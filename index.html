@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="IFM Vendor Portal">
 <meta name="theme-color" content="#F0EEE2">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
 <meta name="color-scheme" content="light">
 <title>IFM Vendor Portal — Beta</title>
@@ -1516,6 +1516,7 @@ border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; }
 textarea, input[type="file"], select {
 font-size: 16px;
 }
+.armed { color: #8A2E2E !important; border-color: #C99 !important; }
 .attn-toollink {
 background: none; border: none; padding: 8px 0 0; font-size: 13px;
 color: inherit; opacity: 0.7; text-decoration: underline; cursor: pointer;
@@ -5891,6 +5892,35 @@ document.getElementById('landing').style.display = 'block';
 function goHome() {
 showScreen(homeScreen);
 }
+// A button that asks a second time in place, instead of a browser dialog.
+// The button keeps its own label and restores it if the person walks away.
+const armedButtons = new Map();
+function confirmTap(btn, run) {
+if (!btn) { run(); return; }
+const armed = armedButtons.get(btn);
+if (armed) {
+clearTimeout(armed.timer);
+armedButtons.delete(btn);
+btn.innerHTML = armed.label;
+btn.classList.remove('armed');
+run();
+return;
+}
+armedButtons.forEach((state, other) => {
+clearTimeout(state.timer);
+other.innerHTML = state.label;
+other.classList.remove('armed');
+armedButtons.delete(other);
+});
+const label = btn.innerHTML;
+btn.textContent = 'Tap again';
+btn.classList.add('armed');
+armedButtons.set(btn, { label: label, timer: setTimeout(() => {
+btn.innerHTML = label;
+btn.classList.remove('armed');
+armedButtons.delete(btn);
+}, 4000) });
+}
 // ---- Android back gesture ---------------------------------------------
 // On Android, swiping from the edge is how people go back; without a history
 // entry to consume, the swipe leaves the app entirely. We keep one spare
@@ -8804,7 +8834,7 @@ let label = '<strong>' + dateLabel + '</strong>';
 if (w.location) label += '<br><span class="empty-note" style="margin:0;">' + esc(w.location) + '</span>';
 if (w.notes) label += '<br><span class="empty-note" style="margin:0;">' + esc(w.notes) + '</span>';
 row.innerHTML = '<span>' + label + '</span><button type="button" title="Delete this date"><svg class="ico"><use href="#i-trash"></use></svg></button>';
-row.querySelector('button').onclick = () => deleteWinterDate(w.id);
+row.querySelector('button').onclick = ev => deleteWinterDate(w.id, ev.currentTarget);
 list.appendChild(row);
 });
 document.getElementById('winterDateListEmpty').style.display = sorted.length ? 'none' : 'block';
@@ -8826,10 +8856,15 @@ document.getElementById('wmNotes').value = '';
 showMsg('wmStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Date added.');
 renderWinterDatesAdmin();
 }
-async function deleteWinterDate(id) {
+async function deleteWinterDate(id, btn) {
 const w = cache.wintermarket.find(x => x.id === id);
 if (!w) return;
-if (!window.confirm('Delete the ' + (w.date || 'this') + ' Winter Market date? This can\u2019t be undone. Any points already recorded for it stay on vendors\u2019 ledgers.')) return;
+if (btn && !armedButtons.has(btn)) {
+confirmTap(btn, () => deleteWinterDate(id, btn));
+showMsg('wmStatusMsg', 'warn', 'Deleting the ' + (w.date || 'this') + ' date also removes it from the calendar. Points already recorded stay on vendors\u2019 ledgers.');
+return;
+}
+if (btn) armedButtons.delete(btn);
 cache.wintermarket = cache.wintermarket.filter(x => x.id !== id);
 await storageSet('ifm-wintermarket', cache.wintermarket);
 renderWinterDatesAdmin();
@@ -8893,7 +8928,7 @@ let label = '<strong>' + esc(p.name) + '</strong><br><span class="empty-note" st
 dateLabel + (p.location ? ' \u2014 ' + esc(p.location) : '') + '</span>';
 if (p.notes) label += '<br><span class="empty-note" style="margin:0;">' + esc(p.notes) + '</span>';
 row.innerHTML = '<span>' + label + '</span><button type="button" title="Delete this PopUp"><svg class="ico"><use href="#i-trash"></use></svg></button>';
-row.querySelector('button').onclick = () => deletePopup(p.id);
+row.querySelector('button').onclick = ev => deletePopup(p.id, ev.currentTarget);
 list.appendChild(row);
 });
 document.getElementById('popupListEmpty').style.display = sorted.length ? 'none' : 'block';
@@ -8922,10 +8957,15 @@ document.getElementById('ppNotes').value = '';
 showMsg('ppStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> PopUp added.');
 renderPopups();
 }
-async function deletePopup(id) {
+async function deletePopup(id, btn) {
 const p = cache.popups.find(x => x.id === id);
 if (!p) return;
-if (!window.confirm('Delete "' + p.name + '"? This can\u2019t be undone. Any points already recorded for it stay on vendors\u2019 ledgers.')) return;
+if (btn && !armedButtons.has(btn)) {
+confirmTap(btn, () => deletePopup(id, btn));
+showMsg('ppStatusMsg', 'warn', 'Deleting \u201c' + esc(p.name) + '\u201d removes it from the calendar. Points already recorded stay on vendors\u2019 ledgers.');
+return;
+}
+if (btn) armedButtons.delete(btn);
 cache.popups = cache.popups.filter(x => x.id !== id);
 await storageSet('ifm-popups', cache.popups);
 renderPopups();
@@ -9821,7 +9861,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-78';
+const BUILD_ID = '13-79';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
