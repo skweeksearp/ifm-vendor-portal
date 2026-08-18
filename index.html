@@ -1640,6 +1640,12 @@ border: 1px solid var(--paper-dim); border-radius: 9px; background: #fff;
 font: inherit; font-size: 10.5px; color: inherit; cursor: pointer; line-height: 1.15; text-align: center;
 }
 #mePanel .me-pal button.on { border-color: var(--leaf); border-width: 2px; background: #F1F6EC; }
+.me-ghost {
+position: fixed; z-index: 120; pointer-events: none;
+transform: translate(-50%, -50%); opacity: 0.85;
+filter: drop-shadow(0 3px 6px rgba(35,42,32,0.35));
+}
+.me-ghost svg { display: block; overflow: visible; }
 #mePanel .me-pal svg { width: 20px; height: 20px; }
 #mePanel label { display: block; font-size: 11.5px; margin: 9px 0 2px; opacity: 0.75; }
 #mePanel input[type=range] { width: 100%; }
@@ -4294,9 +4300,38 @@ let meZoom = 1, mePanX = 0, mePanY = 0;
 let meNorthUp = false;
 let meDrag = null;
 let meOpen = false;
+const mePointers = new Map();
+let mePinch = null;
+let meGhost = null;
+function mePinchPair() {
+const pts = [...mePointers.values()];
+const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+const r = meStage().getBoundingClientRect();
+return {
+d: Math.hypot(dx, dy) || 1,
+mx: (pts[0].x + pts[1].x) / 2 - r.left,
+my: (pts[0].y + pts[1].y) / 2 - r.top
+};
+}
+function meStartPinch() {
+const p = mePinchPair();
+// Remember where the map is under the midpoint, so that point stays under the
+// fingers however far they spread: the map moves with the hand, not the corner.
+mePinch = { d: p.d, zoom: meZoom, ax: (p.mx - mePanX) / meZoom, ay: (p.my - mePanY) / meZoom };
+meDrag = null;
+}
+function meApplyPinch() {
+if (mePointers.size < 2) return;
+const p = mePinchPair();
+meZoom = Math.min(4, Math.max(0.2, mePinch.zoom * (p.d / mePinch.d)));
+mePanX = p.mx - mePinch.ax * meZoom;
+mePanY = p.my - mePinch.ay * meZoom;
+meDraw();
+}
 function meStage() { return document.getElementById('meStage'); }
 function meItemsEl() { return document.getElementById('meItems'); }
 function openMapEditor() {
+meInitEditor();
 meDraft = {
 kiosk: (mapFurniture.kiosk || []).map(i => Object.assign({}, i)),
 booth: (mapFurniture.booth || []).map(i => Object.assign({}, i))
@@ -4358,10 +4393,72 @@ const b = document.createElement('button');
 b.type = 'button';
 b.innerHTML = '<svg viewBox="-22 -16 44 32">' + MAP_FURNITURE_KINDS[k].svg + '</svg><span>' +
 esc(MAP_FURNITURE_KINDS[k].t) + '</span>';
-b.onclick = () => { meKind = (meKind === k ? null : k); mePalette(); meDraw(); };
+b.style.touchAction = 'none';
+b.addEventListener('pointerdown', e => mePaletteDown(e, k));
+b.addEventListener('pointermove', mePaletteMove);
+b.addEventListener('pointerup', mePaletteUp);
+b.addEventListener('pointercancel', mePaletteCancel);
 if (meKind === k) b.className = 'on';
 p.appendChild(b);
 });
+}
+// Dragging a piece out of the palette shows it under the finger at the size it
+// will land, so what you drop is what you saw. A tap that never moves is not a
+// drag: it arms the palette instead, and the next tap on the map places one.
+function mePaletteDown(e, k) {
+const btn = e.currentTarget;
+const was = meKind;
+meKind = k;
+[...btn.parentElement.children].forEach(o => { o.className = o === btn ? 'on' : ''; });
+meDraw();
+const kind = MAP_FURNITURE_KINDS[k];
+const el = document.createElement('div');
+el.className = 'me-ghost';
+el.innerHTML = '<svg viewBox="' + (-kind.w / 2 - 2) + ' ' + (-kind.h / 2 - 2) + ' ' + (kind.w + 4) +
+' ' + (kind.h + 4) + '" width="' + (kind.w + 4) + '" height="' + (kind.h + 4) +
+'" style="transform: scale(' + meZoom + ');">' + kind.svg + '</svg>';
+document.body.appendChild(el);
+meGhost = { el: el, k: k, was: was, id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false };
+meGhostTo(e.clientX, e.clientY);
+try { btn.setPointerCapture(e.pointerId); } catch (err) {}
+e.preventDefault();
+}
+function meGhostTo(x, y) {
+if (!meGhost) return;
+meGhost.el.style.left = x + 'px';
+meGhost.el.style.top = y + 'px';
+}
+function mePaletteMove(e) {
+if (!meGhost || meGhost.id !== e.pointerId) return;
+if (Math.abs(e.clientX - meGhost.x0) > 6 || Math.abs(e.clientY - meGhost.y0) > 6) meGhost.moved = true;
+meGhostTo(e.clientX, e.clientY);
+}
+function mePaletteUp(e) {
+if (!meGhost || meGhost.id !== e.pointerId) return;
+const g = meGhost;
+meGhostClear();
+if (!g.moved) {                             // a tap, not a drag
+if (g.was === g.k) meKind = null;         // tapping an armed piece puts it down
+mePalette(); meDraw();
+return;
+}
+const r = meStage().getBoundingClientRect();
+const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+const overPanel = document.getElementById('mePanel').contains(document.elementFromPoint(e.clientX, e.clientY));
+if (!inside || overPanel) { meKind = null; mePalette(); meDraw(); return; }
+const p = meToMap(e);
+const it = { id: meUid++, k: g.k, x: p.x, y: p.y, r: 0, s: 100, name: '' };
+meDraft[meLayer].push(it);
+meSel = it.id;
+meKind = null;                              // one piece per drag
+mePalette(); meDraw();
+}
+function mePaletteCancel(e) {
+if (meGhost && meGhost.id === e.pointerId) meGhostClear();
+}
+function meGhostClear() {
+if (meGhost && meGhost.el) meGhost.el.remove();
+meGhost = null;
 }
 function meSetLayer(l) {
 meLayer = l; meKind = null; meSel = null;
@@ -4554,6 +4651,12 @@ if (!stage || stage.dataset.wired) return;
 stage.dataset.wired = '1';
 stage.addEventListener('pointerdown', e => {
 if (e.target.closest('#meZoombar, #meMini')) return;
+mePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+stage.setPointerCapture(e.pointerId);
+// A second finger always means the map, never the piece under the first one:
+// whatever was being dragged stops where it is and the gesture becomes a pinch.
+if (mePointers.size === 2) { meStartPinch(); return; }
+if (mePointers.size > 2) return;
 const hit = e.target.closest('.me-item');
 const p = meToMap(e);
 if (hit) {
@@ -4565,22 +4668,37 @@ meDraw();
 const it = { id: meUid++, k: meKind, x: p.x, y: p.y, r: 0, s: 100, name: '' };
 meDraft[meLayer].push(it); meSel = it.id;
 meDrag = { mode: 'item', dx: 0, dy: 0 };
-meDraw();
+meKind = null;
+mePalette(); meDraw();
 } else {
 meDrag = { mode: 'pan', sx: e.clientX - mePanX, sy: e.clientY - mePanY };
 if (meSel !== null) { meSel = null; meDraw(); }
 }
-stage.setPointerCapture(e.pointerId);
 });
 stage.addEventListener('pointermove', e => {
+if (!mePointers.has(e.pointerId)) return;
+mePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+if (mePinch) { meApplyPinch(); return; }
 if (!meDrag) return;
 if (meDrag.mode === 'pan') { mePanX = e.clientX - meDrag.sx; mePanY = e.clientY - meDrag.sy; meDraw(); return; }
 const p = meToMap(e);
 const it = meCurrent(); if (!it) return;
 it.x = p.x - meDrag.dx; it.y = p.y - meDrag.dy; meDraw();
 });
-stage.addEventListener('pointerup', () => { meDrag = null; });
-stage.addEventListener('pointercancel', () => { meDrag = null; });
+const meLift = e => {
+mePointers.delete(e.pointerId);
+if (mePinch && mePointers.size < 2) {
+mePinch = null;
+// Lifting one finger of a pinch must not hand the map to the finger still
+// down: it would jump by however far apart they were.
+meDrag = null;
+const left = [...mePointers.values()][0];
+if (left) meDrag = { mode: 'pan', sx: left.x - mePanX, sy: left.y - mePanY };
+}
+if (!mePointers.size) meDrag = null;
+};
+stage.addEventListener('pointerup', meLift);
+stage.addEventListener('pointercancel', meLift);
 stage.addEventListener('wheel', e => { e.preventDefault(); meZoomBy(e.deltaY < 0 ? 1.08 : 0.93); }, { passive: false });
 // The card is draggable so it can always be moved off whatever is being edited.
 const panel = document.getElementById('mePanel');
@@ -10472,7 +10590,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-83';
+const BUILD_ID = '13-84';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -17644,7 +17762,6 @@ const el = document.getElementById(id);
 el.className = 'status-msg show ' + kind;
 el.innerHTML = text;
 }
-meInitEditor();
 init();</script>
 
 <div id="mapEditor" aria-hidden="true">
@@ -17653,7 +17770,7 @@ init();</script>
     <button type="button" id="mePanelToggle" onclick="meTogglePanel()">&#9776;</button>
     <div id="meHud"><span id="meZoomVal">100%</span><span style="opacity:.4">&middot;</span><span id="meMode">Pan &amp; zoom</span></div>
     <div id="meMini" onclick="meMiniJump(event)"></div>
-    <div id="meEmpty">Pick a piece at right, then tap the map to drop it.</div>
+    <div id="meEmpty">Drag a piece from the card onto the map.</div>
     <div id="meZoombar">
       <button type="button" onclick="meZoomBy(1.25)">+</button>
       <button type="button" onclick="meZoomBy(0.8)">&minus;</button>
@@ -17664,7 +17781,7 @@ init();</script>
       <span class="me-dots">&vellip;&vellip;</span><span class="me-ttl">Map Editor</span>
       <button type="button" class="me-x" onclick="meTogglePanel()" title="Tuck away">&minus;</button>
     </div>
-    <p class="me-hint">Drag this card by its top bar if it covers what you are placing.</p>
+    <p class="me-hint">Drag a piece from below onto the map, or tap it and then tap the map. Drag the map to move it, pinch to zoom. Drag this card by its top bar if it is in the way.</p>
     <div id="meLayerbar">
       <button type="button" id="meLbKiosk" class="on" onclick="meSetLayer('kiosk')">Kiosk map</button>
       <button type="button" id="meLbBooth" onclick="meSetLayer('booth')">Booth-pick map</button>
