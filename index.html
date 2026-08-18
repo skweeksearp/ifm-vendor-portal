@@ -4298,11 +4298,47 @@ body: JSON.stringify({ key: key, value: value }) }, 10000);
 } finally { ifmPosting = false; }
 }
 if (typeof window.storage === 'undefined') {
+let ifmPrimed = false, ifmPriming = null;
+function ifmPrimeAll() {
+if (ifmPrimed) return Promise.resolve();
+if (ifmPriming) return ifmPriming;
+ifmPriming = (async () => {
+try {
+ifmNoteGet(1);
+const r = await ifmFetch(IFM_BACKEND_URL + '?changed=0', null, 15000);
+const j = await r.json();
+(j.items || []).forEach(it => {
+const k = String(it.key);
+if (!ifmWriteQueue.has(k)) ifmMem.set(k, String(it.value));
+});
+if (j.now) ifmLastSync = j.now;
+ifmPrimed = true;
+ifmBackendDownUntil = 0;
+} catch (e) {
+// Fall back to per-key fetches rather than showing an empty app.
+noteStorageFailure('prime', e);
+} finally {
+ifmNoteGet(-1);
+ifmPriming = null;
+}
+})();
+return ifmPriming;
+}
 window.storage = IFM_BACKEND_URL ? {
 async get(key) {
 if (ifmMem.has(key)) {
 const v = ifmMem.get(key);
 return v === null ? null : { key: key, value: v };
+}
+if (!ifmPrimed) await ifmPrimeAll();
+if (ifmPrimed) {
+// The whole tab is in hand; anything absent from it is genuinely missing.
+if (ifmMem.has(key)) {
+const v1 = ifmMem.get(key);
+return v1 === null ? null : { key: key, value: v1 };
+}
+ifmMem.set(key, null);
+return null;
 }
 if (Date.now() < ifmBackendDownUntil) {
 if (!ifmMem.has(key)) ifmMem.set(key, null);
@@ -4957,6 +4993,7 @@ submittedAt: wed.getTime() + Math.floor(rnd('t-' + vid + '-' + d.date) * 16 * 60
 return recs.sort((a, b) => (a.marketDate < b.marketDate ? -1 : a.marketDate > b.marketDate ? 1 : 0));
 }
 async function loadAllData() {
+if (IFM_BACKEND_URL) await ifmPrimeAll();
 const seed = seedData();
 const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops] = await Promise.all([
 storageGet('ifm-ledger'),
@@ -9861,7 +9898,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-79';
+const BUILD_ID = '13-80';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
