@@ -1,0 +1,16 @@
+{
+  "name": "Ithaca Farmers Market Vendor Portal",
+  "short_name": "IFM Portal",
+  "description": "Booths, work hours, and market operations for Ithaca Farmers Market members and staff.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F3EDDD",
+  "theme_color": "#F3EDDD",
+  "icons": [
+    { "src": "ifm-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "ifm-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "ifm-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
