@@ -1385,6 +1385,14 @@ border-color: transparent; font-size: 22px;
 .attn-info { flex: 1; min-width: 0; }
 .attn-t { font-weight: 600; font-size: 14.5px; }
 .attn-m { font-size: 12.5px; opacity: 0.75; margin-top: 1px; }
+.alert-pill {
+display: inline-block; margin-right: 7px; padding: 1px 7px; border-radius: 999px;
+font-size: 11px; font-weight: 800; letter-spacing: 0.02em; vertical-align: 1px;
+border: 1px solid; text-transform: uppercase;
+}
+.alert-pill.waiting { color: #8A6D1F; border-color: #D9A441; background: #FFF7E6; }
+.alert-pill.yes { color: #2E6B36; border-color: #7FA36A; background: #EFF5EA; }
+.alert-pill.no { color: #8A2E2E; border-color: #C99; background: #FBEFEF; }
 .attn-acts { display: flex; gap: 6px; flex-shrink: 0; }
 .attn-acts .primary-btn, .attn-acts .ghost-btn {
 width: auto; margin: 0; padding: 8px 13px; font-size: 13.5px;
@@ -1812,6 +1820,11 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <main>
 <section id="screen-dashboard" class="screen active">
 <div class="screen-head" id="head-dashboard"></div>
+<div class="card" id="vendorAlerts" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-envelope"></use></svg></span>Waiting on the Market</h2>
+<p class="empty-note" id="vendorAlertSub" style="margin-top:0;"></p>
+<div id="vendorAlertList"></div>
+</div>
 <div class="desk-pinned" id="deskProfilePinned">
 <div class="card" id="profileCard">
 <h2 style="display:flex; align-items:center; justify-content:space-between;">
@@ -2838,7 +2851,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
-<div class="comm-item"><div class="comm-title">Beta Reset must not ship</div><div class="comm-desc">Any build headed for real market use sets <code>BETA_RESET_TOOLS</code> to <code>false</code>. The reset desk erases the Store tab for every phone; it exists only to clean up after testing.</div></div>
+<div class="comm-item"><div class="comm-title">Beta Reset must not ship</div><div class="comm-desc">Any build headed for real market use sets <code>BETA_RESET_TOOLS</code> to <code>false</code>. The reset desk rewrites records for every phone; it exists only to clean up after testing. A new storage key must also be added to <code>BETA_RESET_KEYS</code> as traffic or as configuration &mdash; a key in neither group is silently spared, and the screen&rsquo;s three lists are drawn from that same table.</div></div>
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
 </div>
 </section>
@@ -2945,7 +2958,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="dash-fold" data-fold="dev-betareset" id="betaResetTile" style="display:none;">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'betareset')">
 <span class="fold-title">Beta Reset</span>
-<span class="fold-sub">Wipe test tracks from the Store tab &mdash; beta builds only, never ships</span>
+<span class="fold-sub">Sweep up what testing leaves behind, without touching the lists you configured &mdash; beta builds only, never ships</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -2956,12 +2969,28 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="screen-head" id="head-betareset"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Beta Reset</h2>
-<p class="empty-note" style="margin-top:0;">These buttons erase records for <b>every phone</b> on this backend and put back the original fictional data. They exist to clean up after testing &mdash; butler-named work hours, trial promotions, practice approvals. Each asks for a second tap.</p>
-<p class="empty-note"><b>This tool must never ship.</b> Production builds set <code>BETA_RESET_TOOLS</code> to <code>false</code>, which removes this desk entirely &mdash; on a live market it would destroy the record-keeping of the whole market. The Version Update Checklist carries this as a standing item.</p>
-<button type="button" id="brVendor" class="ghost-btn" style="color:#8A2E2E; border-color:#C99;" onclick="betaResetTap('vendor', this)">Reset all vendor data</button>
-<button type="button" id="brManager" class="ghost-btn" style="color:#8A2E2E; border-color:#C99;" onclick="betaResetTap('manager', this)">Reset all Market Manager data</button>
-<button type="button" id="brAll" class="ghost-btn" style="color:#fff; background:#8A2E2E; border-color:#8A2E2E;" onclick="betaResetTap('all', this)">Reset the entire sheet to original fictional data</button>
+<p class="empty-note" style="margin-top:0;">Testing leaves a trail on <b>every phone</b> on this backend &mdash; butler-named work hours, trial promotions, practice approvals. These buttons sweep it up. Each asks for a second tap.</p>
+<p class="empty-note"><b>No tool, screen or feature can be lost here.</b> Those live in the app file itself, not in the sheet. These buttons only rewrite records.</p>
+<button type="button" id="brTraffic" class="ghost-btn" style="color:#8A2E2E; border-color:#C99;" onclick="betaResetTap('traffic', this)">Clear test traffic</button>
+<p class="empty-note" style="margin-top:6px;">The everyday one. It clears what a test session produces and leaves every configured list standing.</p>
+<button type="button" id="brAll" class="ghost-btn" style="color:#fff; background:#8A2E2E; border-color:#8A2E2E;" onclick="betaResetTap('all', this)">Clear test traffic <i>and</i> reset the configured lists</button>
+<p class="empty-note" style="margin-top:6px;">A true clean slate: everything above, plus the lists somebody sat down and filled in. Reach for this only when starting the fictional market over.</p>
 <div class="status-msg" id="brMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-trash"></use></svg></span>What &ldquo;test traffic&rdquo; Means</h2>
+<p class="empty-note" style="margin-top:0;">Both buttons clear all of this.</p>
+<div id="brClears"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-gate"></use></svg></span>Kept by the First Button</h2>
+<p class="empty-note" style="margin-top:0;">Configured lists. <b>Clear test traffic</b> leaves them exactly as they are; only the second button puts them back to seed.</p>
+<div id="brKeeps"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>Never Touched by Either</h2>
+<p class="empty-note" style="margin-top:0;">Not records at all &mdash; work somebody made. Nothing on this desk can reach it.</p>
+<div id="brNever"></div>
 </div>
 </section>
 <section id="screen-creativity" class="screen">
@@ -6979,6 +7008,14 @@ async function loadVp() {
 const v = await storageGet('ifm-feepays');
 if (v !== STORAGE_MISSING) vpCache = v;
 else if (!vpCache) vpCache = { items: [] };
+let repaired = false;
+(vpCache.items || []).forEach(it => {
+if (it.vendorId) return;
+const m = /IFM \u00b7 ([A-Za-z0-9-]+)/.exec(it.note || '');
+it.vendorId = m ? m[1] : '';
+repaired = true;
+});
+if (repaired) await storageSet('ifm-feepays', vpCache);
 return vpCache;
 }
 function vpFeeLines(vendor) {
@@ -7014,18 +7051,39 @@ updatePaySub();
 renderVpList();
 }
 
+function myPayments() {
+return ((vpCache && vpCache.items) || []).filter(it => it.vendorId === currentVendorId);
+}
+function paymentStateLine(it) {
+if (it.status === 'confirmed') return 'Confirmed received by the office';
+if (it.status === 'queried') return 'The office could not find it \u2014 ' + (it.reviewNote || 'check the note and report again');
+return 'Reported \u2014 awaiting office confirmation';
+}
+async function setPaymentStatus(id, status) {
+await loadVp();
+const it = vpCache.items.find(x => x.id === id);
+if (!it) return;
+it.status = status;
+it.reviewedAt = todayISO();
+await storageSet('ifm-feepays', vpCache);
+if (document.getElementById('vpList')) renderVpList();
+}
+function reportedPayments() {
+return ((vpCache && vpCache.items) || []).filter(it => it.status === 'reported');
+}
 function renderVpList() {
 const wrap = document.getElementById('vpList');
 const empty = document.getElementById('vpEmpty');
 if (!wrap) return;
 wrap.innerHTML = '';
-empty.style.display = vpCache.items.length ? 'none' : 'block';
-vpCache.items.forEach(it => {
+const mine = myPayments();
+empty.style.display = mine.length ? 'none' : 'block';
+mine.forEach(it => {
 const row = document.createElement('div');
 row.className = 'tracker-row';
 row.innerHTML = '<div class="t-title">$' + fmtMoney(it.amount) + ' \u2014 ' + esc(it.label) + '</div>' +
 '<div class="t-note">Would open Venmo to <b>@IthacaFarmersMarket</b> with the note \u201C' + esc(it.note) + '\u201D</div>' +
-'<div class="t-note">' + formatDisplayDate(it.date) + ' \u00b7 Reported \u2014 awaiting office confirmation</div>';
+'<div class="t-note">' + formatDisplayDate(it.date) + ' \u00b7 ' + esc(paymentStateLine(it)) + '</div>';
 wrap.appendChild(row);
 });
 }
@@ -7229,7 +7287,7 @@ const total = cartTotal();
 const labels = feeCart.items.map(x => x.label).join('; ');
 const note = 'IFM \u00b7 ' + vendor.vendorId + ' \u00b7 ' + feeCart.items.length + ' item' + (feeCart.items.length > 1 ? 's' : '') + ' \u00b7 $' + fmtMoney(total);
 await loadVp();
-vpCache.items.unshift({ id: 'vp' + Date.now(), date: todayISO(), label: labels, amount: total, note: note, status: 'reported' });
+vpCache.items.unshift({ id: 'vp' + Date.now(), vendorId: vendor.vendorId, date: todayISO(), label: labels, amount: total, note: note, status: 'reported' });
 await storageSet('ifm-feepays', vpCache);
 feeCart.items = [];
 await storageSet('ifm-feecart', feeCart);
@@ -7780,93 +7838,112 @@ renderAll();
 // nothing on any desk can reach these functions. On a live market these
 // buttons would destroy the record-keeping of the entire market.
 const BETA_RESET_TOOLS = true;
-let brArm = { kind: null, timer: null, label: '' };
-function betaResetTap(kind, btn) {
-if (brArm.kind !== kind) {
-if (brArm.timer) clearTimeout(brArm.timer);
-if (brArm.kind) {
-const prev = document.getElementById(brArm.kind === 'vendor' ? 'brVendor' : brArm.kind === 'manager' ? 'brManager' : 'brAll');
-if (prev) prev.textContent = brArm.label;
-}
-brArm.kind = kind;
-brArm.label = btn.textContent;
-btn.textContent = 'Tap again to confirm';
-brArm.timer = setTimeout(() => { btn.textContent = brArm.label; brArm.kind = null; }, 4000);
-return;
-}
-clearTimeout(brArm.timer);
-btn.textContent = brArm.label;
-brArm.kind = null;
-betaResetRun(kind);
-}
-async function resetVendorData() {
-const seed = seedData();
-await storageSet('ifm-ledger', seed.ledger);
-await storageSet('ifm-callinout', seed.callinout);
-await storageSet('ifm-workhours', seed.workhours);
-await storageSet('ifm-booth-shares', []);
-await storageSet('ifm-promos', []);
-await storageSet('ifm-improvements', []);
-await storageSet('ifm-hours-goals', { total: 30, bg: 2 });
-await storageSet('ifm-feepays', { items: [] });
-await storageSet('ifm-feecart', { items: [] });
+// Every key this tool can touch, in one place, so what the screen promises and
+// what the buttons do cannot drift apart. Two groups: the traffic a test session
+// generates, and the lists somebody sat down and configured. Only the second
+// button touches the second group.
+const BETA_RESET_KEYS = [
+{ g: 'traffic', k: 'ifm-vendors-v1', t: 'Vendor profiles \u2014 contact details, descriptions, products', v: () => DEMO_VENDORS_SEED.map(v => ({ ...v })) },
+{ g: 'traffic', k: 'ifm-ledger', t: 'Points ledger entries', v: s => s.ledger },
+{ g: 'traffic', k: 'ifm-workhours', t: 'Work hours submitted', v: s => s.workhours },
+{ g: 'traffic', k: 'ifm-tasks', shared: true, t: 'Work hour tasks posted and claimed', v: () => [] },
+{ g: 'traffic', k: 'ifm-callinout', t: 'Booth requests and absences', v: s => s.callinout },
+{ g: 'traffic', k: 'ifm-booth-shares', t: 'Booths being shared', v: () => [] },
+{ g: 'traffic', k: 'ifm-promos', t: 'Deals vendors posted', v: () => [] },
+{ g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
+{ g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
+{ g: 'traffic', k: 'ifm-feecart', t: 'Fee baskets', v: () => ({ items: [] }) },
+{ g: 'traffic', k: 'ifm-alert-seen', t: 'Notices vendors have dismissed', v: () => ({}) },
+{ g: 'traffic', t: 'Photographs vendors uploaded', run: async () => {
 const idx = await storageGet('ifm-photo-idx');
 if (idx !== STORAGE_MISSING && Array.isArray(idx)) {
 for (const id of idx) await storageSet('ifm-photo-' + id, null);
 }
 await storageSet('ifm-photo-idx', []);
 await storageSet('ifm-vendor-photos', {});
-cache.requirements.status = {};
+cache.vendorPhotos = {};
+} },
+{ g: 'traffic', t: 'Documents submitted, and who has been marked as meeting each requirement', run: async () => {
 await storageSetShared('ifm-doc-submissions', {});
-await storageSet('ifm-requirements', cache.requirements);
-}
-async function resetManagerData() {
-await storageSetShared('ifm-tasks', []);
-await storageSet('ifm-requirements', { reqs: REQUIREMENT_SEED.map(r => ({ ...r })), status: (cache.requirements && cache.requirements.status) || {} });
-await storageSet('ifm-unreservable', { nums: [], updated: '' });
-await storageSet('ifm-ops', { noshow: {}, fines: [], waived: {}, logs: {},
-dayfees: {}, renewal: {}, rollover: {}, auction: {} });
-await storageSet('ifm-settings', {});
-await storageSet('ifm-leaves', []);
-await storageSet('ifm-quitwatch', {});
-await storageSet('ifm-amendments', { items: [
+const cur = await storageGet('ifm-requirements');
+const reqs = (cur !== STORAGE_MISSING && cur && Array.isArray(cur.reqs) && cur.reqs.length)
+? cur.reqs : REQUIREMENT_SEED.map(r => ({ ...r }));
+await storageSet('ifm-requirements', { reqs: reqs, status: {} });
+} },
+{ g: 'traffic', k: 'ifm-lottery', t: 'Booth Selection picks', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-booths-v3', t: 'Booth assignments', v: () => BOOTH_SEED.map(b => ({ ...b })) },
+{ g: 'traffic', k: 'ifm-booth-layouts', t: 'Booth layout drawings', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-winter-reservations', t: 'Winter Market booth reservations', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-ops', t: 'Day-of records \u2014 no-shows, fines, day fees, renewals, end-of-day logs', v: () => ({ noshow: {}, fines: [], waived: {}, logs: {}, dayfees: {}, renewal: {}, rollover: {}, auction: {} }) },
+{ g: 'traffic', k: 'ifm-leaves', t: 'Leaves of absence', v: () => [] },
+{ g: 'traffic', k: 'ifm-quitwatch', t: 'Quit-watch notes', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-stall-checklist', t: 'End-of-day booth checks', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-tracker-facilities', t: 'Facilities requests', v: () => [] },
+{ g: 'traffic', k: 'ifm-tracker-proposal', t: 'Board proposals submitted', v: () => [] },
+{ g: 'traffic', k: 'ifm-popups', t: 'PopUp events', v: () => [] },
+{ g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
+{ g: 'config', k: 'ifm-unreservable', t: 'Unreservable Booths', v: () => ({ nums: [], updated: '' }) },
+{ g: 'config', k: 'ifm-amendments', t: 'Board Amendments', v: () => ({ items: [
 { date: '', text: 'Sharing vendors no longer need to each occupy half the booth\u2019s frontage.',
 note: 'Reported by a board member; meeting date not recorded \u2014 fill it in when the minutes surface.' }
-] });
-await storageSet('ifm-popups', []);
-await storageSet('ifm-season-flags', { shoulderDeclared: false });
-await storageSet('ifm-stall-checklist', {});
-await storageSet('ifm-tracker-facilities', []);
-await storageSet('ifm-tracker-proposal', []);
-await storageSet('ifm-lottery', {});
-await storageSet('ifm-booth-layouts', {});
-await storageSet('ifm-winter-reservations', {});
-await storageSet('ifm-wintermarket', winterMarketOptions().map((o, i) => ({
+] }) },
+{ g: 'config', t: 'The Vendor Requirements list itself', run: async () => {
+const cur = await storageGet('ifm-requirements');
+const status = (cur !== STORAGE_MISSING && cur && cur.status) || {};
+await storageSet('ifm-requirements', { reqs: REQUIREMENT_SEED.map(r => ({ ...r })), status: status });
+} },
+{ g: 'config', k: 'ifm-settings', t: 'The Work Hour Rate', v: () => ({}) },
+{ g: 'config', k: 'ifm-hours-goals', t: 'Work hours goals', v: () => ({ total: 30, bg: 2 }) },
+{ g: 'config', k: 'ifm-wintermarket', t: 'Winter Market dates', v: () => winterMarketOptions().map((o, i) => ({
 id: 'WM-seed-' + i,
 date: o.date,
 location: 'Triphammer Marketplace \u2014 Bakery and ReUse atria',
 notes: '10:30 AM \u2013 2 PM. Booth reserved in advance.'
-})));
-await storageSet('ifm-booths-v3', BOOTH_SEED.map(b => ({ ...b })));
+})) }
+];
+// Nothing here is a record at all \u2014 it is work somebody made. No button on
+// this desk touches any of it.
+const BETA_UNTOUCHED = [
+'The kiosk\u2019s information subjects, their photographs and credits',
+'The kiosk\u2019s window, carrot and logo arrangement',
+'Furniture and outlets placed with the Map Editor',
+'The order of the desks'
+];
+function betaResetTap(kind, btn) {
+confirmTap(btn, () => betaResetRun(kind));
+}
+async function betaApply(group) {
+const seed = seedData();
+for (const e of BETA_RESET_KEYS) {
+if (e.g !== group) continue;
+if (e.run) { await e.run(seed); continue; }
+if (e.shared) await storageSetShared(e.k, e.v(seed));
+else await storageSet(e.k, e.v(seed));
+}
+}
+function initBetaResetScreen() {
+const fill = (id, list) => {
+const el = document.getElementById(id);
+if (!el) return;
+el.innerHTML = list.map(t => '<div class="comm-item"><div class="comm-desc">' + t + '</div></div>').join('');
+};
+fill('brClears', BETA_RESET_KEYS.filter(e => e.g === 'traffic').map(e => e.t));
+fill('brKeeps', BETA_RESET_KEYS.filter(e => e.g === 'config').map(e => e.t));
+fill('brNever', BETA_UNTOUCHED);
 }
 async function betaResetRun(kind) {
-const ids = ['brVendor', 'brManager', 'brAll'];
+const ids = ['brTraffic', 'brAll'];
 ids.forEach(i => { const b = document.getElementById(i); if (b) b.disabled = true; });
 showMsg('brMsg', 'ok', 'Resetting\u2026');
-if (kind === 'vendor') {
-await resetVendorData();
-} else if (kind === 'manager') {
-await resetManagerData();
-} else {
-await resetVendorData();
-await resetManagerData();
-await storageSet('ifm-vendors-v1', DEMO_VENDORS_SEED.map(v => ({ ...v })));
-}
-amendmentsCache = null; unreservableCache = null; vpCache = null; feeCart = null; improveCache = null;
+await betaApply('traffic');
+if (kind === 'all') await betaApply('config');
+amendmentsCache = null; unreservableCache = null; vpCache = null; feeCart = null; improveCache = null; alertSeenCache = null;
 await loadAllData();
 ids.forEach(i => { const b = document.getElementById(i); if (b) b.disabled = false; });
-showMsg('brMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Done. The Store tab is back to ' +
-(kind === 'vendor' ? 'seeded vendor records.' : kind === 'manager' ? 'seeded manager records.' : 'the original fictional data.'));
+showMsg('brMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Done. ' +
+(kind === 'all'
+? 'Every record is back to the original fictional data \u2014 configured lists included.'
+: 'Test traffic is cleared. The configured lists below were left alone.'));
 }
 function currentVendor() {
 return cache.vendors.find(v => v.vendorId === currentVendorId);
@@ -8277,13 +8354,14 @@ if (name === 'kiosk') initKioskScreen();
 if (name === 'leaves') initLeavesScreen();
 if (name === 'whrate') initWorkHourRateScreen();
 if (name === 'requirements') initRequirementsScreen();
+if (name === 'betareset') initBetaResetScreen();
 if (name === 'mydocs') initMyDocsScreen();
 if (name === 'boardflags') initBoardFlagsScreen();
 if (name === 'marketrules') initMarketRulesScreen();
 if (name === 'committees') initCommitteesScreen();
 if (name === 'mycommittees') initMyCommitteesScreen();
 renderRulingsBanner(name);
-if (name === 'dashboard') { renderVendorDocsSub(); applyDeskOrder(); attachDeskDrag(); loadFeeCart().then(updatePaySub); }
+if (name === 'dashboard') { renderVendorDocsSub(); applyDeskOrder(); attachDeskDrag(); loadFeeCart().then(updatePaySub); renderVendorAlerts(); }
 if (name === 'attendreq') initAttendReqScreen();
 if (name === 'noshow') initNoShowScreen();
 if (name === 'fines') initFinesScreen();
@@ -10229,6 +10307,7 @@ const claim = task.claims.find(c => c.vendorId === currentVendorId);
 if (!claim) return;
 claim.status = 'reported';
 claim.reportedAt = Date.now();
+delete claim.sentBackAt;
 cache.tasks = tasks;
 await saveTasks();
 renderAvailableTasks();
@@ -10286,6 +10365,7 @@ const task = tasks.find(t => t.id === taskId);
 const claim = task && task.claims.find(c => c.vendorId === vendorId);
 if (!claim) return;
 claim.status = 'claimed';
+claim.sentBackAt = Date.now();
 delete claim.reportedAt;
 delete claim.approvedAt;
 cache.tasks = tasks;
@@ -10590,7 +10670,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-84';
+const BUILD_ID = '13-87';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -15083,6 +15163,16 @@ acts: [
 ]
 }));
 },
+payments() {
+return reportedPayments().map(it => ({
+t: (boothVendorName(it.vendorId) || it.vendorId || 'Unknown vendor') + ' \u2014 $' + fmtMoney(it.amount),
+m: it.label + ' \u00b7 reported ' + formatDisplayDate(it.date),
+acts: [
+{ t: 'Confirm', primary: true, fn: () => setPaymentStatus(it.id, 'confirmed') },
+{ t: 'Not Found', fn: () => setPaymentStatus(it.id, 'queried') }
+]
+}));
+},
 docs() {
 // Accept is safe one-tap; returning needs a reason and expiry dates need
 // a date field, so those paths go through the full Documents tool.
@@ -15097,6 +15187,147 @@ acts: [
 }
 };
 const mgrAttnOpen = new Set();
+// ---- What the vendor is waiting on ------------------------------------
+// The manager's desk has Needs Attention; this is its other half. Everything a
+// vendor submits sits somewhere until somebody rules on it, and until now the
+// only way to learn the answer was to go and look in the tool you submitted
+// from. Each source reports the same three things: what it was, where it stands,
+// and \u2014 once it is settled \u2014 a way to put the notice down.
+let alertSeenCache = null;
+async function loadAlertSeen() {
+const v = await storageGet('ifm-alert-seen');
+if (v !== STORAGE_MISSING && v) alertSeenCache = v;
+else if (!alertSeenCache) alertSeenCache = {};
+return alertSeenCache;
+}
+async function dismissVendorAlert(key) {
+await loadAlertSeen();
+const mine = alertSeenCache[currentVendorId] || [];
+if (!mine.includes(key)) mine.push(key);
+alertSeenCache[currentVendorId] = mine;
+await storageSet('ifm-alert-seen', alertSeenCache);
+renderVendorAlerts();
+}
+function shortDate(v) {
+if (!v) return '';
+const d = new Date(v);
+return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+// state: 'waiting' shows no dismiss button \u2014 there is nothing to put down yet.
+function vendorAlertItems() {
+const out = [];
+const me = currentVendorId;
+if (!me) return out;
+(cache.tasks || []).forEach(task => {
+(task.claims || []).filter(c => c.vendorId === me).forEach(c => {
+if (c.status === 'reported') {
+out.push({ key: 'task:' + task.id + ':reported', state: 'waiting', go: 'hours',
+t: task.title, m: 'Reported finished ' + shortDate(c.reportedAt) + ' \u00b7 hours post when the manager signs off' });
+} else if (c.status === 'approved') {
+out.push({ key: 'task:' + task.id + ':approved:' + (c.approvedAt || ''), state: 'yes', go: 'hours',
+t: task.title, m: 'Signed off ' + shortDate(c.approvedAt) + ' \u00b7 ' + (task.hours || 0) + ' hours posted' });
+} else if (c.status === 'claimed' && c.sentBackAt) {
+out.push({ key: 'task:' + task.id + ':sentback:' + c.sentBackAt, state: 'no', label: 'Sent back', go: 'hours',
+t: task.title, m: 'Sent back ' + shortDate(c.sentBackAt) + ' \u00b7 still yours to finish and report again' });
+}
+});
+});
+(cache.boothShares || []).filter(s => s.vendorId === me || s.hostVendorId === me).forEach(s => {
+const who = s.vendorId === me ? 'Sharing booth ' + s.boothNum : 'Booth ' + s.boothNum + ' shared with you';
+if (s.status === 'reported') {
+out.push({ key: 'share:' + s.id + ':reported', state: 'waiting', go: 'callinout', t: who,
+m: 'Reported' + (s.date ? ' for ' + s.date : '') + ' \u00b7 waiting on the manager' });
+} else if (s.status === 'allowed' || s.status === 'denied') {
+out.push({ key: 'share:' + s.id + ':' + s.status, state: s.status === 'allowed' ? 'yes' : 'no',
+t: who, m: s.status === 'allowed' ? 'Allowed by the manager' : 'Denied by the manager' });
+}
+});
+(cache.requirements && cache.requirements.reqs || []).forEach(req => {
+const rec = reqStatusFor(req.id, me);
+if (rec.state === 'pending') {
+out.push({ key: 'doc:' + req.id + ':pending', state: 'waiting', go: 'mydocs', t: req.name,
+m: 'Reported posted ' + (rec.sentOn ? formatDisplayDate(rec.sentOn) : '') + ' \u00b7 waiting on the office' });
+} else if (rec.state === 'returned') {
+out.push({ key: 'doc:' + req.id + ':returned:' + (rec.reviewedAt || ''), state: 'no', label: 'Returned', go: 'mydocs',
+t: req.name, m: 'Returned \u00b7 ' + (rec.reviewNote || 'No reason given.') });
+} else if (rec.state === 'onfile' && rec.reviewedAt) {
+out.push({ key: 'doc:' + req.id + ':onfile:' + rec.reviewedAt, state: 'yes', go: 'mydocs',
+t: req.name, m: 'Accepted and on file' + (rec.expiry ? ' \u00b7 expires ' + formatDisplayDate(rec.expiry) : '') });
+}
+});
+((vpCache && vpCache.items) || []).filter(x => x.vendorId === me).forEach(x => {
+if (x.status === 'confirmed') {
+out.push({ key: 'pay:' + x.id + ':confirmed:' + (x.reviewedAt || ''), state: 'yes', label: 'Confirmed', go: 'venmopay',
+t: '$' + fmtMoney(x.amount) + ' \u2014 ' + x.label, m: 'The office confirmed this payment' });
+} else if (x.status === 'queried') {
+out.push({ key: 'pay:' + x.id + ':queried:' + (x.reviewedAt || ''), state: 'no', label: 'Not found', go: 'venmopay',
+t: '$' + fmtMoney(x.amount) + ' \u2014 ' + x.label, m: 'The office could not find this payment \u00b7 check the note and report again' });
+} else {
+out.push({ key: 'pay:' + x.id + ':reported', state: 'waiting', go: 'venmopay',
+t: '$' + fmtMoney(x.amount) + ' \u2014 ' + x.label, m: 'Reported ' + formatDisplayDate(x.date) + ' \u00b7 waiting on the office' });
+}
+});
+(improveCache || []).filter(r => r.vendorId === me).forEach(r => {
+if (r.status === 'Submitted') {
+out.push({ key: 'imp:' + r.id + ':submitted', state: 'waiting', go: 'improve', t: r.title,
+m: 'Submitted ' + formatDisplayDate(r.created) + ' \u00b7 waiting on Buildings & Grounds' });
+} else {
+const good = /^Approved/.test(r.status);
+out.push({ key: 'imp:' + r.id + ':' + r.status, state: r.status === 'On the agenda' ? 'waiting' : (good ? 'yes' : 'no'),
+label: r.status === 'On the agenda' ? 'On the agenda' : (good ? 'Approved' : 'Returned'),
+go: 'improve', t: r.title,
+m: r.status + (r.meeting ? ' \u00b7 ' + formatDisplayDate(r.meeting) : '') + (r.note ? ' \u00b7 ' + r.note : '') });
+}
+});
+return out;
+}
+async function renderVendorAlerts() {
+const card = document.getElementById('vendorAlerts');
+if (!card) return;
+await loadAlertSeen();
+await loadImprovements();
+await loadVp();
+const seen = alertSeenCache[currentVendorId] || [];
+const items = vendorAlertItems().filter(a => !seen.includes(a.key));
+const list = document.getElementById('vendorAlertList');
+card.style.display = items.length ? 'block' : 'none';
+if (!items.length) { list.innerHTML = ''; return; }
+const waiting = items.filter(a => a.state === 'waiting').length;
+const sub = document.getElementById('vendorAlertSub');
+if (sub) sub.textContent = waiting
+? waiting + (waiting === 1 ? ' waiting on a decision' : ' waiting on decisions') +
+(items.length > waiting ? ' \u00b7 ' + (items.length - waiting) + ' settled' : '')
+: items.length + (items.length === 1 ? ' decision came back' : ' decisions came back');
+list.innerHTML = '';
+items.forEach(a => {
+const row = document.createElement('div');
+row.className = 'attn-item';
+row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div>' +
+'<div class="attn-acts"></div>';
+row.querySelector('.attn-t').innerHTML = '<span class="alert-pill ' + a.state + '"></span>';
+row.querySelector('.attn-t').appendChild(document.createTextNode(a.t));
+row.querySelector('.alert-pill').textContent =
+a.label || (a.state === 'waiting' ? 'Waiting' : a.state === 'yes' ? 'Approved' : 'Denied');
+row.querySelector('.attn-m').textContent = a.m;
+const acts = row.querySelector('.attn-acts');
+if (a.state !== 'waiting') {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'ghost-btn';
+b.textContent = 'Dismiss';
+b.onclick = () => dismissVendorAlert(a.key);
+acts.appendChild(b);
+} else if (a.go) {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'ghost-btn';
+b.textContent = 'Open';
+b.onclick = () => showScreen(a.go);
+acts.appendChild(b);
+}
+list.appendChild(row);
+});
+}
 function renderManagerAlerts() {
 const card = document.getElementById('mgrAlerts');
 const wrap = document.getElementById('mgrAlertList');
@@ -15133,6 +15364,13 @@ alerts.push({ id: 'shares', topic: 'Shares', n: sharesWaiting,
 t: sharesWaiting + (sharesWaiting === 1 ? ' booth share reported, awaiting your decision' : ' booth shares reported, awaiting your decision'),
 d: 'Reported by a booth holder \u2014 allow or deny on the Selection screen',
 cls: 'submitted', go: 'lottery' });
+}
+const paysWaiting = reportedPayments().length;
+if (paysWaiting) {
+alerts.push({ id: 'payments', topic: 'Fees', n: paysWaiting,
+t: paysWaiting + (paysWaiting === 1 ? ' reported payment awaiting confirmation' : ' reported payments awaiting confirmation'),
+d: 'A vendor says they have paid \u2014 confirm it against the market\u2019s account',
+cls: 'submitted', go: 'venmopay' });
 }
 const pending = pendingSubmissions();
 if (pending.length) {
