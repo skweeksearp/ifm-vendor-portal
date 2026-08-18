@@ -7003,13 +7003,19 @@ document.getElementById('helpModal').style.display = 'none';
 }
 const LIST_PAGE = 60;
 const listLimits = {};
-function pagedList(key, listEl, matches, filterText, renderFn, rerender) {
+function pagedList(key, listEl, matches, filterText, renderFn, rerender, countEl) {
 if (listLimits[key + ':q'] !== (filterText || '')) {
 listLimits[key + ':q'] = filterText || '';
 listLimits[key] = LIST_PAGE;
 }
 const limit = listLimits[key] || LIST_PAGE;
 matches.slice(0, limit).forEach(renderFn);
+if (countEl) {
+const shown = Math.min(limit, matches.length);
+countEl.textContent = matches.length === 0 ? 'No vendors match'
+: shown >= matches.length ? matches.length + ' vendor' + (matches.length === 1 ? '' : 's')
+: '1\u2013' + shown + ' of ' + matches.length + ' vendors';
+}
 if (matches.length > limit) {
 const more = document.createElement('button');
 more.type = 'button';
@@ -7058,11 +7064,11 @@ function renderVendorList(filterText) {
 const list = document.getElementById('vendorList');
 list.innerHTML = '';
 const q = (filterText || '').trim().toLowerCase();
+// One alphabetical run for every member, whatever their category: looking
+// someone up by name should not require knowing their standing first.
 const matches = cache.vendors.filter(v =>
 !q || v.businessName.toLowerCase().includes(q) || v.lastName.toLowerCase().includes(q)
-);
-document.getElementById('vendorCount').textContent =
-matches.length + ' of ' + cache.vendors.length + ' vendors';
+).sort((a, b) => a.businessName.localeCompare(b.businessName, 'en', { sensitivity: 'base', numeric: true }));
 pagedList('picker', list, matches, filterText, v => {
 const btn = document.createElement('button');
 btn.className = 'vendor-option';
@@ -7072,7 +7078,7 @@ avatarHTML(v, 'avatar') +
 '<div class="vmeta">' + v.category + ' \u2022 ' + v.lastName + ' \u2022 Member since ' + v.joinYear + '</div></div>';
 btn.onclick = () => selectVendor(v.vendorId);
 list.appendChild(btn);
-}, () => renderVendorList(filterText));
+}, () => renderVendorList(filterText), document.getElementById('vendorCount'));
 }
 async function selectVendor(vendorId) {
 currentRole = 'vendor';
@@ -9898,7 +9904,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-80';
+const BUILD_ID = '13-82';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
