@@ -1521,6 +1521,151 @@ font-size: 16px;
 background: none; border: none; padding: 8px 0 0; font-size: 13px;
 color: inherit; opacity: 0.7; text-decoration: underline; cursor: pointer;
 }
+.offline-note {
+position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+background: #FFF7E6; border: 1px solid #D9A441; border-radius: 12px;
+padding: 10px 16px; z-index: 997; max-width: 90%; text-align: center;
+}
+.offline-note .on-kiosk { display: none; }
+/* On a wall display the notice steps aside: a corner strip, small and calm,
+   with nothing centred over the information people came to read. */
+body.kiosk-mode .offline-note { display: none; }
+body.kiosk-mode.ifm-offline #kioskToday::after {
+content: '  \2022  Offline \2014  some details may be out of date.';
+opacity: 0.75;
+}
+/* ---- Furniture placed on the maps by hand ----------------------------
+   Two layers that never mix: park furniture belongs to the kiosk map,
+   electrical to the booth-pick map. Both sit in the booth coordinate
+   space, which is what lets one editor place either. */
+.map-piece { position: absolute; pointer-events: none; z-index: 1; }
+.map-piece svg { display: block; overflow: visible; }
+.map-piece-lbl {
+position: absolute; transform: translate(-50%, -50%);
+font-size: 9px; font-weight: 700; letter-spacing: 0.01em;
+color: var(--ink); opacity: 0.55; white-space: nowrap; pointer-events: none; z-index: 2;
+}
+#kioskBoothCanvas.north-map .map-piece-lbl { transform: translate(-50%, -50%) rotate(50deg); }
+#kioskBoothCanvas.tiny-structures .map-piece-lbl { display: none; }
+/* ---- Map Editor (developer desk) -------------------------------------
+   Full bleed: the map keeps the whole screen and the tool card floats on
+   top of it, draggable clear of whatever is being placed. */
+#mapEditor { position: fixed; inset: 0; z-index: 96; display: none; background: #FFFDF4; color: var(--ink); }
+body.map-editor-open #mapEditor { display: block; }
+#meStage { position: absolute; inset: 0; overflow: hidden; background: #FFFDF4; touch-action: none; }
+#meCanvas { position: absolute; transform-origin: 0 0; }
+#meCanvas .me-park { position: absolute; pointer-events: none; }
+#meCanvas .me-park svg { display: block; }
+body.me-layer-booth #meCanvas .me-park { display: none; }
+body.me-layer-kiosk #meCanvas .me-booth { opacity: 0.55; }
+body.me-layer-kiosk #meCanvas .me-struct { opacity: 0.75; }
+#meCanvas .me-booth {
+position: absolute; width: 36px; height: 26px; margin: -13px 0 0 -18px;
+border: 1px solid #CFC7AE; border-radius: 3px; background: #FBF7EA;
+font-size: 8.5px; display: flex; align-items: center; justify-content: center;
+color: #9A927C; pointer-events: none;
+}
+#meCanvas .me-struct {
+position: absolute; border: 1px solid #BDB49A; border-radius: 4px; background: #EFE9D6;
+font-size: 8.5px; display: flex; align-items: center; justify-content: center;
+text-align: center; color: #8A8266; pointer-events: none; padding: 1px; box-sizing: border-box;
+}
+#meCanvas .me-panelchip {
+position: absolute; transform: translate(-50%, -50%); background: var(--sky); color: #fff;
+font-size: 9px; font-weight: 800; padding: 2px 4px; border-radius: 3px;
+white-space: nowrap; pointer-events: none;
+}
+#meCanvas .me-item { position: absolute; cursor: grab; }
+#meCanvas .me-item svg { display: block; overflow: visible; }
+#meCanvas .me-item .me-hit { fill: transparent; stroke: none; }
+#meCanvas .me-item.sel .me-hit { stroke: var(--leaf); stroke-dasharray: 4 3; fill: none; }
+#meCanvas .me-item .me-nose { stroke: var(--leaf); stroke-width: 2; fill: none; display: none; }
+#meCanvas .me-item.sel .me-nose { display: block; }
+#meCanvas .me-item .me-lbl { font-size: 9px; fill: #6B6552; text-anchor: middle; }
+#mePanel {
+position: absolute; right: 8px; top: 8px; z-index: 22; width: 216px;
+max-height: calc(100% - 92px); overflow-y: auto;
+border: 1px solid var(--paper-dim); border-radius: 12px;
+background: rgba(255,253,244,0.94); backdrop-filter: blur(6px);
+box-shadow: 0 6px 20px rgba(35,42,32,0.18); padding: 0 11px 12px;
+}
+body.me-panel-hidden #mePanel { display: none; }
+#meGrip {
+position: sticky; top: 0; margin: 0 -11px 4px; padding: 7px 11px 5px;
+background: inherit; border-bottom: 1px solid var(--paper-dim); cursor: grab;
+display: flex; align-items: center; gap: 6px; border-radius: 12px 12px 0 0;
+}
+#meGrip .me-dots { letter-spacing: 2px; opacity: 0.4; font-size: 13px; }
+#meGrip .me-ttl { font-size: 12px; font-weight: 700; }
+#meGrip .me-x {
+margin-left: auto; background: none; border: none; font-size: 17px; line-height: 1;
+color: inherit; opacity: 0.55; cursor: pointer; padding: 0 2px;
+}
+#mePanelToggle {
+position: absolute; right: 8px; top: 8px; z-index: 20; width: 36px; height: 36px;
+border: 1px solid var(--paper-dim); border-radius: 9px; background: rgba(255,253,244,0.94);
+font: inherit; font-size: 15px; cursor: pointer; color: inherit; display: none;
+}
+body.me-panel-hidden #mePanelToggle { display: block; }
+#meMini {
+position: absolute; right: 8px; bottom: 8px; z-index: 18; width: 172px;
+border: 1px solid var(--paper-dim); border-radius: 8px;
+background: rgba(255,253,244,0.92); overflow: hidden; cursor: pointer;
+}
+#meMini svg { display: block; width: 100%; }
+#meMini .me-mb { fill: #E6DFC9; }
+#meMini .me-mi { fill: var(--leaf); }
+#meMini .me-mv { fill: rgba(127,163,106,0.18); stroke: #5E7A4C; stroke-width: 6; }
+#meHud {
+position: absolute; left: 10px; top: 10px; z-index: 18; display: flex; gap: 6px;
+align-items: center; font-size: 12px; background: rgba(255,253,244,0.9);
+border: 1px solid var(--paper-dim); border-radius: 8px; padding: 5px 9px;
+}
+#meEmpty { position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
+font-size: 12px; opacity: 0.5; pointer-events: none; }
+#meZoombar { position: absolute; left: 10px; bottom: 10px; z-index: 18; display: flex; gap: 5px; }
+#meZoombar button {
+width: 34px; height: 34px; border: 1px solid var(--paper-dim); border-radius: 8px;
+background: rgba(255,255,255,0.85); font: inherit; font-size: 15px; cursor: pointer; color: inherit;
+}
+#meZoombar button.wide { width: auto; padding: 0 9px; font-size: 12px; }
+#meZoombar button.on { background: var(--ink); color: #FFFDF4; border-color: var(--ink); }
+#mePanel .me-hint { font-size: 11px; opacity: 0.65; line-height: 1.3; margin: 0 0 8px; }
+#mePanel .me-h2 { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em;
+opacity: 0.55; margin: 10px 0 4px; }
+#mePanel .me-pal { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+#mePanel .me-pal button {
+display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 2px;
+border: 1px solid var(--paper-dim); border-radius: 9px; background: #fff;
+font: inherit; font-size: 10.5px; color: inherit; cursor: pointer; line-height: 1.15; text-align: center;
+}
+#mePanel .me-pal button.on { border-color: var(--leaf); border-width: 2px; background: #F1F6EC; }
+#mePanel .me-pal svg { width: 20px; height: 20px; }
+#mePanel label { display: block; font-size: 11.5px; margin: 9px 0 2px; opacity: 0.75; }
+#mePanel input[type=range] { width: 100%; }
+#mePanel input[type=text] {
+width: 100%; font: inherit; font-size: 16px; padding: 6px 8px;
+border: 1px solid var(--paper-dim); border-radius: 7px; background: #fff; color: inherit;
+}
+#mePanel .me-row { display: flex; gap: 6px; margin-top: 8px; }
+#mePanel .me-views { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+#mePanel .me-views .me-btn.on { background: var(--ink); color: #FFFDF4; border-color: var(--ink); }
+#mePanel .me-btn {
+flex: 1; padding: 8px 6px; border: 1px solid var(--paper-dim); border-radius: 8px;
+background: #fff; font: inherit; font-size: 12px; color: inherit; cursor: pointer;
+}
+#mePanel .me-btn.warn { color: #8A2E2E; border-color: #C99; }
+#mePanel .me-btn.go { background: var(--leaf); border-color: var(--leaf); color: #fff; font-weight: 600; }
+#mePanel .me-btn:disabled { opacity: 0.4; }
+#mePanel .me-val { float: right; opacity: 0.6; font-variant-numeric: tabular-nums; }
+#meLayerbar { display: flex; gap: 5px; margin-bottom: 8px; }
+#meLayerbar button {
+flex: 1; padding: 6px 4px; border: 1px solid var(--paper-dim); border-radius: 7px;
+background: #fff; font: inherit; font-size: 11px; cursor: pointer; color: inherit;
+}
+#meLayerbar button.on { background: var(--ink); color: #FFFDF4; border-color: var(--ink); }
+#meMsg { font-size: 11.5px; margin-top: 8px; min-height: 14px; opacity: 0.75; }
+body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 </style>
 </head>
 <body>
@@ -2686,6 +2831,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
+<div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
 <div class="comm-item"><div class="comm-title">Beta Reset must not ship</div><div class="comm-desc">Any build headed for real market use sets <code>BETA_RESET_TOOLS</code> to <code>false</code>. The reset desk erases the Store tab for every phone; it exists only to clean up after testing.</div></div>
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
 </div>
@@ -2777,6 +2923,12 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="dev-mapeditor">
+<button type="button" class="fold-bar" onclick="openMapEditor()">
+<span class="fold-title">Map Editor</span>
+<span class="fold-sub">Place the things that are not booths &mdash; tables, benches, bins, stages on the kiosk map; outlets and cord runs on the booth-pick map</span>
+</button>
 </div>
 <div class="dash-fold" data-fold="dev-tuner">
 <button type="button" class="fold-bar" onclick="toggleKioskTuner()">
@@ -4013,10 +4165,80 @@ const MAP_LABELS = [
 { x: 505, y: 340, t: 'Office Entrance', sec: 1 },
 { x: 1508, y: 190, t: 'W' }
 ];
+// ---- Furniture placed on the maps by hand ------------------------------
+// Each piece draws in its own little coordinate space; rotation and size
+// ride on top. The park furniture belongs to the kiosk map; outlets and
+// cord runs belong to the booth-pick map, where the sub-panels already are.
+const MAP_FURNITURE_KINDS = {
+picnic: { t: 'Picnic table', layer: 'kiosk', w: 34, h: 20, svg:
+'<rect x="-17" y="-7" width="34" height="14" rx="2" fill="#C9A87C" stroke="#8A7355" stroke-width="1.2"/>' +
+'<rect x="-17" y="-11" width="34" height="4" rx="1.5" fill="#B99B72" stroke="#8A7355" stroke-width="1"/>' +
+'<rect x="-17" y="7" width="34" height="4" rx="1.5" fill="#B99B72" stroke="#8A7355" stroke-width="1"/>' },
+bench: { t: 'Bench', layer: 'kiosk', w: 26, h: 9, svg:
+'<rect x="-13" y="-3" width="26" height="6" rx="2" fill="#C9A87C" stroke="#8A7355" stroke-width="1.2"/>' +
+'<rect x="-13" y="-5.5" width="26" height="2.5" rx="1" fill="#A98D66"/>' },
+trash: { t: 'Trash can', layer: 'kiosk', w: 13, h: 13, svg:
+'<rect x="-5.5" y="-5" width="11" height="11" rx="2" fill="#7E8A72" stroke="#5C6553" stroke-width="1.2"/>' +
+'<rect x="-7" y="-7.5" width="14" height="3" rx="1.2" fill="#5C6553"/>' },
+dish: { t: 'Dish station', layer: 'kiosk', w: 22, h: 16, svg:
+'<rect x="-11" y="-8" width="22" height="16" rx="3" fill="#8FA5B8" stroke="#5E7386" stroke-width="1.2"/>' +
+'<circle cx="-4" cy="0" r="4" fill="none" stroke="#FFFDF4" stroke-width="1.4"/>' +
+'<circle cx="4.5" cy="0" r="4" fill="none" stroke="#FFFDF4" stroke-width="1.4"/>' },
+stage: { t: 'Stage', layer: 'kiosk', w: 40, h: 26, svg:
+'<rect x="-20" y="-13" width="40" height="26" rx="3" fill="#B08FA0" stroke="#836675" stroke-width="1.3"/>' +
+'<path d="M-20 -13 L0 -3 L20 -13" fill="none" stroke="#836675" stroke-width="1.2"/>' },
+landmark: { t: 'Landmark', layer: 'kiosk', w: 20, h: 20, svg:
+'<circle r="9" fill="#E4C86A" stroke="#A8913F" stroke-width="1.4"/>' +
+'<path d="M0 -5 L1.6 -1.6 L5.2 -1.2 L2.5 1.4 L3.3 5 L0 3.1 L-3.3 5 L-2.5 1.4 L-5.2 -1.2 L-1.6 -1.6 Z" fill="#A8913F"/>' },
+playground: { t: 'Playground', layer: 'kiosk', w: 30, h: 22, svg:
+'<rect x="-15" y="-11" width="30" height="22" rx="6" fill="#9CC17F" stroke="#6E8F55" stroke-width="1.3"/>' +
+'<path d="M-8 6 L-8 -5 L8 -5 L8 6 M-4 -5 L-4 2 M4 -5 L4 2" fill="none" stroke="#6E8F55" stroke-width="1.3"/>' },
+outlet: { t: 'Shared outlet', layer: 'booth', w: 14, h: 14, svg:
+'<circle r="6.5" fill="#F5E9C8" stroke="#B08A2E" stroke-width="1.4"/>' +
+'<path d="M-1.2 -3.6 L-2.6 0.2 L-0.4 0.2 L-1.6 3.8 L2.6 -0.6 L0.3 -0.6 L1.6 -3.6 Z" fill="#B08A2E"/>' },
+cord: { t: 'Cord run', layer: 'booth', w: 30, h: 8, svg:
+'<path d="M-15 0 Q -7 -5, 0 0 T 15 0" fill="none" stroke="#B08A2E" stroke-width="2" stroke-dasharray="3 2.5"/>' }
+};
+const MAP_FURNITURE_KEYS = { kiosk: 'ifm-map-kiosk', booth: 'ifm-map-booth' };
+let mapFurniture = { kiosk: [], booth: [] };
+function mapPieceHTML(it, extra) {
+const k = MAP_FURNITURE_KINDS[it.k];
+if (!k) return '';
+const pad = extra ? 14 : 2;
+const w = k.w + pad * 2, h = k.h + pad * 2;
+return '<svg viewBox="' + (-k.w / 2 - pad) + ' ' + (-k.h / 2 - pad) + ' ' + w + ' ' + h +
+'" width="' + w + '" height="' + h + '" style="margin-left:' + (-(k.w / 2 + pad)) +
+'px; margin-top:' + (-(k.h / 2 + pad)) + 'px; transform: rotate(' + (it.r || 0) +
+'deg) scale(' + ((it.s || 100) / 100) + ');">' + (extra || '') + k.svg + '</svg>';
+}
+// Pieces ride on the same canvas as the booths, so they turn with the map on
+// the kiosk. Their names do not: those counter-rotate like the section labels.
+function renderMapPieces(canvas, layer) {
+const list = mapFurniture[layer] || [];
+list.forEach(it => {
+const k = MAP_FURNITURE_KINDS[it.k];
+if (!k) return;
+const el = document.createElement('div');
+el.className = 'map-piece';
+el.style.left = it.x + 'px';
+el.style.top = it.y + 'px';
+el.innerHTML = mapPieceHTML(it, '');
+canvas.appendChild(el);
+if (it.name) {
+const lab = document.createElement('div');
+lab.className = 'map-piece-lbl';
+lab.style.left = it.x + 'px';
+lab.style.top = (it.y + (k.h / 2) * ((it.s || 100) / 100) + 9) + 'px';
+lab.textContent = it.name;
+canvas.appendChild(lab);
+}
+});
+}
 function renderMapFurniture(canvas, opts) {
 if (!canvas) return;
 const showPanels = !(opts && opts.panels === false);
-canvas.querySelectorAll('.map-structure, .booth-label, .map-panel').forEach(el => el.remove());
+canvas.querySelectorAll('.map-structure, .booth-label, .map-panel, .map-piece, .map-piece-lbl').forEach(el => el.remove());
+renderMapPieces(canvas, (opts && opts.furniture) || (showPanels ? 'booth' : 'kiosk'));
 const kioskLive = document.body.classList.contains('kiosk-mode');
 MAP_STRUCTURES.forEach(s => {
 const box = document.createElement('div');
@@ -4056,6 +4278,334 @@ canvas.appendChild(lab);
 });
 }
 const KIOSK_PARK_BOX = { x: -3435.9, y: -3633.6, w: 8563.9, h: 7232.5 };
+// ---- Map Editor --------------------------------------------------------
+// Placing furniture is a map job, so the map gets the whole screen and the
+// tools float on top of it. Edits are local until Save: nothing a half-placed
+// bench does can reach the wall display mid-session.
+const ME_MAP_W = 1620, ME_MAP_H = 620;
+// Booths sit on a 40-unit pitch and draw 36 wide, so zoom 1 is roughly life
+// size on a phone. Work at 1.8: a booth reads about 65px and which way a
+// thing faces is obvious at a glance.
+const ME_WORK_ZOOM = 1.8;
+let meLayer = 'kiosk';
+let meDraft = { kiosk: [], booth: [] };
+let meSel = null, meKind = null, meUid = 1;
+let meZoom = 1, mePanX = 0, mePanY = 0;
+let meNorthUp = false;
+let meDrag = null;
+let meOpen = false;
+function meStage() { return document.getElementById('meStage'); }
+function meItemsEl() { return document.getElementById('meItems'); }
+function openMapEditor() {
+meDraft = {
+kiosk: (mapFurniture.kiosk || []).map(i => Object.assign({}, i)),
+booth: (mapFurniture.booth || []).map(i => Object.assign({}, i))
+};
+meUid = 1;
+['kiosk', 'booth'].forEach(L => meDraft[L].forEach(i => { i.id = meUid++; }));
+meSel = null; meKind = null; meNorthUp = false;
+document.body.classList.add('map-editor-open');
+document.body.classList.remove('me-panel-hidden');
+document.getElementById('mePanel').style.left = '';
+document.getElementById('mePanel').style.top = '';
+document.getElementById('mePanel').style.right = '';
+document.getElementById('mapEditor').setAttribute('aria-hidden', 'false');
+meOpen = true;
+meBuildBase();
+meSetLayer('kiosk');
+armBackGesture();
+}
+function closeMapEditor() {
+document.body.classList.remove('map-editor-open');
+document.getElementById('mapEditor').setAttribute('aria-hidden', 'true');
+meOpen = false;
+meSel = null; meKind = null;
+}
+function meCloseTap(btn) {
+if (!meDirtyLayers().length) { closeMapEditor(); return; }
+confirmTap(btn, () => closeMapEditor());
+}
+function meDirtyLayers() {
+return ['kiosk', 'booth'].filter(L => meSerialize(meDraft[L]) !== meSerialize(mapFurniture[L] || []));
+}
+function meSerialize(list) {
+return JSON.stringify((list || []).map(i =>
+({ k: i.k, x: Math.round(i.x), y: Math.round(i.y), r: i.r || 0, s: i.s || 100, name: i.name || '' })));
+}
+function meBuildBase() {
+const base = document.getElementById('meBase');
+if (base.childElementCount) return;
+let html = '<div class="me-park" style="left:' + KIOSK_PARK_BOX.x + 'px; top:' +
+KIOSK_PARK_BOX.y + 'px;">' + KIOSK_PARK_SVG + '</div>';
+Object.keys(BOOTH_COORDS).forEach(n => {
+const c = BOOTH_COORDS[n];
+html += '<div class="me-booth" style="left:' + c.x + 'px; top:' + c.y + 'px;">' + esc(n) + '</div>';
+});
+MAP_STRUCTURES.forEach(s => {
+html += '<div class="me-struct" style="left:' + (s.x - s.w / 2) + 'px; top:' + (s.y - s.h / 2) +
+'px; width:' + s.w + 'px; height:' + s.h + 'px;">' + esc(s.text) + '</div>';
+});
+MAP_PANELS.forEach(pn => {
+html += '<div class="me-panelchip" style="left:' + pn.x + 'px; top:' + pn.y + 'px;">' + esc(pn.id) + '</div>';
+});
+base.innerHTML = html;
+}
+function mePalette() {
+const p = document.getElementById('mePalette');
+p.innerHTML = '';
+Object.keys(MAP_FURNITURE_KINDS).filter(k => MAP_FURNITURE_KINDS[k].layer === meLayer).forEach(k => {
+const b = document.createElement('button');
+b.type = 'button';
+b.innerHTML = '<svg viewBox="-22 -16 44 32">' + MAP_FURNITURE_KINDS[k].svg + '</svg><span>' +
+esc(MAP_FURNITURE_KINDS[k].t) + '</span>';
+b.onclick = () => { meKind = (meKind === k ? null : k); mePalette(); meDraw(); };
+if (meKind === k) b.className = 'on';
+p.appendChild(b);
+});
+}
+function meSetLayer(l) {
+meLayer = l; meKind = null; meSel = null;
+document.getElementById('meLbKiosk').className = l === 'kiosk' ? 'on' : '';
+document.getElementById('meLbBooth').className = l === 'booth' ? 'on' : '';
+document.body.classList.toggle('me-layer-kiosk', l === 'kiosk');
+document.body.classList.toggle('me-layer-booth', l === 'booth');
+mePalette();
+if (l === 'kiosk') meWaterfront(); else meWorkZoom();
+}
+function meToggleNorth() {
+meNorthUp = !meNorthUp;
+document.getElementById('meNorthBtn').className = 'me-btn' + (meNorthUp ? ' on' : '');
+meDraw();
+}
+function meCurrent() { return meDraft[meLayer].find(i => i.id === meSel); }
+function meDraw() {
+if (!meOpen) return;
+let html = '';
+meDraft[meLayer].forEach(it => {
+const k = MAP_FURNITURE_KINDS[it.k];
+if (!k) return;
+const scale = meZoom * (it.s / 100);
+const extra = '<rect class="me-hit" x="' + (-k.w / 2 - 3) + '" y="' + (-k.h / 2 - 3) + '" width="' +
+(k.w + 6) + '" height="' + (k.h + 6) + '" rx="4" style="stroke-width:' + (2 / scale) + '"/>' +
+'<path class="me-nose" d="M0 ' + (-k.h / 2 - 4) + ' L0 ' + (-k.h / 2 - 13) +
+' M-4 ' + (-k.h / 2 - 9) + ' L0 ' + (-k.h / 2 - 14) + ' L4 ' + (-k.h / 2 - 9) +
+'" style="stroke-width:' + (2.2 / scale) + '"/>';
+const lbl = it.name ? '<text class="me-lbl" y="' + (k.h / 2 + 11) + '" transform="rotate(' +
+(-(it.r || 0)) + ')">' + esc(it.name) + '</text>' : '';
+html += '<div class="me-item' + (meSel === it.id ? ' sel' : '') + '" data-id="' + it.id +
+'" style="left:' + it.x + 'px; top:' + it.y + 'px;">' +
+mePieceWithExtras(it, extra, lbl) + '</div>';
+});
+meItemsEl().innerHTML = html;
+const canvas = document.getElementById('meCanvas');
+canvas.style.transform = 'translate(' + mePanX + 'px,' + mePanY + 'px) scale(' + meZoom + ')' +
+(meNorthUp ? ' rotate(-50deg)' : '');
+document.getElementById('meZoomVal').textContent = Math.round(meZoom * 100) + '%';
+document.getElementById('meMode').textContent = meKind
+? ('Tap to place: ' + MAP_FURNITURE_KINDS[meKind].t)
+: (meSel ? 'Editing' : 'Pan & zoom');
+meDrawMini();
+const n = meDraft[meLayer].length;
+document.getElementById('meCount').textContent = n
+? n + ' piece' + (n === 1 ? '' : 's') + ' on the ' + (meLayer === 'kiosk' ? 'kiosk' : 'booth-pick') + ' map.'
+: 'Nothing placed yet.';
+document.getElementById('meEmpty').style.display = n ? 'none' : '';
+const it = meCurrent();
+document.getElementById('meItemEditor').style.display = it ? '' : 'none';
+if (it) {
+document.getElementById('meRot').value = it.r;
+document.getElementById('meScale').value = it.s;
+document.getElementById('meName').value = it.name || '';
+document.getElementById('meRotVal').textContent = it.r + '\u00B0';
+document.getElementById('meScaleVal').textContent = it.s + '%';
+document.getElementById('meKindVal').textContent = MAP_FURNITURE_KINDS[it.k].t;
+}
+const dirty = meDirtyLayers();
+const save = document.getElementById('meSaveBtn');
+save.disabled = !dirty.length;
+save.textContent = dirty.length ? 'Save to the maps' : 'Saved';
+}
+function mePieceWithExtras(it, extra, lbl) {
+const k = MAP_FURNITURE_KINDS[it.k];
+const pad = 14;
+const w = k.w + pad * 2, h = k.h + pad * 2;
+return '<svg viewBox="' + (-k.w / 2 - pad) + ' ' + (-k.h / 2 - pad) + ' ' + w + ' ' + h +
+'" width="' + w + '" height="' + h + '" style="margin-left:' + (-(k.w / 2 + pad)) +
+'px; margin-top:' + (-(k.h / 2 + pad)) + 'px; transform: rotate(' + (it.r || 0) +
+'deg) scale(' + ((it.s || 100) / 100) + ');">' + extra + k.svg + lbl + '</svg>';
+}
+function meSetRot(v) { const it = meCurrent(); if (it) { it.r = Number(v); meDraw(); } }
+function meSetScale(v) { const it = meCurrent(); if (it) { it.s = Number(v); meDraw(); } }
+function meSetName(v) { const it = meCurrent(); if (it) { it.name = v; meDraw(); } }
+function meNudgeRot(d) { const it = meCurrent(); if (it) { it.r = (it.r + d + 360) % 360; meDraw(); } }
+function meDeleteSel() { meDraft[meLayer] = meDraft[meLayer].filter(i => i.id !== meSel); meSel = null; meDraw(); }
+function meDuplicateSel() {
+const it = meCurrent(); if (!it) return;
+const copy = Object.assign({}, it, { id: meUid++, x: it.x + 18, y: it.y + 14 });
+meDraft[meLayer].push(copy); meSel = copy.id; meDraw();
+}
+function meClearLayer(btn) {
+if (!meDraft[meLayer].length) return;
+confirmTap(btn, () => { meDraft[meLayer] = []; meSel = null; meDraw(); });
+}
+function meRevert(btn) {
+if (!meDirtyLayers().length) return;
+confirmTap(btn, () => {
+meDraft = {
+kiosk: (mapFurniture.kiosk || []).map(i => Object.assign({}, i)),
+booth: (mapFurniture.booth || []).map(i => Object.assign({}, i))
+};
+meUid = 1;
+['kiosk', 'booth'].forEach(L => meDraft[L].forEach(i => { i.id = meUid++; }));
+meSel = null;
+meMsg('Back to what is on the maps.');
+meDraw();
+});
+}
+function meMsg(t) { document.getElementById('meMsg').textContent = t || ''; }
+async function meSave() {
+const dirty = meDirtyLayers();
+if (!dirty.length) return;
+meMsg('Saving\u2026');
+for (const L of dirty) {
+mapFurniture[L] = meDraft[L].map(i =>
+({ k: i.k, x: Math.round(i.x), y: Math.round(i.y), r: i.r || 0, s: i.s || 100, name: i.name || '' }));
+await storageSet(MAP_FURNITURE_KEYS[L], mapFurniture[L]);
+}
+meMsg(dirty.length === 2 ? 'Both maps saved.' : (dirty[0] === 'kiosk' ? 'Kiosk map saved.' : 'Booth-pick map saved.'));
+meDraw();
+}
+// ---- pointer handling: drop, select, drag, pan --------------------------
+function meToMap(e) {
+const r = meStage().getBoundingClientRect();
+let x = (e.clientX - r.left - mePanX) / meZoom;
+let y = (e.clientY - r.top - mePanY) / meZoom;
+if (meNorthUp) {
+// CSS order is translate, scale, rotate(-50deg), so undoing it means
+// rotating the un-panned, un-scaled point by +50 degrees.
+const a = 50 * Math.PI / 180;
+const c = Math.cos(a), s = Math.sin(a);
+const nx = x * c - y * s;
+const ny = x * s + y * c;
+x = nx; y = ny;
+}
+return { x: x, y: y };
+}
+function meZoomBy(f) {
+const r = meStage().getBoundingClientRect();
+const cx = r.width / 2, cy = r.height / 2;
+const before = { x: (cx - mePanX) / meZoom, y: (cy - mePanY) / meZoom };
+meZoom = Math.min(4, Math.max(0.2, meZoom * f));
+mePanX = cx - before.x * meZoom; mePanY = cy - before.y * meZoom;
+meDraw();
+}
+function meCenterOn(x, y, z) {
+const r = meStage().getBoundingClientRect();
+if (z) meZoom = z;
+mePanX = r.width / 2 - x * meZoom;
+mePanY = r.height / 2 - y * meZoom;
+meDraw();
+}
+function meWorkZoom() { meCenterOn(500, 280, ME_WORK_ZOOM); }
+// Where the furniture actually lives: the strip between the pavilion and the
+// water, and the far side toward the parking lot.
+function meWaterfront() { meCenterOn(820, 210, 0.8); }
+function meParkingSide() { meCenterOn(880, 430, 1.0); }
+function meFitAll() {
+const b = { x: -260, y: -420, w: 2260, h: 1000 };
+const r = meStage().getBoundingClientRect();
+meZoom = Math.min(4, Math.max(0.2, Math.min(r.width / b.w, r.height / b.h) * 0.9));
+mePanX = r.width / 2 - (b.x + b.w / 2) * meZoom;
+mePanY = r.height / 2 - (b.y + b.h / 2) * meZoom;
+meDraw();
+}
+function meDrawMini() {
+const el = document.getElementById('meMini');
+if (!el) return;
+const r = meStage().getBoundingClientRect();
+const vx = -mePanX / meZoom, vy = -mePanY / meZoom;
+const vw = r.width / meZoom, vh = r.height / meZoom;
+let s = '<svg viewBox="0 0 ' + ME_MAP_W + ' ' + ME_MAP_H + '" preserveAspectRatio="xMidYMid meet">';
+s += '<rect class="me-mb" x="0" y="0" width="' + ME_MAP_W + '" height="' + ME_MAP_H + '"/>';
+Object.keys(BOOTH_COORDS).forEach(n => {
+const c = BOOTH_COORDS[n];
+s += '<rect x="' + (c.x - 16) + '" y="' + (c.y - 11) + '" width="32" height="22" fill="#FBF7EA"/>';
+});
+meDraft[meLayer].forEach(i => { s += '<circle class="me-mi" cx="' + i.x + '" cy="' + i.y + '" r="11"/>'; });
+s += '<rect class="me-mv" x="' + vx + '" y="' + vy + '" width="' + vw + '" height="' + vh + '"/></svg>';
+el.innerHTML = s;
+}
+function meMiniJump(e) {
+const svg = document.getElementById('meMini').querySelector('svg');
+if (!svg) return;
+const b = svg.getBoundingClientRect();
+const mx = ((e.clientX - b.left) / b.width) * ME_MAP_W;
+const my = ((e.clientY - b.top) / b.height) * ME_MAP_H;
+if (meZoom < ME_WORK_ZOOM * 0.6) meZoom = ME_WORK_ZOOM;
+meCenterOn(mx, my);
+}
+function meTogglePanel() {
+document.body.classList.toggle('me-panel-hidden');
+setTimeout(meDraw, 60);
+}
+function meInitEditor() {
+const stage = meStage();
+if (!stage || stage.dataset.wired) return;
+stage.dataset.wired = '1';
+stage.addEventListener('pointerdown', e => {
+if (e.target.closest('#meZoombar, #meMini')) return;
+const hit = e.target.closest('.me-item');
+const p = meToMap(e);
+if (hit) {
+meSel = Number(hit.dataset.id);
+const it = meCurrent();
+meDrag = { mode: 'item', dx: p.x - it.x, dy: p.y - it.y };
+meDraw();
+} else if (meKind) {
+const it = { id: meUid++, k: meKind, x: p.x, y: p.y, r: 0, s: 100, name: '' };
+meDraft[meLayer].push(it); meSel = it.id;
+meDrag = { mode: 'item', dx: 0, dy: 0 };
+meDraw();
+} else {
+meDrag = { mode: 'pan', sx: e.clientX - mePanX, sy: e.clientY - mePanY };
+if (meSel !== null) { meSel = null; meDraw(); }
+}
+stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove', e => {
+if (!meDrag) return;
+if (meDrag.mode === 'pan') { mePanX = e.clientX - meDrag.sx; mePanY = e.clientY - meDrag.sy; meDraw(); return; }
+const p = meToMap(e);
+const it = meCurrent(); if (!it) return;
+it.x = p.x - meDrag.dx; it.y = p.y - meDrag.dy; meDraw();
+});
+stage.addEventListener('pointerup', () => { meDrag = null; });
+stage.addEventListener('pointercancel', () => { meDrag = null; });
+stage.addEventListener('wheel', e => { e.preventDefault(); meZoomBy(e.deltaY < 0 ? 1.08 : 0.93); }, { passive: false });
+// The card is draggable so it can always be moved off whatever is being edited.
+const panel = document.getElementById('mePanel');
+const grip = document.getElementById('meGrip');
+let g = null;
+grip.addEventListener('pointerdown', e => {
+if (e.target.closest('button')) return;
+const r = panel.getBoundingClientRect();
+g = { dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width, h: r.height };
+grip.setPointerCapture(e.pointerId);
+e.preventDefault();
+});
+grip.addEventListener('pointermove', e => {
+if (!g) return;
+const maxX = window.innerWidth - g.w - 4, maxY = window.innerHeight - 40;
+panel.style.left = Math.max(4, Math.min(maxX, e.clientX - g.dx)) + 'px';
+panel.style.top = Math.max(4, Math.min(maxY, e.clientY - g.dy)) + 'px';
+panel.style.right = 'auto';
+});
+const stopGrip = () => { g = null; };
+grip.addEventListener('pointerup', stopGrip);
+grip.addEventListener('pointercancel', stopGrip);
+window.addEventListener('resize', () => { if (meOpen) meDraw(); });
+}
+
 const KIOSK_PARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" class="kiosk-park-svg" viewBox="-3436 -3634 8564 7233" width="8564" height="7233"> <style>.pl{fill:none;stroke-linecap:round;stroke-linejoin:round}</style> <path d="M-3206.8 102.5 L-171.1 66.5 L-111.6 82.6 L-55.1 36.7 L-5.3 59.0 L16.4 58.7 L130.9 23.1 L190.1 -25.5 L243.3 -4.0 L272.3 -82.9 L286.9 -93.0 L348.1 -100.7 L374.7 -114.1 L392.2 -139.5 L394.7 -177.5 L406.5 -192.2 L428.3 -179.0 L459.2 -121.3 L478.9 -99.9 L485.5 -100.9 L496.4 -174.0 L523.7 -194.1 L553.0 -183.0 L577.7 -154.7 L594.7 -121.8 L608.7 -116.6 L619.8 -144.2 L613.1 -214.0 L628.4 -244.8 L651.2 -249.9 L705.8 -223.6 L759.5 -263.5 L825.4 -263.7 L846.3 -281.4 L863.6 -328.1 L878.2 -341.4 L915.8 -311.9 L956.1 -297.4 L981.8 -253.0 L1013.6 -236.9 L1050.3 -235.2 L1084.1 -242.7 L1105.4 -257.5 L1132.6 -295.5 L1143.9 -300.1 L1170.9 -287.6 L1259.3 -200.5 L1290.3 -186.7 L1396.3 -179.7 L1414.2 -192.6 L1434.4 -229.0 L1457.7 -197.0 L1498.7 -92.1 L1565.6 -8.0 L1584.7 -5.6 L1610.1 -38.0 L1619.3 -40.7 L1667.8 16.8 L1696.1 33.8 L1712.2 24.6 L1731.2 -14.1 L1751.1 -21.0 L1769.9 -10.2 L1831.6 56.9 L1846.7 56.3 L1859.5 13.8 L1875.7 6.4 L1904.0 22.7 L1928.0 64.7 L4963.7 28.8 L4922.9 -3425.4 L-3247.5 -3328.7 Z" fill="#AFD3DE"/><path style="fill:#B99B72" class="pl" d="M-235.8 239.2 L-172.6 238.5 L-109.4 235.2 L-46.2 228.1 L16.9 214.7 L80.0 201.3 L143.2 196.8 L206.6 208.7 L270.0 224.4 L333.3 231.2 L396.6 235.5 L459.9 237.3 L523.2 236.6 L586.4 235.8 L649.6 235.1 L712.9 233.0 L776.1 231.0 L826.6 225.4 L851.7 207.4 L870.2 169.2 L876.0 118.5 L875.4 67.9 L881.1 17.3 L899.5 -27.2 L930.8 -59.2 L968.5 -78.6 L1012.7 -85.5 L1057.1 -79.7 L1095.3 -54.8 L1127.3 -23.6 L1178.3 7.4 L1229.4 51.1 L1280.5 94.8 L1331.6 138.4 L1382.6 169.5 L1433.4 187.8 L1484.1 193.6 L1534.8 199.3 L1585.5 211.3 L1636.3 229.7 L1674.6 254.6 L1712.9 285.7 L1738.6 323.4 L1758.1 361.1 L1771.2 398.9 L1928.0 64.7 L1904.0 22.7 L1875.7 6.4 L1859.5 13.8 L1846.7 56.3 L1831.6 56.9 L1769.9 -10.2 L1751.1 -21.0 L1731.2 -14.1 L1712.2 24.6 L1696.1 33.8 L1667.8 16.8 L1619.3 -40.7 L1610.1 -38.0 L1584.7 -5.6 L1565.6 -8.0 L1498.7 -92.1 L1457.7 -197.0 L1434.4 -229.0 L1414.2 -192.6 L1396.3 -179.7 L1290.3 -186.7 L1259.3 -200.5 L1170.9 -287.6 L1143.9 -300.1 L1132.6 -295.5 L1105.4 -257.5 L1084.1 -242.7 L1050.3 -235.2 L1013.6 -236.9 L981.8 -253.0 L956.1 -297.4 L915.8 -311.9 L878.2 -341.4 L863.6 -328.1 L846.3 -281.4 L825.4 -263.7 L759.5 -263.5 L705.8 -223.6 L651.2 -249.9 L628.4 -244.8 L613.1 -214.0 L619.8 -144.2 L608.7 -116.6 L594.7 -121.8 L577.7 -154.7 L553.0 -183.0 L523.7 -194.1 L496.4 -174.0 L485.5 -100.9 L478.9 -99.9 L459.2 -121.3 L428.3 -179.0 L406.5 -192.2 L394.7 -177.5 L392.2 -139.5 L374.7 -114.1 L348.1 -100.7 L286.9 -93.0 L272.3 -82.9 L243.3 -4.0 L190.1 -25.5 L130.9 23.1 L16.4 58.7 L-5.3 59.0 L-55.1 36.7 L-111.6 82.6 L-171.1 66.5 Z" fill="#B99B72"/> <path class="pl" d="M-171.1 66.5 L-111.6 82.6 L-55.1 36.7 L-5.3 59.0 L16.4 58.7 L130.9 23.1 L190.1 -25.5 L243.3 -4.0 L272.3 -82.9 L286.9 -93.0 L348.1 -100.7 L374.7 -114.1 L392.2 -139.5 L394.7 -177.5 L406.5 -192.2 L428.3 -179.0 L459.2 -121.3 L478.9 -99.9 L485.5 -100.9 L496.4 -174.0 L523.7 -194.1 L553.0 -183.0 L577.7 -154.7 L594.7 -121.8 L608.7 -116.6 L619.8 -144.2 L613.1 -214.0 L628.4 -244.8 L651.2 -249.9 L705.8 -223.6 L759.5 -263.5 L825.4 -263.7 L846.3 -281.4 L863.6 -328.1 L878.2 -341.4 L915.8 -311.9 L956.1 -297.4 L981.8 -253.0 L1013.6 -236.9 L1050.3 -235.2 L1084.1 -242.7 L1105.4 -257.5 L1132.6 -295.5 L1143.9 -300.1 L1170.9 -287.6 L1259.3 -200.5 L1290.3 -186.7 L1396.3 -179.7 L1414.2 -192.6 L1434.4 -229.0 L1457.7 -197.0 L1498.7 -92.1 L1565.6 -8.0 L1584.7 -5.6 L1610.1 -38.0 L1619.3 -40.7 L1667.8 16.8 L1696.1 33.8 L1712.2 24.6 L1731.2 -14.1 L1751.1 -21.0 L1769.9 -10.2 L1831.6 56.9 L1846.7 56.3 L1859.5 13.8 L1875.7 6.4 L1904.0 22.7 L1928.0 64.7" stroke="#7FA6B0" stroke-width="4"/> <path class="pl" d="M-235.9 239.2 L-172.6 238.5 L-109.4 235.2 L-46.2 228.1 L16.9 214.7 L80.0 201.3 L143.2 196.8 L206.6 208.7 L270.0 224.4 L333.3 231.2 L396.6 235.5 L459.9 237.3 L523.1 236.6 L586.4 235.8 L649.6 235.1 L712.9 233.0 L776.1 231.0 L826.6 225.4 L851.7 207.4 L870.2 169.2 L876.0 118.5 L875.4 67.9 L881.1 17.3 L899.5 -27.2 L930.8 -59.2 L968.5 -78.7 L1012.7 -85.5 L1057.1 -79.7 L1095.3 -54.9 L1127.3 -23.6 L1178.3 7.4 L1229.4 51.1 L1280.5 94.8 L1331.6 138.4 L1382.6 169.5 L1433.4 187.8 L1484.1 193.6 L1534.8 199.3 L1585.5 211.3 L1636.3 229.7 L1674.6 254.6 L1712.9 285.7 L1738.6 323.4 L1758.1 361.1 L1771.2 398.9" stroke="#D9D0B4" stroke-width="34"/> <path class="pl" d="M-235.9 239.2 L-172.6 238.5 L-109.4 235.2 L-46.2 228.1 L16.9 214.7 L80.0 201.3 L143.2 196.8 L206.6 208.7 L270.0 224.4 L333.3 231.2 L396.6 235.5 L459.9 237.3 L523.1 236.6 L586.4 235.8 L649.6 235.1 L712.9 233.0 L776.1 231.0 L826.6 225.4 L851.7 207.4 L870.2 169.2 L876.0 118.5 L875.4 67.9 L881.1 17.3 L899.5 -27.2 L930.8 -59.2 L968.5 -78.7 L1012.7 -85.5 L1057.1 -79.7 L1095.3 -54.9 L1127.3 -23.6 L1178.3 7.4 L1229.4 51.1 L1280.5 94.8 L1331.6 138.4 L1382.6 169.5 L1433.4 187.8 L1484.1 193.6 L1534.8 199.3 L1585.5 211.3 L1636.3 229.7 L1674.6 254.6 L1712.9 285.7 L1738.6 323.4 L1758.1 361.1 L1771.2 398.9" stroke="#6E6D62" stroke-width="2.5" opacity="0.75" stroke-dasharray="14 16"/> <path class="pl" d="M10.4 200.9 L-15.3 167.0 L-28.4 129.2 L-35.2 91.4" stroke="#D9D0B4" stroke-width="24"/> <path class="pl" d="M1012.7 -85.5 L1012.0 -148.7 L1017.7 -199.4 L1017.1 -250.0" stroke="#D9D0B4" stroke-width="24"/> <circle cx="395.2" cy="160.4" r="47.7" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="451.9" cy="144.8" r="35.0" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="424.0" cy="97.6" r="33.4" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="587.0" cy="158.2" r="29.6" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="529.3" cy="112.7" r="41.5" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="589.1" cy="67.3" r="30.6" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1152.2" cy="99.4" r="41.7" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1238.4" cy="158.7" r="57.4" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1202.4" cy="115.7" r="36.6" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1183.5" cy="201.1" r="46.5" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="887.1" cy="-150.9" r="36.0" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="800.0" cy="-80.5" r="44.4" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="753.3" cy="-106.3" r="28.4" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="800.6" cy="-159.1" r="50.1" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="743.6" cy="64.8" r="35.2" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="705.7" cy="113.1" r="47.0" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1473.6" cy="-45.5" r="34.4" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1539.8" cy="33.6" r="39.2" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1480.2" cy="47.6" r="33.0" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1472.3" cy="117.2" r="57.1" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="-83.5" cy="137.0" r="29.5" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="-137.0" cy="163.5" r="57.4" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1656.4" cy="94.6" r="52.4" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1770.4" cy="159.2" r="58.5" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1239.5" cy="-118.3" r="57.2" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1122.6" cy="-135.4" r="57.9" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1169.3" cy="-80.0" r="51.6" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1197.8" cy="-149.3" r="34.2" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="236.5" cy="161.7" r="53.0" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="90.6" cy="130.1" r="51.2" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="184.5" cy="88.8" r="38.9" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="420.2" cy="-35.3" r="37.1" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="474.3" cy="-43.8" r="57.8" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="411.2" cy="-99.1" r="37.2" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="325.4" cy="-24.4" r="53.7" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="525.8" cy="-102.6" r="32.5" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="548.4" cy="-12.0" r="56.3" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="603.4" cy="-63.2" r="48.9" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1306.9" cy="-119.2" r="48.5" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1397.6" cy="-95.4" r="35.3" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <circle cx="1307.3" cy="-32.6" r="43.2" fill="#5F8C4C" stroke="#48703A" stroke-width="2.5"/> <path class="pl" d="M988.4 -433.1 L1031.4 -433.6 L1033.5 -250.2 L990.5 -249.7 L988.4 -433.1 Z" style="fill:#B08F63" fill="#B08F63" stroke="#8A7355" stroke-width="3"/> <path class="pl" d="M-73.7 41.2 L8.5 40.2 L9.1 97.2 L-73.1 98.1 L-73.7 41.2 Z" style="fill:#B08F63" fill="#B08F63" stroke="#8A7355" stroke-width="3"/> <path class="pl" d="M1302.6 40.1 L1372.2 39.3 L1373.0 110.1 L1303.5 110.9 L1302.6 40.1 Z" style="fill:#B08F63" fill="#B08F63" stroke="#8A7355" stroke-width="3"/> <path class="pl" d="M988.4 -413.6 L1033.5 -413.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <path class="pl" d="M988.4 -391.6 L1033.5 -391.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <path class="pl" d="M988.4 -369.6 L1033.5 -369.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <path class="pl" d="M988.4 -347.6 L1033.5 -347.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <path class="pl" d="M988.4 -325.6 L1033.5 -325.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <path class="pl" d="M988.4 -303.6 L1033.5 -303.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <path class="pl" d="M988.4 -281.6 L1033.5 -281.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <path class="pl" d="M988.4 -259.6 L1033.5 -259.6" stroke="#8A7355" stroke-width="1.5" opacity="0.6"/> <text x="831.6" y="-424.9" font-size="30" fill="#8A8062" text-anchor="middle" font-family="ui-serif,Georgia,serif" letter-spacing="1.5">Cayuga Inlet</text> <text x="320.5" y="213.7" font-size="22" fill="#8A8062" text-anchor="middle" font-family="ui-serif,Georgia,serif" letter-spacing="1.5" transform="rotate(50 320.5 213.7)">Waterfront Trail</text> <text x="1075.5" y="-124.2" font-size="18" fill="#8A8062" text-anchor="middle" font-family="ui-serif,Georgia,serif" letter-spacing="1.5" transform="rotate(50 1075.5 -124.2)">To the dock</text> </svg>';
 function sizeKioskStructures() {
 const canvas = document.getElementById('kioskBoothCanvas');
@@ -4391,6 +4941,7 @@ try {
 const r = await ifmFetch(IFM_BACKEND_URL + '?changed=' + ifmLastSync, null, 8000);
 const j = await r.json();
 ifmBackendDownUntil = 0;
+document.body.classList.remove('ifm-offline');
 if (j.error || !j.items) return;   // old script: sync unsupported until redeployed
 const touched = [];
 j.items.forEach(it => {
@@ -4995,7 +5546,7 @@ return recs.sort((a, b) => (a.marketDate < b.marketDate ? -1 : a.marketDate > b.
 async function loadAllData() {
 if (IFM_BACKEND_URL) await ifmPrimeAll();
 const seed = seedData();
-const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops] = await Promise.all([
+const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops, mapKiosk, mapBooth] = await Promise.all([
 storageGet('ifm-ledger'),
 storageGet('ifm-callinout'),
 storageGet('ifm-workhours'),
@@ -5015,8 +5566,14 @@ storageGet('ifm-photo-idx'),
 storageGet('ifm-promos'),
 storageGet('ifm-booth-shares'),
 storageGet('ifm-requirements'),
-storageGet('ifm-ops')
+storageGet('ifm-ops'),
+storageGet('ifm-map-kiosk'),
+storageGet('ifm-map-booth')
 ]);
+mapFurniture = {
+kiosk: Array.isArray(mapKiosk) ? mapKiosk : [],
+booth: Array.isArray(mapBooth) ? mapBooth : []
+};
 cache.ledger = ledger === STORAGE_MISSING ? seed.ledger : ledger;
 cache.callinout = callinout === STORAGE_MISSING ? seed.callinout : callinout;
 cache.workhours = workhours === STORAGE_MISSING ? seed.workhours : workhours;
@@ -5893,9 +6450,9 @@ async function init() {
 await loadAllData();
 if (storageBroken && IFM_BACKEND_URL) {
 const n = document.createElement('div');
-n.className = 'empty-note';
-n.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#FFF7E6;border:1px solid #D9A441;border-radius:12px;padding:10px 16px;z-index:997;max-width:90%;text-align:center;';
+n.className = 'empty-note offline-note';
 n.textContent = 'Couldn\u2019t reach the market\u2019s records just now \u2014 showing built-in demo data. It keeps retrying on its own.';
+document.body.classList.add('ifm-offline');
 document.body.appendChild(n);
 setTimeout(() => n.remove(), 9000);
 }
@@ -5974,6 +6531,12 @@ try { history.pushState({ ifm: 'guard' }, ''); } catch (e) {}
 function disarmBackGesture() { ifmBackArmed = false; }
 // What a back gesture should undo, most local first.
 function ifmGoBack() {
+// 0. the map editor: a selected piece first, then the editor itself
+if (typeof meOpen !== 'undefined' && meOpen) {
+if (meSel !== null) { meSel = null; meDraw(); return true; }
+closeMapEditor();
+return true;
+}
 // 1. an open story card on the kiosk
 if (typeof kioskLearnOpen !== 'undefined' && kioskLearnOpen) { closeKioskLearn(); return true; }
 // 2. a booth or structure selected on the kiosk map
@@ -6092,9 +6655,12 @@ unblocks: 'Both photographs carry a permission note on screen until this is clea
 { t: 'Kiosk voices &amp; links', keeper: 'The office, the Dish Truck crew, and whoever runs the accounts',
 what: 'The Dish Truck\u2019s story in their own words, the daily music lineup, and the market\u2019s social media and Substack addresses.',
 unblocks: 'The kiosk\u2019s About pages speaking with real voices instead of placeholders, and a News tile linking the market\u2019s own writing.' },
+{ t: 'Shared outlet locations', keeper: 'The Operations Manager and whoever last chased a tripped breaker',
+what: 'Where the shared outlets actually are, and which sub-panel feeds each one. The sub-panels sit about eight feet up and are on no map the market keeps.',
+unblocks: 'The electrical layer of the booth-pick map. The Map Editor can place outlets and cord runs today \u2014 what is missing is the ground truth to place them from, and resetting a tripped breaker is a work-hours job nobody wants to hunt for.' },
 { t: 'Grounds &amp; landmarks survey', keeper: 'The office and the long memory of the market',
 what: 'A layout of benches and picnic tables, the names of the playgrounds, and any culturally significant landmarks on the grounds.',
-unblocks: 'The kiosk map as an educational tool \u2014 furniture and landmarks a visitor can find on the map and learn about.' },
+unblocks: 'The kiosk map as an educational tool \u2014 furniture and landmarks a visitor can find on the map and learn about. The Map Editor on the developer desk can place all of it; it is waiting only on someone to say where things are.' },
 ];
 function initRecordsNeededScreen() {
 const wrap = document.getElementById('recordsNeededList');
@@ -6265,7 +6831,9 @@ const APP_GLOSSARY = [
 { t: 'Explainer', d: 'The popup behind a coned tile\u2019s help dot \u2014 what the tool is for, the rules it will carry, and what blocks it.' },
 { t: 'Chip', d: 'A booth on a map: the tappable numbered square. Its colour is its state \u2014 open, taken, yours, matched.' },
 { t: 'Badge', d: 'The small letters riding a chip: U upgraded electric, NP no parking, CP compact parking, NF no food, W water nearby.' },
-{ t: 'Sprite', d: 'A small marker standing on a map that is not a booth or a building \u2014 today, the orange eight-pointed sale star in front of a booth with a deal on. The pink deal dot was its ancestor.' },
+{ t: 'Sprite', d: 'A small marker the app puts on a map on its own, from live data \u2014 the orange eight-pointed sale star in front of a booth with a deal on. The pink deal dot was its ancestor. A sprite appears because something is true; a piece appears because someone placed it.' },
+{ t: 'Piece', d: 'A thing standing on a map that somebody placed by hand in the Map Editor: a picnic table, a bench, a bin, a dish station, a stage, a playground, a landmark, a shared outlet, a cord run. A piece has a position, a heading and a size, and may carry a name shown beside it.' },
+{ t: 'Map layer', d: 'Which map a piece belongs to. Two, and they never mix: the kiosk layer carries the park\u2019s furniture for visitors, the booth-pick layer carries electrical for vendors. The Map Editor edits one at a time.' },
 { t: 'Stamp', d: 'The small inked picture beside a drawer or tile name \u2014 a phone, a snowflake, a shovel. Decoration with a hint of meaning, like a rubber stamp on a paper form. Not a badge (those ride booth chips), not a sprite (those stand on maps), and not a cone. Decided: none. Every desk runs unstamped; the small pictures live on only inside tool screens\u2019 card headers.' },
 { t: 'Section label', d: 'The grey lettering in the walking promenades \u2014 South End, Dock Wing, Circle End \u2014 aligned to the pavilion\u2019s geometry, so it runs along its aisle whichever way the map is turned.' },
 { t: 'Panel (SP)', d: 'An electrical sub-panel marker on the map \u2014 SP1 through SP10 \u2014 showing which panel feeds the outlets nearby.' },
@@ -9904,7 +10472,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-82';
+const BUILD_ID = '13-83';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -11737,7 +12305,7 @@ function renderKioskMap(occ) {
 const canvas = document.getElementById('kioskBoothCanvas');
 if (!canvas) return;
 renderKioskPark(canvas);
-renderMapFurniture(canvas, { panels: false });
+renderMapFurniture(canvas, { panels: false, furniture: 'kiosk' });
 sizeKioskStructures();
 const existing = {};
 canvas.querySelectorAll('.booth-chip').forEach(el => {
@@ -17076,7 +17644,72 @@ const el = document.getElementById(id);
 el.className = 'status-msg show ' + kind;
 el.innerHTML = text;
 }
+meInitEditor();
 init();</script>
+
+<div id="mapEditor" aria-hidden="true">
+  <div id="meStage">
+    <div id="meCanvas"><div id="meBase"></div><div id="meItems"></div></div>
+    <button type="button" id="mePanelToggle" onclick="meTogglePanel()">&#9776;</button>
+    <div id="meHud"><span id="meZoomVal">100%</span><span style="opacity:.4">&middot;</span><span id="meMode">Pan &amp; zoom</span></div>
+    <div id="meMini" onclick="meMiniJump(event)"></div>
+    <div id="meEmpty">Pick a piece at right, then tap the map to drop it.</div>
+    <div id="meZoombar">
+      <button type="button" onclick="meZoomBy(1.25)">+</button>
+      <button type="button" onclick="meZoomBy(0.8)">&minus;</button>
+    </div>
+  </div>
+  <div id="mePanel">
+    <div id="meGrip">
+      <span class="me-dots">&vellip;&vellip;</span><span class="me-ttl">Map Editor</span>
+      <button type="button" class="me-x" onclick="meTogglePanel()" title="Tuck away">&minus;</button>
+    </div>
+    <p class="me-hint">Drag this card by its top bar if it covers what you are placing.</p>
+    <div id="meLayerbar">
+      <button type="button" id="meLbKiosk" class="on" onclick="meSetLayer('kiosk')">Kiosk map</button>
+      <button type="button" id="meLbBooth" onclick="meSetLayer('booth')">Booth-pick map</button>
+    </div>
+    <div class="me-pal" id="mePalette"></div>
+    <div class="me-h2">View</div>
+    <div class="me-views">
+      <button type="button" class="me-btn" onclick="meWaterfront()">Waterside</button>
+      <button type="button" class="me-btn" onclick="meParkingSide()">Parking side</button>
+      <button type="button" class="me-btn" onclick="meWorkZoom()">Pavilion</button>
+      <button type="button" class="me-btn" onclick="meFitAll()">All</button>
+      <button type="button" class="me-btn" id="meNorthBtn" onclick="meToggleNorth()">North up</button>
+    </div>
+    <div id="meItemEditor" style="display:none;">
+      <div class="me-h2">Selected</div>
+      <label>Name <span class="me-val" id="meKindVal"></span></label>
+      <input type="text" id="meName" oninput="meSetName(this.value)" placeholder="Shown on the map">
+      <label>Rotation <span class="me-val" id="meRotVal">0&deg;</span></label>
+      <input type="range" id="meRot" min="0" max="359" step="1" value="0" oninput="meSetRot(this.value)">
+      <label>Size <span class="me-val" id="meScaleVal">100%</span></label>
+      <input type="range" id="meScale" min="40" max="260" step="5" value="100" oninput="meSetScale(this.value)">
+      <div class="me-row">
+        <button type="button" class="me-btn" onclick="meNudgeRot(-90)">&#8630; 90&deg;</button>
+        <button type="button" class="me-btn" onclick="meNudgeRot(90)">90&deg; &#8631;</button>
+      </div>
+      <div class="me-row">
+        <button type="button" class="me-btn" onclick="meDuplicateSel()">Duplicate</button>
+        <button type="button" class="me-btn warn" onclick="meDeleteSel()">Delete</button>
+      </div>
+    </div>
+    <div class="me-h2">This layer</div>
+    <p class="me-hint" id="meCount">Nothing placed yet.</p>
+    <div class="me-row">
+      <button type="button" class="me-btn go" id="meSaveBtn" onclick="meSave()">Saved</button>
+    </div>
+    <div class="me-row">
+      <button type="button" class="me-btn" onclick="meRevert(this)">Undo all</button>
+      <button type="button" class="me-btn warn" onclick="meClearLayer(this)">Clear layer</button>
+    </div>
+    <div class="me-row">
+      <button type="button" class="me-btn" onclick="meCloseTap(this)">Close</button>
+    </div>
+    <div id="meMsg"></div>
+  </div>
+</div>
 
 <div id="lottoPrintBackdrop" class="modal-backdrop">
   <div class="print-shell">
