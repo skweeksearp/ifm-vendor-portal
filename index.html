@@ -1810,7 +1810,7 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <div id="loading" class="loading"></div>
 <div id="landing" class="picker" style="display:none;">
 <img id="landingLogo" class="picker-logo" alt="Ithaca Farmers Market">
-<h2>Ithaca Farmers Market<button type="button" class="help-dot" onclick="showHelp(59)" aria-label="About this build">?</button></h2>
+<div style="text-align:center; margin: 2px 0 0;"><button type="button" class="help-dot" onclick="showHelp(59)" aria-label="About this build">?</button></div>
 <button class="primary-btn" style="margin-top:22px; width:100%;" onclick="enterAsVendor()"><svg class="ico"><use href="#i-basket"></use></svg> Members / Vendors</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsManager()"><svg class="ico"><use href="#i-toolbox"></use></svg> Market Manager</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsStaff()"><svg class="ico"><use href="#i-clipboard"></use></svg> Staff</button>
@@ -11290,7 +11290,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-113';
+const BUILD_ID = '13-114';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
