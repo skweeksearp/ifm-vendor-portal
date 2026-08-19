@@ -1815,9 +1815,9 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <button class="primary-btn" style="width:100%;" onclick="enterAsManager()"><svg class="ico"><use href="#i-toolbox"></use></svg> Market Manager</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsStaff()"><svg class="ico"><use href="#i-clipboard"></use></svg> Staff</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsVolunteer()"><svg class="ico"><use href="#i-sun-rays"></use></svg> Volunteer</button>
-<button class="primary-btn" style="width:100%;" onclick="enterAsDeveloper()"><svg class="ico"><use href="#i-wrench"></use></svg> Developer</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsKiosk()"><svg class="ico"><use href="#i-search"></use></svg> Kiosk <span style="opacity:.7; font-weight:400;">(tap six times rapidly to exit)</span></button>
-<p class="empty-note" id="landingBuild" style="margin:14px 0 0; text-align:center; opacity:.6;"></p>
+<button class="ghost-btn" id="landingDevBtn" style="width:auto; margin:16px auto 0; display:block; padding:7px 16px; font-size:13px; opacity:.75;" onclick="enterAsDeveloper()"><svg class="ico"><use href="#i-wrench"></use></svg> Developer</button>
+<p class="empty-note" id="landingBuild" style="margin:10px 0 0; text-align:center; opacity:.6;"></p>
 </div>
 <div id="picker" class="picker" style="display:none;">
 <button type="button" class="back-link" onclick="showLanding()" style="margin-bottom:6px;" id="pickerBack"> Back</button>
@@ -11290,7 +11290,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-114';
+const BUILD_ID = '13-115';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
