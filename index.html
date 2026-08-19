@@ -1210,6 +1210,7 @@ padding: calc(clamp(14px, 1.6vw, 22px) * var(--card-scale, 1)); box-shadow: none
    below the rose to fit, and orientation is not what you are reading for. */
 @media (max-height: 560px) {
 .kiosk-detail { max-width: min(62%, 640px); }
+.kiosk-share-stack { max-width: min(62%, 640px); }
 body.kiosk-card-open .north-rose { opacity: 0; }
 body.kiosk-card-open .kiosk-logo { opacity: 0; }
 }
@@ -1402,7 +1403,29 @@ width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
 display: flex; align-items: center; justify-content: center;
 }
 .logo-badge.is-avatar .avatar img { width: 100%; height: 100%; object-fit: cover; }
-.kiosk-detail .kiosk-sharing { font-weight: 400; opacity: 0.7; font-size: 0.72em; }
+.kiosk-share-stack {
+--card-gap: clamp(20px, 16vh, 162px);
+position: absolute; right: 18px; bottom: var(--card-gap); z-index: 20;
+max-width: min(46%, 560px);
+max-height: calc(100% - var(--card-gap) - clamp(56px, 8vh, 84px));
+overflow-y: auto; display: flex; flex-direction: column; gap: 9px;
+}
+.kiosk-share-stack .kiosk-detail {
+position: relative; right: auto; bottom: auto; z-index: auto;
+max-width: none; max-height: none; overflow: visible;
+}
+.kiosk-share-note {
+position: relative; background: rgba(255,252,242,0.95);
+border: 1px solid #C9C0A8; border-radius: 14px;
+padding: calc(clamp(10px, 1.2vw, 15px) * var(--card-scale, 1));
+padding-right: 40px;
+color: #4A4536; line-height: 1.35;
+font-size: calc(clamp(12.5px, 1.35vw, 16px) * var(--card-scale, 1));
+}
+.kiosk-share-note .close {
+position: absolute; right: 8px; top: 6px; background: none; border: 0;
+color: #8A8268; font-size: 22px; font-family: inherit; padding: 2px 8px;
+}
 /* The window that replaced the About button: photographs of the market's own
    subjects, cross-fading, tapped to read. Position and size are set here in
    one place so they can be tuned without touching anything else. */
@@ -10670,7 +10693,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-87';
+const BUILD_ID = '13-89';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -12616,13 +12639,19 @@ const z = kioskZoom || 1;
 return Math.min(1.6, 1 + (z - 1) * 0.2);
 }
 function fitKioskDetail() {
+const stack = document.querySelector('.kiosk-share-stack');
 const card = document.querySelector('.kiosk-detail');
 if (!card) return;
+// With a stack the cards have no height of their own to overflow; the stack is
+// what runs past the screen, so that is what gets measured.
+const box = stack || card;
+const parts = stack ? [...stack.children] : [card];
 let scale = kioskCardZoomScale();
-card.style.setProperty('--card-scale', String(scale));
-for (let i = 0; i < 14 && card.scrollHeight > card.clientHeight + 1; i++) {
+const put = s => parts.forEach(p => p.style.setProperty('--card-scale', String(s)));
+put(scale);
+for (let i = 0; i < 14 && box.scrollHeight > box.clientHeight + 1; i++) {
 scale = Math.max(0.7, scale - 0.06);
-card.style.setProperty('--card-scale', String(scale));
+put(scale);
 if (scale <= 0.7) break;
 }
 }
@@ -12651,30 +12680,58 @@ return;
 }
 const v = cache.vendors.find(x => x.vendorId === vid);
 if (!v) { wrap.innerHTML = ''; return; }
+const guest = boothGuestsOn(kioskSelectedBooth, occ.md.date, vid)[0];
+// A shared booth is two businesses, not one business with a footnote. Each gets
+// its own window, under a line naming what the booth holder has done.
+if (guest) {
+wrap.innerHTML = '<div class="kiosk-share-stack">' +
+'<div class="kiosk-share-note">' +
+'<button type="button" class="close" onclick="clearKioskSelection()">\u00D7</button>' +
+esc(v.businessName) + ' is generously sharing their booth today with ' + esc(guest.businessName) + '.' +
+'</div>' +
+[v, guest].map(bz => kioskVendorCard(bz, occ, false)).join('') +
+'</div>';
+fitKioskDetail();
+return;
+}
+wrap.innerHTML = kioskVendorCard(v, occ, true);
+fitKioskDetail();
+}
+// Two businesses is the Guide's maximum, so this returns at most one guest.
+// Anything beyond that is a records fault, and the manager's desk raises it.
+function boothGuestsOn(boothNum, date, hostId) {
+return (cache.boothShares || []).filter(s =>
+s.date === date && s.status !== 'denied' &&
+String(s.boothNum) === String(boothNum) && s.vendorId !== hostId
+).map(s => cache.vendors.find(x => x.vendorId === s.vendorId)).filter(Boolean);
+}
+function overSharedBooths() {
+const by = {};
+(cache.boothShares || []).forEach(s => {
+if (s.status === 'denied') return;
+const k = s.date + '|' + s.boothNum;
+(by[k] = by[k] || []).push(s);
+});
+return Object.keys(by).filter(k => by[k].length > 1).map(k => ({ key: k, shares: by[k] }));
+}
+// One booth window: the same card whether it stands alone or sits in a stack.
+function kioskVendorCard(v, occ, withClose) {
 const what = String(vField(v, 'products') || '');
 const site = String(vField(v, 'website') || '');
-const deals = promosForVendorOn(vid, occ.md.date);
-const sharers = (cache.boothShares || []).filter(s =>
-s.date === occ.md.date && s.status !== 'denied' &&
-String(s.boothNum) === String(kioskSelectedBooth) && s.vendorId !== vid
-).map(s => boothVendorName(s.vendorId) || s.vendorId);
+const deals = promosForVendorOn(v.vendorId, occ.md.date);
 const dealHtml = deals.length
 ? '<div class="kiosk-deal">' +
 '<div class="kiosk-deal-flag">Today at this booth</div>' +
 deals.map(p => '<div class="kiosk-deal-text">' + esc(p.text) + '</div>').join('') +
 '</div>'
 : '';
-wrap.innerHTML =
-'<div class="kiosk-detail">' + dealHtml +
-'<button type="button" class="close" onclick="clearKioskSelection()">\u00D7</button>' +
-'<h3>' + esc(v.businessName) +
-(sharers.length ? '<span class="kiosk-sharing"> sharing with </span>' + esc(sharers.join(', ')) : '') +
-'</h3>' +
+return '<div class="kiosk-detail">' + dealHtml +
+(withClose ? '<button type="button" class="close" onclick="clearKioskSelection()">\u00D7</button>' : '') +
+'<h3>' + esc(v.businessName) + '</h3>' +
 '<p class="meta">Booth ' + esc(kioskSelectedBooth) + ' \u2022 ' + esc(v.category || '') + '</p>' +
 (what ? '<p class="body">' + esc(what) + '</p>' : '') +
 (site ? '<p class="site">' + esc(site) + '</p>' : '') +
 '</div>';
-fitKioskDetail();
 }
 function marketAttendanceInYear(vendorId, year) {
 const derived = (attendedMarketDates(vendorId, Number(year)) || [])
@@ -15364,6 +15421,13 @@ alerts.push({ id: 'shares', topic: 'Shares', n: sharesWaiting,
 t: sharesWaiting + (sharesWaiting === 1 ? ' booth share reported, awaiting your decision' : ' booth shares reported, awaiting your decision'),
 d: 'Reported by a booth holder \u2014 allow or deny on the Selection screen',
 cls: 'submitted', go: 'lottery' });
+}
+const over = overSharedBooths();
+if (over.length) {
+alerts.push({ topic: 'Shares', n: over.length,
+t: over.length + (over.length === 1 ? ' booth has more than two businesses on it' : ' booths have more than two businesses on them'),
+d: 'The Guide allows two in a booth \u2014 the kiosk shows only the first, so this needs sorting out',
+cls: 'expired', go: 'lottery' });
 }
 const paysWaiting = reportedPayments().length;
 if (paysWaiting) {
