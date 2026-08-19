@@ -2888,10 +2888,22 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
+<div class="comm-item"><div class="comm-title">Correcting a seeded record</div><div class="comm-desc">Changing a value in <code>BOOTH_SEED</code>, <code>DEMO_VENDORS_SEED</code>, <code>REQUIREMENT_SEED</code> or the Winter dates now reaches sheets that already exist — but only where nobody has edited that field. Adding a <em>new</em> collection to the seed means adding it to <code>SEED_MERGE</code> as well, or its records become permanent the first time they are written. And when a seed value changes for a record that may already be in the wild under the old value, name the old value in <code>LEGACY_SEED_BIRTH</code> so sheets written before the stamps existed can still be corrected. Watch the size of the birth keys: booths and vendors sit near 22,000 characters against a cell limit around 50,000.</div></div>
 <div class="comm-item"><div class="comm-title">Reconcilers correct, they do not invent</div><div class="comm-desc">Code that repairs records on load may clear a value that cannot be true, but must never fill in a different one. <code>reconcileBoothReservations</code> used to turn an ineligible Saturday reservation into a Sunday-only booth, granting a vendor a holding they never won at any auction, silently, on every load. Clearing is honest; substituting is a fabrication that later reads as fact.</div></div>
 <div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
 <div class="comm-item"><div class="comm-title">Beta Reset must not ship</div><div class="comm-desc">Any build headed for real market use sets <code>BETA_RESET_TOOLS</code> to <code>false</code>. The reset desk rewrites records for every phone; it exists only to clean up after testing. A new storage key must also be added to <code>BETA_RESET_KEYS</code> as traffic or as configuration &mdash; a key in neither group is silently spared, and the screen&rsquo;s three lists are drawn from that same table.</div></div>
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
+</div>
+</section>
+<section id="screen-seedmerge" class="screen">
+<div class="screen-head" id="head-seedmerge"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>How This Works</h2>
+<p class="empty-note" style="margin-top:0;">The app fills an empty sheet with invented records so the market can be seen working before the real ones arrive. Every seeded field is stamped with the value it was born with. On each load, a field still matching its stamp is still the app&rsquo;s own invention, so a build that corrects it delivers the correction. A field that no longer matches was changed by somebody &mdash; it keeps their value and loses its stamp, permanently. Fields the seed never set are never touched at all.</p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Corrections Delivered</h2>
+<div id="smList"></div>
 </div>
 </section>
 <section id="screen-appglossary" class="screen">
@@ -2962,6 +2974,14 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'appglossary')">
 <span class="fold-title">App Glossary</span>
 <span class="fold-sub">What this app calls its own parts &mdash; desks, tools, chips, help dots, cones and the rest</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="dev-seedmerge">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'seedmerge')">
+<span class="fold-title">Seed Corrections</span>
+<span class="fold-sub">Where a build has corrected its own invented records &mdash; and what it left alone because somebody had entered it</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -3735,6 +3755,11 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <button class="primary-btn" onclick="assignAuctionBooth()"><svg class="ico"><use href="#i-checkmark"></use></svg> Assign &amp; Advance</button>
 <button class="ghost-btn" onclick="passAuctionTurn()">Pass &mdash; skip my turn</button>
 <div class="status-msg" id="auMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>Who Holds What</h2>
+<p class="empty-note" style="margin-top:0;">Every booth on the books, and a way to hand one back. Releasing does not touch the vendor&rsquo;s points or their standing &mdash; it only says the booth is theirs no longer.</p>
+<div id="auHeld"></div>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Order of Choosing</h2>
@@ -5777,7 +5802,7 @@ booth: Array.isArray(mapBooth) ? mapBooth : []
 cache.ledger = ledger === STORAGE_MISSING ? seed.ledger : ledger;
 cache.callinout = callinout === STORAGE_MISSING ? seed.callinout : callinout;
 cache.workhours = workhours === STORAGE_MISSING ? seed.workhours : workhours;
-cache.booths = booths === STORAGE_MISSING ? BOOTH_SEED.map(b => ({ ...b })) : booths;
+cache.booths = (booths === STORAGE_MISSING || !Array.isArray(booths)) ? BOOTH_SEED.map(b => ({ ...b })) : booths;
 cache.lottery = lottery === STORAGE_MISSING ? {} : lottery;
 cache.boothLayouts = boothLayouts === STORAGE_MISSING ? {} : (boothLayouts || {});
 cache.winterReservations = winterReservations === STORAGE_MISSING ? {} : (winterReservations || {});
@@ -5829,9 +5854,9 @@ cache.ops.ruleLog = cache.ops.ruleLog || [];
 ['logs', 'dayfees', 'renewal', 'rollover', 'auction'].forEach(k => {
 cache.ops[k] = cache.ops[k] || {};
 });
-cache.vendors = vendors === STORAGE_MISSING ? DEMO_VENDORS_SEED.map(v => ({ ...v })) : vendors;
+cache.vendors = (vendors === STORAGE_MISSING || !Array.isArray(vendors)) ? DEMO_VENDORS_SEED.map(v => ({ ...v })) : vendors;
 cache.popups = popups === STORAGE_MISSING ? [] : popups;
-cache.wintermarket = wintermarket === STORAGE_MISSING ? [] : wintermarket;
+cache.wintermarket = (wintermarket === STORAGE_MISSING || !Array.isArray(wintermarket)) ? [] : wintermarket;
 cache.hoursGoals = hoursGoals === STORAGE_MISSING ? { total: 30, bg: 2 } : hoursGoals;
 const sharedTasks = await storageGetShared('ifm-tasks');
 cache.tasks = sharedTasks === STORAGE_MISSING ? [] : sharedTasks;
@@ -5857,16 +5882,12 @@ await storageSet('ifm-lottery', cache.lottery);
 }
 if (popups === STORAGE_MISSING) await storageSet('ifm-popups', cache.popups);
 if (wintermarket === STORAGE_MISSING) {
-cache.wintermarket = winterMarketOptions().map((o, i) => ({
-id: 'WM-seed-' + i,
-date: o.date,
-location: 'Triphammer Marketplace \u2014 Bakery and ReUse atria',
-notes: '10:30 AM \u2013 2 PM. Booth reserved in advance.'
-}));
+cache.wintermarket = winterMarketSeed();
 await storageSet('ifm-wintermarket', cache.wintermarket);
 }
 if (hoursGoals === STORAGE_MISSING) await storageSet('ifm-hours-goals', cache.hoursGoals);
 if (vendors === STORAGE_MISSING || vendorsPruned) await storageSet('ifm-vendors-v1', cache.vendors);
+await applySeedMerges();
 }
 const ATTENDANCE_2025 = { V001: 32, V002: 32, V003: 34, V004: 56, V005: 77, V006: 0, V007: 52, V008: 82, V009: 26, V010: 65, V011: 56, V012: 17, V013: 11, V014: 80, V015: 54, V016: 61, V017: 10, V018: 29, V019: 66, V020: 30, V021: 82, V022: 8, V023: 82, V024: 7, V025: 50, V026: 13, V027: 92, V028: 68, V029: 33, V030: 43, V031: 39, V032: 33, V033: 58, V034: 21, V035: 26, V036: 55, V037: 77, V038: 80, V039: 18, V040: 23, V041: 86, V042: 43, V043: 60, V044: 55, V045: 53, V046: 87, V047: 10, V048: 80, V049: 20, V050: 34, V051: 43, V052: 78, V053: 9, V054: 74, V055: 53, V056: 13, V057: 40, V058: 40, V059: 17, V060: 82, V061: 52, V062: 77, V063: 74, V064: 15, V065: 0, V066: 0, V067: 0, V068: 8, V069: 16, V070: 0, V071: 6, V072: 0, V073: 0, V074: 18, V075: 17, V076: 17, V077: 6, V078: 28, V079: 19, V080: 25, V081: 56, V082: 61, V083: 52, V084: 76, V085: 65, V086: 47, V087: 52, V088: 50, V089: 54, V090: 73, V091: 47, V092: 36, V093: 66, V094: 71, V095: 0, V096: 81, V097: 55, V098: 62, V099: 23, V100: 51, V101: 68, V102: 79, V103: 36, V104: 27, V105: 55, V106: 81, V107: 66, V108: 64, V109: 48, V110: 44, V111: 64, V112: 42, V113: 54, V114: 51, V115: 61, V116: 24, V117: 59, V118: 70, V119: 11, V120: 3, V121: 42, V122: 0, V123: 3, V124: 55, V125: 34, V126: 0, V127: 28, V128: 36, V129: 25, V130: 23, V131: 32, V132: 20, V133: 64, V134: 0, V135: 29, V136: 0, V137: 0, V138: 45, V139: 12, V140: 43, V141: 4, V142: 0, V143: 0, V144: 71, V145: 3, V146: 0, V147: 36, V148: 21, V149: 2, V150: 0, V151: 81, V152: 35, V153: 45, V154: 14, V155: 0, V156: 35, V157: 60, V158: 21, V159: 85, V160: 52, V161: 102, V162: 19, V163: 12, V164: 63, V165: 17, V166: 6, V167: 21, V168: 2 };
 const HARVESTED_DIRECTORY_DATA = {
@@ -6453,6 +6474,175 @@ const h = HARVESTED_DIRECTORY_DATA[vendor.vendorId];
 return (h && h[key]) || '';
 }
 const AG_CORNER_BOOTHS = ['1', '13', '14', '33', '44', '59', '88'];
+// ---- Three-way seed merge ----------------------------------------------
+// The app seeds an empty sheet with invented records. Once written, those
+// inventions were indistinguishable from records a person had entered, so a
+// later build that corrected its own fiction could not deliver the correction:
+// the sheet always won. Each seeded field now remembers the value it was born
+// with, which makes three cases separable on every load.
+//
+//   sheet === birth   nobody has touched it, so it is still ours to correct:
+//                     take the build's current seed value and restamp birth.
+//   sheet !== birth   a person changed it. Their value stands, always, and the
+//                     birth stamp is retired for that field.
+//   no birth stamp    a sheet written before this mechanism: migrate, using
+//                     LEGACY_SEED_BIRTH where the seed is known to have changed.
+//
+// Fields absent from the seed are human territory and are never touched.
+const SEED_MERGE = [
+{ key: 'ifm-booths-v3', birth: 'ifm-birth-booths', label: 'Booth records',
+idOf: r => String(r.num), seed: () => BOOTH_SEED, list: () => cache.booths,
+put: v => { cache.booths = v; } },
+{ key: 'ifm-vendors-v1', birth: 'ifm-birth-vendors', label: 'Vendor records',
+idOf: r => String(r.vendorId), seed: () => DEMO_VENDORS_SEED, list: () => cache.vendors,
+put: v => { cache.vendors = v; } },
+{ key: 'ifm-wintermarket', birth: 'ifm-birth-winter', label: 'Winter Market dates',
+idOf: r => String(r.id), seed: () => winterMarketSeed(), list: () => cache.wintermarket,
+put: v => { cache.wintermarket = v; } },
+{ key: 'ifm-requirements', birth: 'ifm-birth-reqs', label: 'Requirement definitions',
+idOf: r => String(r.id), seed: () => REQUIREMENT_SEED,
+list: () => (cache.requirements && cache.requirements.reqs) || [],
+put: v => { cache.requirements.reqs = v; },
+pack: v => ({ reqs: v, status: (cache.requirements && cache.requirements.status) || {} }) }
+];
+// Sheets written before the merge existed. Only fields whose seed value has
+// actually changed need naming: everything else migrates as itself.
+const LEGACY_SEED_BIRTH = {
+'ifm-birth-booths': {
+'34': { sundaySeasonalBy: 'V119' }
+}
+};
+function winterMarketSeed() {
+return winterMarketOptions().map((o, i) => ({
+id: 'WM-seed-' + i,
+date: o.date,
+location: 'Triphammer Marketplace \u2014 Bakery and ReUse atria',
+notes: '10:30 AM \u2013 2 PM. Booth reserved in advance.'
+}));
+}
+// Short, stable, and only ever compared for equality \u2014 the birth store has to
+// fit in a spreadsheet cell, so it holds hashes rather than the values.
+function seedHash(v) {
+const s = JSON.stringify(v === undefined ? null : v);
+let a = 0x811c9dc5;
+for (let i = 0; i < s.length; i++) { a ^= s.charCodeAt(i); a = (a * 0x01000193) >>> 0; }
+return a.toString(36);
+}
+const HUMAN_OWNED = '\u2014';
+const GONE = '(deleted)';
+let seedMergeLog = [];
+function mergeSeedCollection(cfg, birthStore) {
+const seedList = cfg.seed() || [];
+const seedById = {};
+seedList.forEach(r => { seedById[cfg.idOf(r)] = r; });
+const current = (cfg.list() || []).map(r => ({ ...r }));
+const birth = birthStore || {};
+const nextBirth = {};
+const legacy = LEGACY_SEED_BIRTH[cfg.birth] || {};
+const migrating = !birthStore;
+const adopted = [];
+const byId = {};
+current.forEach(r => { byId[cfg.idOf(r)] = r; });
+Object.keys(seedById).forEach(id => {
+const seedRec = seedById[id];
+let rec = byId[id];
+if (!rec) {
+// Migration takes the sheet as it stands: what is absent was absent for a
+// reason nobody wrote down. Afterwards, a stamped record that has gone was
+// deleted by somebody and stays deleted; only genuinely new ones arrive.
+if (migrating || birth[id]) {
+nextBirth[id] = { [GONE]: HUMAN_OWNED };
+return;
+}
+rec = { ...seedRec };
+current.push(rec);
+byId[id] = rec;
+adopted.push({ id: id, field: '(whole record)', to: 'added' });
+}
+const stamps = {};
+Object.keys(seedRec).forEach(f => {
+const seedVal = seedRec[f];
+const sheetVal = rec[f];
+// On a sheet that predates the merge, assume the app's own seed unless the
+// legacy table names a value the seed used to carry.
+let bornVal = seedVal;
+const lg = legacy[id] || {};
+if (Object.prototype.hasOwnProperty.call(lg, f) && seedHash(lg[f]) === seedHash(sheetVal)) bornVal = lg[f];
+const born = migrating ? seedHash(bornVal) : (birth[id] || {})[f];
+// HUMAN_OWNED has to be written down, not inferred from a missing stamp:
+// inferring it meant a field handed over to a person was re-stamped on the
+// next load and became the app's to overwrite all over again.
+if (born === HUMAN_OWNED) { stamps[f] = HUMAN_OWNED; return; }
+if (born === undefined) {
+if (sheetVal === undefined) {              // a field this build adds
+rec[f] = seedVal;
+stamps[f] = seedHash(seedVal);
+adopted.push({ id: id, field: f, from: undefined, to: seedVal });
+} else {
+stamps[f] = HUMAN_OWNED;                 // arrived from somewhere else: not ours
+}
+return;
+}
+if (born !== seedHash(sheetVal)) { stamps[f] = HUMAN_OWNED; return; }
+if (seedHash(seedVal) !== seedHash(sheetVal)) {
+rec[f] = seedVal;                          // still ours to correct, so correct it
+adopted.push({ id: id, field: f, from: sheetVal, to: seedVal });
+}
+stamps[f] = seedHash(rec[f]);
+});
+if (Object.keys(stamps).length) nextBirth[id] = stamps;
+});
+return { list: current, birth: nextBirth, adopted: adopted };
+}
+async function applySeedMerges() {
+seedMergeLog = [];
+for (const cfg of SEED_MERGE) {
+try {
+const stored = await storageGet(cfg.birth);
+const had = stored !== STORAGE_MISSING && stored && typeof stored === 'object';
+const res = mergeSeedCollection(cfg, had ? stored : null);
+if (res.adopted.length) {
+cfg.put(res.list);
+await storageSet(cfg.key, cfg.pack ? cfg.pack(res.list) : res.list);
+seedMergeLog.push({ label: cfg.label, when: new Date().toISOString(), items: res.adopted });
+}
+const before = had ? JSON.stringify(stored) : '';
+if (JSON.stringify(res.birth) !== before) await storageSet(cfg.birth, res.birth);
+} catch (e) {
+noteStorageFailure('seed-merge:' + cfg.key, e);
+}
+}
+if (seedMergeLog.length) {
+const prev = await storageGet('ifm-seed-merge-log');
+const list = (prev !== STORAGE_MISSING && Array.isArray(prev)) ? prev : [];
+await storageSet('ifm-seed-merge-log', seedMergeLog.concat(list).slice(0, 40));
+}
+}
+function renderSeedMerge() {
+const wrap = document.getElementById('smList');
+if (!wrap) return;
+wrap.innerHTML = '';
+storageGet('ifm-seed-merge-log').then(log => {
+const list = (log !== STORAGE_MISSING && Array.isArray(log)) ? log : [];
+if (!list.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">Nothing has been corrected. Either the sheet ' +
+'matches what this build seeds, or every difference is somebody\u2019s own entry \u2014 which is left alone.</p>';
+return;
+}
+list.slice(0, 12).forEach(entry => {
+const row = document.createElement('div');
+row.className = 'comm-item';
+const lines = entry.items.slice(0, 8).map(it =>
+'Record ' + esc(it.id) + ' \u00b7 ' + esc(it.field) + ': ' +
+esc(it.from === undefined ? '' : JSON.stringify(it.from)) + ' \u2192 ' + esc(JSON.stringify(it.to)));
+row.innerHTML = '<div class="comm-title">' + esc(entry.label) + ' \u00b7 ' +
+esc(formatDisplayDate(String(entry.when).slice(0, 10))) + '</div>' +
+'<div class="comm-desc">' + lines.join('<br>') +
+(entry.items.length > 8 ? '<br>\u2026 and ' + (entry.items.length - 8) + ' more' : '') + '</div>';
+wrap.appendChild(row);
+});
+});
+}
 function reconcileCornerBooths() {
 let changed = false;
 cache.booths.forEach(b => {
@@ -7033,6 +7223,7 @@ const APP_GLOSSARY = [
 { t: 'Chip', d: 'A booth on a map: the tappable numbered square. Its colour is its state \u2014 open, taken, yours, matched.' },
 { t: 'Badge', d: 'The small letters riding a chip: U upgraded electric, NP no parking, CP compact parking, NF no food, W water nearby.' },
 { t: 'Sprite', d: 'A small marker the app puts on a map on its own, from live data \u2014 the orange eight-pointed sale star in front of a booth with a deal on. The pink deal dot was its ancestor. A sprite appears because something is true; a piece appears because someone placed it.' },
+{ t: 'Birth stamp', d: 'What a seeded field was worth when the app invented it. Kept beside the records so that later, the app can tell its own fiction from something a person entered: a field still matching its stamp is the app\u2019s to correct, a field that has moved belongs to whoever moved it, permanently. Nothing the seed never set carries a stamp at all.' },
 { t: 'Piece', d: 'A thing standing on a map that somebody placed by hand in the Map Editor: a picnic table, a bench, a bin, a dish station, a stage, a playground, a landmark, a shared outlet, a cord run. A piece has a position, a heading and a size, and may carry a name shown beside it.' },
 { t: 'Map layer', d: 'Which map a piece belongs to. Two, and they never mix: the kiosk layer carries the park\u2019s furniture for visitors, the booth-pick layer carries electrical for vendors. The Map Editor edits one at a time.' },
 { t: 'Stamp', d: 'The small inked picture beside a drawer or tile name \u2014 a phone, a snowflake, a shovel. Decoration with a hint of meaning, like a rubber stamp on a paper form. Not a badge (those ride booth chips), not a sprite (those stand on maps), and not a cone. Decided: none. Every desk runs unstamped; the small pictures live on only inside tool screens\u2019 card headers.' },
@@ -7908,6 +8099,10 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-feecart', t: 'Fee baskets', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-alert-seen', t: 'Notices vendors have dismissed', v: () => ({}) },
+{ g: 'traffic', t: 'Seed birth stamps and the record of what they corrected', run: async () => {
+for (const cfg of SEED_MERGE) await storageSet(cfg.birth, null);
+await storageSet('ifm-seed-merge-log', []);
+} },
 { g: 'traffic', t: 'Photographs vendors uploaded', run: async () => {
 const idx = await storageGet('ifm-photo-idx');
 if (idx !== STORAGE_MISSING && Array.isArray(idx)) {
@@ -7948,12 +8143,7 @@ await storageSet('ifm-requirements', { reqs: REQUIREMENT_SEED.map(r => ({ ...r }
 } },
 { g: 'config', k: 'ifm-settings', t: 'The Work Hour Rate', v: () => ({}) },
 { g: 'config', k: 'ifm-hours-goals', t: 'Work hours goals', v: () => ({ total: 30, bg: 2 }) },
-{ g: 'config', k: 'ifm-wintermarket', t: 'Winter Market dates', v: () => winterMarketOptions().map((o, i) => ({
-id: 'WM-seed-' + i,
-date: o.date,
-location: 'Triphammer Marketplace \u2014 Bakery and ReUse atria',
-notes: '10:30 AM \u2013 2 PM. Booth reserved in advance.'
-})) }
+{ g: 'config', k: 'ifm-wintermarket', t: 'Winter Market dates', v: () => winterMarketSeed() }
 ];
 // Nothing here is a record at all \u2014 it is work somebody made. No button on
 // this desk touches any of it.
@@ -8409,6 +8599,7 @@ if (name === 'leaves') initLeavesScreen();
 if (name === 'whrate') initWorkHourRateScreen();
 if (name === 'requirements') initRequirementsScreen();
 if (name === 'betareset') initBetaResetScreen();
+if (name === 'seedmerge') renderSeedMerge();
 if (name === 'mydocs') initMyDocsScreen();
 if (name === 'boardflags') initBoardFlagsScreen();
 if (name === 'marketrules') initMarketRulesScreen();
@@ -8532,6 +8723,7 @@ developer:         { title: 'Developer' },
 volunteer:         { title: 'Volunteer' },
 venmopay:          { title: 'Pay Fees' },
 appglossary:       { title: 'App Glossary' },
+seedmerge:         { title: 'Seed Corrections' },
 changechecklist:   { title: 'Version Update Checklist' },
 creativity:        { title: 'Creativity' },
 aboutedit:         { title: 'Information Screen Subjects' },
@@ -10823,7 +11015,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-94';
+const BUILD_ID = '13-96';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14845,6 +15037,7 @@ o.textContent = 'Booth ' + b.num + (b.propane ? ' \u2014 propane' : '') +
 (b.corner ? ' \u2014 corner' : '');
 sel.appendChild(o);
 });
+renderHeldBooths();
 const q = document.getElementById('auQueue');
 q.innerHTML = '';
 queue.slice(0, 25).forEach((e, i) => {
@@ -14855,6 +15048,57 @@ esc(e.v.businessName) + '</div><div class="req-meta">' + e.pts + ' points \u00b7
 esc(e.v.category || '') + '</div></div>';
 q.appendChild(row);
 });
+}
+function renderHeldBooths() {
+const wrap = document.getElementById('auHeld');
+if (!wrap) return;
+wrap.innerHTML = '';
+const held = [];
+cache.booths.forEach(b => {
+if (b.reservedBy) held.push({ b: b, id: b.reservedBy, kind: 'sat' });
+if (b.sundaySeasonalBy) held.push({ b: b, id: b.sundaySeasonalBy, kind: 'sun' });
+});
+if (!held.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">No booth is held by anyone right now.</p>';
+return;
+}
+held.sort((a, b) => String(a.b.num).localeCompare(String(b.b.num), undefined, { numeric: true }));
+held.forEach(e => {
+const v = cache.vendors.find(x => x.vendorId === e.id);
+const row = document.createElement('div');
+row.className = 'req-row';
+const main = document.createElement('div');
+main.className = 'req-row-main';
+main.innerHTML = '<div class="req-name">Booth ' + esc(e.b.num) + ' \u2014 ' +
+esc(v ? v.businessName : e.id) + '</div>' +
+'<div class="req-meta">' + (e.kind === 'sat' ? 'Reserved \u00b7 every market day' : 'Sunday-only seasonal') +
+' \u00b7 ' + esc(e.b.section || '') + '</div>';
+row.appendChild(main);
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'ghost-btn';
+btn.style.margin = '0';
+btn.textContent = 'Release';
+btn.onclick = () => confirmTap(btn, () => releaseBooth(e.b.num, e.kind));
+row.appendChild(btn);
+wrap.appendChild(row);
+});
+}
+async function releaseBooth(num, kind) {
+const booth = cache.booths.find(b => String(b.num) === String(num));
+if (!booth) return;
+const who = kind === 'sat' ? booth.reservedBy : booth.sundaySeasonalBy;
+if (kind === 'sat') booth.reservedBy = null; else booth.sundaySeasonalBy = null;
+if (cache.ops.auction) {
+Object.keys(cache.ops.auction).forEach(k => {
+const a = cache.ops.auction[k];
+if (a && a.assigned && a.assigned[who] === String(num)) delete a.assigned[who];
+});
+}
+await storageSet('ifm-booths-v3', cache.booths);
+await saveOps();
+renderAuction();
+showMsg('auMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Booth ' + esc(num) + ' released.');
 }
 async function assignAuctionBooth() {
 const kind = document.getElementById('auKind').value;
@@ -15751,6 +15995,9 @@ d: 'The Guide says vendors sign in at the office. The app implements online sign
 { id: 'BF05', kind: 'discrepancy', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
 t: 'Late-absence fine escalation: settled, worth confirming',
 d: 'The fines table footnote says fines increase in $50 increments for each offence, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
+{ id: 'BF14', kind: 'gap', cat: 'Records', src: 'App mechanism \u2014 not from any market document',
+t: 'Invented records the app can still take back \u2014 and the ones it cannot',
+d: 'The app fills an empty sheet with fictional records so the market can be seen working before the real ones arrive. Until this build those fictions were permanent: once written they were indistinguishable from something a person had entered, so a later build could not withdraw its own invention. Seeded fields now carry a stamp of the value they were born with, and a field still matching its stamp can be corrected by a later build. The part that needs people: a field a person has edited is theirs forever after, which is right for a booth assignment and questionable for a typo \u2014 there is no way to hand a field back to the app short of a full reset. And the fictions themselves should end, not merely become correctable: the Records Needed list asks the office for the real reservation and Sunday-only auction lists.' },
 { id: 'BF13', kind: 'gap', cat: 'Fines', src: 'App proposal \u2014 not from any market document',
 t: 'Should the app put context in front of a fine decision? \u2014 needs discussion',
 d: 'The Fines desk now shows, under each late-absence fine, what the vendor\u2019s own notices say: how late this one was, how many absences they reported on time this season against how many late, which earlier late notices were waived, whether the late ones are nearly all Sundays, how many market days they have attended, and whether a leave is on file. None of it is new information and none of it changes the amount \u2014 it is there because a waive is the one real decision in the process and it was being made with nothing in view. Three things need deciding by people, not by the app. First, whether management wants this at all: the same panel that makes leniency easier to justify makes a pattern harder to ignore, and that cuts both ways. Second, whether any of it is unfair to surface \u2014 attendance and leave status are the questionable ones. Third, whether the Guide\u2019s escalating fine should stay automatic at all, or become a proposal the office confirms; the app currently creates the fine itself and leaves only the waive to a person, which is the opposite of how the rest of the app is built.' },
