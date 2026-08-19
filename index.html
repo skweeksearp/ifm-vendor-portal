@@ -1381,6 +1381,13 @@ overflow: hidden;
 border-color: transparent; font-size: 22px;
 }
 .attn-panel { padding: 2px 12px 10px; border-top: 1px dashed rgba(0,0,0,0.18); }
+.decide-panel { margin: -6px 0 12px; padding: 9px 13px 11px; border-top: none;
+background: #FBF9EF; border: 1px solid var(--paper-dim); border-radius: 0 0 12px 12px; }
+.decide-h { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+opacity: 0.6; margin-bottom: 5px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.decide-flag { text-transform: none; letter-spacing: 0; font-size: 10.5px; font-weight: 700;
+color: #8A6D1F; border: 1px solid #D9A441; background: #FFF7E6; border-radius: 999px; padding: 1px 7px; opacity: 1; }
+.decide-line { font-size: 12.5px; line-height: 1.4; padding: 2px 0; opacity: 0.85; }
 .attn-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(0,0,0,0.07); }
 .attn-item:last-of-type { border-bottom: none; }
 .attn-info { flex: 1; min-width: 0; }
@@ -1940,10 +1947,18 @@ I sell food (prepared food or produce)
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body">
-<div class="dash-fold" data-fold="callinout">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'callinout')">
-<span class="fold-title">Booth Request / Absence</span>
-<span class="fold-sub" id="menuCallInOutSub">Ask for a booth, or say you’ll be away</span>
+<div class="dash-fold" data-fold="callin">
+<button type="button" class="fold-bar" onclick="openCioTool(this, 'request')">
+<span class="fold-title">Request a Booth</span>
+<span class="fold-sub" id="menuCallInSub">Ask for a booth at a market you don’t hold</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="callout">
+<button type="button" class="fold-bar" onclick="openCioTool(this, 'absence')">
+<span class="fold-title">Report an Absence</span>
+<span class="fold-sub" id="menuCallOutSub">Tell the office when you’ll be away</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
@@ -2950,6 +2965,14 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="dev-discuss">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'boardflags')">
+<span class="fold-title">To Discuss with the Market</span>
+<span class="fold-sub">Questions only people can settle &mdash; rules that contradict each other, rules nobody enforces, and proposals waiting on a decision. Shared with the manager&rsquo;s Flagged for Attention.</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="dev-creativity">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'creativity')">
 <span class="fold-title">Creativity</span>
@@ -3130,19 +3153,14 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </section>
 <section id="screen-callinout" class="screen">
 <div class="screen-head" id="head-callinout"></div>
-<p class="empty-note" style="margin:-4px 0 14px;">Long called &ldquo;calling in&rdquo; and &ldquo;calling out.&rdquo; One form, two opposite jobs: ask for a booth at a market you don&rsquo;t hold, or tell the office you&rsquo;ll be away from one you do.</p>
+<p class="empty-note" style="margin:-4px 0 14px;" id="cioLede">Long called &ldquo;calling in&rdquo; and &ldquo;calling out.&rdquo; One form, two opposite jobs: ask for a booth at a market you don&rsquo;t hold, or tell the office you&rsquo;ll be away from one you do.</p>
 <div class="card" id="cioContextCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span><span id="cioContextTitle"></span></h2>
 <p class="empty-note" style="margin-top:0;" id="cioContextText"></p>
 <p class="empty-note" id="cioStillCallIn" style="margin-bottom:0;"></p>
 </div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-leaf-branch"></use></svg></span>Request a Booth or Report an Absence<button type="button" class="help-dot" onclick="showHelp(33)" aria-label="What are the rules here?">?</button></h2>
-<label>Which are you doing?</label>
-<div class="toggle-row">
-<button type="button" id="btnIn" class="in" onclick="selectStatus('In')"><svg class="ico"><use href="#i-leaf-branch"></use></svg> Request a booth</button>
-<button type="button" id="btnOut" class="out" onclick="selectStatus('Out')"><svg class="ico"><use href="#i-hide"></use></svg> Report an absence</button>
-</div>
+<h2><span class="emoji"><svg class="ico"><use href="#i-leaf-branch"></use></svg></span><span id="cioFormTitle">Request a Booth</span><button type="button" class="help-dot" onclick="showHelp(33)" aria-label="What are the rules here?">?</button></h2>
 <label style="margin-top:16px;" id="cioDateLabel">Select Day(s) — tap as many as you need</label>
 <div style="display:flex; gap:8px; margin-bottom:10px;" id="cioBulkBtns">
 <button type="button" class="ghost-btn" style="margin:0; width:auto; padding:7px 12px; font-size:14px;" onclick="selectAllCioDates()">Select All</button>
@@ -3150,6 +3168,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <select id="cioDateSelect" style="display:none;" onchange="pickCioSingleDate(this.value)"></select>
 <div id="cioDateList" class="cio-date-list"></div>
+<p class="empty-note" id="cioNoDates" style="display:none; margin:6px 0 0;"></p>
 <div id="cioFeeRow"></div>
 <p class="empty-note" id="cioSundayNote" style="display:none; margin:10px 0 0;"></p>
 <button class="primary-btn" id="submitCio" onclick="submitCallInOut()" disabled><svg class="ico"><use href="#i-sprig"></use></svg> Submit</button>
@@ -3733,6 +3752,16 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <section id="screen-calloutpatterns" class="screen">
 <div class="screen-head" id="head-calloutpatterns"></div>
 <div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>This Season</h2>
+<div id="cpGlance"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Is One Deadline Harder?</h2>
+<div id="cpByDay"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Who Is Missing the Deadline</h2>
+<p class="empty-note" style="margin-top:0;">Only vendors who were late or gave no notice appear here. Being away is not the problem &mdash; the market plans around an absence it knows about.</p>
 <div id="calloutPatternList"></div>
 </div>
 </section>
@@ -8488,7 +8517,7 @@ kiosk:             { title: 'Information Kiosk' },
 leaves:            { title: 'Leaves of Absence' },
 whrate:            { title: 'Work Hour Rate' },
 popupsvendor:      { title: 'PopUp Events' },
-callinout:         { title: 'Booth Request / Absence' },
+callinout:         { title: () => cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth' },
 hours:             { title: 'Work Hours' },
 booths:            { title: () => currentAuction === 'weekly' ? 'Sunday Booth Selection' : 'Season Booth Selection' },
 communicate:       { title: 'Communicate with the Market' },
@@ -8568,6 +8597,23 @@ if (btn) btn.textContent = on ? 'End Shoulder Season' : 'Declare Shoulder Season
 function vendorHoldsStall(vendorId) {
 return cache.booths.some(b => b.reservedBy === vendorId || b.sundaySeasonalBy === vendorId);
 }
+function saturdayBoothOf(vendorId) {
+const b = cache.booths.find(x => x.reservedBy === vendorId);
+return b ? b.num : null;
+}
+function sundayBoothOf(vendorId) {
+const b = cache.booths.find(x => x.reservedBy === vendorId || x.sundaySeasonalBy === vendorId);
+return b ? b.num : null;
+}
+// Sunday-only means Sunday only: the holder is in the running every Saturday.
+function holdsSundayOnlyBooth(vendorId) {
+return !saturdayBoothOf(vendorId) && !!sundayBoothOf(vendorId);
+}
+function vendorBaselineBoothOn(vendorId, date) {
+if (!date) return null;
+const b = cache.booths.find(x => boothBaselineHolder(x, date) === vendorId);
+return b ? b.num : null;
+}
 function applyVendorVisibility() {
 const show = (id, visible) => {
 const el = document.getElementById(id);
@@ -8582,16 +8628,24 @@ if (!vendor) return;
 const holdsStall = vendorHoldsStall(vendor.vendorId);
 const isFull = vendor.category.endsWith('Full');
 const isAg = vendor.category.startsWith('Ag');
-show('menuWeeklyLottery', !holdsStall || shoulderSeasonDeclared());
+show('menuWeeklyLottery', !saturdayBoothOf(vendor.vendorId) || shoulderSeasonDeclared());
 show('commAgOnly', isAg);
 const onCmte = committeesFor(vendor.vendorId).length > 0;
 show('menuMyCommittees', onCmte);
 updateIneligibleLegend();
-const cioSub = document.getElementById('menuCallInOutSub');
+const cioSub = document.getElementById('menuCallInSub');
 if (cioSub) {
-cioSub.textContent = holdsStall
-? 'Tell us when you\u2019ll be away'
-: 'Request a booth by Wed 11:59\u00A0PM for Saturday';
+cioSub.textContent = saturdayBoothOf(vendor.vendorId)
+? 'Season start and finish, Trail spaces, shoulder season'
+: 'Saturdays \u2014 by Wed 11:59\u00A0PM';
+}
+const outSub = document.getElementById('menuCallOutSub');
+if (outSub) {
+outSub.textContent = saturdayBoothOf(vendor.vendorId)
+? 'Both days \u2014 Wed 11:59\u00A0PM / 8:00\u00A0AM Sunday'
+: (sundayBoothOf(vendor.vendorId)
+? 'Sundays \u2014 by 8:00\u00A0AM that day'
+: 'Only once you have been given a booth');
 }
 const sub = document.getElementById('menuSatAuctionSub');
 if (sub) {
@@ -8602,7 +8656,7 @@ sub.textContent = isFull
 const note = document.getElementById('menuTailorNote');
 if (note) {
 const hidden = [];
-if (holdsStall && !shoulderSeasonDeclared()) hidden.push('the weekly Booth Selection (you hold a reserved booth \u2014 report an absence instead if you\u2019ll be away)');
+if (saturdayBoothOf(vendor.vendorId) && !shoulderSeasonDeclared()) hidden.push('the weekly Booth Selection (you hold a reserved booth \u2014 report an absence instead if you\u2019ll be away)');
 if (!isAg) hidden.push('the Value-Added Farm Products application');
 if (!onCmte) hidden.push('the Committees drawer (you don\u2019t currently serve on one)');
 note.textContent = hidden.length
@@ -9800,29 +9854,103 @@ cache.popups = cache.popups.filter(x => x.id !== id);
 await storageSet('ifm-popups', cache.popups);
 renderPopups();
 }
+// Ranking vendors by how often they are away rewards nobody for calling ahead:
+// a vendor who gives notice every time climbed the same list as one who never
+// calls. What management can act on is the deadline being missed \u2014 and
+// whether a deadline is being missed by everybody, which is a rule question.
 function renderCalloutPatterns() {
-const counts = {};
-cache.callinout.forEach(r => {
-if (/out/i.test(r.status)) counts[r.vendorId] = (counts[r.vendorId] || 0) + 1;
+const notices = seasonNotices(null);
+const noShows = [];
+Object.keys((cache.ops && cache.ops.noshow) || {}).forEach(date => {
+(cache.ops.noshow[date] || []).forEach(vid => noShows.push({ vendorId: vid, date: date }));
 });
-const rows = Object.entries(counts)
-.map(([vendorId, count]) => ({ v: cache.vendors.find(x => x.vendorId === vendorId), count }))
-.filter(r => r.v)
-.sort((a, b) => b.count - a.count)
-.slice(0, 40);
+const late = notices.filter(n => n.late);
+const onTime = notices.length - late.length;
 const container = document.getElementById('calloutPatternList');
 container.innerHTML = '';
+const glance = document.getElementById('cpGlance');
+if (glance) {
+glance.innerHTML = notices.length || noShows.length
+? '<div class="stat-row">' +
+'<div class="stat"><div class="num mono">' + onTime + '</div><div class="label">On Time</div></div>' +
+'<div class="stat"><div class="num mono">' + late.length + '</div><div class="label">Late</div></div>' +
+'<div class="stat"><div class="num mono">' + noShows.length + '</div><div class="label">No Notice</div></div>' +
+'</div>' +
+'<p class="empty-note" style="margin-bottom:0;">' +
+(notices.length
+? Math.round((onTime / notices.length) * 100) + '% of absences reached the office before the deadline this season. ' +
+'A notice is what lets the booth go to somebody else, so on-time notices are the number worth watching.'
+: 'No absences from booth holders on record yet this season.') +
+'</p>'
+: '<p class="empty-note" style="margin:0;">No absences on record yet this season.</p>';
+}
+// Is one deadline harder than the other? If most late notices are Sundays
+// across many vendors, the 8 AM deadline is the finding, not the vendors.
+const byDay = document.getElementById('cpByDay');
+if (byDay) {
+const rows = ['Saturday', 'Sunday'].map(day => {
+const all = notices.filter(n => n.day === day);
+const l = all.filter(n => n.late).length;
+return { day: day, all: all.length, late: l, pct: all.length ? Math.round((l / all.length) * 100) : 0 };
+}).filter(r => r.all);
+if (!rows.length) { byDay.innerHTML = '<p class="empty-note" style="margin:0;">Nothing to compare yet.</p>'; }
+else {
+byDay.innerHTML = rows.map(r =>
+'<div class="report-row"><div class="r-name">' + r.day +
+'<span style="opacity:.6; font-weight:400;"> \u00b7 deadline ' +
+(r.day === 'Saturday' ? 'Wed 11:59\u00A0PM' : '8:00\u00A0AM that day') + '</span></div>' +
+'<div class="r-hours">' + r.late + ' of ' + r.all + ' late (' + r.pct + '%)</div></div>').join('');
+const worse = rows.slice().sort((a, b) => b.pct - a.pct)[0];
+const other = rows.find(r => r !== worse);
+const spread = other ? worse.pct - other.pct : 0;
+const vendorsLate = new Set(late.filter(n => n.day === worse.day).map(n => n.vendorId)).size;
+if (other && spread >= 25 && vendorsLate >= 3) {
+byDay.innerHTML += '<p class="empty-note" style="margin-bottom:0;"><strong>' + worse.day +
+' notices are late far more often</strong> \u2014 ' + vendorsLate +
+' different vendors. When a deadline is missed this widely it is worth asking whether the ' +
+'deadline fits the day, rather than treating each notice on its own.</p>';
+}
+}
+}
+// Who is missing the deadline, said alongside how often they get it right.
+const byVendor = {};
+notices.forEach(n => {
+const b = byVendor[n.vendorId] = byVendor[n.vendorId] || { late: 0, onTime: 0, dates: [] };
+if (n.late) { b.late++; b.dates.push(n.date); } else b.onTime++;
+});
+noShows.forEach(n => {
+const b = byVendor[n.vendorId] = byVendor[n.vendorId] || { late: 0, onTime: 0, dates: [] };
+b.noShow = (b.noShow || 0) + 1;
+});
+const rows = Object.keys(byVendor)
+.map(id => ({ id: id, v: cache.vendors.find(x => x.vendorId === id), ...byVendor[id] }))
+.filter(r => r.v && (r.late || r.noShow))
+.sort((a, b) => (b.late + (b.noShow || 0) * 2) - (a.late + (a.noShow || 0) * 2));
+const clean = Object.keys(byVendor).filter(id => !byVendor[id].late && !byVendor[id].noShow).length;
 if (!rows.length) {
-container.innerHTML = '<p class="empty-note">No absences on record yet.</p>';
+container.innerHTML = '<p class="empty-note">Every absence this season reached the office on time' +
+(clean ? ' \u2014 all ' + clean + ' vendor' + (clean === 1 ? '' : 's') + ' who reported one.' : '.') + '</p>';
 return;
 }
-rows.forEach((r, i) => {
+rows.forEach(r => {
 const row = document.createElement('div');
 row.className = 'report-row';
-row.innerHTML = '<div class="r-name">' + (i + 1) + '. ' + r.v.businessName + '</div>' +
-'<div class="r-hours">' + r.count + ' absence' + (r.count === 1 ? '' : 's') + '</div>';
+const parts = [];
+if (r.late) parts.push(r.late + ' late');
+if (r.noShow) parts.push(r.noShow + ' with no notice');
+row.innerHTML = '<div class="r-name">' + esc(r.v.businessName) +
+'<span style="opacity:.65; font-weight:400;"> \u00b7 ' + r.onTime + ' on time</span></div>' +
+'<div class="r-hours">' + parts.join(' \u00b7 ') + '</div>';
 container.appendChild(row);
 });
+if (clean) {
+const note = document.createElement('p');
+note.className = 'empty-note';
+note.style.marginBottom = '0';
+note.textContent = clean + ' other vendor' + (clean === 1 ? '' : 's') +
+' reported ' + (clean === 1 ? 'an absence' : 'absences') + ' this season and gave notice on time every time.';
+container.appendChild(note);
+}
 }
 function csvEscape(val) {
 const s = String(val === undefined || val === null ? '' : val);
@@ -10693,7 +10821,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-89';
+const BUILD_ID = '13-93';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -10748,9 +10876,9 @@ const status = document.getElementById('sundaySignInStatus');
 const rec = cache.lottery[date];
 const signedIn = !!(rec && rec.manualCheck && rec.manualCheck[vendor.vendorId]);
 const holdsStall = cache.booths.some(b =>
-b.sundaySeasonalBy === vendor.vendorId ||
-(b.reservedBy === vendor.vendorId && !cache.callinout.some(r =>
-r.vendorId === vendor.vendorId && r.marketDate === date && /out/i.test(r.status))));
+boothBaselineHolder(b, date) === vendor.vendorId) &&
+!cache.callinout.some(r =>
+r.vendorId === vendor.vendorId && r.marketDate === date && /out/i.test(r.status));
 if (holdsStall) {
 btn.disabled = true;
 btn.textContent = 'You Already Hold a Booth';
@@ -13012,7 +13140,7 @@ function shareIsHostMode() {
 const v = currentVendor();
 if (!v) return false;
 const date = document.getElementById('shareDate') ? document.getElementById('shareDate').value : '';
-return vendorHoldsStall(v.vendorId) || vendorAssignedOn(v.vendorId, date);
+return !!vendorBoothOn(v.vendorId, date) || vendorAssignedOn(v.vendorId, date);
 }
 function shareOwnBoothFor(vendorId, date) {
 const rec = (cache.lottery || {})[date];
@@ -13059,7 +13187,7 @@ blank.value = ''; blank.textContent = 'Choose the vendor\u2026';
 sel.appendChild(blank);
 cache.vendors
 .filter(g => g.vendorId !== (v && v.vendorId) &&
-!vendorHoldsStall(g.vendorId) &&
+!vendorBoothOn(g.vendorId, date) &&
 !vendorAssignedOn(g.vendorId, date))
 .sort((a, b) => a.businessName.localeCompare(b.businessName))
 .forEach(g => {
@@ -14118,6 +14246,70 @@ delete cache.ops.waived[id];
 renderFines();
 await saveOps();
 }
+// ---- Before you decide -------------------------------------------------
+// A waive is the one piece of real discretion in a late-absence fine, and it
+// was being offered with no context at all. None of this is new data: it is
+// the vendor's own notices, read back in the shape the decision needs.
+// NOTE: this panel is a proposal, not settled market policy \u2014 see the
+// Flagged for Attention entry BF13 before it is relied on.
+function seasonNotices(vendorId) {
+const year = seasonYear();
+const season = allMarketDatesInSeason(year);
+const holds = (id, md) => cache.booths.some(b =>
+(md.day === 'Saturday' ? b.reservedBy : (b.sundaySeasonalBy || b.reservedBy)) === id);
+const out = [];
+cache.callinout.forEach(r => {
+if (r.status === 'In') return;
+if (vendorId && r.vendorId !== vendorId) return;
+const md = season.find(m => m.date === r.marketDate);
+if (!md || !holds(r.vendorId, md)) return;
+const dl = callOutDeadline(r.marketDate, md.day);
+out.push({ vendorId: r.vendorId, date: r.marketDate, day: md.day,
+late: !!r.submittedAt && r.submittedAt > dl,
+hours: r.submittedAt ? Math.max(0, Math.round((r.submittedAt - dl) / 3600000)) : null });
+});
+return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+function lateNoticeContext(vendorId, forDate) {
+const year = seasonYear();
+const notices = seasonNotices(vendorId);
+const late = notices.filter(n => n.late);
+const idx = late.findIndex(n => n.date === forDate);
+const earlier = late.slice(0, Math.max(0, idx));
+const waivedBefore = earlier.filter(n => cache.ops.waived['auto:' + vendorId + ':' + n.date]).length;
+const bySunday = late.filter(n => n.day === 'Sunday').length;
+const leave = (cache.leaves || []).find(l =>
+l.vendorId === vendorId && Number(l.year) === Number(year));
+return {
+onTime: notices.length - late.length, late: late.length,
+occurrence: idx >= 0 ? idx + 1 : late.length + 1,
+thisOne: late[idx] || null,
+earlier: earlier, waivedBefore: waivedBefore,
+sundayShare: late.length ? bySunday / late.length : 0,
+attended: marketAttendanceInYear(vendorId, year),
+leave: leave || null
+};
+}
+function lateNoticeLines(c) {
+const out = [];
+if (c.thisOne) {
+out.push(c.thisOne.hours !== null && c.thisOne.hours < 24
+? 'This notice came ' + (c.thisOne.hours < 1 ? 'under an hour' : c.thisOne.hours + ' hour' + (c.thisOne.hours === 1 ? '' : 's')) + ' past the deadline.'
+: 'This notice came ' + (c.thisOne.hours === null ? 'after the deadline' : Math.round(c.thisOne.hours / 24) + ' day' + (Math.round(c.thisOne.hours / 24) === 1 ? '' : 's') + ' past the deadline') + '.');
+}
+out.push(c.onTime + (c.onTime === 1 ? ' absence' : ' absences') + ' reported on time this season, ' +
+c.late + ' late.' + (c.onTime && c.late === 1 ? ' This is the first one missed.' : ''));
+if (c.earlier.length) {
+out.push('Earlier late notices: ' + c.earlier.map(n => formatDisplayDate(n.date)).join(', ') +
+(c.waivedBefore ? ' \u00b7 ' + c.waivedBefore + ' already waived' : ' \u00b7 none waived'));
+}
+if (c.late >= 3 && c.sundayShare >= 0.75) {
+out.push('Nearly all of them are Sundays \u2014 the 8:00\u00A0AM deadline may be the difficulty rather than the vendor.');
+}
+out.push('Attended ' + c.attended + ' market day' + (c.attended === 1 ? '' : 's') + ' this season.');
+if (c.leave) out.push('A leave of absence is on file for this year (' + esc(c.leave.status || 'recorded') + ').');
+return out;
+}
 function renderFines() {
 const wrap = document.getElementById('fnList');
 const empty = document.getElementById('fnEmpty');
@@ -14164,6 +14356,15 @@ row.appendChild(del);
 }
 row.appendChild(wv);
 wrap.appendChild(row);
+if (f.auto) {
+const c = lateNoticeContext(f.vendorId, f.date);
+const panel = document.createElement('div');
+panel.className = 'attn-panel decide-panel';
+panel.innerHTML = '<div class="decide-h">Before you decide' +
+'<span class="decide-flag">Needs discussion \u2014 BF13</span></div>' +
+lateNoticeLines(c).map(t => '<div class="decide-line">' + t + '</div>').join('');
+wrap.appendChild(panel);
+}
 });
 }
 function membershipComposition() {
@@ -15548,6 +15749,9 @@ d: 'The Guide says vendors sign in at the office. The app implements online sign
 { id: 'BF05', kind: 'discrepancy', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
 t: 'Late-absence fine escalation: settled, worth confirming',
 d: 'The fines table footnote says fines increase in $50 increments for each offence, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
+{ id: 'BF13', kind: 'gap', cat: 'Fines', src: 'App proposal \u2014 not from any market document',
+t: 'Should the app put context in front of a fine decision? \u2014 needs discussion',
+d: 'The Fines desk now shows, under each late-absence fine, what the vendor\u2019s own notices say: how late this one was, how many absences they reported on time this season against how many late, which earlier late notices were waived, whether the late ones are nearly all Sundays, how many market days they have attended, and whether a leave is on file. None of it is new information and none of it changes the amount \u2014 it is there because a waive is the one real decision in the process and it was being made with nothing in view. Three things need deciding by people, not by the app. First, whether management wants this at all: the same panel that makes leniency easier to justify makes a pattern harder to ignore, and that cuts both ways. Second, whether any of it is unfair to surface \u2014 attendance and leave status are the questionable ones. Third, whether the Guide\u2019s escalating fine should stay automatic at all, or become a proposal the office confirms; the app currently creates the fine itself and leaves only the waive to a person, which is the opposite of how the rest of the app is built.' },
 { id: 'BF06', kind: 'gap', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
 t: 'A fee may be waived once per calendar year \u2014 nothing counts the waivers',
 d: 'Management may waive a fee at their discretion once per calendar year, with further appeals going to the Board. The app lets a manager waive any number of fines. Without a count, the limit is unenforceable and inconsistent between managers.' },
@@ -17831,8 +18035,18 @@ const parts = dates.map(d => { total += dayFeeFor(cioDateDayMap[d] || ''); retur
 await addFeeToCart('dayfees', 'Day fee' + (dates.length > 1 ? 's' : '') + ' \u2014 ' + parts.join(', '), total);
 renderCioFeeRow();
 }
+// An absence is only possible on a day you hold a booth; a request is only
+// possible on a day you do not. One list cannot be both, which is most of what
+// made the old single form confusing.
+function cioDatesForMode() {
+const all = generateUpcomingMarketDates();
+const vendor = currentRole === 'vendor' ? currentVendor() : null;
+if (!vendor) return all;
+const held = d => !!vendorBaselineBoothOn(vendor.vendorId, d) || vendorAssignedOn(vendor.vendorId, d);
+return cioMode === 'absence' ? all.filter(e => held(e.date)) : all.filter(e => !held(e.date));
+}
 function renderCioDateList() {
-const upcoming = generateUpcomingMarketDates();
+const upcoming = cioDatesForMode();
 cioDateDayMap = {};
 const list = document.getElementById('cioDateList');
 list.innerHTML = '';
@@ -17840,8 +18054,10 @@ upcoming.forEach(entry => {
 cioDateDayMap[entry.date] = entry.day;
 const chip = document.createElement('button');
 chip.type = 'button';
+const already = cioMode === 'absence' && cache.callinout.some(r =>
+r.vendorId === currentVendorId && r.marketDate === entry.date && /out/i.test(r.status));
 chip.className = 'cio-date-chip' + (selectedCioDates.has(entry.date) ? ' selected' : '');
-chip.innerHTML = '<span>' + entry.label + '</span>' +
+chip.innerHTML = '<span>' + entry.label + (already ? ' \u00b7 already reported' : '') + '</span>' +
 '<span class="check"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></span>';
 chip.onclick = () => toggleCioDate(entry.date);
 list.appendChild(chip);
@@ -17850,6 +18066,16 @@ renderCioFeeRow();
 renderCioDateSelect(upcoming);
 updateCioSubmitState();
 renderCioSundayNote();
+const empty = document.getElementById('cioNoDates');
+if (empty) {
+empty.style.display = upcoming.length ? 'none' : '';
+empty.textContent = cioMode === 'absence'
+? 'No upcoming market day has a booth of yours on it, so there is nothing to report away from.'
+: 'You already hold a booth on every upcoming market day \u2014 nothing to request.';
+}
+const label = document.getElementById('cioDateLabel');
+if (label && !upcoming.length) label.style.display = 'none';
+else if (label) label.style.display = '';
 }
 function renderCioDateSelect(upcoming) {
 const sel = document.getElementById('cioDateSelect');
@@ -17896,10 +18122,15 @@ renderCioDateList();
 function updateCioSubmitState() {
 document.getElementById('submitCio').disabled = !(selectedStatus && selectedCioDates.size > 0);
 }
+let cioMode = 'request';
+function openCioTool(btn, mode) {
+cioMode = mode;
+selectedStatus = mode === 'absence' ? 'Out' : 'In';
+selectedCioDates.clear();
+toggleToolFold(btn, 'callinout');
+}
 function selectStatus(status) {
 selectedStatus = status;
-document.getElementById('btnIn').classList.toggle('selected', status === 'In');
-document.getElementById('btnOut').classList.toggle('selected', status === 'Out');
 if (cioSingleDateMode() && selectedCioDates.size > 1) {
 const earliest = [...selectedCioDates].sort()[0];
 selectedCioDates.clear();
@@ -17943,49 +18174,67 @@ note.innerHTML = 'Heads up: Sunday takes no booth request. Sunday booths are set
 }
 function renderCallInOutContext() {
 const card = document.getElementById('cioContextCard');
-const btnIn = document.getElementById('btnIn');
-const btnOut = document.getElementById('btnOut');
-if (!card || !btnIn || !btnOut) return;
+if (!card) return;
 const vendor = currentRole === 'vendor' ? currentVendor() : null;
-if (!vendor) {
-card.style.display = 'none';
-btnIn.style.order = '';
-btnOut.style.order = '';
-return;
-}
-const holdsStall = vendorHoldsStall(vendor.vendorId);
-const satStall = cache.booths.some(b => b.reservedBy === vendor.vendorId);
+if (!vendor) { card.style.display = 'none'; return; }
+const satBooth = saturdayBoothOf(vendor.vendorId);
+const sunBooth = sundayBoothOf(vendor.vendorId);
+const sundayOnly = !satBooth && !!sunBooth;
+const absence = cioMode === 'absence';
 card.style.display = '';
-document.getElementById('cioContextTitle').textContent =
-holdsStall ? 'You hold a reserved booth' : 'You request a booth each week';
-if (holdsStall) {
-document.getElementById('cioContextText').innerHTML =
-'Your booth is yours every market day, so there is nothing to request week to week \u2014 ' +
-'this screen is mainly for telling the office when you will be <strong>away</strong>. ' +
-(satStall
-? 'Saturday absences are due by <strong>11:59\u00A0PM Wednesday</strong>'
-: 'Sunday absences are due by <strong>8:00\u00A0AM</strong> that day') +
-', and a late notice still counts \u2014 the office would always rather know, even late.';
-document.getElementById('cioStillCallIn').innerHTML =
-'<strong>When you would still request a booth:</strong> to tell the office when you are starting ' +
-'and finishing for the season; during shoulder season, when reserved-booth holders may join ' +
-'the weekly Booth Selection and booths in the dock wing (45\u201358) and circle end (69\u201378) ' +
-'begin closing; to ask for a Waterfront Trail space, which is reserved in advance through the ' +
-'weekly Booth Selection; or for a second business of yours on a day your reserved booth is released.';
-} else {
-document.getElementById('cioContextText').innerHTML =
-'You do not hold a reserved booth, so a booth request is how you get one. ' +
-'Request by <strong>11:59\u00A0PM Wednesday</strong> and the OpM works the ranked list by ' +
-'phone on Thursday morning; anything left goes to the in-person Booth Selection at 7:30\u00A0AM ' +
-'Saturday (8:30\u00A0AM in Nov/Dec).';
-document.getElementById('cioStillCallIn').innerHTML =
-'<strong>Sundays take no booth request</strong> \u2014 sign in instead, online from ' +
-'6:00\u00A0PM Saturday until 8:30\u00A0AM or in person before 8:30\u00A0AM at the booth across ' +
-'from the office, and choose your booth when your turn comes. Report an absence here if you have already been given a booth and cannot make it.';
+const title = document.getElementById('cioContextTitle');
+const text = document.getElementById('cioContextText');
+const still = document.getElementById('cioStillCallIn');
+const lede = document.getElementById('cioLede');
+const formTitle = document.getElementById('cioFormTitle');
+if (formTitle) formTitle.textContent = absence ? 'Report an Absence' : 'Request a Booth';
+if (lede) {
+lede.textContent = absence
+? 'Long called \u201Ccalling out.\u201D Telling the office early releases your booth to somebody else \u2014 and a late notice still counts.'
+: 'Long called \u201Ccalling in.\u201D This is how you ask for a booth at a market you do not already hold.';
 }
-btnIn.style.order = holdsStall ? '2' : '1';
-btnOut.style.order = holdsStall ? '1' : '2';
-if (!selectedStatus) selectStatus(holdsStall ? 'Out' : 'In');
+if (absence) {
+// Only the days this vendor actually holds a booth can be missed.
+title.textContent = satBooth ? 'Both days are yours'
+: sunBooth ? 'Sundays are yours' : 'You hold no booth yet';
+text.innerHTML = satBooth
+? 'Booth ' + esc(satBooth) + ' is yours every market day. Saturday absences are due by ' +
+'<strong>11:59\u00A0PM Wednesday</strong> and Sunday absences by <strong>8:00\u00A0AM</strong> that day.'
+: sunBooth
+? 'Booth ' + esc(sunBooth) + ' is your Sunday-only seasonal booth, so Sunday is the day you would be ' +
+'away from. Absences are due by <strong>8:00\u00A0AM</strong> that day.'
+: 'You do not hold a booth on any day right now, so there is nothing to be away from. If you are ' +
+'given a booth through Booth Selection and then cannot make it, report it here.';
+still.innerHTML = (satBooth || sunBooth)
+? 'A late notice still counts \u2014 the office would always rather know, even late. Past the deadline ' +
+'it is recorded as late; no notice at all is recorded as a no-show.'
+: '';
+still.style.display = (satBooth || sunBooth) ? '' : 'none';
+} else {
+title.textContent = satBooth ? 'You hold a reserved booth'
+: sundayOnly ? 'Saturdays are what you request' : 'You request a booth each week';
+text.innerHTML = satBooth
+? 'Booth ' + esc(satBooth) + ' is yours every market day, so there is nothing to request week to week.'
+: sundayOnly
+? 'Booth ' + esc(sunBooth) + ' is yours on Sundays, but you do not hold a Saturday booth \u2014 so a ' +
+'request is how you get one. Request by <strong>11:59\u00A0PM Wednesday</strong> and the OpM works ' +
+'the ranked list by phone on Thursday morning; anything left goes to the in-person Booth Selection ' +
+'at 7:30\u00A0AM Saturday (8:30\u00A0AM in Nov/Dec).'
+: 'You do not hold a reserved booth, so a booth request is how you get one. Request by ' +
+'<strong>11:59\u00A0PM Wednesday</strong> and the OpM works the ranked list by phone on Thursday ' +
+'morning; anything left goes to the in-person Booth Selection at 7:30\u00A0AM Saturday ' +
+'(8:30\u00A0AM in Nov/Dec).';
+still.style.display = '';
+still.innerHTML = satBooth
+? '<strong>When you would still request:</strong> to tell the office when you are starting and ' +
+'finishing for the season; during shoulder season, when reserved-booth holders may join the weekly ' +
+'Booth Selection; or to ask for a Waterfront Trail space, reserved in advance through Booth Selection.'
+: '<strong>Sundays take no booth request</strong> \u2014 sign in instead, online from 6:00\u00A0PM ' +
+'Saturday until 8:30\u00A0AM or in person before 8:30\u00A0AM at the booth across from the office, ' +
+'and choose your booth when your turn comes.';
+}
+selectedStatus = cioMode === 'absence' ? 'Out' : 'In';
+renderCioDateList();
 renderCioDateMode();
 renderCioSundayNote();
 }
@@ -18024,12 +18273,10 @@ await storageSet('ifm-callinout', cache.callinout);
 const verb = selectedStatus === 'In' ? 'Booth request' : 'Absence notice';
 const dateWord = dates.length === 1 ? 'date' : 'dates';
 let msg = '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded: ' + verb + ' for ' + dates.length + ' ' + dateWord + '.';
-if (lateCount) msg += ' (' + lateCount + ' marked late \u2014 fine applies.)';
+if (lateCount) msg += ' (' + lateCount + ' past the deadline, so recorded as late.)';
 showMsg('cioStatusMsg', 'ok', msg);
 selectedCioDates.clear();
-selectedStatus = null;
-document.getElementById('btnIn').classList.remove('selected');
-document.getElementById('btnOut').classList.remove('selected');
+selectedStatus = cioMode === 'absence' ? 'Out' : 'In';
 renderCioDateList();
 renderAll();
 } catch (e) {
