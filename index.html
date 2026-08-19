@@ -2888,6 +2888,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
+<div class="comm-item"><div class="comm-title">Reconcilers correct, they do not invent</div><div class="comm-desc">Code that repairs records on load may clear a value that cannot be true, but must never fill in a different one. <code>reconcileBoothReservations</code> used to turn an ineligible Saturday reservation into a Sunday-only booth, granting a vendor a holding they never won at any auction, silently, on every load. Clearing is honest; substituting is a fabrication that later reads as fact.</div></div>
 <div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
 <div class="comm-item"><div class="comm-title">Beta Reset must not ship</div><div class="comm-desc">Any build headed for real market use sets <code>BETA_RESET_TOOLS</code> to <code>false</code>. The reset desk rewrites records for every phone; it exists only to clean up after testing. A new storage key must also be added to <code>BETA_RESET_KEYS</code> as traffic or as configuration &mdash; a key in neither group is silently spared, and the screen&rsquo;s three lists are drawn from that same table.</div></div>
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
@@ -4147,7 +4148,7 @@ const BOOTH_SEED = [
 { num: '31', section: 'Row A', corner: false, propane: false, reservedBy: 'V008', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '32', section: 'Row A', corner: false, propane: false, reservedBy: 'V080', sundaySeasonalBy: null, np: false, cp: false, u: true, nf: false, w: true, floor: 'brick' },
 { num: '33', section: 'Row A', corner: true, propane: false, reservedBy: 'V108', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
-{ num: '34', section: 'Middle Row', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: 'V119', np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
+{ num: '34', section: 'Middle Row', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '35', section: 'Middle Row', corner: false, propane: false, reservedBy: 'V005', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '36', section: 'Middle Row', corner: false, propane: false, reservedBy: 'V114', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '37', section: 'Middle Row', corner: false, propane: false, reservedBy: 'V019', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
@@ -6469,9 +6470,7 @@ cache.booths.forEach(b => {
 if (b.reservedBy) {
 const v = byId[b.reservedBy];
 if (!v || !v.category.endsWith('Full')) {
-const vid = b.reservedBy;
 b.reservedBy = null;
-if (v && !b.sundaySeasonalBy && !heldSun.has(vid)) { b.sundaySeasonalBy = vid; heldSun.add(vid); }
 changed = true;
 } else if (heldSat.has(b.reservedBy)) {
 b.reservedBy = null; changed = true;
@@ -6854,6 +6853,9 @@ unblocks: 'Both photographs carry a permission note on screen until this is clea
 { t: 'Kiosk voices &amp; links', keeper: 'The office, the Dish Truck crew, and whoever runs the accounts',
 what: 'The Dish Truck\u2019s story in their own words, the daily music lineup, and the market\u2019s social media and Substack addresses.',
 unblocks: 'The kiosk\u2019s About pages speaking with real voices instead of placeholders, and a News tile linking the market\u2019s own writing.' },
+{ t: 'Who actually holds which booth', keeper: 'The Operations Manager \u2014 the reservation list and the Sunday-only auction results',
+what: 'The real list of reserved booth holders, and separately the vendors who won Sunday-only seasonal booths at the Easy Entry auction. Both as of this season.',
+unblocks: 'Everything that asks whether a vendor holds a booth: what the Request and Absence tools offer, who appears in Booth Selection, the kiosk map, attendance minimums, and late-notice deadlines. The app currently runs on invented assignments, so a vendor testing the app can be shown holding a booth they have never held.' },
 { t: 'Shared outlet locations', keeper: 'The Operations Manager and whoever last chased a tripped breaker',
 what: 'Where the shared outlets actually are, and which sub-panel feeds each one. The sub-panels sit about eight feet up and are on no map the market keeps.',
 unblocks: 'The electrical layer of the booth-pick map. The Map Editor can place outlets and cord runs today \u2014 what is missing is the ground truth to place them from, and resetting a tripped breaker is a work-hours job nobody wants to hunt for.' },
@@ -10821,7 +10823,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-93';
+const BUILD_ID = '13-94';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
