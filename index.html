@@ -1957,7 +1957,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="boothassign">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Booth Assignments</span>
-<span class="fold-sub">Requests and absences, booth selections, winter, pop-ups</span>
+<span class="fold-sub">Getting a booth, and telling the office when you can’t come</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body">
@@ -2023,7 +2023,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="lottery" id="menuWeeklyLottery">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'lottery')">
 <span class="fold-title">Sunday Booth Selection</span>
-<span class="fold-sub">This week’s open Sunday booths · the “lottery”</span>
+<span class="fold-sub">Sign in for a Sunday booth · this week’s open booths</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
@@ -2224,7 +2224,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="st-lottery">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'lottery')">
 <span class="fold-title">Sunday Booth Selection</span>
-<span class="fold-sub">The &ldquo;lottery&rdquo; &middot; ranked by points, not drawn</span>
+<span class="fold-sub">Run the Sunday sign-in and hand out the open booths</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -2232,7 +2232,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="st-winter">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winterbooths')">
 <span class="fold-title">Winter Market Booths</span>
-<span class="fold-sub">Reserve and assign by date</span>
+<span class="fold-sub">Reserve Triphammer spaces for vendors, by date</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -11043,7 +11043,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-105';
+const BUILD_ID = '13-106';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
