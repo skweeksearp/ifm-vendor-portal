@@ -1862,11 +1862,15 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <div id="vendorAlertList"></div>
 </div>
 <div class="desk-pinned" id="deskProfilePinned">
+<div class="dash-fold" data-fold="fProfile">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Business Profile</span>
+<span class="fold-sub" id="foldSubProfile">Your photo, contact details, products and links</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
 <div class="card" id="profileCard">
-<h2 style="display:flex; align-items:center; justify-content:space-between;">
-<span><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Business Profile</span>
-<button type="button" id="profileEditBtn" onclick="toggleProfileEdit(true)" title="Edit your directory listing" style="background:none; border:none; padding:4px; cursor:pointer; color:var(--ink);"><svg class="ico"><use href="#i-pencil-plus"></use></svg></button>
-<button type="button" class="help-dot" onclick="showHelp(4)" aria-label="What are the rules here?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Business Profile<button type="button" class="help-dot" onclick="showHelp(4)" aria-label="What are the rules here?">?</button></h2>
 <div class="photo-row">
 <div id="profilePhotoPreview" class="photo-preview"></div>
 <div style="flex:1;">
@@ -1877,6 +1881,8 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 </div>
 </div>
 <div id="profileView"></div>
+<button type="button" class="ghost-btn" id="profileEditBtn" onclick="toggleProfileEdit(true)">
+<svg class="ico"><use href="#i-pencil-plus"></use></svg> Edit Profile</button>
 <div id="profileEditForm" style="display:none;">
 <label for="profBiz">Business Name</label>
 <input type="text" id="profBiz">
@@ -1907,6 +1913,8 @@ I sell food (prepared food or produce)
 <button class="ghost-btn" style="margin:0;" onclick="toggleProfileEdit(false)">Cancel</button>
 </div>
 <div class="status-msg" id="profileStatusMsg"></div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -11027,7 +11035,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-99';
+const BUILD_ID = '13-100';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
