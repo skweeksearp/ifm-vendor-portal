@@ -1996,7 +1996,7 @@ I sell food (prepared food or produce)
 </div>
 <div class="dash-fold" data-fold="auction" id="menuSatAuction">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'auction')">
-<span class="fold-title">Season Booth Selection</span>
+<span class="fold-title">Season-Long Booth Reservations</span>
 <span class="fold-sub" id="menuSatAuctionSub">Full: Sat + Sun · All members: Sun-only</span>
 <span class="fold-chev">›</span>
 </button>
@@ -2909,7 +2909,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
-<div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season Booth Selection sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
+<div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
 <div class="comm-item"><div class="comm-title">Correcting a seeded record</div><div class="comm-desc">Changing a value in <code>BOOTH_SEED</code>, <code>DEMO_VENDORS_SEED</code>, <code>REQUIREMENT_SEED</code> or the Winter dates now reaches sheets that already exist — but only where nobody has edited that field. Adding a <em>new</em> collection to the seed means adding it to <code>SEED_MERGE</code> as well, or its records become permanent the first time they are written. And when a seed value changes for a record that may already be in the wild under the old value, name the old value in <code>LEGACY_SEED_BIRTH</code> so sheets written before the stamps existed can still be corrected. Watch the size of the birth keys: booths and vendors sit near 22,000 characters against a cell limit around 50,000.</div></div>
 <div class="comm-item"><div class="comm-title">Reconcilers correct, they do not invent</div><div class="comm-desc">Code that repairs records on load may clear a value that cannot be true, but must never fill in a different one. <code>reconcileBoothReservations</code> used to turn an ineligible Saturday reservation into a Sunday-only booth, granting a vendor a holding they never won at any auction, silently, on every load. Clearing is honest; substituting is a fabrication that later reads as fact.</div></div>
 <div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
@@ -3341,7 +3341,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="legend-grid">
 <div class="legend-row"><span class="legend-icon"><svg class="ico"><use href="#i-propane"></use></svg></span> Propane priority (placeholder — see note below)</div>
-<div class="legend-row"><span class="legend-icon"><svg class="ico"><use href="#i-wheat"></use></svg></span> Ag-only corner booth (Season Booth Selection rule)</div>
+<div class="legend-row"><span class="legend-icon"><svg class="ico"><use href="#i-wheat"></use></svg></span> Ag-only corner booth (season reservation rule)</div>
 <div class="legend-row"><span class="legend-icon"><svg class="ico"><use href="#i-plank"></use></svg></span> Floor material &amp; who's reserved it</div>
 <div class="legend-row"><span class="legend-icon"><svg class="ico"><use href="#i-ruler"></use></svg></span> Booth layout &mdash; built-in counters &amp; shelves</div>
 </div>
@@ -3761,14 +3761,14 @@ comes from.</p>
 </section>
 <section id="screen-auction" class="screen">
 <div class="screen-head" id="head-auction"></div>
-<p class="empty-note" style="margin:-4px 0 14px;" id="auIntro">The Season Booth Selection &mdash; long called the &ldquo;annual auction.&rdquo;
+<p class="empty-note" style="margin:-4px 0 14px;" id="auIntro">Season-Long Booth Reservations &mdash; long called the &ldquo;annual auction.&rdquo; This is where a booth becomes a vendor&rsquo;s for the whole season, rather than for one market day.
 Nobody bids and no points are spent &mdash; vendors are called in points order and each picks a booth for the season.</p>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-gavel"></use></svg></span><span id="auHeading">Season Booth Selection</span><button type="button" class="help-dot" onclick="showPlanned('auction')" aria-label="What are the rules here?">?</button></h2>
-<label for="auKind">Which Booth Selection</label>
+<h2><span class="emoji"><svg class="ico"><use href="#i-gavel"></use></svg></span><span id="auHeading">Season-Long Booth Reservations</span><button type="button" class="help-dot" onclick="showPlanned('auction')" aria-label="What are the rules here?">?</button></h2>
+<label for="auKind">Which reservation round</label>
 <select id="auKind" onchange="renderAuction()">
-<option value="sat">Annual Saturday Booth Selection &mdash; late March</option>
-<option value="sun">Seasonal Sunday-Only Booth Selection &mdash; late April</option>
+<option value="sat">Annual Saturday round &mdash; late March</option>
+<option value="sun">Seasonal Sunday-only round &mdash; late April</option>
 </select>
 <p class="empty-note" id="auSummary"></p>
 <div id="auTurn"></div>
@@ -7742,7 +7742,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Vendor Standing",
-"body": "<p>The Vendor Guide requires all outstanding fees and fines to be paid before a vendor&rsquo;s first market of the year, and requires fees current and insurance valid to sell at all. A vendor placed on hold here cannot request a booth, cannot be listed in either Booth Selection, cannot reserve a Winter Market space, and cannot claim one in the Season Booth Selection. Reporting an absence is always allowed &mdash; blocking that would only earn them a no-show fine.</p>"
+"body": "<p>The Vendor Guide requires all outstanding fees and fines to be paid before a vendor&rsquo;s first market of the year, and requires fees current and insurance valid to sell at all. A vendor placed on hold here cannot request a booth, cannot be listed in either Booth Selection, cannot reserve a Winter Market space, and cannot take a season-long reservation. Reporting an absence is always allowed &mdash; blocking that would only earn them a no-show fine.</p>"
 },
 {
 "title": "Vendors That May Have Quit the IFM",
@@ -7958,8 +7958,8 @@ body: () => '<p>The once-a-year batch that turns last season into this season&rs
 '<p><b>1. Review the plan.</b> Opening this screen changes nothing. Look over the summary and the largest movements &mdash; this is where a wrong-looking number gets caught before it becomes anyone&rsquo;s ranking.</p>' +
 '<p><b>2. Post it.</b> One press writes the whole season to the points ledger: ' + ruleNum('ptsYear') + ' membership points to every vendor, ' + ruleNum('ptsDay') + ' point per market day attended, and last year&rsquo;s attendance points retired. Every selection ranks on the new numbers from then on.</p>' +
 '<p><b>3. Done for the year.</b> A posted season is blocked from posting again &mdash; twice would double-count everyone. A single wrong entry is fixed afterwards in the Points Manager, not by re-running.</p>' },
-auction: { built: true, live: true, t: 'Season Booth Selection', when: 'Annual &mdash; late March and late April',
-body: '<p>Run the two annual Booth Selections &mdash; the &ldquo;auctions&rdquo; &mdash; the way the weekly ones already run.</p>' +
+auction: { built: true, live: true, t: 'Season-Long Booth Reservations', when: 'Annual &mdash; late March and late April',
+body: '<p>Run the two annual rounds \u2014 the &ldquo;auctions&rdquo; \u2014 the way the weekly ones already run. What they hand out is different: a weekly Booth Selection gives a vendor a booth for one market day, while these give a reservation that stands all season, which is why they carry their own name.</p>' +
 '<p>Despite the name, nobody bids and no points are spent. The Guide is explicit that points make the weekly selections and the annual ones &ldquo;more equitable&rdquo;: they are a ranking, not a currency. All four events are the same mechanic &mdash; sort by category tier, then points, then call names in order.</p>' +
 '<p>The Saturday Booth Selection is held in late March alongside Spring Cleanup, Full Members in good standing only; availability must be published two weeks ahead. The Sunday-only seasonal Booth Selection follows in late April, Full vendors choosing first and then Easy Entry, with availability published a week ahead. Nine booths go first to propane-using Full Members in points order. The unreservable booth list is updated before the March Booth Selection once non-returning vendors are known.</p>' +
 '<p>The Booth Selection engine already knows how to rank a pool of vendors against a pool of booths. This is its annual sibling.</p>' },
@@ -8736,7 +8736,7 @@ whrate:            { title: 'Work Hour Rate' },
 popupsvendor:      { title: 'PopUp Events' },
 callinout:         { title: () => cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth' },
 hours:             { title: 'Work Hours' },
-booths:            { title: () => currentAuction === 'weekly' ? 'Sunday Booth Selection' : 'Season Booth Selection' },
+booths:            { title: () => currentAuction === 'weekly' ? 'Sunday Booth Selection' : 'Season-Long Booth Reservations' },
 communicate:       { title: 'Communicate with the Market' },
 evacuation:        { title: 'Emergency Evacuation Plan' },
 lottery:           { title: 'Sunday Booth Selection Sheet' },
@@ -8781,7 +8781,7 @@ optool:            { title: () => (OPTOOLS[otOpenKey] || {}).title || 'Record Lo
 dayfees:           { title: 'Day-Fee Collection Log' },
 renewal:           { title: 'Renewal Tracker' },
 pointsroll:        { title: 'Annual Points Rollover' },
-auction:           { title: () => selectionSeason() + ' Season Booth Selection' },
+auction:           { title: () => selectionSeason() + ' Season-Long Booth Reservations' },
 boardcycle:        { title: 'Board Meeting Cycle' },
 committees:        { title: 'Committees' },
 mycommittees:      { title: 'Committees' }
@@ -11004,7 +11004,8 @@ if (/^Out/i.test(s)) return 'Away';
 return s;
 }
 const PLAIN_WORDS_CHANGED = [
-{ a: 'Booth Selection', g: 'lottery, auction', d: 'Nothing is drawn and nobody bids. Vendors are ranked by category tier, then by points, and each one chooses from what is still open. Points rank you; they are never spent.' },
+{ a: 'Booth Selection', g: 'lottery, auction', d: 'Nothing is drawn and nobody bids. Vendors are ranked by category tier, then by points, and each one chooses from what is still open. Points rank you; they are never spent. Used for the weekly rounds, which hand out a booth for one market day.' },
+{ a: 'Season-Long Booth Reservations', g: 'the annual auction', d: 'The two annual rounds, late March and late April, where a booth becomes a vendor\u2019s for the whole season instead of for a day. Same mechanic as the weekly Booth Selections \u2014 ranked by points, each picks in turn \u2014 but what is won is a reservation, so it is named for that.' },
 { a: 'Booth Request / Absence', g: 'calling in, calling out', d: 'One form doing two opposite jobs. A booth request asks for space at a market you do not hold. An absence tells the office you will not be at one you do. Nobody calls any more \u2014 it is a form.' },
 { a: 'Exception Request', g: 'Special Needs Request', d: 'A request to the Board to allow something the rules otherwise do not: a late fee, an attendance shortfall, a Leave of Absence, a disability accommodation. The Guide defines it as an action outside current policy, so the name reads today as though it were only for accommodations.' },
 { a: 'Value-Added Farm Products', g: 'Enhanced Agricultural Products', d: 'A product an Ag vendor makes from what they grow \u2014 at least 75% farm-grown ingredient. Nothing is enhanced or fortified; value-added is the ordinary term in agriculture.' },
@@ -11042,7 +11043,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-103';
+const BUILD_ID = '13-104';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -11132,7 +11133,7 @@ if (booth.nf && vendorSellsFood(vendor)) {
 return { why: 'No food sales allowed at this booth', label: 'No-Food booths \u2014 your profile says you sell food' };
 }
 if (booth.corner && currentAuction === 'annual-sat' && !vendor.category.startsWith('Ag')) {
-return { why: 'Corner booth — Agricultural vendors only in the Season Booth Selection', label: 'Ag-only corner booths \u2014 Agriculture vendors only' };
+return { why: 'Corner booth — Agricultural vendors only in the season-long reservations', label: 'Ag-only corner booths \u2014 Agriculture vendors only' };
 }
 return null;
 }
@@ -11193,9 +11194,9 @@ const note = document.getElementById('auctionRuleNote');
 if (currentAuction === 'weekly') {
 note.textContent = 'Sunday Booth Selection, the \u201Clottery\u201D: Sunday booths default to whoever holds them Saturday, unless that vendor reported an absence for this date. Everything left over goes to the 8:30\u00A0AM meeting \u2014 vendors seeking one of those booths sign in online from 6:00\u00A0PM Saturday onward or in person before 8:30\u00A0AM, then choose in points order.';
 } else if (currentAuction === 'annual-sat') {
-note.textContent = 'Season Booth Selection, the \u201Cauction\u201D — Full Members: choose in points order for a season-long booth, valid Saturday and Sunday. 9 dock-wing booths are offered to propane-using Full vendors first. Corner booths are Ag-only — tap a booth to check.';
+note.textContent = 'Season-Long Booth Reservations, the \u201Cauction\u201D — Full Members: choose in points order for a season-long booth, valid Saturday and Sunday. 9 dock-wing booths are offered to propane-using Full vendors first. Corner booths are Ag-only — tap a booth to check.';
 } else {
-note.textContent = 'Season Booth Selection, the \u201Cauction\u201D — Sunday-Only, All Members: for booths not already claimed by Full Members. Full vendors choose first by points, then Easy Entry vendors. Reserved for the current season only.';
+note.textContent = 'Season-Long Booth Reservations, the \u201Cauction\u201D — Sunday-Only, All Members: for booths not already claimed by Full Members. Full vendors choose first by points, then Easy Entry vendors. Reserved for the current season only.';
 }
 const sundayDate = document.getElementById('sundayViewDate').value;
 renderSundaySignIn();
@@ -15027,7 +15028,7 @@ return kind === 'sat' ? !b.reservedBy : (!b.sundaySeasonalBy && !b.reservedBy);
 }
 function initAuctionScreen() {
 const h = document.getElementById('auHeading');
-if (h) h.textContent = selectionSeason() + ' Season Booth Selection';
+if (h) h.textContent = selectionSeason() + ' Season-Long Booth Reservations';
 document.getElementById('auMsg').className = 'status-msg';
 renderAuction();
 }
@@ -16023,8 +16024,8 @@ d: 'The Guide reads "more than 4 years", which excludes a vendor at exactly four
 t: 'Booth 33 is listed as both a corner and a regular booth',
 d: 'The fee table names 1, 13, 14, 33, 44, 59 and 88 as Agricultural Corner Booths, but the "most booths" band covers 15 to 43, which contains 33. The two prices differ by hundreds of dollars.' },
 { id: 'BF03', kind: 'discrepancy', cat: 'Booths', src: 'Vendor Guide, Annual Booth Auction',
-t: 'Are corner booths Ag-only always, or only in the Season Booth Selection?',
-d: 'The Guide restricts corner booths to Agriculture vendors in the sentence about the annual event \u2014 the Season Booth Selection. The app scopes the restriction to that event alone. If the Operations Manager treats them as Ag-only in the weekly Booth Selections too, the app is wrong every week.' },
+t: 'Are corner booths Ag-only always, or only in the season-long reservations?',
+d: 'The Guide restricts corner booths to Agriculture vendors in the sentence about the annual event \u2014 the season-long reservations. The app scopes the restriction to that event alone. If the Operations Manager treats them as Ag-only in the weekly Booth Selections too, the app is wrong every week.' },
 { id: 'BF04', kind: 'discrepancy', cat: 'Booth Selection', src: 'Vendor Guide, Sunday',
 t: 'Sunday sign-in location does not match practice',
 d: 'The Guide says vendors sign in at the office. The app implements online sign-in from 6 PM Saturday plus in-person at the booth across from the office, which is what the market actually does. Either the Guide or the app should change; at present a vendor reading the Guide is told the wrong place.' },
@@ -16033,7 +16034,7 @@ t: 'Late-absence fine escalation: settled, worth confirming',
 d: 'The fines table footnote says fines increase in $50 increments for each offence, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
 { id: 'BF15', kind: 'gap', cat: 'Permissions', src: 'App defect \u2014 found in testing',
 t: 'Who can operate what has never been audited across the whole app',
-d: 'The Season Booth Selection screen is on both the vendor desk and the manager\u2019s, and until this build it handed vendors the manager\u2019s controls: assigning a booth to the next vendor in line, passing a turn, and releasing anyone\u2019s booth. It is now gated in two places \u2014 the controls are hidden for anyone but the manager, and the functions refuse to run for anyone else \u2014 but the fix was made to the one screen where the fault was seen. Every other screen that appears on more than one desk needs the same reading. A sweep of the vendor desk then found four more of the same kind, all now manager-only: Sign In a Vendor and Shared Booths on the Sunday Booth Selection, both Printable Sheet cards, and Browse by Date \u2014 a calendar that listed every vendor by name with what they had requested or reported, on any vendor\u2019s phone. Who Holds What went too: a vendor has the Rolodex, and a manager\u2019s ledger of every holding answers nothing the Rolodex does not answer better. What remains to audit is the staff, volunteer and kiosk desks, and the question of whether one vendor should see another\u2019s absences at all \u2014 the app now says no, which nobody has confirmed.' },
+d: 'The Season-Long Booth Reservations screen is on both the vendor desk and the manager\u2019s, and until this build it handed vendors the manager\u2019s controls: assigning a booth to the next vendor in line, passing a turn, and releasing anyone\u2019s booth. It is now gated in two places \u2014 the controls are hidden for anyone but the manager, and the functions refuse to run for anyone else \u2014 but the fix was made to the one screen where the fault was seen. Every other screen that appears on more than one desk needs the same reading. A sweep of the vendor desk then found four more of the same kind, all now manager-only: Sign In a Vendor and Shared Booths on the Sunday Booth Selection, both Printable Sheet cards, and Browse by Date \u2014 a calendar that listed every vendor by name with what they had requested or reported, on any vendor\u2019s phone. Who Holds What went too: a vendor has the Rolodex, and a manager\u2019s ledger of every holding answers nothing the Rolodex does not answer better. What remains to audit is the staff, volunteer and kiosk desks, and the question of whether one vendor should see another\u2019s absences at all \u2014 the app now says no, which nobody has confirmed.' },
 { id: 'BF14', kind: 'gap', cat: 'Records', src: 'App mechanism \u2014 not from any market document',
 t: 'Invented records the app can still take back \u2014 and the ones it cannot',
 d: 'The app fills an empty sheet with fictional records so the market can be seen working before the real ones arrive. Until this build those fictions were permanent: once written they were indistinguishable from something a person had entered, so a later build could not withdraw its own invention. Seeded fields now carry a stamp of the value they were born with, and a field still matching its stamp can be corrected by a later build. The part that needs people: a field a person has edited is theirs forever after, which is right for a booth assignment and questionable for a typo \u2014 there is no way to hand a field back to the app short of a full reset. And the fictions themselves should end, not merely become correctable: the Records Needed list asks the office for the real reservation and Sunday-only auction lists.' },
@@ -16820,13 +16821,13 @@ body.appendChild(note);
 }
 const MGR_FOLDERS = [
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
-sub: 'Running the selections \u2014 booths given out for a day, a season, the winter, and the pool held back from all of it',
+sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
 tiles: [
 { s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
 { s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
 { s: 'auction', i: 'i-gavel',
-t: () => selectionSeason() + ' Season Booth Selection',
-d: () => 'Held March and April ' + selectionSeason() + ', for that whole season &middot; the &ldquo;auction&rdquo;' },
+t: () => selectionSeason() + ' Season-Long Booth Reservations',
+d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
 { s: 'winterbooths', i: 'i-snowflake', t: 'Winter Market Booths', d: 'Triphammer spaces, assigned by date' },
 { s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'The Thursday pool \u2014 updated before the March Booth Selection' },
 ] },
@@ -18170,7 +18171,7 @@ statusText = 'Open for ' + sundayDate + ' \u2014 the regular holder reported an 
 }
 } else if (currentAuction === 'annual-sunday') {
 if (booth.reservedBy) {
-statusText = 'Already held Sat & Sun by ' + boothVendorName(booth.reservedBy) + ' via the Full-member Season Booth Selection.';
+statusText = 'Already held Sat & Sun by ' + boothVendorName(booth.reservedBy) + ' in the Full-member season-long reservations.';
 } else if (booth.sundaySeasonalBy) {
 statusText = 'Reserved for Sundays this season by ' + boothVendorName(booth.sundaySeasonalBy) + '.';
 } else {
@@ -18179,11 +18180,11 @@ statusText = 'Open for the Sunday-only seasonal Booth Selection.';
 } else if (currentAuction === 'annual-sat') {
 statusText = booth.reservedBy
 ? boothVendorName(booth.reservedBy) + ' holds this booth Saturday and Sunday.'
-: 'Available in the Season Booth Selection (Full Members) — Saturday and Sunday.';
+: 'Available in the season-long reservations (Full Members) — Saturday and Sunday.';
 } else if (booth.reservedBy) {
 statusText = 'Reserved by ' + boothVendorName(booth.reservedBy) + '.';
 } else {
-statusText = 'Available in the Season Booth Selection (Full Members).';
+statusText = 'Available in the season-long reservations (Full Members).';
 }
 document.getElementById('boothDetailStatus').textContent = statusText;
 const facilities = document.getElementById('boothDetailFacilities');
@@ -18208,7 +18209,7 @@ if (booth.nf) chips.push({ html: '<svg class="ico"><use href="#i-no-entry"></use
 const blockedWhy = currentRole === 'vendor' ? boothIneligibleReason(booth, currentVendor()) : '';
 if (blockedWhy) chips.push({ html: '<svg class="ico"><use href="#i-warning"></use></svg> Not available to you \u2014 ' + blockedWhy, cls: 'warn' });
 if (booth.w) chips.push({ html: '<svg class="ico"><use href="#i-tap"></use></svg> Water Spigot Nearby', cls: 'good' });
-if (booth.corner) chips.push({ html: '<svg class="ico"><use href="#i-wheat"></use></svg> Agricultural Corner Booth — Ag-only in the Season Booth Selection', cls: 'warn' });
+if (booth.corner) chips.push({ html: '<svg class="ico"><use href="#i-wheat"></use></svg> Agricultural Corner Booth — Ag-only in the season-long reservations', cls: 'warn' });
 if (booth.propane) chips.push({ html: PROPANE_ICON_SVG + ' Propane Priority', cls: 'warn' });
 if (booth.note) chips.push({ html: '<svg class="ico"><use href="#i-warning"></use></svg> ' + booth.note, cls: 'warn' });
 chips.forEach(c => {
@@ -18235,7 +18236,7 @@ claimBtn.innerHTML = '<svg class="ico"><use href="#i-corn"></use></svg> Choose a
 claimBtn.style.display = 'none';
 } else if (currentAuction === 'annual-sat' && !vendor.category.endsWith('Full')) {
 claimBtn.style.display = 'none';
-document.getElementById('boothDetailStatus').textContent += ' ' + vendor.businessName + ' is not a Full Member, so is not eligible for the Full-member Season Booth Selection.';
+document.getElementById('boothDetailStatus').textContent += ' ' + vendor.businessName + ' is not a Full Member, so is not eligible for the Full-member season-long reservations.';
 } else if (booth.corner && !vendor.category.startsWith('Ag')) {
 claimBtn.style.display = 'none';
 document.getElementById('boothDetailStatus').textContent += ' Corner booths are reserved for Ag vendors.';
