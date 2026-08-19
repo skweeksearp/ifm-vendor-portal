@@ -1994,6 +1994,14 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
+<div class="dash-fold" data-fold="lottery" id="menuWeeklyLottery">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'lottery')">
+<span class="fold-title">Sunday Booth Selection</span>
+<span class="fold-sub">Sign in for a Sunday booth · this week’s open booths</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="auction" id="menuSatAuction">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'auction')">
 <span class="fold-title">Season-Long Booth Reservations</span>
@@ -2019,14 +2027,6 @@ I sell food (prepared food or produce)
 <div class="fold-body"></div>
 </div>
 </div>
-</div>
-<div class="dash-fold" data-fold="lottery" id="menuWeeklyLottery">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'lottery')">
-<span class="fold-title">Sunday Booth Selection</span>
-<span class="fold-sub">Sign in for a Sunday booth · this week’s open booths</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
 </div>
 <div class="dash-fold" data-fold="hours">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'hours')">
@@ -11044,7 +11044,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-107';
+const BUILD_ID = '13-108';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
