@@ -2918,6 +2918,19 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
 </div>
 </section>
+<section id="screen-selfaudit" class="screen">
+<div class="screen-head" id="head-selfaudit"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What This Checks</h2>
+<p class="empty-note" style="margin-top:0;">Nearly every leak found in testing has belonged to one of four faults, and each one can be looked for by machine. Reports were being fixed one instance at a time while the rest of the class sat undisturbed &mdash; this walks the whole population instead. It cannot judge whether wording is <i>good</i>, only whether it is consistent, and it knows nothing of faults nobody has named yet.</p>
+<p class="empty-note" id="saSummary" style="margin-bottom:0;"></p>
+<button type="button" class="ghost-btn" onclick="renderSelfAudit()">Run the audit again</button>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>What It Found</h2>
+<div id="saList"></div>
+</div>
+</section>
 <section id="screen-seedmerge" class="screen">
 <div class="screen-head" id="head-seedmerge"></div>
 <div class="card">
@@ -2997,6 +3010,14 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'appglossary')">
 <span class="fold-title">App Glossary</span>
 <span class="fold-sub">What this app calls its own parts &mdash; desks, tools, chips, help dots, cones and the rest</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="dev-selfaudit">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'selfaudit')">
+<span class="fold-title">Self-Audit</span>
+<span class="fold-sub">Walks the whole app for the four faults that keep being found one at a time &mdash; ownership, role exposure, description drift, unguarded writes</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -6643,6 +6664,177 @@ const list = (prev !== STORAGE_MISSING && Array.isArray(prev)) ? prev : [];
 await storageSet('ifm-seed-merge-log', seedMergeLog.concat(list).slice(0, 40));
 }
 }
+// ---- Self-Audit ---------------------------------------------------------
+// Four faults have accounted for nearly every leak found in testing, and each
+// one is mechanically detectable. Reports of a single instance were being fixed
+// one at a time while the rest of the class sat undisturbed; this walks the
+// whole population instead.
+//
+//   Ownership      a list of per-person records with no vendor on them.
+//   Role exposure  a control on a screen that two desks share.
+//   Description    a screen whose five descriptions no longer agree.
+//   Write guards   a function that writes market records without checking who.
+//
+// It cannot judge whether wording is good, only whether it is consistent, and
+// it knows nothing of faults nobody has named yet.
+const AUDIT_OWNERSHIP_KEYS = [
+{ k: 'ifm-feepays', path: 'items', t: 'Reported fee payments' },
+{ k: 'ifm-workhours', t: 'Work hours logged' },
+{ k: 'ifm-callinout', t: 'Requests and absences' },
+{ k: 'ifm-booth-shares', t: 'Booth shares' },
+{ k: 'ifm-promos', t: 'Deals posted' },
+{ k: 'ifm-improvements', t: 'Improvement proposals' },
+{ k: 'ifm-leaves', t: 'Leaves of absence' },
+{ k: 'ifm-ledger', t: 'Points ledger' },
+{ k: 'ifm-desk-order', byId: true, t: 'Desk arrangements' },
+{ k: 'ifm-alert-seen', byId: true, t: 'Dismissed notices' }
+];
+// Screens a vendor, staff member or volunteer can open that the manager also
+// uses. Anything on them that writes the market's records must be gated.
+const AUDIT_SHARED_SCREENS = ['auction', 'lottery', 'callinout', 'winter', 'winterbooths',
+'booths', 'directory', 'hours', 'popupsvendor', 'mydocs', 'communicate', 'boothlayouts'];
+const AUDIT_ROLES = ['vendor', 'staff', 'volunteer'];
+// Writes a vendor is meant to make on their own behalf. Each is a decision
+// somebody made, recorded here so the audit stops asking about it.
+const AUDIT_VENDOR_ACTIONS = ['submitBoothShare', 'deleteBoothShare', 'claimSelectedBooth',
+'reportDocumentSent', 'toggleWinterReservation', 'toggleSundaySignIn', 'saveBoothLayout',
+'revertBoothLayout', 'claimTask', 'reportTaskComplete', 'undoTaskReport', 'submitCallInOut',
+'saveTasks', 'saveOps', 'loadAllData', 'payFeeCart', 'addFeeToCart'];
+
+async function runSelfAudit() {
+const out = { ownership: [], roles: [], descriptions: [], guards: [] };
+
+// --- 1. Ownership -------------------------------------------------------
+for (const spec of AUDIT_OWNERSHIP_KEYS) {
+let v;
+try { v = await storageGet(spec.k); } catch (e) { continue; }
+if (v === STORAGE_MISSING || !v) continue;
+if (spec.byId) {
+const keys = Object.keys(v);
+if (Array.isArray(v)) {
+out.ownership.push({ k: spec.k, t: spec.t, n: v.length,
+d: 'Stored as one shared list. Records meant for one person each are held in common, so every vendor reads and overwrites the same thing.' });
+} else {
+const strays = keys.filter(id => !cache.vendors.some(x => x.vendorId === id));
+if (strays.length) out.ownership.push({ k: spec.k, t: spec.t, n: strays.length,
+d: 'Held under ' + strays.length + ' id' + (strays.length === 1 ? '' : 's') + ' matching no vendor on the roster: ' + strays.slice(0, 4).join(', ') + '.' });
+}
+continue;
+}
+const list = spec.path ? (v[spec.path] || []) : v;
+if (!Array.isArray(list) || !list.length) continue;
+const orphans = list.filter(r => r && typeof r === 'object' && !r.vendorId);
+if (orphans.length) out.ownership.push({ k: spec.k, t: spec.t, n: orphans.length,
+d: orphans.length + ' of ' + list.length + ' records carry no vendorId, so nothing can tell whose they are. Anyone filtering this list by vendor either sees everyone\u2019s or sees none.' });
+const unknown = list.filter(r => r && r.vendorId && !cache.vendors.some(x => x.vendorId === r.vendorId));
+if (unknown.length) out.ownership.push({ k: spec.k, t: spec.t, n: unknown.length,
+d: unknown.length + ' records name a vendor who is not on the roster.' });
+}
+
+// --- 4. Write guards, run first so the role check can use its findings ---
+const marketKeys = /'ifm-(booths-v3|lottery|booth-shares|ops|requirements|unreservable|amendments|settings|hours-goals|wintermarket|tasks|popups|season-flags|winter-reservations|booth-layouts)'/;
+const unguarded = new Set();
+Object.keys(window).forEach(n => {
+if (typeof window[n] !== 'function') return;
+let src = '';
+try { src = window[n].toString(); } catch (e) { return; }
+if (src.length > 12000) return;
+if (!/storageSet(Shared)?\(/.test(src) || !marketKeys.test(src)) return;
+if (/requireManager\(|requireMarketRole\(|currentRole !== 'manager'|currentRole === 'manager'/.test(src)) return;
+if (AUDIT_VENDOR_ACTIONS.includes(n)) return;
+unguarded.add(n);
+out.guards.push({ fn: n });
+});
+
+// --- 2. Role exposure ---------------------------------------------------
+const wasRole = currentRole, wasVendor = currentVendorId, wasScreen = ifmCurrentScreen;
+for (const role of AUDIT_ROLES) {
+currentRole = role;
+if (role === 'vendor' && !currentVendorId && cache.vendors.length) currentVendorId = cache.vendors[0].vendorId;
+setRoleHeader(role);
+for (const name of AUDIT_SHARED_SCREENS) {
+const sec = document.getElementById('screen-' + name);
+if (!sec) continue;
+try { runScreenInit(name); } catch (e) {}
+const shown = [...sec.querySelectorAll('button')].filter(b => {
+if (b.closest('.manager-only') || b.classList.contains('manager-only')) return false;
+const call = b.getAttribute('onclick') || '';
+return [...unguarded].some(fn => call.includes(fn + '('));
+}).map(b => (b.textContent.trim().replace(/\s+/g, ' ').slice(0, 34) || '(unlabelled)') +
+' \u2192 ' + (b.getAttribute('onclick') || '').split('(')[0]);
+const uniq = [...new Set(shown)];
+if (uniq.length) out.roles.push({ role: role, screen: name, controls: uniq });
+}
+}
+currentRole = wasRole; currentVendorId = wasVendor;
+setRoleHeader(wasRole || 'vendor');
+if (wasScreen && wasScreen !== 'selfaudit') { try { showScreen(wasScreen); } catch (e) {} }
+
+// --- 3. Description drift ----------------------------------------------
+Object.keys(SCREEN_META).forEach(name => {
+if (!document.getElementById('screen-' + name)) {
+out.descriptions.push({ screen: name, d: 'Named in SCREEN_META but no such screen exists.' });
+return;
+}
+const meta = SCREEN_META[name];
+const title = typeof meta.title === 'function' ? meta.title() : meta.title;
+const hi = SCREEN_HELP[name];
+if (hi !== undefined) {
+const help = HELP_TEXTS[hi];
+if (!help) out.descriptions.push({ screen: name, d: 'Help dot points at entry ' + hi + ', which does not exist.' });
+else if (!titlesAgree(help.title, title)) out.descriptions.push({ screen: name,
+d: 'Screen is called \u201C' + title + '\u201D; its help dot opens \u201C' + help.title + '\u201D.' });
+}
+});
+
+return out;
+}
+function titlesAgree(a, b) {
+const norm = s => String(s || '').toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+const x = norm(a), y = norm(b);
+return x === y || x.includes(y) || y.includes(x);
+}
+let auditRunning = false;
+async function renderSelfAudit() {
+const wrap = document.getElementById('saList');
+if (!wrap || auditRunning) return;
+auditRunning = true;
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">Walking the app\u2026</p>';
+let r;
+try { r = await runSelfAudit(); }
+catch (e) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">The audit could not finish: ' + esc(e.message || String(e)) + '</p>';
+auditRunning = false;
+return;
+}
+auditRunning = false;
+const section = (title, count, blurb, rows) => {
+const card = document.createElement('div');
+card.className = 'comm-item';
+card.innerHTML = '<div class="comm-title">' + esc(title) + ' \u00b7 ' +
+(count ? count + ' found' : 'nothing found') + '</div>' +
+'<div class="comm-desc">' + blurb + (rows.length ? '<br><br>' + rows.join('<br>') : '') + '</div>';
+wrap.appendChild(card);
+};
+wrap.innerHTML = '';
+section('Ownership', r.ownership.length,
+'Records about one person that carry nothing saying whose they are. This is the fault that let every vendor read every other vendor\u2019s reported payments, and let one vendor rearrange all 168 desks.',
+r.ownership.map(o => '<b>' + esc(o.t) + '</b> (<code>' + esc(o.k) + '</code>) \u2014 ' + o.d));
+section('Role exposure', r.roles.length,
+'Controls that act on the market\u2019s records, visible on a screen opened from a desk that should not have them. A control is flagged when it calls one of the unguarded writing functions below, so this list and the last one move together.',
+r.roles.map(o => '<b>' + esc(o.role) + '</b> on <code>' + esc(o.screen) + '</code>: ' + esc(o.controls.join(' \u00b7 '))));
+section('Description drift', r.descriptions.length,
+'A screen and its help dot disagreeing about what the screen is called, or a registry naming a screen that no longer exists. Catches the case where a help entry sits under another screen\u2019s title.',
+r.descriptions.map(o => '<code>' + esc(o.screen) + '</code> \u2014 ' + esc(o.d)));
+section('Write guards', r.guards.length,
+'Functions that write the market\u2019s own records without checking the role of whoever called them. Hiding a button does not withhold the power behind it. Writes a vendor is meant to make on their own behalf are named in <code>AUDIT_VENDOR_ACTIONS</code> and left out; anything appearing here has not been decided either way.',
+r.guards.map(o => '<code>' + esc(o.fn) + '</code>'));
+const total = r.ownership.length + r.roles.length + r.descriptions.length + r.guards.length;
+const sum = document.getElementById('saSummary');
+if (sum) sum.textContent = total
+? total + ' finding' + (total === 1 ? '' : 's') + ' across four faults. Each is a class, not an incident \u2014 fix the class.'
+: 'Nothing found in any of the four faults. That is not the same as no bugs: this walks only what it knows to look for.';
+}
 function renderSeedMerge() {
 const wrap = document.getElementById('smList');
 if (!wrap) return;
@@ -7103,7 +7295,8 @@ note: 'Reported by a board member; meeting date not recorded \u2014 fill it in w
 ] };
 return amendmentsCache;
 }
-async function saveAmendments() { await storageSet('ifm-amendments', amendmentsCache); }
+async function saveAmendments() {
+if (!requireManager()) return; await storageSet('ifm-amendments', amendmentsCache); }
 async function initAmendmentsScreen() {
 document.getElementById('amDate').value = todayISO();
 document.getElementById('amText').value = '';
@@ -7162,6 +7355,7 @@ else if (!unreservableCache) unreservableCache = { nums: [], updated: '' };
 return unreservableCache;
 }
 async function saveUnreservable() {
+if (!requireManager()) return;
 unreservableCache.updated = todayISO();
 await storageSet('ifm-unreservable', unreservableCache);
 }
@@ -7762,7 +7956,7 @@ const HELP_TEXTS = [
 "body": "<p>Only vendors who submitted a booth request show up below automatically. Use this if someone called the office instead.</p>"
 },
 {
-"title": "Add a Vendor to This Saturday",
+"title": "Saturday Booth Selection Sheet",
 "body": "<p><strong>Priority order:</strong> Full Ag, then Full Food + Full Artisan together, then Easy Entry Ag vendors with more than 4 years at market, then everyone else Easy Entry (Food, Artisan, and Ag vendors in their first four years). Sorted by points within each tier.</p><p>Vendors without a reserved booth request one any time up to <strong>11:59&nbsp;PM Wednesday</strong>. The OpM then works the ranked list by phone on Thursday morning. Anything still open is handed out at an in-person Booth Selection on Saturday itself, 7:30&nbsp;AM (8:30&nbsp;AM in Nov/Dec). Priority tiers differ from Sunday's \u2014 see below.</p>"
 },
 {
@@ -7770,11 +7964,11 @@ const HELP_TEXTS = [
 "body": ""
 },
 {
-"title": "Dollars per Hour Owed",
+"title": "Work Hour Rate",
 "body": "<p>A rate applies to the whole of its own season and to no other. There is no proration part-way through a year: the Guide bills whatever is still owed at year end, so six hours short is six times that season&rsquo;s rate. A season with no rate of its own carries the last one set forward.</p><p>Vendors owe work hours for markets attended and pay a fee for any they don&rsquo;t work, billed by February 28th of the following year. The Vendor Guide prints <strong>$25 per hour owed</strong>, but annual fees are approved yearly by the Board, so the figure can change by vote.</p>"
 },
 {
-"title": "Rate by Season",
+"title": "Leaves of Absence",
 "body": "<p>Per the Vendor Guide, a Leave of Absence runs for <strong>one year only</strong> and needs Board approval, requested through an Exception Request (the Guide&rsquo;s &ldquo;Special Needs Request&rdquo;) in time for the December Board meeting. A vendor on Leave still pays the Application Fee and, if they hold one, the Reserved Booth Fee for that year. On return they choose in points order using the points they had in their last year of participation &mdash; nothing is spent. A vendor who returns from an <strong>unapproved</strong> Leave loses their seniority &mdash; points, banked work hours, and reserved booth.</p><p>A vendor recorded here is held out of Booth Selection and the Winter Market for the year of their Leave, the same way a vendor on a fees hold is.</p>"
 },
 {
@@ -7790,7 +7984,7 @@ const HELP_TEXTS = [
 "body": "<p>Winter Market spaces are reserved ahead of the date rather than chosen at a Booth Selection. One space per vendor per date. Numbering restarts in each atrium, so a space is always &ldquo;Bakery&nbsp;12&rdquo; or &ldquo;ReUse&nbsp;12&rdquo;, never just 12.</p><p><strong>Unconfirmed rule.</strong> The Vendor Guide sets the $30 Winter Market fee and says staff collect it on site, but the allocation rules live in the separate Winter Market Guidelines, which this app has never seen. First come, first served is an assumption. If winter spaces are meant to go in points order or be assigned by staff, this screen needs changing before anyone relies on it.</p>"
 },
 {
-"title": "Assign To",
+"title": "Winter Market Booths",
 "body": "<p>Tap an open space to give it to this vendor; tap a taken one to release it.</p>"
 },
 {
@@ -8662,6 +8856,7 @@ if (name === 'whrate') initWorkHourRateScreen();
 if (name === 'requirements') initRequirementsScreen();
 if (name === 'betareset') initBetaResetScreen();
 if (name === 'seedmerge') renderSeedMerge();
+if (name === 'selfaudit') renderSelfAudit();
 if (name === 'mydocs') initMyDocsScreen();
 if (name === 'boardflags') initBoardFlagsScreen();
 if (name === 'marketrules') initMarketRulesScreen();
@@ -8786,6 +8981,7 @@ volunteer:         { title: 'Volunteer' },
 venmopay:          { title: 'Pay Fees' },
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
+selfaudit:         { title: 'Self-Audit' },
 changechecklist:   { title: 'Version Update Checklist' },
 creativity:        { title: 'Creativity' },
 aboutedit:         { title: 'Information Screen Subjects' },
@@ -8833,6 +9029,7 @@ function shoulderSeasonDeclared() {
 return !!(cache.seasonFlags && cache.seasonFlags.shoulderDeclared);
 }
 async function setShoulderSeason(on) {
+if (!requireManager()) return;
 cache.seasonFlags = cache.seasonFlags || {};
 cache.seasonFlags.shoulderDeclared = !!on;
 cache.seasonFlags.declaredOn = on ? new Date().toISOString() : null;
@@ -9194,6 +9391,7 @@ const v = Math.round(Number(n) * 100) / 100;
 return v % 1 === 0 ? String(v) : v.toFixed(2);
 }
 async function setWorkHourRate(value, year) {
+if (!requireManager()) return;
 const r = Number(value);
 const yr = String(year || document.getElementById('whRateYear').value || new Date().getFullYear());
 if (!isFinite(r) || r <= 0) {
@@ -9459,6 +9657,7 @@ return satAttendanceCount(b.v.vendorId) - satAttendanceCount(a.v.vendorId);
 });
 }
 async function satNoAnswer() {
+if (!requireMarketRole()) return;
 const date = document.getElementById('satLottoDate').value;
 const rec = lottoRec('saturday');
 const pool = lottoPool('saturday', date);
@@ -9587,6 +9786,7 @@ lottoRenderSections(kind);
 if (kind === 'sunday') renderShareReview();
 }
 async function lottoSaveMeta(kind) {
+if (!requireMarketRole()) return;
 lottoRec(kind).openBooths = lottoEl(kind, 'extra').value;
 await storageSet('ifm-lottery', cache.lottery);
 }
@@ -9660,6 +9860,7 @@ k.turnSub(v) + '</div>' +
 if (noAnswer && k.showNoAnswer && k.showNoAnswer() && openCount) noAnswer.style.display = '';
 }
 async function lottoAssignNext(kind, boothNum) {
+if (!requireMarketRole()) return;
 const date = lottoDateOf(kind);
 const rec = lottoRec(kind);
 const pool = lottoPool(kind, date);
@@ -9674,6 +9875,7 @@ lottoRenderBooths(kind);
 lottoRenderSections(kind);
 }
 async function lottoUnassign(kind, boothNum) {
+if (!requireMarketRole()) return;
 const rec = lottoRec(kind);
 const vid = Object.keys(rec.assignments).find(v => rec.assignments[v] === boothNum);
 if (vid) delete rec.assignments[vid];
@@ -9774,12 +9976,14 @@ input.oninput = () => lottoSaveBooth(kind, input.dataset.vid, input.value);
 });
 }
 async function lottoDropVendor(kind, vendorId) {
+if (!requireMarketRole()) return;
 lottoRec(kind).manualCheck[vendorId] = false;
 await storageSet('ifm-lottery', cache.lottery);
 lottoRenderBooths(kind);
 lottoRenderSections(kind);
 }
 async function lottoSaveBooth(kind, vendorId, value) {
+if (!requireMarketRole()) return;
 lottoRec(kind).assignments[vendorId] = value;
 await storageSet('ifm-lottery', cache.lottery);
 lottoRenderBooths(kind);
@@ -9826,6 +10030,7 @@ document.getElementById('hrsGoalBG').value = cache.hoursGoals.bg;
 renderHoursReport();
 }
 async function saveHoursGoals() {
+if (!requireManager()) return;
 const total = document.getElementById('hrsGoalTotal').value;
 const bg = document.getElementById('hrsGoalBG').value;
 cache.hoursGoals = { total, bg };
@@ -9983,6 +10188,7 @@ list.appendChild(row);
 document.getElementById('winterDateListEmpty').style.display = sorted.length ? 'none' : 'block';
 }
 async function addWinterDate() {
+if (!requireManager()) return;
 const date = document.getElementById('wmDate').value;
 const location = document.getElementById('wmLocation').value.trim();
 const notes = document.getElementById('wmNotes').value.trim();
@@ -10000,6 +10206,7 @@ showMsg('wmStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></
 renderWinterDatesAdmin();
 }
 async function deleteWinterDate(id, btn) {
+if (!requireManager()) return;
 const w = cache.wintermarket.find(x => x.id === id);
 if (!w) return;
 if (btn && !armedButtons.has(btn)) {
@@ -10082,6 +10289,7 @@ if (isNaN(d)) return iso;
 return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 async function addPopup() {
+if (!requireManager()) return;
 const name = document.getElementById('ppName').value.trim();
 const date = document.getElementById('ppDate').value;
 const location = document.getElementById('ppLocation').value.trim();
@@ -10101,6 +10309,7 @@ showMsg('ppStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></
 renderPopups();
 }
 async function deletePopup(id, btn) {
+if (!requireManager()) return;
 const p = cache.popups.find(x => x.id === id);
 if (!p) return;
 if (btn && !armedButtons.has(btn)) {
@@ -11081,7 +11290,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-111';
+const BUILD_ID = '13-113';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13353,6 +13562,7 @@ await storageSet('ifm-leaves', cache.leaves);
 renderLeaves();
 }
 async function clearLeaveSeniority(l) {
+if (!requireManager()) return;
 const pts = vendorPoints(l.vendorId);
 if (pts !== 0) {
 cache.ledger.push({
@@ -13998,6 +14208,7 @@ wrap.appendChild(row);
 });
 }
 async function addRequirement() {
+if (!requireManager()) return;
 const name = document.getElementById('reqNewName').value.trim();
 if (!name) { showMsg('reqNewMsg', 'err', 'Give the requirement a name.'); return; }
 const mode = document.getElementById('reqNewApplies').value;
@@ -14029,6 +14240,7 @@ showMsg('reqNewMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></sv
 renderRequirementList();
 }
 async function deleteRequirement(id) {
+if (!requireManager()) return;
 cache.requirements.reqs = cache.requirements.reqs.filter(r => r.id !== id);
 Object.keys(cache.requirements.status).forEach(k => {
 if (k.indexOf(id + '|') === 0) delete cache.requirements.status[k];
@@ -14075,6 +14287,7 @@ sel.appendChild(o);
 });
 }
 async function addVendorToRequirement() {
+if (!requireManager()) return;
 const req = cache.requirements.reqs.find(r => r.id === reqOpenId);
 if (!req) return;
 const id = document.getElementById('reqAddVendorSel').value;
@@ -14090,6 +14303,7 @@ showMsg('reqRosterMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use><
 esc(v ? v.businessName : 'Vendor') + ' added.');
 }
 async function removeVendorFromRequirement(vendorId) {
+if (!requireManager()) return;
 const req = cache.requirements.reqs.find(r => r.id === reqOpenId);
 if (!req) return;
 req.vendorIds = (req.vendorIds || []).filter(x => x !== vendorId);
@@ -14100,6 +14314,7 @@ renderRequirementRoster();
 renderRequirementList();
 }
 async function setRequirementField(vendorId, field, value) {
+if (!requireManager()) return;
 if (!reqOpenId) return;
 const key = reqStatusKey(reqOpenId, vendorId);
 const rec = cache.requirements.status[key] || { state: 'missing', expiry: '', ref: '' };
@@ -15194,7 +15409,13 @@ showMsg('auMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> B
 }
 function requireManager(msgId) {
 if (currentRole === 'manager') return true;
-if (msgId) showMsg(msgId, 'err', 'Only the Market Manager can change booth records.');
+if (msgId) showMsg(msgId, 'err', 'Only the Market Manager can change these records.');
+return false;
+}
+// The Sunday and Saturday desks are run by staff as often as by the manager.
+function requireMarketRole(msgId) {
+if (currentRole === 'manager' || currentRole === 'staff') return true;
+if (msgId) showMsg(msgId, 'err', 'Only the Market Manager or staff can change this.');
 return false;
 }
 async function assignAuctionBooth() {
@@ -15631,6 +15852,7 @@ wrap.appendChild(card);
 });
 }
 async function reviewSubmission(reqId, vendorId, decision) {
+if (!requireManager()) return;
 const key = reqStatusKey(reqId, vendorId);
 const rec = cache.requirements.status[key];
 if (!rec) return;
