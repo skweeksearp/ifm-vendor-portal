@@ -8109,7 +8109,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Ithaca Farmers Market",
-"body": "<p>This is a demo/beta build. The first five buttons \u2014 Members/Vendors, Market Manager, Staff, Volunteer, Developer \u2014 are stand-ins for real login; pick the role you want to preview. The last one is the customer-facing kiosk that runs on the touchscreen during market hours.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
+"body": "<p>This is a demo/beta build. The four buttons at the top \u2014 Members/Vendors, Market Manager, Staff, Volunteer \u2014 stand in for a real login; pick the role you want to preview. <b>Kiosk</b> is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself \u2014 what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
 },
 {
 "title": "Recent Entries",
@@ -8133,6 +8133,7 @@ const h = HELP_TEXTS[i];
 if (!h) return;
 document.getElementById('helpTitle').textContent = h.title;
 document.getElementById('helpBody').innerHTML = h.body;
+stampBuild();
 document.getElementById('helpModal').style.display = 'flex';
 }
 const PLANNED = {
@@ -11290,7 +11291,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-115';
+const BUILD_ID = '13-116';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
