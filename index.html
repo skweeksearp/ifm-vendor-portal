@@ -2154,6 +2154,7 @@ I sell food (prepared food or produce)
 <div class="fold-body"></div>
 </div>
 <p class="empty-note" id="menuTailorNote" style="margin: 14px 0 4px; text-align:center;"></p>
+<button type="button" class="ghost-btn" id="deskOrderReset" style="display:none;" onclick="resetDeskOrder(this)">Put the drawers back in their usual order</button>
 </section>
 <section id="screen-winter" class="screen">
 <div class="screen-head" id="head-winter"></div>
@@ -7425,13 +7426,24 @@ document.getElementById('volRoleCard').innerHTML =
 '<p><b>At the market:</b> ' + r.at + '</p>' +
 '<p class="empty-note">' + r.note + '</p>';
 }
-// ----- Movable desk: drawer order persists in 'ifm-desk-order' -----
+// ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
+const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'hours', 'fPoints', 'mycommittees',
+'fShare', 'directory', 'venmopay', 'mydocs', 'myattend', 'guide', 'communicate'];
 let deskDragAttached = false;
 let deskOrderCache = null;
+async function loadDeskOrders() {
+const v = await storageGet('ifm-desk-order');
+if (v === STORAGE_MISSING || !v) return {};
+// A bare list is the old shared arrangement. Nobody owns it, so it is dropped
+// rather than handed to whichever vendor signs in next.
+return Array.isArray(v) ? {} : v;
+}
 async function applyDeskOrder() {
-let saved = await storageGet('ifm-desk-order');
-if (saved === STORAGE_MISSING || !Array.isArray(saved)) saved = deskOrderCache;
-if (!Array.isArray(saved)) return;
+const all = await loadDeskOrders();
+let saved = all[currentVendorId];
+if (!Array.isArray(saved)) saved = deskOrderCache && deskOrderCache.id === currentVendorId ? deskOrderCache.order : null;
+updateDeskOrderReset(Array.isArray(saved));
+if (!Array.isArray(saved)) saved = DESK_DEFAULT_ORDER;
 const dash = document.getElementById('screen-dashboard');
 const note = document.getElementById('menuTailorNote');
 const byKey = {};
@@ -7443,8 +7455,31 @@ seq.forEach(k => dash.insertBefore(byKey[k], note));
 async function saveDeskOrder() {
 const dash = document.getElementById('screen-dashboard');
 const order = Array.from(dash.querySelectorAll(':scope > .dash-fold')).map(f => f.dataset.fold).filter(Boolean);
-deskOrderCache = order;
-await storageSet('ifm-desk-order', order);
+deskOrderCache = { id: currentVendorId, order: order };
+const all = await loadDeskOrders();
+all[currentVendorId] = order;
+await storageSet('ifm-desk-order', all);
+updateDeskOrderReset(true);
+}
+// Dragging a drawer is easy to do by accident and hard to undo by hand.
+async function resetDeskOrder(btn) {
+confirmTap(btn, async () => {
+const all = await loadDeskOrders();
+delete all[currentVendorId];
+deskOrderCache = null;
+await storageSet('ifm-desk-order', all);
+const dash = document.getElementById('screen-dashboard');
+const note = document.getElementById('menuTailorNote');
+DESK_DEFAULT_ORDER.forEach(k => {
+const f = dash.querySelector(':scope > .dash-fold[data-fold="' + k + '"]');
+if (f) dash.insertBefore(f, note);
+});
+updateDeskOrderReset(false);
+});
+}
+function updateDeskOrderReset(custom) {
+const b = document.getElementById('deskOrderReset');
+if (b) b.style.display = custom ? '' : 'none';
 }
 function attachDeskDrag() {
 if (deskDragAttached) return;
@@ -8125,6 +8160,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-feecart', t: 'Fee baskets', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-alert-seen', t: 'Notices vendors have dismissed', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-desk-order', t: 'Drawer arrangements vendors have made on their own desks', v: () => ({}) },
 { g: 'traffic', t: 'Seed birth stamps and the record of what they corrected', run: async () => {
 for (const cfg of SEED_MERGE) await storageSet(cfg.birth, null);
 await storageSet('ifm-seed-merge-log', []);
@@ -11045,7 +11081,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-110';
+const BUILD_ID = '13-111';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
