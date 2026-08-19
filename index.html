@@ -3785,6 +3785,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Order of Choosing</h2>
+<p class="empty-note" id="auStanding" style="margin-top:0; display:none;"></p>
 <div id="auQueue"></div>
 </div>
 </section>
@@ -11043,7 +11044,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-106';
+const BUILD_ID = '13-107';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -15030,6 +15031,9 @@ function initAuctionScreen() {
 const h = document.getElementById('auHeading');
 if (h) h.textContent = selectionSeason() + ' Season-Long Booth Reservations';
 document.getElementById('auMsg').className = 'status-msg';
+const vendor = currentRole === 'vendor' ? currentVendor() : null;
+const kind = document.getElementById('auKind');
+if (vendor && kind) kind.value = (vendor.category || '').endsWith('Full') ? 'sat' : 'sun';
 renderAuction();
 }
 function renderAuction() {
@@ -15068,6 +15072,23 @@ sel.appendChild(o);
 renderHeldBooths();
 const q = document.getElementById('auQueue');
 q.innerHTML = '';
+const me = currentRole === 'vendor' ? currentVendorId : null;
+const myPlace = me ? queue.findIndex(e => e.v.vendorId === me) : -1;
+const standing = document.getElementById('auStanding');
+if (standing) {
+if (!me) { standing.style.display = 'none'; }
+else {
+standing.style.display = '';
+const kindWord = kind === 'sat' ? 'the Saturday round' : 'the Sunday-only round';
+standing.textContent = myPlace >= 0
+? 'You are ' + ordinal(myPlace + 1) + ' of ' + queue.length + ' still to choose in ' + kindWord + '.'
+: (state.assigned[me]
+? 'You have booth ' + state.assigned[me] + ' from ' + kindWord + '.'
+: 'You are not in ' + kindWord + '. ' + (kind === 'sat'
+? 'The Saturday round is for Full Members only.'
+: 'Everyone still choosing has already been through it.'));
+}
+}
 queue.slice(0, 25).forEach((e, i) => {
 const row = document.createElement('div');
 row.className = 'req-row';
@@ -15076,6 +15097,10 @@ esc(e.v.businessName) + '</div><div class="req-meta">' + e.pts + ' points \u00b7
 esc(e.v.category || '') + '</div></div>';
 q.appendChild(row);
 });
+}
+function ordinal(n) {
+const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 function renderHeldBooths() {
 const wrap = document.getElementById('auHeld');
