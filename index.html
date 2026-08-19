@@ -2896,6 +2896,13 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-arrows-cycle"></use></svg></span>After a Major Change, Sweep These</h2>
 <p class="empty-note" style="margin-top:0;">A rename, a moved tool, or a rephrasing ripples further than the screen it happens on. This is the sweep list &mdash; each entry is a place stale wording has actually been found.</p>
+<div class="comm-item"><div class="comm-title">A screen is described in five places</div><div class="comm-desc">Change what a tool <em>is</em> and five separate texts go stale, each written at a different time and none of them next to the others in the file. Walk all five, every time:
+<br>&bull; <b>The desk tile</b> &mdash; the folder entry in <code>MGR_FOLDERS</code>, or the drawer&rsquo;s <code>fold-sub</code> on the vendor desk.
+<br>&bull; <b>The screen&rsquo;s own intro</b> &mdash; the <code>empty-note</code> under its heading.
+<br>&bull; <b>The help dot</b> &mdash; its entry in <code>HELP_TEXTS</code>, found by index and easy to mismatch. Read the title as well as the body: entry 45 sat under the wrong screen&rsquo;s name for months.
+<br>&bull; <b>Plain Words</b> &mdash; if the market has its own name for the thing.
+<br>&bull; <b>Anywhere else that names it</b> &mdash; alerts, Records Needed, planned-tool explainers, other tools&rsquo; summaries.
+<br>Absence Patterns was rebuilt to watch deadlines rather than count absences, and for two builds the tile, the help dot and Plain Words all still described the leaderboard it had stopped being. A screen that contradicts its own description teaches people not to trust either.</div></div>
 <div class="comm-item"><div class="comm-title">Help dots</div><div class="comm-desc">Every &ldquo;?&rdquo; whose screen changed. A rebuilt screen can orphan its help dot entirely &mdash; check the dot still exists, and that its text describes the screen as it now stands.</div></div>
 <div class="comm-item"><div class="comm-title">Explainers behind cones</div><div class="comm-desc">Planned-tool text that names other tools, desks, or old vocabulary &mdash; including the footer state when a cone comes off.</div></div>
 <div class="comm-item"><div class="comm-title">Plain Words</div><div class="comm-desc">If the market&rsquo;s vocabulary moved, the ledger records it &mdash; old word kept in quotation marks as the bridge.</div></div>
@@ -7814,8 +7821,8 @@ const HELP_TEXTS = [
 "body": "<p>Saturdays, January&ndash;March, usually at Triphammer Marketplace. No booth request or absence notice applies here &mdash; add each date as it's scheduled, then record points for vendors who attended from Points Manager.</p>"
 },
 {
-"title": "All Winter Market Dates",
-"body": "<p>Vendors ranked by how many absences they have reported, most first. A high count isn't automatically a problem \u2014 just something worth a look.</p>"
+"title": "Absence Patterns",
+"body": "<p>Being away is not the problem \u2014 the market plans around an absence it knows about. What this screen watches is whether the office was told in time: absences reported on time, reported late, and days with no notice at all.</p><p>The two deadlines are compared side by side. When one is missed far more often <em>and</em> by several different vendors, that points at the deadline rather than at the people \u2014 a rule worth revisiting, not fifteen separate conversations.</p><p>Only vendors who were late or gave no notice are listed, each shown alongside how often they got it right. Anyone who always gave notice is counted in a closing line rather than named.</p><p>All of this depends on the notice carrying a submission time. A notice phoned in to the office has none, so it cannot be judged late and is not counted here.</p>"
 },
 {
 "title": "Data Export",
@@ -11002,7 +11009,7 @@ const PLAIN_WORDS_CHANGED = [
 { a: 'Exception Request', g: 'Special Needs Request', d: 'A request to the Board to allow something the rules otherwise do not: a late fee, an attendance shortfall, a Leave of Absence, a disability accommodation. The Guide defines it as an action outside current policy, so the name reads today as though it were only for accommodations.' },
 { a: 'Value-Added Farm Products', g: 'Enhanced Agricultural Products', d: 'A product an Ag vendor makes from what they grow \u2014 at least 75% farm-grown ingredient. Nothing is enhanced or fortified; value-added is the ordinary term in agriculture.' },
 { a: 'Membership share', g: 'Certificate of Membership', d: '$300, payable over three years, carrying $100 of equity that a departing member may claim in writing. It is a buy-in, not a document you are handed.' },
-{ a: 'Absence Patterns', g: 'Call-Out Patterns', d: 'Counts how often each vendor has told the office they will be away. A high count is not automatically a problem.' },
+{ a: 'Absence Patterns', g: 'Call-Out Patterns', d: 'Whether the office was told in time \u2014 on time, late, or not at all. Not a count of absences: telling the office is the thing the market wants, so counting absences would rank vendors by doing the right thing.' },
 { a: 'A vendor\u2019s place at the market ends', g: 'considered to have left the market', d: 'What happens after 15 January with renewal forms or fines outstanding. Nobody has left: the market is closing the door. Worth wording plainly in the letter that goes out.' },
 ];
 const PLAIN_WORDS_KEPT = [
@@ -11035,7 +11042,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-100';
+const BUILD_ID = '13-103';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -16813,7 +16820,7 @@ body.appendChild(note);
 }
 const MGR_FOLDERS = [
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
-sub: 'Who stands where: ranked by points, each picks in turn \u2014 never drawn, never bid',
+sub: 'Running the selections \u2014 booths given out for a day, a season, the winter, and the pool held back from all of it',
 tiles: [
 { s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
 { s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
@@ -16846,7 +16853,7 @@ tiles: [
 { soon: 'pointsroll', s: 'pointsroll', i: 'i-star', t: 'Annual Points Rollover', d: 'Sets the ranking every selection uses' },
 { s: 'standing', i: 'i-warning', t: 'Vendor Standing', d: 'Fees, insurance, and who may have quit' },
 { s: 'leaves', i: 'i-calendar', t: 'Leaves of Absence', d: 'Approvals, fees, seniority' },
-{ s: 'calloutpatterns', i: 'i-phone', t: 'Absence Patterns', d: 'Who reports absences most often' },
+{ s: 'calloutpatterns', i: 'i-phone', t: 'Absence Patterns', d: 'Who is missing the deadline \u2014 and whether a deadline is the problem' },
 { soon: 'attendreq', s: 'attendreq', i: 'i-checkmark', t: 'Attendance Requirement', d: 'What holding a reserved booth obliges' },
 { soon: 'fines', s: 'fines', i: 'i-scale', t: 'Fines &amp; Penalties', d: 'What is owed, with the escalation' },
 { soon: 'disciplinary', ot: 'disciplinary', i: 'i-warning', t: 'Disciplinary Record', d: 'Which stage a vendor is at' },
