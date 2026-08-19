@@ -2874,7 +2874,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="screen-head" id="head-unreservable"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-no-entry"></use></svg></span>Unreservable Booths</h2>
-<p class="empty-note" style="margin-top:0;">The booths no reservation can be taken on &mdash; the pool the Operations Manager hands out Thursday morning as part of the call-in round. The Guide requires this list to be updated <b>before the March Booth Selection each year</b>, once non-returning vendors are known.</p>
+<p class="empty-note" style="margin-top:0;">Booths no reservation can be taken on, available to vendors seeking a booth for Saturday or Sunday assignment. They are first handed out in the Thursday call-in round and stay in the pool for the in-person rounds after it. The Guide requires this list to be updated <b>before the March round each year</b>, once non-returning vendors are known.</p>
 <p class="empty-note" id="urStamp"></p>
 <label for="urAdd">Add a booth to the list</label>
 <div style="display:flex; gap:8px;">
@@ -11043,7 +11043,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-104';
+const BUILD_ID = '13-105';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -16032,6 +16032,9 @@ d: 'The Guide says vendors sign in at the office. The app implements online sign
 { id: 'BF05', kind: 'discrepancy', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
 t: 'Late-absence fine escalation: settled, worth confirming',
 d: 'The fines table footnote says fines increase in $50 increments for each offence, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
+{ id: 'BF16', kind: 'gap', cat: 'Booths', src: 'Vendor Guide, Non-reservable Stalls',
+t: 'Unreservable booths: the Guide names Thursday and nothing else',
+d: 'One sentence covers it \u2014 the OpM assigns these stalls on Thursday morning as part of the call-in process. Saturday morning and Sunday are never mentioned in connection with them. Nothing suggests they are withheld: no reservation can be taken on them, both in-person rounds assign from whatever is open, and there is nothing they could be held back for. The app now says they are available to vendors seeking a booth for Saturday or Sunday, first handed out in the Thursday round. Two things for the OpM to confirm. First, that Sunday really does draw from the same pool. Second, whether the office ever holds one back on the day \u2014 for a vendor whose plans changed, or for a second business in the family. The Guide gives no such priority: a vendor\u2019s second business enters the lottery on its own points and status, and a reserved-booth holder may not enter the daily lottery at all outside shoulder season. But discretion is written into the day-of decisions, so a practice could exist that the Guide never records.' },
 { id: 'BF15', kind: 'gap', cat: 'Permissions', src: 'App defect \u2014 found in testing',
 t: 'Who can operate what has never been audited across the whole app',
 d: 'The Season-Long Booth Reservations screen is on both the vendor desk and the manager\u2019s, and until this build it handed vendors the manager\u2019s controls: assigning a booth to the next vendor in line, passing a turn, and releasing anyone\u2019s booth. It is now gated in two places \u2014 the controls are hidden for anyone but the manager, and the functions refuse to run for anyone else \u2014 but the fix was made to the one screen where the fault was seen. Every other screen that appears on more than one desk needs the same reading. A sweep of the vendor desk then found four more of the same kind, all now manager-only: Sign In a Vendor and Shared Booths on the Sunday Booth Selection, both Printable Sheet cards, and Browse by Date \u2014 a calendar that listed every vendor by name with what they had requested or reported, on any vendor\u2019s phone. Who Holds What went too: a vendor has the Rolodex, and a manager\u2019s ledger of every holding answers nothing the Rolodex does not answer better. What remains to audit is the staff, volunteer and kiosk desks, and the question of whether one vendor should see another\u2019s absences at all \u2014 the app now says no, which nobody has confirmed.' },
@@ -16829,7 +16832,7 @@ tiles: [
 t: () => selectionSeason() + ' Season-Long Booth Reservations',
 d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
 { s: 'winterbooths', i: 'i-snowflake', t: 'Winter Market Booths', d: 'Triphammer spaces, assigned by date' },
-{ s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'The Thursday pool \u2014 updated before the March Booth Selection' },
+{ s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
 ] },
 { key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
 sub: 'The plan for the day itself',
