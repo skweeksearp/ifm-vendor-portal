@@ -3218,13 +3218,57 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </section>
 <section id="screen-callinout" class="screen">
 <div class="screen-head" id="head-callinout"></div>
-<p class="empty-note" style="margin:-4px 0 14px;" id="cioLede">Long called &ldquo;calling in&rdquo; and &ldquo;calling out.&rdquo; One form, two opposite jobs: ask for a booth at a market you don&rsquo;t hold, or tell the office you&rsquo;ll be away from one you do.</p>
+<p class="empty-note" style="margin:-4px 0 14px;" id="cioLede">&ldquo;Calling in,&rdquo; as plenty of vendors still do by phone \u2014 this is the same ask, sent from your pocket: a booth at a market you don&rsquo;t hold, or notice that you&rsquo;ll be awice you&rsquo;ll be away from one you do.</p>
 <div class="card" id="cioContextCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span><span id="cioContextTitle"></span></h2>
 <p class="empty-note" style="margin-top:0;" id="cioContextText"></p>
 <p class="empty-note" id="cioStillCallIn" style="margin-bottom:0;"></p>
 </div>
-<div class="card">
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Record One for a Vendor</h2>
+<p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. Absences, booth requests, shares, documents, improvement proposals: entered here each is the same record the vendor&rsquo;s own screen would have made, judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
+<label for="obVendor">Vendor</label>
+<select id="obVendor" onchange="fillObRequirements()"></select>
+<label for="obKind">What they told you</label>
+<select id="obKind" onchange="toggleObKind()">
+<option value="Out">They will be away &mdash; an absence</option>
+<option value="In">They want a booth &mdash; a request</option>
+<option value="share">They are sharing their booth with somebody</option>
+<option value="doc">They sent a document &mdash; insurance, permit, licence</option>
+<option value="improve">They propose a booth improvement</option>
+</select>
+<div id="obShareWrap" style="display:none;">
+<label for="obGuest">Who is joining them in the booth</label>
+<select id="obGuest"></select>
+<label for="obFamily">Same family?</label>
+<select id="obFamily"><option value="no">Separate businesses</option><option value="yes">Same family</option></select>
+</div>
+<div id="obDocWrap" style="display:none;">
+<label for="obReq">Which document</label>
+<select id="obReq"></select>
+</div>
+<div id="obImpWrap" style="display:none;">
+<label for="obImpTitle">Title</label>
+<input type="text" id="obImpTitle" placeholder="e.g. New tilting counter with shelf below">
+<label for="obImpDesc">Describe the work</label>
+<input type="text" id="obImpDesc" placeholder="Materials, dimensions, and what changes">
+<label for="obImpBooth">Booth</label>
+<input type="text" id="obImpBooth" placeholder="e.g. 34">
+</div>
+<label for="obDate">Market day it concerns</label>
+<input type="date" id="obDate">
+<label for="obWhen">When they told the office</label>
+<input type="datetime-local" id="obWhen">
+<label for="obChannel">How it arrived</label>
+<select id="obChannel">
+<option>Phone</option><option>Email</option><option>Mail</option><option>In person</option>
+</select>
+<label for="obNote">Note (optional)</label>
+<input type="text" id="obNote" placeholder="e.g. left on the office voicemail Tuesday evening">
+<button type="button" class="primary-btn" onclick="recordForVendor()"><svg class="ico"><use href="#i-checkmark"></use></svg> Record it</button>
+<div class="status-msg" id="obMsg"></div>
+</div>
+<div class="card" id="cioFormCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-leaf-branch"></use></svg></span><span id="cioFormTitle">Request a Booth</span><button type="button" class="help-dot" onclick="showHelp(33)" aria-label="What are the rules here?">?</button></h2>
 <label style="margin-top:16px;" id="cioDateLabel">Select Day(s) — tap as many as you need</label>
 <div style="display:flex; gap:8px; margin-bottom:10px;" id="cioBulkBtns">
@@ -7454,6 +7498,8 @@ await saveUnreservable();
 renderUnreservable();
 }
 const PRINCIPLES = [
+{ t: 'Optional for vendors, indispensable to the office',
+d: 'The app exists to lighten the Market Manager\u2019s record-keeping, not to make vendors use software. Many have sold here for decades and tell the market things by phone, email, post, or across the desk \u2014 and will keep doing so. Those channels are first-class forever: every record a vendor could enter themselves must also be enterable by the office on their behalf, and no vendor-facing text may speak of the old ways as over. The measure of this app is the manager\u2019s ledger, not the vendor\u2019s screen time.' },
 { t: 'Sandbox first, and batch the builds',
 d: 'A new feature is built as a small standalone file and tried on the device before it goes anywhere near the app: an eighteen-kilobyte sandbox costs almost nothing to send and to look at, while the app itself is over a megabyte. The same thrift applies to changes inside the app \u2014 several small edits should ride out together in one build rather than one build each. Where judgement about feel is needed, the sandbox carries the controls so the person deciding can find the answer themselves instead of describing it.' },
 { t: 'The market sets prices, not the app',
@@ -7565,6 +7611,115 @@ updatePaySub();
 renderVpList();
 }
 
+// The office's side of the phone call. The record is the vendor's own \u2014 the
+// only extra facts kept are how it arrived and that the office typed it.
+function initRecordForVendor() {
+if (currentRole !== 'manager') return;
+const opts = cache.vendors.slice().sort((a, b) => a.businessName.localeCompare(b.businessName))
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+['obVendor', 'obGuest'].forEach(id => {
+const sel = document.getElementById(id);
+if (sel && !sel.dataset.filled) { sel.innerHTML = opts; sel.dataset.filled = '1'; }
+});
+toggleObKind();
+const when = document.getElementById('obWhen');
+if (when && !when.value) {
+const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+when.value = d.toISOString().slice(0, 16);
+}
+}
+function toggleObKind() {
+const k = (document.getElementById('obKind') || {}).value;
+const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+show('obShareWrap', k === 'share');
+show('obDocWrap', k === 'doc');
+show('obImpWrap', k === 'improve');
+const dateLbl = document.querySelector('label[for="obDate"]');
+if (dateLbl) dateLbl.textContent = k === 'doc' ? 'Date they sent it'
+: k === 'improve' ? 'Date it arrived' : 'Market day it concerns';
+if (k === 'doc') fillObRequirements();
+}
+function fillObRequirements() {
+if ((document.getElementById('obKind') || {}).value !== 'doc') return;
+const vid = (document.getElementById('obVendor') || {}).value;
+const sel = document.getElementById('obReq');
+if (!sel) return;
+const reqs = vendorRequirements(vid);
+sel.innerHTML = reqs.length
+? reqs.map(r => '<option value="' + esc(r.id) + '">' + esc(r.name) + '</option>').join('')
+: '<option value="">No requirement applies to this vendor</option>';
+}
+async function recordForVendor() {
+if (!requireManager('obMsg')) return;
+const vendorId = document.getElementById('obVendor').value;
+const marketDate = document.getElementById('obDate').value;
+const status = document.getElementById('obKind').value;
+const whenStr = document.getElementById('obWhen').value;
+const channel = document.getElementById('obChannel').value;
+const note = document.getElementById('obNote').value.trim();
+if (!vendorId || !marketDate) { showMsg('obMsg', 'err', 'Pick the vendor and the market day.'); return; }
+if (!whenStr) { showMsg('obMsg', 'err', 'Say when they told the office \u2014 that is what the deadline is judged against.'); return; }
+const told = new Date(whenStr).getTime();
+const name = esc(boothVendorName(vendorId) || vendorId);
+const via = channel === 'In person' ? ', told the office in person.' : ', told the office by ' + esc(channel.toLowerCase()) + '.';
+if (status === 'share') {
+const guestId = document.getElementById('obGuest').value;
+if (guestId === vendorId) { showMsg('obMsg', 'err', 'A booth is shared with somebody else.'); return; }
+const ownDay = shareOwnBoothFor(vendorId, marketDate);
+if (!ownDay) { showMsg('obMsg', 'err', name + ' has no booth on the books for that day to share.'); return; }
+const taken = (cache.boothShares || []).filter(s =>
+s.date === marketDate && s.boothNum === ownDay.num && s.status !== 'denied');
+if (taken.length) { showMsg('obMsg', 'err', 'Booth ' + esc(ownDay.num) + ' already has a second business that day \u2014 the Guide allows two in a booth.'); return; }
+cache.boothShares = cache.boothShares || [];
+cache.boothShares.push({ id: 'bs' + Date.now(), vendorId: guestId, date: marketDate, boothNum: ownDay.num,
+hostVendorId: vendorId, sameFamily: document.getElementById('obFamily').value === 'yes',
+status: 'reported', reportedAt: told, channel: channel, recordedBy: 'office' });
+await storageSet('ifm-booth-shares', cache.boothShares);
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded: ' +
+esc(boothVendorName(guestId)) + ' sharing booth ' + esc(ownDay.num) + ' with ' + name +
+' on ' + esc(formatDisplayDate(marketDate)) + via + ' It still needs allowing for the day.');
+} else if (status === 'doc') {
+const reqId = document.getElementById('obReq').value;
+if (!reqId) { showMsg('obMsg', 'err', 'No requirement applies to this vendor.'); return; }
+const key = reqStatusKey(reqId, vendorId);
+const rec = cache.requirements.status[key] || { state: 'missing', expiry: '', ref: '' };
+rec.state = 'pending';
+rec.sentOn = marketDate;
+rec.reportedAt = todayISO();
+rec.reviewNote = '';
+rec.channel = channel;
+rec.recordedBy = 'office';
+cache.requirements.status[key] = rec;
+await storageSet('ifm-requirements', cache.requirements);
+await saveSubmissions();
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Noted as sent by ' + name + via +
+' Mark it received on Vendor Requirements once it arrives.');
+} else if (status === 'improve') {
+const title = document.getElementById('obImpTitle').value.trim();
+if (!title) { showMsg('obMsg', 'err', 'Give the proposal a title.'); return; }
+await loadImprovements();
+improveCache.push({ id: 'I' + Date.now(), vendorId: vendorId,
+booth: document.getElementById('obImpBooth').value.trim(),
+category: 'structure',
+title: title, desc: document.getElementById('obImpDesc').value.trim(),
+drawings: 'ready', created: marketDate, status: 'Submitted', meeting: '', note: note,
+channel: channel, recordedBy: 'office' });
+await storageSet('ifm-improvements', improveCache);
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Proposal recorded for ' + name + via +
+' It joins the B&amp;G queue like any other.');
+} else {
+const already = cache.callinout.find(r => r.vendorId === vendorId && r.marketDate === marketDate);
+cache.callinout.push({ vendorId: vendorId, marketDate: marketDate, status: status,
+submittedAt: told, channel: channel, recordedBy: 'office',
+note: note });
+await storageSet('ifm-callinout', cache.callinout);
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded for ' + name + ' \u2014 ' +
+(status === 'Out' ? 'away' : 'requesting') + ' on ' + esc(formatDisplayDate(marketDate)) + via +
+(already ? ' They already had a record for that day \u2014 both are kept, newest wins where it matters.' : ''));
+}
+document.getElementById('obNote').value = '';
+renderCalendar && renderCalendar();
+}
 function myPayments() {
 return ((vpCache && vpCache.items) || []).filter(it => it.vendorId === currentVendorId);
 }
@@ -8101,7 +8256,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Absence Patterns",
-"body": "<p>Being away is not the problem \u2014 the market plans around an absence it knows about. What this screen watches is whether the office was told in time: absences reported on time, reported late, and days with no notice at all.</p><p>The two deadlines are compared side by side. When one is missed far more often <em>and</em> by several different vendors, that points at the deadline rather than at the people \u2014 a rule worth revisiting, not fifteen separate conversations.</p><p>Only vendors who were late or gave no notice are listed, each shown alongside how often they got it right. Anyone who always gave notice is counted in a closing line rather than named.</p><p>All of this depends on the notice carrying a submission time. A notice phoned in to the office has none, so it cannot be judged late and is not counted here.</p>"
+"body": "<p>Being away is not the problem \u2014 the market plans around an absence it knows about. What this screen watches is whether the office was told in time: absences reported on time, reported late, and days with no notice at all.</p><p>The two deadlines are compared side by side. When one is missed far more often <em>and</em> by several different vendors, that points at the deadline rather than at the people \u2014 a rule worth revisiting, not fifteen separate conversations.</p><p>Only vendors who were late or gave no notice are listed, each shown alongside how often they got it right. Anyone who always gave notice is counted in a closing line rather than named.</p><p>All of this depends on the notice carrying a submission time. Notices the office records on a vendor\u2019s behalf carry the time the vendor told them, whatever the channel \u2014 so a phoned-in notice counts, judged by the phone call, not the typing.</p>"
 },
 {
 "title": "Data Export",
@@ -9018,7 +9173,7 @@ kiosk:             { title: 'Information Kiosk' },
 leaves:            { title: 'Leaves of Absence' },
 whrate:            { title: 'Work Hour Rate' },
 popupsvendor:      { title: 'PopUp Events' },
-callinout:         { title: () => cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth' },
+callinout:         { title: () => currentRole !== 'vendor' ? 'Requests & Absences' : (cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth') },
 hours:             { title: 'Work Hours' },
 booths:            { title: () => currentAuction === 'weekly' ? 'Sunday Booth Selection' : 'Season-Long Booth Reservations' },
 communicate:       { title: 'Communicate with the Market' },
@@ -11375,7 +11530,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-118';
+const BUILD_ID = '13-120';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -17369,6 +17524,7 @@ const MGR_FOLDERS = [
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
 sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
 tiles: [
+{ s: 'callinout', i: 'i-phone', t: 'Requests &amp; Absences', d: 'Take anything a vendor sends the old ways \u2014 absences, requests, shares, documents, proposals' },
 { s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
 { s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
 { s: 'auction', i: 'i-gavel',
@@ -19011,7 +19167,9 @@ function renderCallInOutContext() {
 const card = document.getElementById('cioContextCard');
 if (!card) return;
 const vendor = currentRole === 'vendor' ? currentVendor() : null;
-if (!vendor) { card.style.display = 'none'; return; }
+const formCard = document.getElementById('cioFormCard');
+if (formCard) formCard.style.display = vendor ? '' : 'none';
+if (!vendor) { card.style.display = 'none'; initRecordForVendor(); return; }
 const satBooth = saturdayBoothOf(vendor.vendorId);
 const sunBooth = sundayBoothOf(vendor.vendorId);
 const sundayOnly = !satBooth && !!sunBooth;
@@ -19025,8 +19183,8 @@ const formTitle = document.getElementById('cioFormTitle');
 if (formTitle) formTitle.textContent = absence ? 'Report an Absence' : 'Request a Booth';
 if (lede) {
 lede.textContent = absence
-? 'Long called \u201Ccalling out.\u201D Telling the office early releases your booth to somebody else \u2014 and a late notice still counts.'
-: 'Long called \u201Ccalling in.\u201D This is how you ask for a booth at a market you do not already hold.';
+? '\u201CCalling out,\u201D as plenty of vendors still do by phone \u2014 the same notice, sent from your pocket. Telling the office early releases your booth to somebody else, and a late notice still counts.'
+: '\u201CCalling in,\u201D as plenty of vendors still do by phone \u2014 the same ask, sent from your pocket: a booth at a market you do not already hold.';
 }
 if (absence) {
 // Only the days this vendor actually holds a booth can be missed.
