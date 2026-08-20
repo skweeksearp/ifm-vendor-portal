@@ -1823,7 +1823,7 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <button class="primary-btn" style="margin-top:22px; width:100%;" onclick="enterAsVendor()"><svg class="ico"><use href="#i-basket"></use></svg> Members / Vendors</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsManager()"><svg class="ico"><use href="#i-toolbox"></use></svg> Market Manager</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsStaff()"><svg class="ico"><use href="#i-clipboard"></use></svg> Staff</button>
-<button class="primary-btn" style="width:100%;" onclick="enterAsVolunteer()"><svg class="ico"><use href="#i-sun-rays"></use></svg> Volunteer</button>
+<button class="primary-btn" style="width:100%;" onclick="enterAsVolunteer()"><svg class="ico"><use href="#i-sun-rays"></use></svg> Volunteers / Partners</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsKiosk()"><svg class="ico"><use href="#i-search"></use></svg> Kiosk <span style="opacity:.7; font-weight:400;">(tap six times rapidly to exit)</span></button>
 <button class="ghost-btn" id="landingDevBtn" style="width:auto; margin:16px auto 0; display:block; padding:7px 16px; font-size:13px; opacity:.75;" onclick="enterAsDeveloper()"><svg class="ico"><use href="#i-wrench"></use></svg> Developer</button>
 <p class="empty-note" id="landingBuild" style="margin:10px 0 0; text-align:center; opacity:.6;"></p>
@@ -7302,7 +7302,7 @@ document.getElementById('bizMeta').textContent = 'Ithaca Farmers Market \u2014 f
 document.getElementById('bizName').textContent = 'Developer';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 the app about itself';
 } else if (role === 'volunteer') {
-document.getElementById('bizName').textContent = 'Volunteer';
+document.getElementById('bizName').textContent = 'Volunteers / Partners';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 the hands beyond the booths';
 }
 }
@@ -8333,7 +8333,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Ithaca Farmers Market",
-"body": "<p>This is a demo/beta build. The four buttons at the top \u2014 Members/Vendors, Market Manager, Staff, Volunteer \u2014 stand in for a real login; pick the role you want to preview. <b>Kiosk</b> is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself \u2014 what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
+"body": "<p>This is a demo/beta build. The four buttons at the top \u2014 Members/Vendors, Market Manager, Staff, Volunteers/Partners \u2014 stand in for a real login; pick the role you want to preview. <b>Kiosk</b> is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself \u2014 what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
 },
 {
 "title": "Recent Entries",
@@ -9204,7 +9204,7 @@ satlottery:        { title: 'Saturday Booth Selection Sheet' },
 boothlayout:       { title: 'Booth Layouts' },
 improve:           { title: 'Booth Improvements' },
 developer:         { title: 'Developer' },
-volunteer:         { title: 'Volunteer' },
+volunteer:         { title: 'Volunteers / Partners' },
 venmopay:          { title: 'Pay Fees' },
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
@@ -11551,7 +11551,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-2';
+const BUILD_ID = '14-4';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13301,7 +13301,7 @@ const what = (mode === 'product')
 ? kioskSnippet(products, q)
 : '<span class="lead">' + (products
 ? esc(products.length > 110 ? products.slice(0, 110) + '\u2026' : products)
-: esc(v.category || '')) + '</span>';
+: '') + '</span>';
 btn.innerHTML =
 '<span><span class="biz">' + esc(v.businessName) + '</span>' +
 '<span class="what">' + what + '</span></span>' +
@@ -13586,7 +13586,7 @@ deals.map(p => '<div class="kiosk-deal-text">' + esc(p.text) + '</div>').join(''
 return '<div class="kiosk-detail">' + dealHtml +
 (withClose ? '<button type="button" class="close" onclick="clearKioskSelection()">\u00D7</button>' : '') +
 '<h3>' + esc(v.businessName) + '</h3>' +
-'<p class="meta">Booth ' + esc(kioskSelectedBooth) + ' \u2022 ' + esc(v.category || '') + '</p>' +
+'<p class="meta">Booth ' + esc(kioskSelectedBooth) + '</p>' +
 (what ? '<p class="body">' + esc(what) + '</p>' : '') +
 (site ? '<p class="site">' + esc(site) + '</p>' : '') +
 '</div>';
