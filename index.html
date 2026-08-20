@@ -2940,6 +2940,41 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div id="saList"></div>
 </div>
 </section>
+<section id="screen-orgstalls" class="screen">
+<div class="screen-head" id="head-orgstalls"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-tent"></use></svg></span>What the Guide Allows</h2>
+<p class="empty-note" style="margin-top:0;">A legitimate non-profit may, <b>when space allows</b>, use a market stall <b>once during the season</b> to hand out information and educate the public, after contacting the Organizational Manager. There is no application window and no deadline &mdash; the Guide sets none. What it does set are conditions:</p>
+<div class="comm-item"><div class="comm-desc">
+&bull; They may not <b>sell anything</b>, solicit donations, or accept donations.<br>
+&bull; They may not be aggressive, or advertise their presence at market without approval.<br>
+&bull; No soliciting or campaigning by <b>political, religious, or other special interest groups</b> is permitted at the market at all &mdash; by visitors or vendors.<br>
+&bull; Non-political voter registration is the one named exception, with manager approval.
+</div></div>
+</div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>Give a Stall</h2>
+<label for="osName">Organization</label>
+<input type="text" id="osName" placeholder="e.g. Finger Lakes Land Trust">
+<label for="osContact">Who asked</label>
+<input type="text" id="osContact" placeholder="Name, phone or email">
+<label for="osDate">Market day</label>
+<input type="date" id="osDate" onchange="renderOrgBoothChoices()">
+<div id="osBooths"></div>
+<label for="osPurpose">What they will be doing</label>
+<input type="text" id="osPurpose" placeholder="e.g. handing out trail maps, signing up for a walk series">
+<label style="display:flex; gap:9px; align-items:flex-start; margin-top:12px; font-size:13px;">
+<input type="checkbox" id="osTerms" style="width:auto; margin:2px 0 0;">
+<span>The terms above have been gone over with them &mdash; no selling, no donations, no campaigning.</span>
+</label>
+<button type="button" class="primary-btn" onclick="assignOrgStall(this)"><svg class="ico"><use href="#i-checkmark"></use></svg> Give them the stall</button>
+<div class="status-msg" id="osMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>This Season</h2>
+<div id="osList"></div>
+</div>
+</section>
 <section id="screen-seedmerge" class="screen">
 <div class="screen-head" id="head-seedmerge"></div>
 <div class="card">
@@ -6028,6 +6063,7 @@ await storageSet('ifm-wintermarket', cache.wintermarket);
 if (hoursGoals === STORAGE_MISSING) await storageSet('ifm-hours-goals', cache.hoursGoals);
 if (vendors === STORAGE_MISSING || vendorsPruned) await storageSet('ifm-vendors-v1', cache.vendors);
 await applySeedMerges();
+await loadOrgStalls();
 }
 const ATTENDANCE_2025 = { V001: 32, V002: 32, V003: 34, V004: 56, V005: 77, V006: 0, V007: 52, V008: 82, V009: 26, V010: 65, V011: 56, V012: 17, V013: 11, V014: 80, V015: 54, V016: 61, V017: 10, V018: 29, V019: 66, V020: 30, V021: 82, V022: 8, V023: 82, V024: 7, V025: 50, V026: 13, V027: 92, V028: 68, V029: 33, V030: 43, V031: 39, V032: 33, V033: 58, V034: 21, V035: 26, V036: 55, V037: 77, V038: 80, V039: 18, V040: 23, V041: 86, V042: 43, V043: 60, V044: 55, V045: 53, V046: 87, V047: 10, V048: 80, V049: 20, V050: 34, V051: 43, V052: 78, V053: 9, V054: 74, V055: 53, V056: 13, V057: 40, V058: 40, V059: 17, V060: 82, V061: 52, V062: 77, V063: 74, V064: 15, V065: 0, V066: 0, V067: 0, V068: 8, V069: 16, V070: 0, V071: 6, V072: 0, V073: 0, V074: 18, V075: 17, V076: 17, V077: 6, V078: 28, V079: 19, V080: 25, V081: 56, V082: 61, V083: 52, V084: 76, V085: 65, V086: 47, V087: 52, V088: 50, V089: 54, V090: 73, V091: 47, V092: 36, V093: 66, V094: 71, V095: 0, V096: 81, V097: 55, V098: 62, V099: 23, V100: 51, V101: 68, V102: 79, V103: 36, V104: 27, V105: 55, V106: 81, V107: 66, V108: 64, V109: 48, V110: 44, V111: 64, V112: 42, V113: 54, V114: 51, V115: 61, V116: 24, V117: 59, V118: 70, V119: 11, V120: 3, V121: 42, V122: 0, V123: 3, V124: 55, V125: 34, V126: 0, V127: 28, V128: 36, V129: 25, V130: 23, V131: 32, V132: 20, V133: 64, V134: 0, V135: 29, V136: 0, V137: 0, V138: 45, V139: 12, V140: 43, V141: 4, V142: 0, V143: 0, V144: 71, V145: 3, V146: 0, V147: 36, V148: 21, V149: 2, V150: 0, V151: 81, V152: 35, V153: 45, V154: 14, V155: 0, V156: 35, V157: 60, V158: 21, V159: 85, V160: 52, V161: 102, V162: 19, V163: 12, V164: 63, V165: 17, V166: 6, V167: 21, V168: 2 };
 const HARVESTED_DIRECTORY_DATA = {
@@ -8581,6 +8617,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-feecart', t: 'Fee baskets', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-alert-seen', t: 'Notices vendors have dismissed', v: () => ({}) },
 { g: 'traffic', k: 'ifm-desk-order', t: 'Drawer arrangements vendors have made on their own desks', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-orgstalls', t: 'Stalls given to community organizations', v: () => [] },
 { g: 'traffic', t: 'Seed birth stamps and the record of what they corrected', run: async () => {
 for (const cfg of SEED_MERGE) await storageSet(cfg.birth, null);
 await storageSet('ifm-seed-merge-log', []);
@@ -9084,6 +9121,7 @@ if (name === 'requirements') initRequirementsScreen();
 if (name === 'betareset') initBetaResetScreen();
 if (name === 'seedmerge') renderSeedMerge();
 if (name === 'selfaudit') renderSelfAudit();
+if (name === 'orgstalls') renderOrgStalls();
 if (name === 'mydocs') initMyDocsScreen();
 if (name === 'boardflags') initBoardFlagsScreen();
 if (name === 'marketrules') initMarketRulesScreen();
@@ -9209,6 +9247,7 @@ venmopay:          { title: 'Pay Fees' },
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
 selfaudit:         { title: 'Self-Audit' },
+orgstalls:         { title: 'Community Organizations' },
 changechecklist:   { title: 'Version Update Checklist' },
 creativity:        { title: 'Creativity' },
 aboutedit:         { title: 'Information Screen Subjects' },
@@ -9587,8 +9626,10 @@ const calledOut = cache.callinout.some(r =>
 r.vendorId === holder && r.marketDate === date && /out/i.test(r.status));
 if (calledOut) open.push({ num: booth.num, vacatedBy: boothVendorName(holder) });
 });
-open.sort((a, b) => boothSortKey(a.num) - boothSortKey(b.num));
-return open;
+const toOrgs = new Set((orgStallsCache || []).filter(o => o.date === date).map(o => String(o.booth)));
+const left = toOrgs.size ? open.filter(b => !toOrgs.has(String(b.num))) : open;
+left.sort((a, b) => boothSortKey(a.num) - boothSortKey(b.num));
+return left;
 }
 const LOTTO_SECTIONS = [
 { title: 'Full Ag Members', match: v => v.category === 'Ag Full' },
@@ -11551,7 +11592,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-4';
+const BUILD_ID = '14-6';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -11776,9 +11817,14 @@ if (vid) return vid;
 }
 return null;
 }
+// A stall given to an organization is occupied, and educating the public is the
+// entire reason the Guide allows it \u2014 so the kiosk has to know about it.
 function kioskOccupancy() {
 const md = kioskMarketDate();
-const byVendor = {}, byBooth = {};
+const byVendor = {}, byBooth = {}, byOrg = {};
+(orgStallsCache || []).forEach(o => {
+if (o.date === md.date) byOrg[o.booth] = o;
+});
 cache.booths.forEach(b => {
 const vid = boothOccupant(b, md.date);
 if (!vid) return;
@@ -11790,7 +11836,7 @@ if (s.date === md.date && s.status !== 'denied' && !byVendor[s.vendorId]) {
 byVendor[s.vendorId] = s.boothNum;
 }
 });
-return { md, byVendor, byBooth };
+return { md, byVendor, byBooth, byOrg };
 }
 function initKioskScreen() {
 ['kioskVendorSearch', 'kioskProductSearch'].forEach(id => {
@@ -13398,7 +13444,8 @@ const vid = occ.byBooth[booth.num];
 const spin = boothArcAngle(booth);
 const wedge = boothIsArcWedge(booth);
 const chipSpin = wedge ? spin : 0;
-const cls = 'booth-chip ' + (vid ? 'kiosk-here' : 'available') +
+const org = (occ.byOrg || {})[booth.num];
+const cls = 'booth-chip ' + (vid || org ? 'kiosk-here' : 'available') +
 (kioskMatchBooths.has(booth.num) ? ' kiosk-match' : '') +
 (kioskSelectedBooth === booth.num ? ' kiosk-hit' : '') +
 (spin ? (wedge ? ' arc-wedge' : ' arc-link link-' + booth.num) : '');
@@ -13528,6 +13575,17 @@ return;
 }
 wrap.innerHTML = ''; return; }
 const vid = occ.byBooth[kioskSelectedBooth];
+const org = (occ.byOrg || {})[kioskSelectedBooth];
+if (!vid && org) {
+wrap.innerHTML = '<div class="kiosk-detail">' +
+'<button type="button" class="close" onclick="clearKioskSelection()">\u00D7</button>' +
+'<h3>' + esc(org.name) + '</h3>' +
+'<p class="meta">Booth ' + esc(kioskSelectedBooth) + ' \u2022 visiting today</p>' +
+(org.purpose ? '<p class="body">' + esc(org.purpose) + '</p>' : '') +
+'<p class="site">A community organization, here to share information \u2014 not selling.</p></div>';
+fitKioskDetail();
+return;
+}
 if (!vid) {
 wrap.innerHTML = '<div class="kiosk-detail">' +
 '<button type="button" class="close" onclick="clearKioskSelection()">\u00D7</button>' +
@@ -15258,6 +15316,126 @@ if (note) r.reviewNote = note;
 await storageSet('ifm-workhours', cache.workhours);
 if (currentRole === 'vendor' && currentVendorId) renderAll();
 else renderManagerAlerts();
+}
+// ---- A stall for a community organization ------------------------------
+// The Guide allows this in one paragraph and sets no deadline whatever: a
+// legitimate non-profit may, "when space allows," use a stall "once during the
+// season" to distribute information and educate the public, after contacting
+// the Organizational Manager. What it does set are conditions of conduct, and
+// a flat prohibition on political, religious and special-interest soliciting.
+// So the tool checks the once-a-season limit and the space, and puts the
+// conduct terms in front of whoever approves it rather than burying them.
+let orgStallsCache = null;
+async function loadOrgStalls() {
+if (orgStallsCache) return orgStallsCache;
+const v = await storageGet('ifm-orgstalls');
+orgStallsCache = (v === STORAGE_MISSING || !Array.isArray(v)) ? [] : v;
+return orgStallsCache;
+}
+function orgStallsInSeason(year) {
+return (orgStallsCache || []).filter(o => String(o.date || '').slice(0, 4) === String(year));
+}
+function orgNameKey(name) { return String(name || '').trim().toLowerCase(); }
+
+async function renderOrgStalls() {
+if (currentRole !== 'manager') return;
+await loadOrgStalls();
+const dateEl = document.getElementById('osDate');
+if (dateEl && !dateEl.value) {
+const next = generateUpcomingMarketDates()[0];
+if (next) dateEl.value = next.date;
+}
+renderOrgBoothChoices();
+renderOrgStallList();
+}
+function renderOrgBoothChoices() {
+const wrap = document.getElementById('osBooths');
+const date = (document.getElementById('osDate') || {}).value;
+if (!wrap) return;
+if (!date) { wrap.innerHTML = '<p class="empty-note" style="margin:0;">Pick a market day first.</p>'; return; }
+const taken = new Set(orgStallsInSeason(seasonYear())
+.filter(o => o.date === date).map(o => String(o.booth)));
+const open = computeOpenBooths(date).filter(b => !taken.has(String(b.num)));
+if (!open.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">No booth is open that day. The Guide allows this ' +
+'<b>when space allows</b>, so there is nothing to give until one frees up.</p>';
+return;
+}
+wrap.innerHTML = '<label for="osBooth">Booth</label><select id="osBooth">' +
+open.map(b => '<option value="' + esc(b.num) + '">Booth ' + esc(b.num) +
+(b.vacatedBy ? ' \u2014 ' + esc(b.vacatedBy) + ' away' : ' \u2014 open') + '</option>').join('') +
+'</select>' +
+'<p class="empty-note" style="margin:6px 0 0;">' + open.length + ' open that day. A booth given here stops ' +
+'being available in that day\u2019s selections.</p>';
+}
+async function assignOrgStall(btn) {
+if (!requireManager('osMsg')) return;
+await loadOrgStalls();
+const name = document.getElementById('osName').value.trim();
+const contact = document.getElementById('osContact').value.trim();
+const date = document.getElementById('osDate').value;
+const boothEl = document.getElementById('osBooth');
+const booth = boothEl ? boothEl.value : '';
+const purpose = document.getElementById('osPurpose').value.trim();
+const agreed = document.getElementById('osTerms').checked;
+if (!name) { showMsg('osMsg', 'err', 'Name the organization.'); return; }
+if (!date || !booth) { showMsg('osMsg', 'err', 'Pick a market day and a booth that is open on it.'); return; }
+if (!agreed) { showMsg('osMsg', 'err', 'Confirm the terms have been gone over with them \u2014 the Guide makes them conditions, not suggestions.'); return; }
+const prior = orgStallsInSeason(seasonYear()).find(o => orgNameKey(o.name) === orgNameKey(name));
+if (prior) {
+showMsg('osMsg', 'err', esc(name) + ' already had a stall on ' + esc(formatDisplayDate(prior.date)) +
+'. The Guide allows one during the season. Removing that record below is the only way to give another.');
+return;
+}
+confirmTap(btn, async () => {
+orgStallsCache.push({ id: 'os' + Date.now(), name: name, contact: contact, date: date,
+booth: booth, purpose: purpose, approvedBy: 'OrgM', recordedAt: Date.now() });
+await storageSet('ifm-orgstalls', orgStallsCache);
+document.getElementById('osName').value = '';
+document.getElementById('osContact').value = '';
+document.getElementById('osPurpose').value = '';
+document.getElementById('osTerms').checked = false;
+renderOrgStalls();
+showMsg('osMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(name) +
+' has booth ' + esc(booth) + ' on ' + esc(formatDisplayDate(date)) + '. That is their one for the season.');
+});
+}
+async function removeOrgStall(id, btn) {
+if (!requireManager('osMsg')) return;
+confirmTap(btn, async () => {
+await loadOrgStalls();
+orgStallsCache = orgStallsCache.filter(o => o.id !== id);
+await storageSet('ifm-orgstalls', orgStallsCache);
+renderOrgStalls();
+});
+}
+function renderOrgStallList() {
+const wrap = document.getElementById('osList');
+if (!wrap) return;
+const rows = orgStallsInSeason(seasonYear()).slice().sort((a, b) => a.date.localeCompare(b.date));
+if (!rows.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">No organization has taken a stall this season.</p>';
+return;
+}
+wrap.innerHTML = '';
+rows.forEach(o => {
+const row = document.createElement('div');
+row.className = 'req-row';
+const main = document.createElement('div');
+main.className = 'req-row-main';
+main.innerHTML = '<div class="req-name">' + esc(o.name) + '</div>' +
+'<div class="req-meta">Booth ' + esc(o.booth) + ' \u00b7 ' + esc(formatDisplayDate(o.date)) +
+(o.contact ? ' \u00b7 ' + esc(o.contact) : '') + (o.purpose ? ' \u00b7 ' + esc(o.purpose) : '') + '</div>';
+row.appendChild(main);
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'ghost-btn';
+btn.style.margin = '0';
+btn.textContent = 'Remove';
+btn.onclick = () => removeOrgStall(o.id, btn);
+row.appendChild(btn);
+wrap.appendChild(row);
+});
 }
 function renderComposition() {
 renderClassChanger();
@@ -17552,6 +17730,7 @@ tiles: [
 t: () => selectionSeason() + ' Season-Long Booth Reservations',
 d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
 { s: 'winterbooths', i: 'i-snowflake', t: 'Winter Market Booths', d: 'Triphammer spaces, assigned by date' },
+{ s: 'orgstalls', i: 'i-tent', t: 'Community Organizations', d: 'A stall for a non-profit \u2014 once a season, when space allows' },
 { s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
 ] },
 { key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
