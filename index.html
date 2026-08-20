@@ -3296,7 +3296,8 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div class="empty-note" id="taskListEmpty" style="display:none;">The Market Manager has not posted any tasks right now.</div>
 </div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Log New Work Hours</h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Log Hours You Worked</h2>
+<p class="empty-note" style="margin-top:0;">For work the Market Manager did not post as a task &mdash; committee and Board meetings, presenting your own proposal, or anything the office agreed to beforehand. The Guide has the Market Managers approve these, so they wait for a sign-off before they post to your total.</p>
 <label for="hrsDate">Date</label>
 <input type="date" id="hrsDate">
 <div class="lotto-dates" id="hrsDateChips"></div>
@@ -3967,9 +3968,17 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 appointed by the Board President (Bylaws, Article VI). This screen records those
 decisions so everyone can see them &mdash; it does not make them. Add people here
 after the Board has said yes, not before.</p>
-<p style="margin:0;">Time served on a committee counts toward a vendor&rsquo;s work hour
-requirement. Hours still get logged the normal way, through Work Hours &mdash; the
-committee chair keeps the meeting tally.</p>
+<p style="margin:0 0 8px;">Time served on a committee counts toward a vendor&rsquo;s work hour
+requirement. Hours are logged through <b>Log Hours You Worked</b> on the vendor&rsquo;s own desk and
+signed off by the Market Manager &mdash; the committee chair keeps the meeting tally and passes it on,
+as the Food Committee guidelines describe.</p>
+<p style="margin:0;"><b>A chair posting jobs directly is waiting on one record.</b> The Guide raises no
+objection: committee service earns hours, and the only condition it sets is that &ldquo;all other work
+hour assignments are subject to prior approval by the Market Managers.&rdquo; So a chair could post a job
+to everyone or hand one to a particular vendor, with the manager signing it off &mdash; exactly the round
+trip logged hours now make. What is missing is knowing <i>who chairs what</i>. Until the rosters arrive
+the app cannot tell a chair from any other vendor, so the tool has nobody to belong to. The manager can
+already assign a task to one vendor from Work Hours Tasks.</p>
 </div>
 </section>
 <section id="screen-mycommittees" class="screen">
@@ -3993,6 +4002,16 @@ committee chair keeps the meeting tally.</p>
 <option>Building &amp; Grounds</option>
 <option>Board / Committee</option>
 </select>
+<label for="tkWho" style="margin-top:10px;">Who it is for</label>
+<select id="tkWho" onchange="toggleTaskWho()">
+<option value="">Anyone — posted to every vendor</option>
+<option value="one">One vendor in particular</option>
+</select>
+<div id="tkWhoWrap" style="display:none;">
+<label for="tkWhoVendor" style="margin-top:10px;">Vendor</label>
+<select id="tkWhoVendor"></select>
+<p class="empty-note" style="margin:6px 0 0;">Only they will see it. Work hours are not transferable, so an assigned task cannot be handed to somebody else.</p>
+</div>
 <label for="tkHours" style="margin-top:10px;">Work hours credit</label>
 <input type="number" id="tkHours" min="0" step="0.25" value="1">
 <label style="margin-top:10px; display:flex; align-items:center; gap:8px;">
@@ -8480,8 +8499,9 @@ function currentVendor() {
 return cache.vendors.find(v => v.vendorId === currentVendorId);
 }
 function applyHubEligibility(vendor) {
+if (!vendor) { applyVendorVisibility(); return; }
 const fullTab = document.getElementById('btnAnnualFull');
-if (fullTab) fullTab.style.display = vendor.category.endsWith('Full') ? '' : 'none';
+if (fullTab) fullTab.style.display = String(vendor.category || '').endsWith('Full') ? '' : 'none';
 applyVendorVisibility();
 }
 function esc(s) {
@@ -8812,7 +8832,7 @@ const events = [];
 attendedMarketDates(vendorId, year)
 .forEach(a => events.push({ date: a.date, kind: 'debit', day: a.day, source: a.source }));
 cache.workhours
-.filter(r => r.vendorId === vendorId && r.date && r.date.startsWith(yr))
+.filter(r => r.vendorId === vendorId && r.date && r.date.startsWith(yr) && hoursCount(r))
 .forEach(r => events.push({
 date: r.date, kind: 'credit',
 hours: Number(r.hours || 0),
@@ -10889,6 +10909,17 @@ state[boothNum][index].checked = !state[boothNum][index].checked;
 await storageSet('ifm-stall-checklist', state);
 renderStallChecklistItems(boothNum);
 }
+function toggleTaskWho() {
+const one = document.getElementById('tkWho').value === 'one';
+document.getElementById('tkWhoWrap').style.display = one ? '' : 'none';
+document.getElementById('tkSpotsWrap').style.display = one ? 'none' : '';
+const sel = document.getElementById('tkWhoVendor');
+if (one && sel && !sel.dataset.filled) {
+sel.innerHTML = cache.vendors.slice().sort((a, b) => a.businessName.localeCompare(b.businessName))
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+sel.dataset.filled = '1';
+}
+}
 function toggleTaskSpotsInput() {
 const unlimited = document.getElementById('tkUnlimited').checked;
 document.getElementById('tkSpotsWrap').style.display = unlimited ? 'none' : 'block';
@@ -10912,10 +10943,15 @@ showMsg('tkStatusMsg', 'err', 'Give the task a title.');
 return;
 }
 const tasks = await loadTasks();
+const whoSel = document.getElementById('tkWho');
+const assignedTo = (whoSel && whoSel.value === 'one')
+? (document.getElementById('tkWhoVendor') || {}).value || '' : '';
 tasks.push({
 id: 'tk' + Date.now(),
 title, desc, date, category, hours,
-spotsNeeded: spots,
+spotsNeeded: assignedTo ? 1 : spots,
+assignedTo: assignedTo,
+postedBy: currentRole === 'manager' ? 'the Market Manager' : currentRole,
 claims: [],
 createdAt: Date.now()
 });
@@ -11156,7 +11192,10 @@ await sweepLapsedClaims();
 const tasks = await loadTasks();
 const container = document.getElementById('taskList');
 container.innerHTML = '';
-const open = tasks.filter(t => t.spotsNeeded === null || t.claims.length < t.spotsNeeded || t.claims.some(c => c.vendorId === currentVendorId));
+const open = tasks.filter(t => {
+if (t.assignedTo && t.assignedTo !== currentVendorId) return false;
+return t.spotsNeeded === null || t.claims.length < t.spotsNeeded || t.claims.some(c => c.vendorId === currentVendorId);
+});
 if (!open.length) {
 document.getElementById('taskListEmpty').style.display = 'block';
 return;
@@ -11336,7 +11375,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-117';
+const BUILD_ID = '13-118';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -15029,6 +15068,21 @@ wrap.innerHTML = rows.slice(0, 25).map(r =>
 '<div class="req-meta">' + esc(r.e.from) + ' \u2192 ' + esc(r.e.to) + ' \u00b7 ' + esc(formatDisplayDate(r.e.on)) +
 (r.e.note ? ' \u00b7 ' + esc(r.e.note) : '') + '</div></div></div>').join('');
 }
+function hoursCount(r) { return !r || !r.status || r.status === 'approved'; }
+function pendingHours(vendorId) {
+return (cache.workhours || []).filter(r => r.status === 'submitted' && (!vendorId || r.vendorId === vendorId));
+}
+async function reviewLoggedHours(id, decision, note) {
+if (!requireManager()) return;
+const r = (cache.workhours || []).find(x => x.id === id);
+if (!r) return;
+r.status = decision === 'approve' ? 'approved' : 'sentback';
+r.reviewedAt = Date.now();
+if (note) r.reviewNote = note;
+await storageSet('ifm-workhours', cache.workhours);
+if (currentRole === 'vendor' && currentVendorId) renderAll();
+else renderManagerAlerts();
+}
 function renderComposition() {
 renderClassChanger();
 renderClassHistory();
@@ -16163,6 +16217,16 @@ acts: [
 ]
 }));
 },
+loggedhours() {
+return pendingHours().map(r => ({
+t: (boothVendorName(r.vendorId) || r.vendorId) + ' \u2014 ' + r.hours + ' hour' + (r.hours === 1 ? '' : 's'),
+m: (r.category || 'General') + ' \u00b7 ' + formatDisplayDate(r.date) + (r.note ? ' \u00b7 ' + r.note : ''),
+acts: [
+{ t: 'Approve', primary: true, fn: () => reviewLoggedHours(r.id, 'approve') },
+{ t: 'Send Back', fn: () => reviewLoggedHours(r.id, 'sendback') }
+]
+}));
+},
 payments() {
 return reportedPayments().map(it => ({
 t: (boothVendorName(it.vendorId) || it.vendorId || 'Unknown vendor') + ' \u2014 $' + fmtMoney(it.amount),
@@ -16253,6 +16317,19 @@ t: req.name, m: 'Returned \u00b7 ' + (rec.reviewNote || 'No reason given.') });
 } else if (rec.state === 'onfile' && rec.reviewedAt) {
 out.push({ key: 'doc:' + req.id + ':onfile:' + rec.reviewedAt, state: 'yes', go: 'mydocs',
 t: req.name, m: 'Accepted and on file' + (rec.expiry ? ' \u00b7 expires ' + formatDisplayDate(rec.expiry) : '') });
+}
+});
+(cache.workhours || []).filter(r => r.vendorId === me && r.source === 'self').forEach(r => {
+const what = r.hours + ' hour' + (r.hours === 1 ? '' : 's') + ' \u2014 ' + (r.category || 'General');
+if (r.status === 'submitted') {
+out.push({ key: 'wh:' + r.id + ':submitted', state: 'waiting', go: 'hours', t: what,
+m: 'Logged ' + formatDisplayDate(r.date) + ' \u00b7 waiting on the manager to sign off' });
+} else if (r.status === 'approved') {
+out.push({ key: 'wh:' + r.id + ':approved:' + (r.reviewedAt || ''), state: 'yes', go: 'hours', t: what,
+m: 'Signed off \u00b7 posted to your total' });
+} else if (r.status === 'sentback') {
+out.push({ key: 'wh:' + r.id + ':sentback:' + (r.reviewedAt || ''), state: 'no', label: 'Sent back', go: 'hours',
+t: what, m: r.reviewNote || 'Sent back \u00b7 speak to the office before logging it again' });
 }
 });
 ((vpCache && vpCache.items) || []).filter(x => x.vendorId === me).forEach(x => {
@@ -16371,6 +16448,13 @@ alerts.push({ topic: 'Shares', n: over.length,
 t: over.length + (over.length === 1 ? ' booth has more than two businesses on it' : ' booths have more than two businesses on them'),
 d: 'The Guide allows two in a booth \u2014 the kiosk shows only the first, so this needs sorting out',
 cls: 'expired', go: 'lottery' });
+}
+const hoursWaiting = pendingHours().length;
+if (hoursWaiting) {
+alerts.push({ id: 'loggedhours', topic: 'Work Hours', n: hoursWaiting,
+t: hoursWaiting + (hoursWaiting === 1 ? ' logged hour awaiting sign-off' : ' logged hours awaiting sign-off'),
+d: 'Work a vendor did and recorded themselves \u2014 the Guide has these approved by the Market Managers',
+cls: 'submitted', go: 'taskmanager' });
 }
 const paysWaiting = reportedPayments().length;
 if (paysWaiting) {
@@ -19047,9 +19131,10 @@ showMsg('hrsStatusMsg', 'err', 'Enter a positive number of hours.');
 return;
 }
 try {
-cache.workhours.push({ vendorId: currentVendorId, date, hours, category, note });
+cache.workhours.push({ id: 'wh' + Date.now(), vendorId: currentVendorId, date, hours, category, note,
+source: 'self', status: 'submitted', submittedAt: Date.now() });
 await storageSet('ifm-workhours', cache.workhours);
-showMsg('hrsStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Hours logged. Thank you!');
+showMsg('hrsStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Sent to the office. They post to your total once the manager signs them off.');
 document.getElementById('hrsAmount').value = '';
 document.getElementById('hrsNote').value = '';
 renderAll();
