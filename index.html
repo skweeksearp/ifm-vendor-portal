@@ -3701,6 +3701,27 @@ comes from.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Membership Composition<button type="button" class="help-dot" onclick="showPlanned('composition')" aria-label="What are the rules here?">?</button></h2>
 <div id="compBody"></div>
 </div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>Record a Class Change</h2>
+<p class="empty-note" style="margin-top:0;">The Guide makes this a Board decision: a vacancy is determined, the committee recommends against its own rubric, the Board approves. The app cannot see any of that happen &mdash; it does the arithmetic and keeps the record.</p>
+<div id="compClass">
+<label for="ccVendor">Vendor</label>
+<select id="ccVendor" onchange="updateClassChanger()"></select>
+<label for="ccClass">Class</label>
+<select id="ccClass" onchange="updateClassEffect()"></select>
+<p class="empty-note" id="ccEffect" style="margin:8px 0 0;"></p>
+<label for="ccDate">Date the Board decided</label>
+<input type="date" id="ccDate">
+<label for="ccNote">Note (optional)</label>
+<input type="text" id="ccNote" placeholder="e.g. Ag Committee recommendation, January vacancies">
+<button type="button" class="primary-btn" onclick="applyClassChange(this)"><svg class="ico"><use href="#i-checkmark"></use></svg> Record the change</button>
+<div class="status-msg" id="ccMsg"></div>
+</div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Changes on Record</h2>
+<div id="compHistory"></div>
+</div>
 </section>
 <section id="screen-optool" class="screen">
 <div class="screen-head" id="head-optool"></div>
@@ -6770,6 +6791,14 @@ currentRole = wasRole; currentVendorId = wasVendor;
 setRoleHeader(wasRole || 'vendor');
 if (wasScreen && wasScreen !== 'selfaudit') { try { showScreen(wasScreen); } catch (e) {} }
 
+// A role written on the body that disagrees with the role in force means every
+// class-based rule on the page is answering the wrong question.
+if (!document.body.classList.contains('role-' + (wasRole || 'vendor'))) {
+out.roles.push({ role: wasRole || '(none)', screen: 'body class',
+controls: ['The page is marked ' + (document.body.className.match(/role-\w+/) || ['nothing'])[0] +
+' while the role in force is ' + (wasRole || 'none') + '. Manager-only controls hide by that mark.'] });
+}
+
 // --- 3. Description drift ----------------------------------------------
 Object.keys(SCREEN_META).forEach(name => {
 if (!document.getElementById('screen-' + name)) {
@@ -8329,6 +8358,7 @@ async function selectVendor(vendorId) {
 currentRole = 'vendor';
 homeScreen = 'dashboard';
 currentVendorId = vendorId;
+setRoleHeader('vendor');
 document.getElementById('picker').style.display = 'none';
 document.getElementById('main').style.display = 'block';
 showScreen('dashboard');
@@ -8625,7 +8655,7 @@ const year = new Date().getFullYear();
 positionHeader('dashboard');
 applyHubEligibility(vendor);
 document.getElementById('bizName').textContent = vendor.businessName;
-document.getElementById('bizMeta').textContent = vendor.category + ' \u2022 ' + vendor.lastName + ' \u2022 Member since ' + vendor.joinYear;
+document.getElementById('bizMeta').textContent = '';
 renderProfile(vendor);
 const myLedger = cache.ledger.filter(r => r.vendorId === vendor.vendorId);
 const total = myLedger.reduce((sum, r) => sum + Number(r.points || 0), 0);
@@ -8956,7 +8986,7 @@ refreshAllDateChips();
 runScreenInit(name);
 }
 const SCREEN_META = {
-dashboard:         { title: 'Vendor', home: true },
+dashboard:         { title: () => vendorClassLine(currentVendor()), home: true },
 managerdash:       { title: 'Market Manager', home: true },
 staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
@@ -9047,6 +9077,21 @@ el.innerHTML = on
 : '<strong>Shoulder season is not declared.</strong> Reserved-booth vendors cannot enter the weekly Booth Selection.' +
 (isShoulderSeason() ? ' The calendar suggests it is about that time of year.' : '');
 if (btn) btn.textContent = on ? 'End Shoulder Season' : 'Declare Shoulder Season';
+}
+// The Guide's own words: Full Member, or Easy Entry Vendor, with the category
+// beside it. The year is when they entered that class, not when they joined.
+function vendorClassLine(v) {
+if (!v) return 'Vendor';
+const cat = String(v.category || '');
+const kind = cat.indexOf('Non-Ag') === 0 ? 'Non-Ag' : (cat.indexOf('Ag ') === 0 ? 'Ag' : '');
+const full = /Full/.test(cat);
+const since = classSinceYear(v);
+return (kind ? kind + ' ' : '') + (full ? 'Full Member' : 'Easy Entry Vendor') +
+(since ? ' \u00b7 since ' + since : '');
+}
+function classSinceYear(v) {
+if (!v) return '';
+return v.classSince || v.joinYear || '';
 }
 function vendorHoldsStall(vendorId) {
 return cache.booths.some(b => b.reservedBy === vendorId || b.sundaySeasonalBy === vendorId);
@@ -11291,7 +11336,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-116';
+const BUILD_ID = '13-117';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14857,7 +14902,136 @@ agNeeded: Math.ceil(full.length * (ruleNum('agShare') / 100)),
 vacancies: Math.max(0, ruleNum('fullCap') - full.length),
 };
 }
+// ---- Changing a vendor's class ----------------------------------------
+// The Guide makes this a Board decision, not a threshold the app can watch for.
+// A vacancy has to exist; the committee recommends against its own rubric; the
+// Board approves. So the app does the parts that are arithmetic \u2014 how many
+// vacancies, and whether the 60/40 rule still holds afterwards \u2014 and records
+// the decision somebody else made, with the date it was made.
+function classOptions(v) {
+const kind = String(v.category || '').indexOf('Non-Ag') === 0 ? 'Non-Ag' : 'Ag';
+return [kind + ' Full', kind + ' Easy Entry'];
+}
+function isFullClass(c) { return /Full/.test(String(c || '')); }
+// What a promotion would do to the rule, before it is made.
+function compositionAfter(vendorId, newClass) {
+const before = membershipComposition();
+const v = cache.vendors.find(x => x.vendorId === vendorId);
+if (!v) return { before: before, after: before };
+const wasFull = isFullClass(v.category), willBeFull = isFullClass(newClass);
+if (wasFull === willBeFull) return { before: before, after: before };
+const isAg = String(newClass).indexOf('Ag ') === 0;
+const d = willBeFull ? 1 : -1;
+const total = before.total + d;
+const ag = before.ag + (isAg ? d : 0);
+return {
+before: before,
+after: {
+cap: before.cap, total: total, ag: ag, nonAg: total - ag,
+agPct: total ? Math.round((ag / total) * 1000) / 10 : 0,
+agNeeded: Math.ceil(total * (ruleNum('agShare') / 100)),
+vacancies: Math.max(0, before.cap - total)
+}
+};
+}
+function renderClassChanger() {
+const wrap = document.getElementById('compClass');
+if (!wrap || currentRole !== 'manager') { if (wrap) wrap.innerHTML = ''; return; }
+const sel = document.getElementById('ccVendor');
+if (sel && !sel.dataset.filled) {
+sel.innerHTML = cache.vendors.slice()
+.sort((a, b) => a.businessName.localeCompare(b.businessName))
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + ' \u2014 ' + esc(v.category) + '</option>').join('');
+sel.dataset.filled = '1';
+}
+updateClassChanger();
+}
+// Picking a vendor rebuilds the two classes open to them. Picking a class only
+// recalculates what it would do.
+function updateClassChanger() {
+const sel = document.getElementById('ccVendor');
+const v = cache.vendors.find(x => x.vendorId === (sel && sel.value));
+const cls = document.getElementById('ccClass');
+if (!v || !cls) return;
+cls.innerHTML = classOptions(v).map(o => '<option value="' + esc(o) + '"' +
+(o === v.category ? ' selected' : '') + '>' + esc(o) + '</option>').join('');
+updateClassEffect();
+}
+function updateClassEffect() {
+const sel = document.getElementById('ccVendor');
+const v = cache.vendors.find(x => x.vendorId === (sel && sel.value));
+const cls = document.getElementById('ccClass');
+const note = document.getElementById('ccEffect');
+if (!v || !cls || !note) return;
+const target = cls.value;
+const m = compositionAfter(v.vendorId, target);
+const lines = [];
+if (target === v.category) {
+lines.push('No change \u2014 ' + esc(v.businessName) + ' is already ' + esc(v.category) + ', since ' + esc(classSinceYear(v)) + '.');
+} else if (isFullClass(target)) {
+lines.push('Full memberships would go from ' + m.before.total + ' to ' + m.after.total + ' of ' + m.after.cap + '.');
+if (m.before.vacancies < 1) lines.push('<b>There is no vacancy.</b> The Guide offers Full status only when management and the Board have determined one exists.');
+lines.push('Agricultural share would be ' + m.after.agPct + '%, against the 60% the rule requires \u2014 ' +
+(m.after.ag >= m.after.agNeeded ? 'still met.' : '<b>this would break it.</b>'));
+lines.push('On promotion the Guide keeps all their points, and a Certificate of Membership becomes due: $300, payable $100 a year for three years.');
+} else {
+lines.push('Full memberships would go from ' + m.before.total + ' to ' + m.after.total + ', freeing a vacancy.');
+lines.push('Any Saturday reservation they hold is a Full member\u2019s right \u2014 release it separately if it no longer applies.');
+}
+note.innerHTML = lines.join('<br>');
+}
+async function applyClassChange(btn) {
+if (!requireManager('ccMsg')) return;
+const sel = document.getElementById('ccVendor');
+const v = cache.vendors.find(x => x.vendorId === sel.value);
+const target = document.getElementById('ccClass').value;
+const when = document.getElementById('ccDate').value;
+const note = document.getElementById('ccNote').value.trim();
+if (!v) return;
+if (target === v.category) { showMsg('ccMsg', 'err', 'That is the class they are already in.'); return; }
+if (!when) { showMsg('ccMsg', 'err', 'Record the date the Board decided. Without it there is no decision, only a change.'); return; }
+confirmTap(btn, async () => {
+const from = v.category;
+v.category = target;
+v.classSince = String(when).slice(0, 4);
+v.classHistory = (v.classHistory || []).concat([{ from: from, to: target, on: when, note: note }]);
+await storageSet('ifm-vendors-v1', cache.vendors);
+// A membership change is a Board decision, so it is written where the Board's
+// decisions are kept as well as on the vendor.
+await loadAmendments();
+amendmentsCache.items.unshift({
+date: when,
+text: v.businessName + ': ' + from + ' \u2192 ' + target + '.',
+note: note || 'Recorded from Membership Composition. No further detail given.'
+});
+await storageSet('ifm-amendments', amendmentsCache);
+document.getElementById('ccNote').value = '';
+sel.dataset.filled = '';
+renderComposition();
+showMsg('ccMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+esc(v.businessName) + ' is now ' + esc(target) + ', since ' + esc(v.classSince) +
+'. Recorded in Board Decisions.');
+});
+}
+function renderClassHistory() {
+const wrap = document.getElementById('compHistory');
+if (!wrap) return;
+const rows = [];
+cache.vendors.forEach(v => (v.classHistory || []).forEach(e =>
+rows.push({ name: v.businessName, e: e })));
+rows.sort((a, b) => String(b.e.on).localeCompare(String(a.e.on)));
+if (!rows.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">No class has been changed in this app yet. Anyone\u2019s standing before that is whatever the roster was seeded with, not a decision on record.</p>';
+return;
+}
+wrap.innerHTML = rows.slice(0, 25).map(r =>
+'<div class="req-row"><div class="req-row-main"><div class="req-name">' + esc(r.name) + '</div>' +
+'<div class="req-meta">' + esc(r.e.from) + ' \u2192 ' + esc(r.e.to) + ' \u00b7 ' + esc(formatDisplayDate(r.e.on)) +
+(r.e.note ? ' \u00b7 ' + esc(r.e.note) : '') + '</div></div></div>').join('');
+}
 function renderComposition() {
+renderClassChanger();
+renderClassHistory();
 const m = membershipComposition();
 const line = (label, value, note) =>
 '<div class="req-row"><div class="req-row-main"><div class="req-name">' + label +
@@ -17133,7 +17307,7 @@ tiles: [
 { s: 'addvendor', i: 'i-clipboard', t: 'Add New Vendor', d: 'Onboard and draft a welcome letter' },
 { s: 'requirements', i: 'i-key', t: 'Vendor Requirements', d: 'Licences, permits, insurance and expiry' },
 { soon: 'renewal', s: 'renewal', i: 'i-arrows-cycle', t: 'Renewal Tracker', d: 'Dec 31, the January window, and share instalments' },
-{ soon: 'composition', s: 'composition', i: 'i-columns', t: 'Membership Composition', d: 'The 105 cap and the 60/40 rule' },
+{ s: 'composition', i: 'i-columns', t: 'Membership Composition', d: 'The 105 cap, the 60/40 rule, and recording a change of class' },
 ] },
 { key: 'standing', title: 'Points & Standing', icon: 'i-star',
 sub: 'How each vendor is doing \u2014 points, absences, fines and discipline',
