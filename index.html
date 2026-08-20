@@ -6862,7 +6862,8 @@ if (uniq.length) out.roles.push({ role: role, screen: name, controls: uniq });
 }
 currentRole = wasRole; currentVendorId = wasVendor;
 setRoleHeader(wasRole || 'vendor');
-if (wasScreen && wasScreen !== 'selfaudit') { try { showScreen(wasScreen); } catch (e) {} }
+const inFold = (() => { const s = document.getElementById('screen-selfaudit'); return s && s.closest('.fold-body'); })();
+if (wasScreen && wasScreen !== 'selfaudit' && !inFold) { try { showScreen(wasScreen); } catch (e) {} }
 
 // A role written on the body that disagrees with the role in force means every
 // class-based rule on the page is answering the wrong question.
@@ -11550,7 +11551,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-1';
+const BUILD_ID = '14-2';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
