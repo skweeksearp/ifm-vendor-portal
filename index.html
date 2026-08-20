@@ -1394,6 +1394,15 @@ opacity: 0.6; margin-bottom: 5px; display: flex; align-items: center; gap: 7px; 
 .decide-flag { text-transform: none; letter-spacing: 0; font-size: 10.5px; font-weight: 700;
 color: #8A6D1F; border: 1px solid #D9A441; background: #FFF7E6; border-radius: 999px; padding: 1px 7px; opacity: 1; }
 .decide-line { font-size: 12.5px; line-height: 1.4; padding: 2px 0; opacity: 0.85; }
+.ob-kinds { display: flex; flex-wrap: wrap; gap: 7px; }
+.ob-kind {
+flex: 1 1 calc(50% - 7px); min-width: 136px; text-align: left;
+padding: 10px 12px; border: 1px solid var(--paper-dim); border-radius: 12px;
+background: #fff; font-family: inherit; color: var(--ink); cursor: pointer;
+}
+.ob-kind b { display: block; font-size: 14.5px; }
+.ob-kind span { display: block; font-size: 11.5px; opacity: 0.65; margin-top: 1px; }
+.ob-kind.selected { border-color: var(--leaf, #4C6B41); border-width: 2px; padding: 9px 11px; background: #F4F7F0; }
 .attn-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(0,0,0,0.07); }
 .attn-item:last-of-type { border-bottom: none; }
 .attn-info { flex: 1; min-width: 0; }
@@ -3229,14 +3238,15 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. Absences, booth requests, shares, documents, improvement proposals: entered here each is the same record the vendor&rsquo;s own screen would have made, judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
 <label for="obVendor">Vendor</label>
 <select id="obVendor" onchange="fillObRequirements()"></select>
-<label for="obKind">What they told you</label>
-<select id="obKind" onchange="toggleObKind()">
-<option value="Out">They will be away &mdash; an absence</option>
-<option value="In">They want a booth &mdash; a request</option>
-<option value="share">They are sharing their booth with somebody</option>
-<option value="doc">They sent a document &mdash; insurance, permit, licence</option>
-<option value="improve">They propose a booth improvement</option>
-</select>
+<label>What they told you</label>
+<input type="hidden" id="obKind" value="Out">
+<div class="ob-kinds" id="obKinds">
+<button type="button" class="ob-kind selected" data-k="Out"><b>An absence</b><span>They will be away</span></button>
+<button type="button" class="ob-kind" data-k="In"><b>A booth request</b><span>They want a booth</span></button>
+<button type="button" class="ob-kind" data-k="share"><b>A booth share</b><span>Two businesses, one booth</span></button>
+<button type="button" class="ob-kind" data-k="doc"><b>A document</b><span>Insurance, permit, licence</span></button>
+<button type="button" class="ob-kind" data-k="improve"><b>An improvement proposal</b><span>Work on their booth, for B&amp;G</span></button>
+</div>
 <div id="obShareWrap" style="display:none;">
 <label for="obGuest">Who is joining them in the booth</label>
 <select id="obGuest"></select>
@@ -7622,11 +7632,21 @@ const sel = document.getElementById(id);
 if (sel && !sel.dataset.filled) { sel.innerHTML = opts; sel.dataset.filled = '1'; }
 });
 toggleObKind();
+const kinds = document.getElementById('obKinds');
+if (kinds && !kinds.dataset.wired) {
+kinds.querySelectorAll('.ob-kind').forEach(b => { b.onclick = () => pickObKind(b); });
+kinds.dataset.wired = '1';
+}
 const when = document.getElementById('obWhen');
 if (when && !when.value) {
 const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
 when.value = d.toISOString().slice(0, 16);
 }
+}
+function pickObKind(btn) {
+document.getElementById('obKind').value = btn.dataset.k;
+document.querySelectorAll('#obKinds .ob-kind').forEach(b => b.classList.toggle('selected', b === btn));
+toggleObKind();
 }
 function toggleObKind() {
 const k = (document.getElementById('obKind') || {}).value;
@@ -11530,7 +11550,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-0';
+const BUILD_ID = '14-1';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
