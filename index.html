@@ -3218,7 +3218,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </section>
 <section id="screen-callinout" class="screen">
 <div class="screen-head" id="head-callinout"></div>
-<p class="empty-note" style="margin:-4px 0 14px;" id="cioLede">&ldquo;Calling in,&rdquo; as plenty of vendors still do by phone \u2014 this is the same ask, sent from your pocket: a booth at a market you don&rsquo;t hold, or notice that you&rsquo;ll be awice you&rsquo;ll be away from one you do.</p>
+<p class="empty-note" style="margin:-4px 0 14px;" id="cioLede">&ldquo;Calling in,&rdquo; as plenty of vendors still do by phone &mdash; this is the same ask, sent from your pocket: a booth at a market you don&rsquo;t hold, or notice that you&rsquo;ll be away from one you do.</p>
 <div class="card" id="cioContextCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span><span id="cioContextTitle"></span></h2>
 <p class="empty-note" style="margin-top:0;" id="cioContextText"></p>
@@ -9173,7 +9173,7 @@ kiosk:             { title: 'Information Kiosk' },
 leaves:            { title: 'Leaves of Absence' },
 whrate:            { title: 'Work Hour Rate' },
 popupsvendor:      { title: 'PopUp Events' },
-callinout:         { title: () => currentRole !== 'vendor' ? 'Requests & Absences' : (cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth') },
+callinout:         { title: () => currentRole !== 'vendor' ? 'The Old-Fashioned Way' : (cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth') },
 hours:             { title: 'Work Hours' },
 booths:            { title: () => currentAuction === 'weekly' ? 'Sunday Booth Selection' : 'Season-Long Booth Reservations' },
 communicate:       { title: 'Communicate with the Market' },
@@ -11530,7 +11530,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '13-120';
+const BUILD_ID = '14-0';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -17521,10 +17521,10 @@ note.textContent = 'Committee time counts toward your work hours \u2014 log it u
 body.appendChild(note);
 }
 const MGR_FOLDERS = [
+{ s: 'callinout', i: 'i-phone', t: 'The Old-Fashioned Way', d: 'Take anything a vendor sends by phone, email, mail, or across the desk \u2014 absences, requests, shares, documents, proposals' },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
 sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
 tiles: [
-{ s: 'callinout', i: 'i-phone', t: 'Requests &amp; Absences', d: 'Take anything a vendor sends the old ways \u2014 absences, requests, shares, documents, proposals' },
 { s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
 { s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
 { s: 'auction', i: 'i-gavel',
@@ -17633,6 +17633,7 @@ const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 grid.innerHTML = '';
 MGR_FOLDERS.forEach(f => {
+if (f.s) { grid.appendChild(buildToolFold(f)); return; }
 const fold = document.createElement('div');
 fold.className = 'dash-fold';
 fold.dataset.fold = 'mgr-' + f.key;
