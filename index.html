@@ -896,6 +896,64 @@ background: rgba(255,255,255,0.35); color: #3A382C; outline: none;
 body.kiosk-mode input.kiosk-search:focus { border-color: #D8A93B; background: rgba(255,255,255,0.88); }
 body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 400; }
 .kiosk-search:focus { border-color: #7FA36A; }
+
+/* THE NEW-DEAL BANNER.
+   Pink, bold, orange around every letter, right across the screen under the
+   search bars, for two minutes or until somebody else posts one.
+
+   ON THE FLASHING, which is the one thing here worth being careful about:
+   this is a screen in a public market with children and elderly people in
+   front of it, and fast flashing can trigger seizures in people with
+   photosensitive epilepsy. The published guidance is nothing above three
+   flashes a second; this pulses once every 1.6 seconds -- around 0.6 Hz,
+   five times slower than the limit -- which reads as a pulse rather than a
+   strobe and is safe at any distance. It also stops entirely for anyone whose
+   device asks for reduced motion. Please do not speed it up. */
+/* The search bars are absolutely positioned over the map, so a banner left in
+   the normal flow lands BEHIND them at the top of the stage rather than under
+   them. It has to be positioned against the same corner and pushed below the
+   taller of the two -- the bars are 6px from the top and about 75px tall in
+   kiosk mode, so 88px clears them with room to breathe. */
+.kiosk-newdeal {
+  position: absolute;
+  left: 0; right: 0;
+  top: 88px;
+  z-index: 14;
+  width: auto;
+  margin: 0;
+  padding: 10px 14px;
+  pointer-events: none;
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(19px, 3.4vw, 34px);
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #FF3D9A;
+  -webkit-text-stroke: 1.6px #FF7A18;
+  paint-order: stroke fill;
+  /* A dark band behind it. Without this the map reads straight through the
+     letters -- pink on a pale sand path is barely there, and the whole point
+     of the banner is that it is seen from across the aisle. */
+  background: rgba(28, 32, 24, 0.78);
+  border-top: 2px solid rgba(255,122,24,0.55);
+  border-bottom: 2px solid rgba(255,122,24,0.55);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.55), 0 0 14px rgba(255,122,24,0.35);
+  animation: kioskDealPulse 1.6s ease-in-out infinite;
+}
+@keyframes kioskDealPulse {
+  /* The BAND holds still and the LETTERS pulse. Fading the whole strip in and
+     out would make the map behind it flicker too, which is both uglier and
+     harder on the eye than pulsing the words alone. */
+  0%, 100% { color: #FF3D9A; -webkit-text-stroke-color: #FF7A18; }
+  50%      { color: #FFC0DD; -webkit-text-stroke-color: #FFD9A0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-newdeal { animation: none; opacity: 1; }
+}
 .kiosk-clock {
 position: absolute; right: 16px; top: 10px; z-index: 15;
 color: #3A382C; text-align: right; pointer-events: none;
@@ -2679,6 +2737,7 @@ placeholder="Find something"
 oninput="kioskTyped('product')" onkeydown="kioskProductKey(event)"
 onfocus="if (foolGuardFocus(this)) return; noteKioskActivity();">
 </div>
+<div class="kiosk-newdeal" id="kioskNewDeal" style="display:none;"><span id="kioskNewDealText"></span></div>
 <div class="kiosk-clock" id="kioskClock"></div>
 <div class="kiosk-panel" id="kioskDestruct" style="display:none;">
 <div class="kp-head" id="kdHead">IFM PAVILION // AUTONOMOUS DEFENSE</div>
@@ -13406,7 +13465,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-67';
+const BUILD_ID = '14-68';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13684,15 +13743,80 @@ if (kioskClockTimer) clearInterval(kioskClockTimer);
 kioskClockTimer = setInterval(() => {
 if (currentRole === 'kiosk') renderKioskClock();
 }, 10000);
+// Checked every two seconds rather than every ten: a deal that takes ten
+// seconds to appear has already stopped being news to the person standing
+// there. This compares two numbers and does nothing else.
+if (kioskDealWatch) clearInterval(kioskDealWatch);
+kioskDealWatch = setInterval(refreshKioskDeal, 2000);
 const stage = document.getElementById('kioskStage');
 if (stage) stage.addEventListener('pointerdown', noteKioskTap, true);
 bindKioskMapGestures();
 kioskResizeBound = true;
 }
 }
+// THE NEW-DEAL BANNER, in words.
+//
+// A vendor posts a sale; within a few seconds the kiosk says so across the top
+// of the screen. It runs for two minutes, or until another vendor posts, in
+// which case theirs takes over -- one at a time, newest wins. It is an
+// ADDITION: the star on the booth stays exactly as it was, and this does not
+// touch it.
+//
+// The banner announces the ARRIVAL of a deal, so it is driven by when the deal
+// was posted, not by which day it applies to. A deal posted now for tomorrow
+// is still news now.
+const KIOSK_DEAL_MS = 120000;              // two minutes
+const KIOSK_DEAL_CHARS = 58;               // one line, at kiosk size, on any screen
+let kioskDealShownId = null, kioskDealTimer = null, kioskDealSeenAt = null;
+
+function kioskDealWords(p) {
+// "Buy one get one free flowers at booth 34" -- the vendor's own words, cut to
+// one line, with the booth on the end because that is the part a shopper acts
+// on. If it will not fit, the booth stays and the words give way; a banner
+// that says what the offer is but not where is no use to anybody.
+const booth = vendorBoothOn(p.vendorId, todayISO());
+const v = cache.vendors.find(x => x.vendorId === p.vendorId);
+const tail = booth ? ' at booth ' + booth
+: (v && v.businessName ? ' at ' + v.businessName : '');
+let words = String(p.text || '').replace(/\s+/g, ' ').trim();
+const room = Math.max(12, KIOSK_DEAL_CHARS - tail.length);
+if (words.length > room) words = words.slice(0, room - 1).replace(/[\s,;:.-]+$/, '') + '\u2026';
+return (words + tail).trim();
+}
+function newestKioskDeal() {
+const list = (cache.promos || []).filter(p => p && p.createdAt);
+if (!list.length) return null;
+return list.reduce((a, b) => (Number(b.createdAt) > Number(a.createdAt) ? b : a));
+}
+function hideKioskDeal() {
+const el = document.getElementById('kioskNewDeal');
+if (el) el.style.display = 'none';
+if (kioskDealTimer) { clearTimeout(kioskDealTimer); kioskDealTimer = null; }
+kioskDealShownId = null;
+}
+function refreshKioskDeal() {
+const el = document.getElementById('kioskNewDeal');
+if (!el) return;
+if (currentRole !== 'kiosk') { hideKioskDeal(); return; }
+const p = newestKioskDeal();
+if (!p) { hideKioskDeal(); return; }
+// First sight of the kiosk: whatever was posted before we started watching is
+// old news. Without this, standing the kiosk up would flash a deal from last
+// Tuesday at whoever walked past.
+if (kioskDealSeenAt === null) { kioskDealSeenAt = Date.now(); }
+const age = Date.now() - Number(p.createdAt);
+if (age > KIOSK_DEAL_MS) { hideKioskDeal(); return; }
+if (p.id === kioskDealShownId) return;         // already up; leave it be
+kioskDealShownId = p.id;
+document.getElementById('kioskNewDealText').textContent = kioskDealWords(p);
+el.style.display = 'block';
+if (kioskDealTimer) clearTimeout(kioskDealTimer);
+kioskDealTimer = setTimeout(hideKioskDeal, Math.max(1000, KIOSK_DEAL_MS - age));
+}
 let kioskResizeBound = false;
 const KIOSK_TZ = 'America/New_York';
 let kioskClockTimer = null;
+let kioskDealWatch = null;
 let kioskIdleTimer = null;
 let kioskTaps = [];
 const KIOSK_EXIT_TAPS = 6;
