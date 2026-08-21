@@ -4449,10 +4449,9 @@ search: ['teal', 'the teal', 'boat', 'cruise', 'cruises', 'boat ride', 'ride', '
 blurb: 'The MV Teal, a diesel cruise boat that sails from the end of the pier two or three times each market day. ' +
 'A ride is $30 and lasts about 45 minutes. Listen for the Market Manager on the bullhorn \u2014 ' +
 'that is the ten-minute call before she leaves. The sailing is run by the boat\u2019s own crew, not by the market.' },
-{ x: 539, y: 256, w: 55, h: 23, text: 'Restroom Trailer', key: 'trailer', fs: 7,
+{ x: 494, y: 235, w: 55, h: 35, text: 'Restroom Trailer', key: 'trailer',
 search: ['restroom', 'rest room', 'bathroom', 'toilet', 'wc'],
 blurb: 'More restrooms, in the trailer beside the mid-hall service block.' },
-{ x: 477, y: 262, w: 26, h: 12, text: 'Sink', fs: 6.5, lx: -16 },
 { x: 474, y: 281, w: 39, h: 39, text: 'Restrooms', sub: 'ADA', fs: 7.5, key: 'restrooms',
 search: ['restroom', 'rest room', 'bathroom', 'toilet', 'wc', 'ada'],
 blurb: 'ADA accessible. Mid-hall, between booths 33 and 34.' },
@@ -11639,7 +11638,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-31';
+const BUILD_ID = '14-32';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
