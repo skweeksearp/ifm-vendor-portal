@@ -243,7 +243,7 @@ border: 1px solid rgba(35,42,32,0.15);
 .lotto-key i.available { background: var(--leaf); }
 .lotto-key i.assigned { background: var(--sunflower); }
 .lotto-key i.reserved { background: #4A5568; }
-#lottoPrintBackdrop.open, #feeStmtBackdrop.open { align-items: stretch; }
+#lottoPrintBackdrop.open, #feeStmtBackdrop.open, #yearEndBackdrop.open { align-items: stretch; }
 .print-shell {
 flex: 1; background: #fff; color: #000; display: flex; flex-direction: column; overflow: hidden;
 }
@@ -252,7 +252,7 @@ display: flex; gap: 10px; align-items: center; justify-content: space-between;
 padding: 12px 14px; border-bottom: 1px solid #ccc; background: var(--paper);
 }
 .print-bar button { width: auto; margin: 0; padding: 9px 16px; font-size: 15px; }
-#lottoPrintSheet, #feeStmtSheet { padding: 18px 16px 40px; overflow-y: auto; flex: 1; }
+#lottoPrintSheet, #feeStmtSheet, #yearEndSheet { padding: 18px 16px 40px; overflow-y: auto; flex: 1; }
 .pr-h1 { font-size: 21px; font-weight: 800; margin: 0; font-family: 'Manrope', sans-serif; }
 .pr-sub { font-size: 13px; margin: 3px 0 16px; }
 .pr-h2 { font-size: 16px; font-weight: 800; margin: 20px 0 8px; border-bottom: 2px solid #000; padding-bottom: 4px; font-family: 'Manrope', sans-serif; }
@@ -302,9 +302,9 @@ body:not(.kiosk-mode) #app { max-width: 640px; }
 @media print {
 @page { margin: 12mm; }
 #app, .print-bar { display: none !important; }
-#lottoPrintBackdrop.open, #feeStmtBackdrop.open { display: block !important; position: static; background: none; }
+#lottoPrintBackdrop.open, #feeStmtBackdrop.open, #yearEndBackdrop.open { display: block !important; position: static; background: none; }
 .print-shell { display: block; overflow: visible; }
-#lottoPrintSheet, #feeStmtSheet { padding: 0; overflow: visible; }
+#lottoPrintSheet, #feeStmtSheet, #yearEndSheet { padding: 0; overflow: visible; }
 html, body { background: #fff !important; color: #000 !important; }
 tr { break-inside: avoid; }
 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -3083,6 +3083,17 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
 <div class="comm-item"><div class="comm-title">Beta Reset must not ship</div><div class="comm-desc">Any build headed for real market use sets <code>BETA_RESET_TOOLS</code> to <code>false</code>. The reset desk rewrites records for every phone; it exists only to clean up after testing. A new storage key must also be added to <code>BETA_RESET_KEYS</code> as traffic or as configuration &mdash; a key in neither group is silently spared, and the screen&rsquo;s three lists are drawn from that same table.</div></div>
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
+</div>
+</section>
+<section id="screen-yearend" class="screen">
+<div class="screen-head" id="head-yearend"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Year-End Money Worksheet<button type="button" class="help-dot" onclick="showHelp(HELP_YEAR_END)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Every money figure this app holds for one year, gathered on one printable page for whoever does the market&rsquo;s books. <b>It is a worksheet, not a set of accounts.</b> The page itself lists what it cannot see, which for tax purposes matters more than what it can.</p>
+<label for="yeYear">Which year</label>
+<select id="yeYear" onchange="renderYearEndPreview()"></select>
+<div id="yePreview" style="margin-top:10px;"></div>
+<button type="button" class="primary-btn" style="margin-top:10px;" onclick="openYearEnd()">View printable page</button>
 </div>
 </section>
 <section id="screen-bootreport" class="screen">
@@ -8999,6 +9010,7 @@ setRoleHeader('staff');
 showScreen('staff');
 }
 const HELP_FEE_STATEMENT = 64;
+const HELP_YEAR_END = 65;
 const HELP_TEXTS = [
 {
 "title": "Sharing Someone’s Booth",
@@ -9259,6 +9271,10 @@ const HELP_TEXTS = [
 {
 "title": "Year's Record of Fees",
 "body": "<p>Every fee this app has recorded for you in one year, on a page you can print or save as a PDF.</p><p><b>It is not a receipt.</b> The page keeps two lists apart on purpose. <em>Payments you reported</em> are ones you told the app about &mdash; the app cannot see Venmo, a cheque, or cash across the desk, so nothing there has been matched to an actual transfer. <em>Amounts the office recorded</em> are ones the market put on its books; whether they have been paid is a different question this page cannot answer.</p><p>Adding those two together would produce a confident number that nobody has checked, which at tax time is worse than no number at all. So they are never added.</p><p>Ask the office for a statement from their books before you rely on any figure here.</p>"
+},
+{
+"title": "Year-End Money Worksheet",
+"body": "<p>Every money figure this app holds for one year, on one page for whoever does the market's books.</p><p><b>It is a worksheet, not a set of accounts.</b> The app has never seen a bank statement, a cash drawer, or a single expense. It holds what the office typed in while running markets.</p><p>Four kinds of fact are kept apart and never added together. <em>Recorded as received</em> is the nearest thing to income it has. <em>Membership share installments</em> are <b>equity, not income</b> — a member buys a share and can be repaid it on leaving, and booking that as revenue would overstate what the market earned and understate what it owes its members. <em>Vendor-reported</em> payments are unconfirmed by anybody. And the last section lists what the app cannot see, which for a tax return matters more than what it can.</p><p>Two figures are inferred rather than stored, and the page says so on itself: renewals hold a postmark but not an amount, and day fees hold who paid but not how much.</p>"
 }
 ];
 function showHelp(i) {
@@ -9996,6 +10012,7 @@ banked: Math.max(worked - accrued, 0)
 }
 function runScreenInit(name) {
 if (name === 'bootreport') initBootReportScreen();
+if (name === 'yearend') initYearEndScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
 if (name === 'directory') renderDirectory('');
 if (name === 'lottery') { initLotteryScreen(); centreLiveMap('lottoMapWrap'); }
@@ -10137,6 +10154,7 @@ volunteer:         { title: 'Volunteers / Partners' },
 venmopay:          { title: 'Pay Fees' },
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
+yearend:           { title: 'Year-End Money Worksheet' },
 bootreport:        { title: 'How This Opening Went' },
 selfaudit:         { title: 'Self-Audit' },
 orgstalls:         { title: 'Community Organizations' },
@@ -11062,6 +11080,224 @@ function initBootReportScreen() { renderBootReport(); }
 function forgetWarmCopy() {
 try { localStorage.removeItem(IFM_WARM_KEY); } catch (e) {}
 location.reload();
+}
+// THE MARKET'S YEAR, AS FAR AS THIS APP CAN SEE IT.
+//
+// The dangerous version of this tool is the one that adds everything up and
+// prints a confident total, because someone would file on it. This app is not
+// the market's accounts and never was: it holds no bank statement, no cash
+// drawer, no expenses at all. What it holds is what the office typed in while
+// running markets.
+//
+// So the page is a WORKSHEET. Four things are kept apart, because they are
+// four different kinds of fact and adding them would destroy the distinction:
+//
+//   RECORDED IN   money the office marked as received. The nearest thing to
+//                 income the app has, and still not a bank record.
+//   EQUITY        membership share installments. These are NOT income --
+//                 a member buys a share and can be repaid it on leaving.
+//                 A co-operative that books equity as revenue has a problem
+//                 no spreadsheet will find later.
+//   REPORTED      a vendor said they paid. Unconfirmed by anybody.
+//   EXPECTED      what the rules say was owed. Not money at all.
+//
+// And the page ends with what the app cannot see, which for tax is the more
+// important list.
+function yearEndYears() {
+const years = new Set([seasonYear()]);
+Object.keys((cache.ops && cache.ops.renewal) || {}).forEach(y => years.add(Number(y)));
+Object.keys((cache.ops && cache.ops.dayfees) || {}).forEach(d => years.add(Number(String(d).slice(0, 4))));
+(((cache.ops || {}).fines) || []).forEach(f => f.date && years.add(Number(String(f.date).slice(0, 4))));
+opRecords('certificate').forEach(r => {
+const d = (r.values || {}).date; if (d) years.add(Number(String(d).slice(0, 4)));
+});
+((vpCache && vpCache.items) || []).forEach(it => it.date && years.add(Number(String(it.date).slice(0, 4))));
+return [...years].filter(y => y > 2000).sort((a, b) => b - a);
+}
+function yearEndData(year) {
+const inYear = d => String(d || '').slice(0, 4) === String(year);
+const round = n => Math.round(n * 100) / 100;
+const vendorOf = id => cache.vendors.find(v => v.vendorId === id);
+
+// --- renewals: the office recorded a postmark, so the annual fee was paid.
+// The AMOUNT is not stored anywhere, so it is inferred from the class the
+// vendor holds today -- which is right for almost everyone and wrong for
+// anyone who changed class. The page says so rather than hiding it.
+const ren = (cache.ops.renewal || {})[year] || {};
+let renewCount = 0, renewTotal = 0, renewFull = 0, renewEE = 0;
+Object.keys(ren).forEach(vid => {
+if (!ren[vid] || !ren[vid].postmarked) return;
+const v = vendorOf(vid);
+if (!v) return;
+const full = String(v.category || '').endsWith('Full');
+renewCount++; renewTotal += full ? 230 : 115;
+if (full) renewFull++; else renewEE++;
+});
+
+// --- day fees: a list of who paid, per date. The amount is the rate for that
+// day of the week, read now -- if the Board has changed the rate since, this
+// values an old market at today's price.
+let dayCount = 0, dayTotal = 0;
+const dayDates = [];
+Object.keys(cache.ops.dayfees || {}).forEach(date => {
+if (!inYear(date)) return;
+const list = cache.ops.dayfees[date] || [];
+if (!list.length) return;
+const d = new Date(date + 'T12:00:00');
+const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
+const fee = dayFee(dayName);
+dayCount += list.length; dayTotal += list.length * fee;
+dayDates.push({ date: date, n: list.length, fee: fee });
+});
+dayDates.sort((a, b) => a.date.localeCompare(b.date));
+
+// --- fines
+const fines = (((cache.ops || {}).fines) || []).filter(f => inYear(f.date));
+const waivedOf = f => !!(cache.ops.waived || {})['F:' + f.id];
+const finesLive = fines.filter(f => !waivedOf(f));
+const finesWaived = fines.filter(waivedOf);
+const finesTotal = finesLive.reduce((s, f) => s + Number(f.amount || 0), 0);
+const byReason = {};
+finesLive.forEach(f => { const k = f.reason || 'Unstated';
+byReason[k] = byReason[k] || { n: 0, amt: 0 };
+byReason[k].n++; byReason[k].amt += Number(f.amount || 0); });
+
+// --- membership share installments: equity
+const certs = opRecords('certificate').filter(r => inYear((r.values || {}).date));
+const certTotal = certs.reduce((s, r) => s + Number((r.values || {}).amount || 0), 0);
+
+// --- vendor-reported, unconfirmed
+const reported = ((vpCache && vpCache.items) || []).filter(it => inYear(it.date));
+const reportedTotal = reported.reduce((s, it) => s + Number(it.amount || 0), 0);
+
+return {
+renewCount: renewCount, renewTotal: round(renewTotal), renewFull: renewFull, renewEE: renewEE,
+vendorCount: (cache.vendors || []).length,
+dayCount: dayCount, dayTotal: round(dayTotal), dayDates: dayDates,
+fines: finesLive, finesTotal: round(finesTotal), finesWaived: finesWaived, byReason: byReason,
+certs: certs, certTotal: round(certTotal),
+reported: reported, reportedTotal: round(reportedTotal),
+receivedTotal: round(renewTotal + dayTotal + finesTotal)
+};
+}
+function initYearEndScreen() {
+const sel = document.getElementById('yeYear');
+if (!sel) return;
+const chosen = sel.value;
+sel.innerHTML = '';
+yearEndYears().forEach(y => {
+const o = document.createElement('option');
+o.value = String(y); o.textContent = String(y);
+sel.appendChild(o);
+});
+if (chosen && [...sel.options].some(o => o.value === chosen)) sel.value = chosen;
+renderYearEndPreview();
+}
+function renderYearEndPreview() {
+const el = document.getElementById('yePreview');
+if (!el) return;
+const d = yearEndData(Number(document.getElementById('yeYear').value) || seasonYear());
+const row = (t, n) => '<div class="tracker-row"><div class="t-title">' + t +
+'</div><div class="t-note"><b>$' + fmtMoney(n) + '</b></div></div>';
+el.innerHTML =
+row('Recorded as received', d.receivedTotal) +
+row('Membership shares \u2014 equity, not income', d.certTotal) +
+row('Vendor-reported, unconfirmed', d.reportedTotal);
+}
+function openYearEnd() {
+if (!requireManager()) return;
+const year = Number(document.getElementById('yeYear').value) || seasonYear();
+const d = yearEndData(year);
+const m = n => '$' + fmtMoney(n);
+let H = '';
+H += '<p class="pr-h1">Year-End Money Worksheet \u2014 ' + year + '</p>';
+H += '<p class="pr-sub">Ithaca Farmers Market \u00b7 printed ' +
+new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+' \u00b7 from the vendor portal, build ' + esc(BUILD_ID) + '</p>';
+
+H += '<p class="pr-h2">Read this first</p>';
+H += '<p style="font-size:13.5px; line-height:1.55; margin:0;">' +
+'<b>This is a worksheet, not a set of accounts.</b> It contains what the office typed into this app ' +
+'while running markets during ' + year + ' \u2014 nothing more. It has never seen a bank statement, a ' +
+'cash drawer, or a single expense. The four sections below are four different kinds of fact and are ' +
+'deliberately not added into one figure: doing so would produce a confident number that nothing has ' +
+'checked, which at tax time is worse than no number.</p>';
+
+H += '<p class="pr-h2">1 &nbsp;Recorded as received &nbsp;&mdash;&nbsp; ' + m(d.receivedTotal) + '</p>';
+H += '<table class="pr-list"><thead><tr><th>What</th><th>Count</th><th>Amount</th></tr></thead><tbody>';
+H += '<tr><td>Annual vendor fees (renewal postmarked)</td><td>' + d.renewCount +
+' of ' + d.vendorCount + '</td><td>' + m(d.renewTotal) + '</td></tr>';
+H += '<tr><td>Day fees collected</td><td>' + d.dayCount + ' payments</td><td>' + m(d.dayTotal) + '</td></tr>';
+H += '<tr><td>Fines (not waived)</td><td>' + d.fines.length + '</td><td>' + m(d.finesTotal) + '</td></tr>';
+H += '</tbody></table>';
+H += '<p style="font-size:13px; margin:6px 0 0; line-height:1.5;">' +
+'<b>Two things to check before using the first two lines.</b> The renewal record stores a postmark date, ' +
+'not an amount \u2014 the figure above is worked out from each vendor\u2019s class as it stands <em>today</em> ' +
+'($230 Full, $115 Easy Entry; ' + d.renewFull + ' and ' + d.renewEE + ' respectively). Anyone who changed ' +
+'class during the year is valued wrongly. Day fees are likewise stored as who paid, not how much, so each ' +
+'market is valued at the rate in force <em>now</em>; if the Board changed a rate during ' + year +
+', earlier markets are priced at today\u2019s figure.</p>';
+
+H += '<p class="pr-h2">2 &nbsp;Membership share installments &nbsp;&mdash;&nbsp; ' + m(d.certTotal) + '</p>';
+H += '<p style="font-size:13.5px; line-height:1.55; margin:0 0 6px;"><b>This is equity, not income, and it is ' +
+'kept out of the total above on purpose.</b> A Full Member pays $300 over up to three years toward a share ' +
+'in the market and can ask for it back on leaving. Booking it as revenue would overstate the market\u2019s ' +
+'income and understate what it owes its members. ' + d.certs.length + ' payment' +
+(d.certs.length === 1 ? '' : 's') + ' recorded in ' + year + '.</p>';
+
+H += '<p class="pr-h2">3 &nbsp;Vendor-reported, unconfirmed &nbsp;&mdash;&nbsp; ' + m(d.reportedTotal) + '</p>';
+H += '<p style="font-size:13.5px; line-height:1.55; margin:0;">' + d.reported.length + ' payment' +
+(d.reported.length === 1 ? '' : 's') + ' that vendors told the app they had made. The app cannot see Venmo, ' +
+'a cheque, or cash across the desk, so <b>none of these has been matched to a transfer</b>. They may overlap ' +
+'with section 1, or be duplicates, or be settled another way. They are listed for chasing, not for counting.</p>';
+
+if (Object.keys(d.byReason).length) {
+H += '<p class="pr-h2">Fines by reason</p>';
+H += '<table class="pr-list"><thead><tr><th>Reason</th><th>Count</th><th>Amount</th></tr></thead><tbody>';
+Object.keys(d.byReason).sort().forEach(k => {
+H += '<tr><td>' + esc(k) + '</td><td>' + d.byReason[k].n + '</td><td>' + m(d.byReason[k].amt) + '</td></tr>';
+});
+H += '</tbody></table>';
+if (d.finesWaived.length) H += '<p style="font-size:13px; margin:6px 0 0;">' + d.finesWaived.length +
+' fine' + (d.finesWaived.length === 1 ? ' was' : 's were') + ' waived and ' +
+(d.finesWaived.length === 1 ? 'is' : 'are') + ' excluded above.</p>';
+}
+
+if (d.dayDates.length) {
+H += '<p class="pr-h2">Day fees, market by market</p>';
+H += '<table class="pr-list"><thead><tr><th>Market</th><th>Paid</th><th>Rate</th><th>Amount</th></tr></thead><tbody>';
+d.dayDates.forEach(x => {
+H += '<tr><td>' + esc(formatDisplayDate(x.date)) + '</td><td>' + x.n + '</td><td>' + m(x.fee) +
+'</td><td>' + m(x.n * x.fee) + '</td></tr>';
+});
+H += '</tbody></table>';
+}
+
+H += '<p class="pr-h2">4 &nbsp;What this app has never seen</p>';
+H += '<p style="font-size:13.5px; margin:0 0 4px;">For a tax return this list matters more than the figures above.</p>';
+H += '<ul style="font-size:13.5px; line-height:1.6; margin:0; padding-left:18px;">' +
+'<li><b>Every expense.</b> Rent, utilities, wages, insurance, repairs, equipment, printing. The app records ' +
+'no outgoing money of any kind.</li>' +
+'<li><b>The bank.</b> Nothing here has been reconciled against a statement. A fee marked received in the app ' +
+'is a note somebody made, not a deposit.</li>' +
+'<li><b>Cash.</b> Money handed across the desk and not entered is invisible here.</li>' +
+'<li><b>Income that is not a vendor fee</b> \u2014 grants, sponsorship, events, stall hire, donations, ' +
+'anything the market earns other than from its own vendors.</li>' +
+'<li><b>Tokens, EBT, SNAP and market-bucks</b> and any matching programme.</li>' +
+'<li><b>Refunds and repaid shares.</b> A member leaving and being repaid their $300 appears nowhere.</li>' +
+'<li><b>Anything before this app was in use</b>, and anything the office kept elsewhere.</li>' +
+'</ul>';
+H += '<p style="font-size:13px; margin:14px 0 0; line-height:1.5;"><b>Give this to whoever does the books as a ' +
+'starting point and a cross-check, not as a return.</b> Neither the market nor this page is giving tax advice.</p>';
+H += '<p style="font-size:12px; margin:16px 0 0; color:#444;">Figures are those held in the app at the moment ' +
+'of printing. Reprinting after further entries will give different numbers.</p>';
+
+document.getElementById('yearEndSheet').innerHTML = H;
+document.getElementById('yearEndBackdrop').classList.add('open');
+document.getElementById('yearEndSheet').scrollTop = 0;
+}
+function closeYearEnd() {
+document.getElementById('yearEndBackdrop').classList.remove('open');
 }
 function closeFeeStatement() {
 document.getElementById('feeStmtBackdrop').classList.remove('open');
@@ -12788,7 +13024,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-63';
+const BUILD_ID = '14-64';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -19110,6 +19346,7 @@ tiles: [
 { soon: 'attendreq', s: 'attendreq', i: 'i-checkmark', t: 'Attendance Requirement', d: 'What holding a reserved booth obliges' },
 { soon: 'fines', s: 'fines', i: 'i-scale', t: 'Fines &amp; Penalties', d: 'What is owed, with the escalation' },
 { soon: 'disciplinary', ot: 'disciplinary', i: 'i-warning', t: 'Disciplinary Record', d: 'Which stage a vendor is at' },
+{ s: 'yearend', i: 'i-document', t: 'Year-End Money Worksheet', d: 'Every figure the app holds for a year, and what it does not' },
 ] },
 { key: 'hours', title: 'Work Hours', icon: 'i-clock',
 sub: 'What is owed, worked, and billed',
@@ -21022,6 +21259,15 @@ init();</script>
   </div>
 </div>
 
+<div id="yearEndBackdrop" class="modal-backdrop">
+  <div class="print-shell">
+    <div class="print-bar">
+      <button type="button" class="ghost-btn" onclick="closeYearEnd()">Close</button>
+      <button type="button" onclick="window.print()">Print or save as PDF</button>
+    </div>
+    <div id="yearEndSheet"></div>
+  </div>
+</div>
 <div id="feeStmtBackdrop" class="modal-backdrop">
   <div class="print-shell">
     <div class="print-bar">
