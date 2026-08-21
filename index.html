@@ -683,15 +683,43 @@ display: flex; align-items: center; justify-content: center; background: #fff;
 width: 60px; padding: 6px; border: 1px solid var(--paper-dim); border-radius: 6px;
 font-size: 14px; text-align: center; font-family: inherit;
 }
-.open-booth-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.open-booth-chip {
-display: flex; flex-direction: column; align-items: center; justify-content: center;
-min-width: 52px; padding: 6px 8px; border: 1px solid var(--leaf); border-radius: 10px;
-background: #fff; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 16px; color: var(--ink);
+/* This was a wrapped row of little tiles. Each tile held the name of whoever
+   had vacated the booth, so a booth freed by "Rainbow Valley Ranch/Fingerlakes"
+   drew wide and one marked "always open" drew narrow -- a visible difference
+   that meant nothing at all, on a screen where every other visible difference
+   means something. It is a list now: one booth per line, everything in the
+   same columns, so the eye can run down it. */
+.open-booth-chips { margin-top: 8px; }
+.open-booth-row {
+display: flex; align-items: center; gap: 10px; width: 100%;
+padding: 9px 12px; margin-bottom: 6px; text-align: left;
+border: 1px solid var(--paper-dim); border-radius: 12px; background: #fff;
+font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink);
 }
-.open-booth-chip .vacated-by { font-family: inherit; font-size: 10px; opacity: 0.6; max-width: 70px; text-align: center; line-height: 1.15; margin-top: 1px; }
-.open-booth-chip.assigned { background: var(--leaf); color: #fff; border-color: var(--leaf-dark); }
-.open-booth-chip.assigned .vacated-by { opacity: 0.9; }
+.open-booth-row .ob-num {
+flex: 0 0 auto; min-width: 46px; font-size: 19px; font-weight: 700;
+font-variant-numeric: tabular-nums; text-align: center;
+border-right: 1px solid var(--paper-dim); padding-right: 10px;
+}
+.open-booth-row .ob-body { flex: 1 1 auto; min-width: 0; }
+/* Both are spans inside a button, and spans sit side by side. They are two
+   separate facts -- where the booth is, and why it is free -- so they stack. */
+.open-booth-row .ob-section { display: block; font-size: 15px; line-height: 1.2; }
+.open-booth-row .vacated-by {
+display: block; font-size: 13px; opacity: 0.65; line-height: 1.2; margin-top: 2px;
+overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.open-booth-row .ob-state {
+flex: 0 0 auto; font-size: 12px; letter-spacing: .03em; text-transform: uppercase;
+padding: 4px 9px; border-radius: 9px; background: var(--paper-dim); color: var(--ink-dim, #8a8a86);
+}
+.open-booth-row.assigned { border-color: var(--leaf); background: #F3F7EF; }
+.open-booth-row.assigned .ob-state { background: var(--leaf); color: #fff; }
+@media (max-height: 520px) {
+  .drawer-list .open-booth-row { padding: 6px 10px; margin-bottom: 5px; }
+  .drawer-list .open-booth-row .ob-num { font-size: 17px; min-width: 40px; }
+  .drawer-list .open-booth-row .ob-section { font-size: 14px; }
+  .drawer-list .open-booth-row .vacated-by { font-size: 12px; }
+}
 .lotto-add-result {
 display: flex; align-items: center; justify-content: space-between;
 padding: 8px 10px; border: 1px solid var(--paper-dim); border-radius: 10px; margin-top: 6px;
@@ -10184,10 +10212,26 @@ return year_month_day(d);
 function year_month_day(d) {
 return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
 }
+// Booth numbers are not all numbers: the Pavilion floor is P1, P2 and the
+// Waterfront Trail is WT1, WT2. parseInt('P1') is NaN, NaN*100 is NaN, and a
+// comparator returning NaN says "these are equal" for every pair -- so the
+// lettered booths did not sort at all, they simply stayed wherever the array
+// happened to put them, which was the top. Letters now sort after numbers,
+// grouped by their prefix, and numerically within it.
 function boothSortKey(num) {
-const n = parseInt(num, 10);
-const suffix = String(num).replace(/^\d+/, '');
-return n * 100 + (suffix ? suffix.charCodeAt(0) : 0);
+const s = String(num);
+const m = s.match(/^(\d+)([A-Za-z]*)$/);
+if (m) return Number(m[1]) * 100 + (m[2] ? m[2].charCodeAt(0) : 0);
+const lettered = s.match(/^([A-Za-z]+)(\d*)$/);
+if (lettered) {
+// 1,000,000 puts every lettered booth after every numbered one.
+let base = 1000000;
+for (let i = 0; i < lettered[1].length && i < 3; i++) {
+base += lettered[1].toUpperCase().charCodeAt(i) * Math.pow(100, 3 - i);
+}
+return base + Number(lettered[2] || 0);
+}
+return 2000000;
 }
 function boothBaselineHolder(booth, date) {
 if (booth.reservedBy) return booth.reservedBy;
@@ -10665,20 +10709,36 @@ container.innerHTML = '';
 if (!openBooths.length) {
 container.innerHTML = '<p class="empty-note">No open booths yet \u2014 no absences on file for this date.</p>';
 }
+container.classList.add('drawer-list');
 openBooths.forEach(b => {
 const isAssigned = assignedBoothNums.has(b.num);
 const holder = isAssigned
 ? Object.keys(rec.assignments).find(vid => rec.assignments[vid] === b.num)
 : null;
-const chip = document.createElement('button');
-chip.type = 'button';
-chip.className = 'open-booth-chip' + (isAssigned ? ' assigned' : '');
-chip.innerHTML = '<div>' + b.num + '</div><div class="vacated-by">' +
-(isAssigned ? boothVendorName(holder) : (b.vacatedBy ? 'was ' + b.vacatedBy : 'always open')) +
-'</div>';
-chip.onclick = () => isAssigned ? lottoUnassign(kind, b.num) : lottoAssignNext(kind, b.num);
-container.appendChild(chip);
+const booth = cache.booths.find(x => x.num === b.num);
+const row = document.createElement('button');
+row.type = 'button';
+row.className = 'open-booth-row' + (isAssigned ? ' assigned' : '');
+row.innerHTML =
+'<span class="ob-num">' + esc(b.num) + '</span>' +
+'<span class="ob-body">' +
+'<span class="ob-section">' + esc((booth && booth.section) || 'Booth') + '</span>' +
+'<span class="vacated-by">' +
+(isAssigned ? 'Given to ' + esc(boothVendorName(holder))
+: (b.vacatedBy ? 'Free today \u2014 ' + esc(b.vacatedBy) + ' is away'
+: 'Open every market')) +
+'</span></span>' +
+'<span class="ob-state">' + (isAssigned ? 'given' : 'open') + '</span>';
+// Same gesture as the map: a booth opens the booth sheet, and the action --
+// if there is one -- is offered inside it, after you have seen what it is.
+row.onclick = () => openBoothDetail(b.num, { sel: kind });
+container.appendChild(row);
 });
+setTimeout(() => { fitListToRows(container, '.open-booth-row', 5.4); markListEnds(container); }, 0);
+if (!container.dataset.scrollBound) {
+container.addEventListener('scroll', () => markListEnds(container), { passive: true });
+container.dataset.scrollBound = '1';
+}
 renderLottoBoothMap(k.ids.canvas, {
 kind, openBooths, assignments: rec.assignments,
 onAssign: num => lottoAssignNext(kind, num),
@@ -12182,7 +12242,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-50';
+const BUILD_ID = '14-51';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
