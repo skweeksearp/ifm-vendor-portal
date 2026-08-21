@@ -5402,6 +5402,31 @@ const IFM_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzqoNF62WqybRV8
 // Warm-boot state. `var` and up here on purpose: these are read during boot,
 // and a `let` further down the file threw "is not defined" because the read
 // happened from a different block than the declaration.
+// COUNTING THE LOADS, BECAUSE THE CLOCK RESETS ON EACH ONE.
+//
+// Every number in the boot report starts when the page starts loading. If the
+// page loads more than once for a single tap -- a redirect, an update reload,
+// a crash and retry -- each load reports its own small number and the person
+// holding the phone experiences the sum. That is how a report can honestly say
+// 0.3 s while a stopwatch honestly says nine.
+//
+// sessionStorage survives a reload within the same tab and dies when the tab
+// does, which is exactly the shape of "one tap". So: count the loads, and
+// remember when the first of them began.
+var ifmLoadNo = 1, ifmChainMs = null, ifmChainFrom = null;
+try {
+const raw = sessionStorage.getItem('ifm-loadchain');
+const now = Date.now();
+if (raw) {
+const c = JSON.parse(raw);
+ifmLoadNo = (c.n || 1) + 1;
+ifmChainFrom = c.t || now;
+} else {
+ifmChainFrom = now;
+}
+sessionStorage.setItem('ifm-loadchain', JSON.stringify({ n: ifmLoadNo, t: ifmChainFrom }));
+} catch (e) {}
+
 var ifmWarmAge = null, ifmWarmUsed = false, ifmBootMs = null, ifmBootDone = false;
 var ifmWarmBytes = null, ifmWarmKept = null, ifmWarmDropped = [], ifmWarmError = null,
     ifmPhotoMs = null, ifmPrimeMs = null, ifmRecordsMs = null,
@@ -7911,6 +7936,7 @@ try { kioskFirst = localStorage.getItem('ifm-kiosk-device') === '1'; } catch (e)
 if (!kioskFirst) showLanding();
 ifmBootMs = Date.now() - bootStarted;
 try { ifmFromNav = Math.round(performance.now()); } catch (e) {}
+if (ifmChainFrom) ifmChainMs = Date.now() - ifmChainFrom;
 
 ifmDataReady = loadAllData();
 await ifmDataReady;
@@ -10967,9 +10993,32 @@ const row = (k, v, note) => rows.push('<div class="tracker-row"><div class="t-ti
 //
 // performance.now() inside the app is milliseconds since the browser started
 // navigating, so it covers the download and the reading of the file as well.
-row('Whole thing, tap to first screen', ifmFromNav === null ? 'not recorded'
+// If the page has loaded more than once, THAT is the number the person felt.
+if (ifmLoadNo > 1) {
+row('This page has loaded ' + ifmLoadNo + ' times', ifmChainMs === null ? '\u2014'
+: (ifmChainMs / 1000).toFixed(1) + ' s since the first',
+'for one tap. Every row below measures only the LAST of those loads, which is ' +
+'why they look quick. Something is reloading the page.');
+}
+row('This load, start to first screen', ifmFromNav === null ? 'not recorded'
 : (ifmFromNav / 1000).toFixed(1) + ' s',
-'the honest number \u2014 fetching this file, reading it, then drawing');
+ifmLoadNo > 1 ? 'this load only \u2014 see above' : 'fetching this file, reading it, then drawing');
+// Where the browser spent it, from its own record rather than ours.
+try {
+const nav = performance.getEntriesByType('navigation')[0];
+if (nav) {
+const ms = n => Math.round(n) + ' ms';
+row('  \u2014 finding and reaching the server', ms(nav.connectEnd - nav.startTime),
+'lookup and connection, before a byte of the file');
+row('  \u2014 waiting for the first byte', ms(nav.responseStart - nav.requestStart),
+'the server thinking');
+row('  \u2014 downloading the file', ms(nav.responseEnd - nav.responseStart),
+Math.round((nav.transferSize || 0) / 1024) + ' KB over the wire' +
+((nav.transferSize === 0 && nav.decodedBodySize) ? ' \u2014 served from this phone\u2019s cache' : ''));
+row('  \u2014 reading the file', ms(nav.domInteractive - nav.responseEnd),
+'making sense of 16,000 lines');
+}
+} catch (e) {}
 row('  \u2014 of which, fetching and reading the app', ifmParseMs === null ? 'not recorded'
 : (ifmParseMs / 1000).toFixed(1) + ' s',
 'nothing here can be made faster from inside the app; only a smaller file helps');
@@ -12731,7 +12780,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-61';
+const BUILD_ID = '14-62';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
