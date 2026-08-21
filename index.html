@@ -1239,6 +1239,14 @@ font-size: clamp(15px, 1.8vw, 22px); font-weight: 800; line-height: 1.25; margin
 position: absolute; width: 40px; height: 40px; pointer-events: none;
 transform: translate(-50%, -50%); z-index: 5;
 }
+/* A star that can be pressed needs something to press: the drawing is small
+   and has gaps, so the whole square takes the tap. */
+body.kiosk-mode .deal-star.tappable { pointer-events: auto; cursor: pointer; }
+body.kiosk-mode .deal-star.tappable::after {
+content: ''; position: absolute; inset: -6px; border-radius: 50%;
+}
+body.kiosk-mode .deal-star.tappable:active svg { transform: scale(0.88); }
+.deal-star svg { transition: transform .12s ease; }
 .deal-star svg { display: block; width: 100%; height: 100%; }
 .kiosk-detail h3 { margin: 0 0 2px; font-size: calc(clamp(18px, 2.1vw, 28px) * var(--card-scale, 1)); color: #2E2B20; }
 .kiosk-detail .meta { color: #B98A2E; font-size: calc(clamp(12px, 1.3vw, 16px) * var(--card-scale, 1)); margin: 0 0 8px; }
@@ -11638,7 +11646,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-33';
+const BUILD_ID = '14-34';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13570,6 +13578,10 @@ star = document.createElement('span');
 star.className = 'deal-star';
 star.dataset.num = booth.num;
 star.innerHTML = DEAL_STAR_SVG;
+if (document.body.classList.contains('kiosk-mode')) {
+star.classList.add('tappable');
+star.onclick = ev => { ev.stopPropagation(); selectKioskBooth(booth.num, { focus: true }); };
+}
 canvas.appendChild(star);
 }
 star.style.left = (pos.x + dir.x * 42) + 'px';
