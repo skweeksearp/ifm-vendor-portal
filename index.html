@@ -127,8 +127,13 @@ font-size: 15px; box-shadow: 0 4px 14px rgba(35,42,32,0.3); }
    of the inner list hands the scroll straight on to the page, so a firm swipe
    runs off the end of the list and carries on down the desk -- which feels
    exactly like the containment not working. */
+/* Height is set in NAMES, not pixels: about four and a half rows, so four are
+   whole and the fifth is cut, which says "there is more" better than any
+   shadow. The pitch of a row is measured on the device rather than assumed,
+   because it differs with the text size the person has chosen. The pixel
+   clamp below is only the fallback for the moment before that measurement. */
 .drawer-list {
-  max-height: clamp(240px, 60vh, 640px);
+  max-height: var(--list-h, clamp(240px, 60vh, 640px));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -561,6 +566,18 @@ font-size: 22px; border-color: transparent;
 }
 .dir-name { font-weight: 700; font-size: 18px; color: var(--ink); }
 .dir-meta { font-size: 15px; opacity: 0.7; margin-top: 2px; }
+/* Held sideways there is no room for four full-sized rows AND the search box
+   above them, so inside a contained list the row tightens: same information,
+   less air. Only inside .drawer-list -- the Rolodex opened as its own screen
+   has the whole window and keeps the roomier row. */
+@media (max-height: 520px) {
+  .drawer-list .dir-card { padding: 7px 12px; margin-bottom: 6px; gap: 10px; }
+  .drawer-list .dir-avatar { width: 34px; height: 34px; font-size: 21px; }
+  .drawer-list .dir-name { font-size: 16px; }
+  .drawer-list .dir-meta { font-size: 13px; margin-top: 1px; }
+  .drawer-list .dir-points .num { font-size: 17px; }
+  .drawer-list .dir-points .lbl { font-size: 11px; }
+}
 .dir-points { margin-left: auto; text-align: center; }
 .report-row {
 display: flex; align-items: center; justify-content: space-between;
@@ -9983,6 +10000,19 @@ renderBooths();
 // the top whenever the search changes -- otherwise a search made half way down
 // returns its matches somewhere off screen and reads as having found nothing.
 let dirScrollBound = false;
+// Size a contained list to a number of rows, measured from the rows actually
+// on the page. Falls back to the CSS clamp if there is nothing to measure yet.
+function fitListToRows(el, rowSelector, rows) {
+if (!el) return;
+const items = el.querySelectorAll(rowSelector);
+if (items.length < 2) { el.style.removeProperty('--list-h'); return; }
+const a = items[0].getBoundingClientRect(), b = items[1].getBoundingClientRect();
+const pitch = b.top - a.top;
+if (!(pitch > 8)) { el.style.removeProperty('--list-h'); return; }
+// Never take more than two thirds of the window, however tall the rows are.
+const cap = Math.round(window.innerHeight * 0.66);
+el.style.setProperty('--list-h', Math.min(Math.round(pitch * rows), cap) + 'px');
+}
 function markListEnds(el) {
 if (!el) return;
 const more = el.scrollHeight - el.clientHeight;
@@ -10007,7 +10037,8 @@ vField(v, 'primaryContact').toLowerCase().includes(q) ||
 vField(v, 'address').toLowerCase().includes(q)
 );
 document.getElementById('dirCount').textContent = matches.length + ' of ' + cache.vendors.length + ' vendors';
-setTimeout(() => markListEnds(list), 0);
+// Four whole rows and a glimpse of the fifth.
+setTimeout(() => { fitListToRows(list, '.dir-card', 4.6); markListEnds(list); }, 0);
 pagedList('directory', list, matches, filterText, v => {
 const total = cache.ledger.filter(r => r.vendorId === v.vendorId)
 .reduce((sum, r) => sum + Number(r.points || 0), 0);
@@ -12131,7 +12162,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-47';
+const BUILD_ID = '14-48';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
