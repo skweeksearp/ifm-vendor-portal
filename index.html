@@ -3085,6 +3085,16 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
 </div>
 </section>
+<section id="screen-bootreport" class="screen">
+<div class="screen-head" id="head-bootreport"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>How This Opening Went</h2>
+<p class="empty-note" style="margin-top:0;">A cold open used to wait for the whole sheet before showing anything. It now opens from a copy kept on this device and corrects itself when the sheet answers. When it is slow, this says which part was slow &mdash; guessing at that from somewhere else is how a fortnight gets wasted.</p>
+<div id="bootReport"></div>
+<button type="button" class="ghost-btn" style="margin-top:10px;" onclick="renderBootReport()">Read it again</button>
+<button type="button" class="ghost-btn" onclick="forgetWarmCopy()">Forget the copy and reload</button>
+</div>
+</section>
 <section id="screen-selfaudit" class="screen">
 <div class="screen-head" id="head-selfaudit"></div>
 <div class="card">
@@ -3219,6 +3229,14 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'appglossary')">
 <span class="fold-title">App Glossary</span>
 <span class="fold-sub">What this app calls its own parts &mdash; desks, tools, chips, help dots, cones and the rest</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="dev-boot">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'bootreport')">
+<span class="fold-title">How This Opening Went</span>
+<span class="fold-sub">Where the seconds went on this device &mdash; the copy, the sheet, the photographs</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -5385,6 +5403,8 @@ const IFM_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzqoNF62WqybRV8
 // and a `let` further down the file threw "is not defined" because the read
 // happened from a different block than the declaration.
 var ifmWarmAge = null, ifmWarmUsed = false, ifmBootMs = null, ifmBootDone = false;
+var ifmWarmBytes = null, ifmWarmKept = null, ifmWarmDropped = [], ifmWarmError = null,
+    ifmPhotoMs = null, ifmPrimeMs = null;
 function ifmFetch(url, opts, ms) {
 const ctl = new AbortController();
 const t = setTimeout(() => ctl.abort(), ms || 8000);
@@ -5639,15 +5659,33 @@ ifmWarmAge = Date.now() - j.savedAt;
 return j.items.length > 0;
 } catch (e) { return false; }
 }
+// Vendor photographs are base64 JPEGs, one key each, and there are as many of
+// them as there are vendors with a picture. They are also the one thing on the
+// desk nobody is waiting to read. Keeping them out of the copy is the
+// difference between a copy that saves and a copy that is thrown away on every
+// boot for being too big -- which is a warm boot that is never warm.
+function ifmWarmSkip(key) { return /^ifm-photo-/.test(key); }
 function ifmWarmSave(items) {
 try {
-const payload = JSON.stringify({ savedAt: Date.now(), items: items });
-// A sheet that has outgrown the browser's cupboard should not throw every
-// boot -- drop the copy and carry on fetching the slow way.
-if (payload.length > IFM_WARM_BUDGET) { localStorage.removeItem(IFM_WARM_KEY); return; }
+const keep = (items || []).filter(it => !ifmWarmSkip(String(it.key)));
+let payload = JSON.stringify({ savedAt: Date.now(), items: keep });
+// Still too big? Drop the largest records one at a time rather than throwing
+// the whole copy away. Half a copy still saves most of the wait; no copy
+// saves none of it, and that was the old behaviour.
+if (payload.length > IFM_WARM_BUDGET) {
+keep.sort((a, b) => String(b.value).length - String(a.value).length);
+while (keep.length && payload.length > IFM_WARM_BUDGET) {
+ifmWarmDropped.push(String(keep.shift().key));
+payload = JSON.stringify({ savedAt: Date.now(), items: keep });
+}
+}
+ifmWarmBytes = payload.length;
+ifmWarmKept = keep.length;
 localStorage.setItem(IFM_WARM_KEY, payload);
 } catch (e) {
-try { localStorage.removeItem(IFM_WARM_KEY); } catch (e2) {}
+// Out of room in the browser: keep whatever is already there rather than
+// clearing it, since a slightly stale copy still beats a ten-second wait.
+ifmWarmError = e && e.name ? e.name : 'save failed';
 }
 }
 
@@ -6406,12 +6444,23 @@ cache.seasonFlags = seasonFlags === STORAGE_MISSING ? { shoulderDeclared: false 
 cache.leaves = leaves === STORAGE_MISSING ? [] : (leaves || []);
 cache.quitWatch = quitWatch === STORAGE_MISSING ? {} : (quitWatch || {});
 cache.settings = settings === STORAGE_MISSING ? {} : (settings || {});
-cache.vendorPhotos = {};
+cache.vendorPhotos = cache.vendorPhotos || {};
 {
 const idx = vendorPhotos === STORAGE_MISSING ? null : (vendorPhotos || []);
 if (idx && idx.length) {
-const shots = await Promise.all(idx.map(id => storageGet('ifm-photo-' + id)));
-idx.forEach((id, i) => { if (shots[i] !== STORAGE_MISSING && shots[i]) cache.vendorPhotos[id] = shots[i]; });
+// Fetched WITHOUT await. A photograph is decoration; the market should not
+// stand still for it. They drop into place and the desk redraws when they
+// arrive. This was the second half of the slow cold start: one request per
+// vendor with a picture, every one of them blocking the sign-in screen.
+const t0 = Date.now();
+Promise.all(idx.map(id => storageGet('ifm-photo-' + id))).then(shots => {
+let got = 0;
+idx.forEach((id, i) => {
+if (shots[i] !== STORAGE_MISSING && shots[i]) { cache.vendorPhotos[id] = shots[i]; got++; }
+});
+ifmPhotoMs = Date.now() - t0;
+if (got) { try { renderAll(); } catch (e) {} }
+}).catch(() => {});
 } else if (idx === null) {
 // legacy migration: photos may still live under the old single key
 const legacy = await storageGet('ifm-vendor-photos');
@@ -9844,6 +9893,7 @@ banked: Math.max(worked - accrued, 0)
 };
 }
 function runScreenInit(name) {
+if (name === 'bootreport') initBootReportScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
 if (name === 'directory') renderDirectory('');
 if (name === 'lottery') { initLotteryScreen(); centreLiveMap('lottoMapWrap'); }
@@ -9985,6 +10035,7 @@ volunteer:         { title: 'Volunteers / Partners' },
 venmopay:          { title: 'Pay Fees' },
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
+bootreport:        { title: 'How This Opening Went' },
 selfaudit:         { title: 'Self-Audit' },
 orgstalls:         { title: 'Community Organizations' },
 changechecklist:   { title: 'Version Update Checklist' },
@@ -10825,6 +10876,45 @@ esc(BUILD_ID) + '. Records shown are those held in the app at the time of printi
 document.getElementById('feeStmtSheet').innerHTML = html;
 document.getElementById('feeStmtBackdrop').classList.add('open');
 document.getElementById('feeStmtSheet').scrollTop = 0;
+}
+// What the last opening actually cost, in the places it can cost something.
+// Written to be read aloud down a telephone.
+function renderBootReport() {
+const el = document.getElementById('bootReport');
+if (!el) return;
+const rows = [];
+const row = (k, v, note) => rows.push('<div class="tracker-row"><div class="t-title">' + k +
+'</div><div class="t-note"><b>' + v + '</b>' + (note ? ' \u2014 ' + note : '') + '</div></div>');
+
+row('Time to a usable screen', ifmBootMs === null ? 'not recorded' : ifmBootMs + ' ms',
+ifmWarmUsed ? 'opened from the copy on this device'
+: 'no copy was available, so it waited for the sheet');
+
+if (ifmWarmUsed && ifmWarmAge !== null) {
+const mins = Math.round(ifmWarmAge / 60000);
+row('Age of the copy it opened from', mins < 60 ? mins + ' min old'
+: Math.round(mins / 60) + ' hr old', 'refreshed every time the sheet answers');
+}
+row('Copy now on this device', ifmWarmBytes === null ? 'not written yet this session'
+: Math.round(ifmWarmBytes / 1024) + ' KB',
+ifmWarmKept === null ? '' : ifmWarmKept + ' records kept');
+if (ifmWarmDropped.length) {
+row('Left out of the copy for size', ifmWarmDropped.length + ' record' +
+(ifmWarmDropped.length === 1 ? '' : 's'),
+esc(ifmWarmDropped.slice(0, 4).join(', ')) + (ifmWarmDropped.length > 4 ? ' and more' : ''));
+}
+if (ifmWarmError) row('The copy could not be written', esc(ifmWarmError),
+'the browser refused the room \u2014 every opening will be slow until this clears');
+row('Photographs', ifmPhotoMs === null ? 'still arriving, or none to fetch'
+: ifmPhotoMs + ' ms', 'fetched after the screen was usable, never before');
+row('Held in memory now', (cache.vendors || []).length + ' vendors, ' +
+Object.keys(cache.vendorPhotos || {}).length + ' photographs', '');
+el.innerHTML = rows.join('');
+}
+function initBootReportScreen() { renderBootReport(); }
+function forgetWarmCopy() {
+try { localStorage.removeItem(IFM_WARM_KEY); } catch (e) {}
+location.reload();
 }
 function closeFeeStatement() {
 document.getElementById('feeStmtBackdrop').classList.remove('open');
@@ -12551,7 +12641,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-57';
+const BUILD_ID = '14-58';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
