@@ -4449,17 +4449,17 @@ search: ['teal', 'the teal', 'boat', 'cruise', 'cruises', 'boat ride', 'ride', '
 blurb: 'The MV Teal, a diesel cruise boat that sails from the end of the pier two or three times each market day. ' +
 'A ride is $30 and lasts about 45 minutes. Listen for the Market Manager on the bullhorn \u2014 ' +
 'that is the ten-minute call before she leaves. The sailing is run by the boat\u2019s own crew, not by the market.' },
-{ x: 494, y: 257, w: 55, h: 23, text: 'Restroom Trailer', key: 'trailer',
+{ x: 539, y: 256, w: 55, h: 23, text: 'Restroom Trailer', key: 'trailer', fs: 7,
 search: ['restroom', 'rest room', 'bathroom', 'toilet', 'wc'],
 blurb: 'More restrooms, in the trailer beside the mid-hall service block.' },
-{ x: 452, y: 264, w: 26, h: 12, text: 'Sink' },
-{ x: 474, y: 281, w: 39, h: 39, text: 'Restrooms', sub: 'ADA', key: 'restrooms',
+{ x: 477, y: 262, w: 26, h: 12, text: 'Sink', fs: 6.5, lx: -16 },
+{ x: 474, y: 281, w: 39, h: 39, text: 'Restrooms', sub: 'ADA', fs: 7.5, key: 'restrooms',
 search: ['restroom', 'rest room', 'bathroom', 'toilet', 'wc', 'ada'],
 blurb: 'ADA accessible. Mid-hall, between booths 33 and 34.' },
 { x: 541, y: 111, w: 38, h: 38, text: 'Merch Booth', key: 'merch', dark: true,
 search: ['merch', 'merchandise', 'merch booth', 'shirt', 't-shirt', 'tshirt', 'hat', 'tote', 'souvenir', 'gift', 'market merch', 'ifm merch'],
 blurb: 'Market merchandise \u2014 the market\u2019s own goods. On the Waterfront Trail line, just past WT2.' },
-{ x: 513, y: 281, w: 38, h: 39, text: 'Office', key: 'office',
+{ x: 513, y: 281, w: 38, h: 39, text: 'Office', fs: 8, key: 'office',
 search: ['office', 'market office', 'manager', 'staff', 'help', 'information'],
 blurb: 'The market office \u2014 staff and questions. Mid-hall, next to the Restrooms.' },
 { x: 1520, y: 197, w: 44, h: 60, text: 'gravel path' },
@@ -4580,8 +4580,12 @@ if (s.img) {
 box.classList.add('struct-img');
 box.innerHTML = '<img src="' + s.img + '" alt="' + esc(s.text) + '">';
 } else {
-box.innerHTML = '<span>' + esc(s.text) + '</span>' +
+box.innerHTML = '<span' + (s.fs ? ' style="font-size:' + s.fs + 'px"' : '') + '>' + esc(s.text) + '</span>' +
 (s.sub ? '<em>' + esc(s.sub) + '</em>' : '');
+if (s.lx || s.ly) {
+box.style.alignItems = 'center';
+box.querySelector('span').style.transform = 'translate(' + (s.lx || 0) + 'px,' + (s.ly || 0) + 'px)';
+}
 }
 if (s.key && kioskLive) {
 box.classList.add('findable');
@@ -11635,7 +11639,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-29';
+const BUILD_ID = '14-31';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
