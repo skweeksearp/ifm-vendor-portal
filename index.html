@@ -117,6 +117,31 @@ font-size: 15px; box-shadow: 0 4px 14px rgba(35,42,32,0.3); }
 /* Not relevant to this vendor today. Dimmed, never removed: a vendor should be
    able to see the whole market's toolkit and read why a part of it is not
    theirs at the moment. Hiding a tool teaches a vendor it does not exist. */
+/* A long list inside a drawer scrolls WITHIN ITSELF rather than pushing the
+   desk down. The Rolodex opened to thirteen screenfuls on a phone, which put
+   every drawer below it out of reach behind a very long thumb-drag. Contained,
+   the drawer stays roughly a screen tall whatever is in it, and the search box
+   above it stays put while the names move.
+
+   `overscroll-behavior: contain` matters here: without it, reaching the bottom
+   of the inner list hands the scroll straight on to the page, so a firm swipe
+   runs off the end of the list and carries on down the desk -- which feels
+   exactly like the containment not working. */
+.drawer-list {
+  max-height: clamp(240px, 60vh, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  padding-right: 2px;
+}
+/* A hairline at each end saying there is more above or below, drawn only when
+   the list is actually scrolled -- a static shadow reads as decoration. */
+.drawer-list.has-above { box-shadow: inset 0 7px 6px -7px rgba(35,42,32,0.30); }
+.drawer-list.has-below { box-shadow: inset 0 -7px 6px -7px rgba(35,42,32,0.30); }
+.drawer-list.has-above.has-below {
+  box-shadow: inset 0 7px 6px -7px rgba(35,42,32,0.30),
+              inset 0 -7px 6px -7px rgba(35,42,32,0.30); }
 .dash-fold.not-yours > .fold-bar .fold-title,
 .dash-fold.not-yours > .fold-bar .fold-sub { opacity: .45; }
 .dash-fold.not-yours > .fold-bar .fold-chev { opacity: .3; }
@@ -2286,7 +2311,7 @@ I sell food (prepared food or produce)
 <input type="text" id="dirSearch" placeholder="Search by business or last name" oninput="renderDirectory(this.value)">
 <div id="dirCount" class="empty-note" style="margin-top:8px;"></div>
 </div>
-<div id="dirList"></div>
+<div id="dirList" class="drawer-list"></div>
 </section>
 <section id="screen-managerdash" class="screen">
 <div class="screen-head" id="head-managerdash"></div>
@@ -9954,9 +9979,26 @@ document.getElementById('sundayViewDate').value = nextSunday();
 closeBoothDetail();
 renderBooths();
 }
+// Keep the fade marks honest as the list is scrolled, and reset the scroll to
+// the top whenever the search changes -- otherwise a search made half way down
+// returns its matches somewhere off screen and reads as having found nothing.
+let dirScrollBound = false;
+function markListEnds(el) {
+if (!el) return;
+const more = el.scrollHeight - el.clientHeight;
+el.classList.toggle('has-above', el.scrollTop > 4);
+el.classList.toggle('has-below', more > 4 && el.scrollTop < more - 4);
+}
 function renderDirectory(filterText) {
 const list = document.getElementById('dirList');
+const sameQuery = list.dataset.q === (filterText || '');
 list.innerHTML = '';
+list.dataset.q = filterText || '';
+if (!dirScrollBound) {
+list.addEventListener('scroll', () => markListEnds(list), { passive: true });
+dirScrollBound = true;
+}
+if (!sameQuery) list.scrollTop = 0;
 const q = (filterText || '').trim().toLowerCase();
 const matches = cache.vendors.filter(v =>
 !q || v.businessName.toLowerCase().includes(q) || v.lastName.toLowerCase().includes(q) ||
@@ -9965,6 +10007,7 @@ vField(v, 'primaryContact').toLowerCase().includes(q) ||
 vField(v, 'address').toLowerCase().includes(q)
 );
 document.getElementById('dirCount').textContent = matches.length + ' of ' + cache.vendors.length + ' vendors';
+setTimeout(() => markListEnds(list), 0);
 pagedList('directory', list, matches, filterText, v => {
 const total = cache.ledger.filter(r => r.vendorId === v.vendorId)
 .reduce((sum, r) => sum + Number(r.points || 0), 0);
@@ -12088,7 +12131,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-46';
+const BUILD_ID = '14-47';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
