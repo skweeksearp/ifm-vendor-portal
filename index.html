@@ -2997,6 +2997,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
+<div class="comm-item"><div class="comm-title">A new live map, or a new layer on an old one</div><div class="comm-desc">Add it to <code>AUDIT_MAPS</code>. The map knows a great deal &mdash; the buildings, the promenade panels, the section labels, the badge on every booth, the placed furniture and outlets &mdash; and a screen that leaves half of it out <em>still looks like a map</em>, which is why the sixth fault counts layers instead of trusting the eye. Where a map is meant to carry less, say so in its <code>without</code> list along with the reason, so a real gap cannot hide behind &ldquo;that one is different&rdquo;.</div></div>
 <div class="comm-item"><div class="comm-title">A booth on any map</div><div class="comm-desc">Every booth on every live map opens the booth sheet, and every booth means <em>every</em> booth &mdash; including ones already spoken for. A booth that is taken is exactly the booth a vendor rings up to ask about, and a chip that does nothing is the office being told to go and look it up somewhere else. The sheet takes a context saying which desk it was opened from, and offers that desk&rsquo;s action inside it; where there is no action, it still says everything known about the booth. A map that offers less than another map is a fault, not a simplification.</div></div>
 <div class="comm-item"><div class="comm-title">A card that takes an entry and reports back</div><div class="comm-desc">Mark it <code>desk-form</code>. When the desk changes hands &mdash; one vendor to another, vendor to manager, anyone to the kiosk &mdash; <code>clearDeskState()</code> empties every field inside it, along with every <code>.status-msg</code> on the page. Without the mark, nothing sweeps it, and the next person opens the tool to find the last person&rsquo;s words and the last person&rsquo;s green confirmation. A block whose text is <em>worked out</em> from state rather than typed &mdash; a running total, a note that appears only for certain days &mdash; gets <code>desk-transient</code> instead. A field that must survive a hand-over because it shows a saved setting rather than something part-typed gets <code>keep-on-handover</code>. The Self-Audit&rsquo;s fifth fault names any card it finds unenrolled, so this is checkable rather than remembered.</div></div>
 <div class="comm-item"><div class="comm-title">Correcting a seeded record</div><div class="comm-desc">Changing a value in <code>BOOTH_SEED</code>, <code>DEMO_VENDORS_SEED</code>, <code>REQUIREMENT_SEED</code> or the Winter dates now reaches sheets that already exist — but only where nobody has edited that field. Adding a <em>new</em> collection to the seed means adding it to <code>SEED_MERGE</code> as well, or its records become permanent the first time they are written. And when a seed value changes for a record that may already be in the wild under the old value, name the old value in <code>LEGACY_SEED_BIRTH</code> so sheets written before the stamps existed can still be corrected. Watch the size of the birth keys: booths and vendors sit near 22,000 characters against a cell limit around 50,000.</div></div>
@@ -3010,7 +3011,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="screen-head" id="head-selfaudit"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What This Checks</h2>
-<p class="empty-note" style="margin-top:0;">Nearly every leak found in testing has belonged to one of five faults, and each one can be looked for by machine. Reports were being fixed one instance at a time while the rest of the class sat undisturbed &mdash; this walks the whole population instead. It cannot judge whether wording is <i>good</i>, only whether it is consistent, and it knows nothing of faults nobody has named yet.</p>
+<p class="empty-note" style="margin-top:0;">Nearly every leak found in testing has belonged to one of six faults, and each one can be looked for by machine. Reports were being fixed one instance at a time while the rest of the class sat undisturbed &mdash; this walks the whole population instead. It cannot judge whether wording is <i>good</i>, only whether it is consistent, and it knows nothing of faults nobody has named yet.</p>
 <p class="empty-note" id="saSummary" style="margin-bottom:0;"></p>
 <button type="button" class="ghost-btn" onclick="renderSelfAudit()">Run the audit again</button>
 </div>
@@ -3140,7 +3141,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="dash-fold" data-fold="dev-selfaudit">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'selfaudit')">
 <span class="fold-title">Self-Audit</span>
-<span class="fold-sub">Walks the whole app for the five faults that keep being found one at a time &mdash; ownership, role exposure, description drift, unguarded writes, screen residue</span>
+<span class="fold-sub">Walks the whole app for the six faults that keep being found one at a time &mdash; ownership, role exposure, description drift, unguarded writes, screen residue, map parity</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -7056,7 +7057,7 @@ const AUDIT_VENDOR_ACTIONS = ['submitBoothShare', 'deleteBoothShare', 'claimSele
 'saveTasks', 'saveOps', 'loadAllData', 'payFeeCart', 'addFeeToCart'];
 
 async function runSelfAudit() {
-const out = { ownership: [], roles: [], descriptions: [], guards: [], residue: [] };
+const out = { ownership: [], roles: [], descriptions: [], guards: [], residue: [], maps: [] };
 
 // --- 1. Ownership -------------------------------------------------------
 for (const spec of AUDIT_OWNERSHIP_KEYS) {
@@ -7193,6 +7194,63 @@ if (unenrolled.length) out.residue.push({ what: 'Forms not enrolled',
 d: 'Cards that take entries and report back, but are not marked <code>desk-form</code>, so nothing clears them when the desk changes hands: ' + unenrolled.join(' \u00b7 ') + '.' });
 }
 
+// --- 6. Map parity ------------------------------------------------------
+// A great deal of work went into what the Steamboat Landing map knows: the
+// buildings, the promenade panels, the section labels, the badges on each
+// booth, the placed furniture and outlets. That work is worth nothing on a
+// screen that quietly leaves half of it out -- and the leaving-out is silent,
+// because a map with a missing layer still looks like a map.
+//
+// So: draw every map, count every layer, and flag any map carrying less than
+// the richest one. Differences that are DELIBERATE must be declared here with
+// a reason, which means a real gap cannot hide behind "that one's different".
+{
+const was = { role: currentRole, vendor: currentVendorId, screen: ifmCurrentScreen };
+const layers = ['booth-chip', 'map-structure', 'map-panel', 'booth-label', 'booth-badge', 'map-piece'];
+const found = [];
+AUDIT_MAPS.forEach(m => {
+try {
+currentRole = m.role;
+currentVendorId = m.role === 'vendor' ? (cache.vendors[0] || {}).vendorId : null;
+deskHandoverQuiet = true;
+setRoleHeader(m.role);
+showScreen(m.screen);
+runScreenInit(m.screen);
+const c = document.getElementById(m.canvas);
+if (!c) { out.maps.push({ map: m.label, d: 'Its canvas <code>' + m.canvas + '</code> is not on the page.' }); return; }
+const counts = {};
+layers.forEach(L => { counts[L] = c.querySelectorAll('.' + L).length; });
+found.push({ m: m, counts: counts });
+} catch (e) {
+out.maps.push({ map: m.label, d: 'Would not draw: ' + (e.message || String(e)) });
+}
+});
+deskHandoverQuiet = false;
+currentRole = was.role; currentVendorId = was.vendor;
+setRoleHeader(was.role || 'vendor');
+if (was.screen) { try { showScreen(was.screen); } catch (e) {} }
+
+const best = {};
+layers.forEach(L => { best[L] = Math.max.apply(null, found.map(f => f.counts[L]).concat([0])); });
+found.forEach(f => {
+const short = [];
+layers.forEach(L => {
+if (f.counts[L] >= best[L]) return;
+if ((f.m.without || []).indexOf(L) >= 0) return;   // declared, with a reason
+short.push(L.replace('booth-chip', 'booths').replace('map-', '').replace('booth-', '') +
+' ' + f.counts[L] + ' where another map has ' + best[L]);
+});
+if (short.length) out.maps.push({ map: f.m.label,
+d: 'Carries less than the fullest map: ' + short.join('; ') + '.' });
+});
+// An empty furniture store is not a fault, but it is worth saying out loud,
+// because "no outlets on the map" and "no outlets placed yet" look identical.
+if (best['map-piece'] === 0) {
+out.maps.push({ map: 'All maps', note: true,
+d: 'No placed furniture or outlets on any map. The layer is wired everywhere \u2014 this means nothing has been placed and saved yet, not that a map is missing it.' });
+}
+}
+
 return out;
 }
 function titlesAgree(a, b) {
@@ -7200,6 +7258,19 @@ const norm = s => String(s || '').toLowerCase().replace(/[^a-z ]/g, '').replace(
 const x = norm(a), y = norm(b);
 return x === y || x.includes(y) || y.includes(x);
 }
+// Every live map, and what each is allowed to be without. A deliberate
+// difference belongs here, in words, or it reads as a fault.
+const AUDIT_MAPS = [
+{ label: 'Season-Long Reservations (vendor)', screen: 'booths', canvas: 'boothCanvas', role: 'vendor' },
+{ label: 'Season-Long Reservations (manager)', screen: 'booths', canvas: 'boothCanvas', role: 'manager' },
+{ label: 'Sunday Booth Selection', screen: 'lottery', canvas: 'lottoBoothCanvas', role: 'manager' },
+{ label: 'Saturday Booth Selection', screen: 'satlottery', canvas: 'satLottoBoothCanvas', role: 'manager' },
+// The kiosk is the public map. It drops the promenade panels and the booth
+// badges on purpose: a shopper is being shown where a vendor is standing, not
+// which booths have upgraded electric or take propane.
+{ label: 'Kiosk (public)', screen: 'kiosk', canvas: 'kioskBoothCanvas', role: 'kiosk',
+without: ['map-panel', 'booth-badge'] }
+];
 let auditRunning = false;
 async function renderSelfAudit() {
 const wrap = document.getElementById('saList');
@@ -7235,14 +7306,20 @@ r.descriptions.map(o => '<code>' + esc(o.screen) + '</code> \u2014 ' + esc(o.d))
 section('Write guards', r.guards.length,
 'Functions that write the market\u2019s own records without checking the role of whoever called them. Hiding a button does not withhold the power behind it. Writes a vendor is meant to make on their own behalf are named in <code>AUDIT_VENDOR_ACTIONS</code> and left out; anything appearing here has not been decided either way.',
 r.guards.map(o => '<code>' + esc(o.fn) + '</code>'));
+section('Map parity', r.maps.length,
+'Any live map carrying less than the fullest one. The Steamboat Landing map knows the buildings, the promenade panels, the section labels, the badges on every booth and the placed furniture \u2014 and a screen that leaves half of that out still looks like a map, which is why this is checked by counting rather than by eye. Deliberate differences are declared in <code>AUDIT_MAPS</code> with a reason; anything else is a gap.',
+r.maps.map(o => (o.note ? '' : '<b>' + esc(o.map) + '</b> \u2014 ') + o.d));
 section('Screen residue', r.residue.length,
 'What one person left on the screen that the next person inherits. The data on every screen is filtered by whose it is; a status message, a date selection or a half-typed form is not data, and no re-render clears it. Found when a posted deal left its confirmation on the next vendor\u2019s screen, above a list correctly saying they had posted nothing.',
 r.residue.map(o => '<b>' + esc(o.what) + '</b> \u2014 ' + esc(o.d)));
-const total = r.ownership.length + r.roles.length + r.descriptions.length + r.guards.length + r.residue.length;
+// A note is a remark, not a finding; it should not make the tally look bad.
+const notes = r.maps.filter(o => o.note).length;
+const total = r.ownership.length + r.roles.length + r.descriptions.length +
+r.guards.length + r.residue.length + (r.maps.length - notes);
 const sum = document.getElementById('saSummary');
 if (sum) sum.textContent = total
-? total + ' finding' + (total === 1 ? '' : 's') + ' across five faults. Each is a class, not an incident \u2014 fix the class.'
-: 'Nothing found in any of the five faults. That is not the same as no bugs: this walks only what it knows to look for.';
+? total + ' finding' + (total === 1 ? '' : 's') + ' across six faults. Each is a class, not an incident \u2014 fix the class.'
+: 'Nothing found in any of the six faults. That is not the same as no bugs: this walks only what it knows to look for.';
 }
 function renderSeedMerge() {
 const wrap = document.getElementById('smList');
@@ -11976,7 +12053,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-40';
+const BUILD_ID = '14-41';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
