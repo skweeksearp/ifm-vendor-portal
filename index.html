@@ -102,12 +102,6 @@ font-size: 15px; box-shadow: 0 4px 14px rgba(35,42,32,0.3); }
 .card.not-yours > h2, .card.not-yours > p, .card.not-yours > label,
 .card.not-yours > .card-body { opacity: .45; }
 .card.not-yours { position: relative; }
-.not-yours-tag {
-  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 9px;
-  font-size: 11px; letter-spacing: .03em; text-transform: uppercase;
-  background: var(--paper-dim, #e6e4dc); color: var(--ink-dim, #8a8a86);
-  vertical-align: middle; opacity: 1;
-}
 .why-panel {
   margin: 0; padding: 14px 16px; border-radius: 12px;
   background: var(--paper-dim, #f0eee6); color: var(--ink, #2c2f27);
@@ -8264,26 +8258,14 @@ if (!wasOpen) fold.classList.add('open');
 // shape of the whole market and where they stand in it.
 //
 // `reason` is written to the vendor: what is not available, why, and what
-// would open it. `tag` is the two or three words on the drawer itself.
-function setDeskRelevance(id, relevant, reason, tag) {
+// would open it. The drawer itself carries no badge or label -- it reads
+// exactly as it always did, only dimmed. The words belong inside, where
+// there is room to say something useful, not crowded onto the bar.
+function setDeskRelevance(id, relevant, reason) {
 const el = document.getElementById(id);
 if (!el) return;
 el.style.display = '';
 el.classList.toggle('not-yours', !relevant);
-const bar = el.querySelector(':scope > .fold-bar') || el.querySelector(':scope > h2');
-if (bar) {
-let chip = bar.querySelector('.not-yours-tag');
-if (!relevant) {
-if (!chip) {
-chip = document.createElement('span');
-chip.className = 'not-yours-tag';
-const title = bar.querySelector('.fold-title');
-if (title) title.insertAdjacentElement('afterend', chip);
-else bar.appendChild(chip);
-}
-chip.textContent = tag || 'not yours yet';
-} else if (chip) chip.remove();
-}
 el.dataset.whyNot = relevant ? '' : (reason || '');
 // A dimmed CARD says its piece in place; a dimmed DRAWER says it on opening.
 if (!el.classList.contains('dash-fold')) {
@@ -9598,19 +9580,16 @@ const satBooth = saturdayBoothOf(vendor.vendorId);
 const weeklyOpen = !satBooth || shoulderSeasonDeclared();
 setDeskRelevance('menuWeeklyLottery', weeklyOpen,
 'You hold booth ' + satBooth + ' for the season, so you do not sign in for a weekly Sunday booth \u2014 it is already yours. ' +
-'This drawer opens for you if the market declares a shoulder season, and if you will be away, Report an Absence is the tool you want.',
-'you hold a booth');
+'This drawer opens for you if the market declares a shoulder season, and if you will be away, Report an Absence is the tool you want.');
 setDeskRelevance('commAgOnly', isAg,
 'The Value-Added Farm Products application is for Ag vendors. It is what an Ag vendor files to sell a product ' +
 'made from what they grow. Your membership is recorded as ' + vendor.category + '. If that is wrong, or if your ' +
-'business has changed, the office can record a class change.',
-'Ag vendors');
+'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0;
 setDeskRelevance('menuMyCommittees', onCmte,
 'You are not on a committee at the moment, so there are no agendas or tasks in front of you here. ' +
 'Committees are open to any vendor \u2014 tell the office or a board member you would like to serve on one, ' +
-'and this drawer fills up with the work in front of it.',
-'not on one yet');
+'and this drawer fills up with the work in front of it.');
 updateIneligibleLegend();
 const cioSub = document.getElementById('menuCallInSub');
 if (cioSub) {
@@ -11842,7 +11821,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-37';
+const BUILD_ID = '14-38';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
