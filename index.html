@@ -93,6 +93,28 @@ font-size: 15px; box-shadow: 0 4px 14px rgba(35,42,32,0.3); }
 .fold-body section.screen.inline-screen { display: block; }
 .fold-body section.screen.inline-screen .screen-head { display: none; }
 .dash-fold.open > .fold-body { display: block; }
+/* Not relevant to this vendor today. Dimmed, never removed: a vendor should be
+   able to see the whole market's toolkit and read why a part of it is not
+   theirs at the moment. Hiding a tool teaches a vendor it does not exist. */
+.dash-fold.not-yours > .fold-bar .fold-title,
+.dash-fold.not-yours > .fold-bar .fold-sub { opacity: .45; }
+.dash-fold.not-yours > .fold-bar .fold-chev { opacity: .3; }
+.card.not-yours > h2, .card.not-yours > p, .card.not-yours > label,
+.card.not-yours > .card-body { opacity: .45; }
+.card.not-yours { position: relative; }
+.not-yours-tag {
+  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 9px;
+  font-size: 11px; letter-spacing: .03em; text-transform: uppercase;
+  background: var(--paper-dim, #e6e4dc); color: var(--ink-dim, #8a8a86);
+  vertical-align: middle; opacity: 1;
+}
+.why-panel {
+  margin: 0; padding: 14px 16px; border-radius: 12px;
+  background: var(--paper-dim, #f0eee6); color: var(--ink, #2c2f27);
+  font-size: 15px; line-height: 1.5;
+}
+.why-panel b { display: block; margin-bottom: 4px; }
+.why-panel .why-foot { display: block; margin-top: 8px; font-size: 13.5px; color: var(--ink-dim, #8a8a86); }
 .fold-body .dash-fold { margin: 0 0 10px 18px; }
 .fold-body .card { margin-top: 0; }
 .header-main { display: flex; align-items: center; gap: 10px; }
@@ -1898,7 +1920,7 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body">
-<div class="card" id="profileCard">
+<div class="card desk-form" id="profileCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Business Profile<button type="button" class="help-dot" onclick="showHelp(4)" aria-label="What are the rules here?">?</button></h2>
 <div class="photo-row">
 <div id="profilePhotoPreview" class="photo-preview"></div>
@@ -1954,7 +1976,7 @@ I sell food (prepared food or produce)
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body">
-<div class="card" id="promoCard">
+<div class="card desk-form" id="promoCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>Sales &amp; Promotions<button type="button" class="help-dot" onclick="showHelp(1)" aria-label="What are the rules here?">?</button></h2>
 <label for="promoItem">What&rsquo;s on offer?</label>
 <input type="text" id="promoItem" maxlength="50" placeholder="e.g. sourdough loaves">
@@ -2115,7 +2137,7 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
-<div class="dash-fold" data-fold="mycommittees" id="menuMyCommittees" style="display:none;">
+<div class="dash-fold" data-fold="mycommittees" id="menuMyCommittees">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mycommittees')">
 <span class="fold-title">Committees</span>
 <span class="fold-sub">Agendas and tasks in front of your committees</span>
@@ -2336,7 +2358,7 @@ I sell food (prepared food or produce)
 <button type="button" class="ghost-btn" onclick="abNew()"><svg class="ico"><use href="#i-plus"></use></svg> Add a subject</button>
 <div class="status-msg" id="abMsg"></div>
 </div>
-<div class="card" id="abEditCard" style="display:none;">
+<div class="card desk-form" id="abEditCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-quill"></use></svg></span><span id="abEditTitle">Edit subject</span></h2>
 <img id="abPhotoPrev" alt="" style="display:none; width:100%; max-height:190px; object-fit:cover; border-radius:12px; border:1px solid var(--paper-dim); margin-bottom:10px;">
 <label class="field-label" for="abFile">Photograph</label>
@@ -2461,7 +2483,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 </section>
 <section id="screen-whrate" class="screen">
 <div class="screen-head" id="head-whrate"></div>
-<div class="card">
+<div class="card desk-form">
 <p class="empty-note" id="whRateNote"></p>
 <label for="whRateYear">Season</label>
 <select id="whRateYear" onchange="renderWorkHourRate()"></select>
@@ -2485,7 +2507,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>All Leaves</h2>
 <div id="loaList"></div>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Record a Leave</h2>
 <label for="loaYear">Year of Leave</label>
 <select id="loaYear"></select>
@@ -2845,7 +2867,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <select id="blBooth" onchange="loadBoothLayoutEditor()"></select>
 <p class="empty-note" id="blStatus" style="margin-bottom:0;"></p>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-ruler"></use></svg></span>Draw the Booth<button type="button" class="help-dot" onclick="showHelp(30)" aria-label="What are the rules here?">?</button></h2>
 <div class="bl-tools" id="blTools"></div>
 <div class="bl-grid" id="blGrid"></div>
@@ -2876,7 +2898,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </section>
 <section id="screen-addvendor" class="screen">
 <div class="screen-head" id="head-addvendor"></div>
-<div class="card">
+<div class="card desk-form">
 <label for="newVBiz">Business Name</label>
 <input type="text" id="newVBiz" placeholder="e.g. Blue Heron Farm">
 <label for="newVLast">Primary Contact Last Name</label>
@@ -2903,7 +2925,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </section>
 <section id="screen-amendments" class="screen">
 <div class="screen-head" id="head-amendments"></div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-quill"></use></svg></span>Board Amendments</h2>
 <p class="empty-note" style="margin-top:0;">The printed Guide is a yearly snapshot; the board amends continuously. After each meeting, record anything rule-bearing here in one line &mdash; and record the quiet months too, so silence means &ldquo;confirmed no change,&rdquo; not &ldquo;unknown.&rdquo; This log is also next year&rsquo;s Guide revision, built as it happens.</p>
 <label for="amDate">Meeting or decision date</label>
@@ -2922,7 +2944,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </section>
 <section id="screen-unreservable" class="screen">
 <div class="screen-head" id="head-unreservable"></div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-no-entry"></use></svg></span>Unreservable Booths</h2>
 <p class="empty-note" style="margin-top:0;">Booths no reservation can be taken on, available to vendors seeking a booth for Saturday or Sunday assignment. They are first handed out in the Thursday call-in round and stay in the pool for the in-person rounds after it. The Guide requires this list to be updated <b>before the March round each year</b>, once non-returning vendors are known.</p>
 <p class="empty-note" id="urStamp"></p>
@@ -2960,6 +2982,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
+<div class="comm-item"><div class="comm-title">A card that takes an entry and reports back</div><div class="comm-desc">Mark it <code>desk-form</code>. When the desk changes hands &mdash; one vendor to another, vendor to manager, anyone to the kiosk &mdash; <code>clearDeskState()</code> empties every field inside it, along with every <code>.status-msg</code> on the page. Without the mark, nothing sweeps it, and the next person opens the tool to find the last person&rsquo;s words and the last person&rsquo;s green confirmation. A block whose text is <em>worked out</em> from state rather than typed &mdash; a running total, a note that appears only for certain days &mdash; gets <code>desk-transient</code> instead. A field that must survive a hand-over because it shows a saved setting rather than something part-typed gets <code>keep-on-handover</code>. The Self-Audit&rsquo;s fifth fault names any card it finds unenrolled, so this is checkable rather than remembered.</div></div>
 <div class="comm-item"><div class="comm-title">Correcting a seeded record</div><div class="comm-desc">Changing a value in <code>BOOTH_SEED</code>, <code>DEMO_VENDORS_SEED</code>, <code>REQUIREMENT_SEED</code> or the Winter dates now reaches sheets that already exist — but only where nobody has edited that field. Adding a <em>new</em> collection to the seed means adding it to <code>SEED_MERGE</code> as well, or its records become permanent the first time they are written. And when a seed value changes for a record that may already be in the wild under the old value, name the old value in <code>LEGACY_SEED_BIRTH</code> so sheets written before the stamps existed can still be corrected. Watch the size of the birth keys: booths and vendors sit near 22,000 characters against a cell limit around 50,000.</div></div>
 <div class="comm-item"><div class="comm-title">Reconcilers correct, they do not invent</div><div class="comm-desc">Code that repairs records on load may clear a value that cannot be true, but must never fill in a different one. <code>reconcileBoothReservations</code> used to turn an ineligible Saturday reservation into a Sunday-only booth, granting a vendor a holding they never won at any auction, silently, on every load. Clearing is honest; substituting is a fabrication that later reads as fact.</div></div>
 <div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
@@ -2971,7 +2994,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="screen-head" id="head-selfaudit"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What This Checks</h2>
-<p class="empty-note" style="margin-top:0;">Nearly every leak found in testing has belonged to one of four faults, and each one can be looked for by machine. Reports were being fixed one instance at a time while the rest of the class sat undisturbed &mdash; this walks the whole population instead. It cannot judge whether wording is <i>good</i>, only whether it is consistent, and it knows nothing of faults nobody has named yet.</p>
+<p class="empty-note" style="margin-top:0;">Nearly every leak found in testing has belonged to one of five faults, and each one can be looked for by machine. Reports were being fixed one instance at a time while the rest of the class sat undisturbed &mdash; this walks the whole population instead. It cannot judge whether wording is <i>good</i>, only whether it is consistent, and it knows nothing of faults nobody has named yet.</p>
 <p class="empty-note" id="saSummary" style="margin-bottom:0;"></p>
 <button type="button" class="ghost-btn" onclick="renderSelfAudit()">Run the audit again</button>
 </div>
@@ -2992,7 +3015,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 &bull; Non-political voter registration is the one named exception, with manager approval.
 </div></div>
 </div>
-<div class="card manager-only">
+<div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>Give a Stall</h2>
 <label for="osName">Organization</label>
 <input type="text" id="osName" placeholder="e.g. Finger Lakes Land Trust">
@@ -3101,7 +3124,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="dash-fold" data-fold="dev-selfaudit">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'selfaudit')">
 <span class="fold-title">Self-Audit</span>
-<span class="fold-sub">Walks the whole app for the four faults that keep being found one at a time &mdash; ownership, role exposure, description drift, unguarded writes</span>
+<span class="fold-sub">Walks the whole app for the five faults that keep being found one at a time &mdash; ownership, role exposure, description drift, unguarded writes, screen residue</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -3210,7 +3233,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <p class="empty-note" id="impDeadline" style="margin-top:0;"></p>
 <p class="empty-note" style="margin-top:6px;">Drawings and specifications go to the Buildings &amp; Grounds Committee <b>before construction</b>, in person or by email, at least one week before their meeting. This proposal puts your plan in front of the office and tracks where it stands &mdash; the drawings themselves still travel by email or on paper.</p>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Propose an Improvement</h2>
 <label for="impBooth">Booth</label>
 <select id="impBooth"></select>
@@ -3308,7 +3331,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" style="margin-top:0;" id="cioContextText"></p>
 <p class="empty-note" id="cioStillCallIn" style="margin-bottom:0;"></p>
 </div>
-<div class="card manager-only">
+<div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Record One for a Vendor</h2>
 <p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. Absences, booth requests, shares, documents, improvement proposals: entered here each is the same record the vendor&rsquo;s own screen would have made, judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
 <label for="obVendor">Vendor</label>
@@ -3353,7 +3376,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <button type="button" class="primary-btn" onclick="recordForVendor()"><svg class="ico"><use href="#i-checkmark"></use></svg> Record it</button>
 <div class="status-msg" id="obMsg"></div>
 </div>
-<div class="card" id="cioFormCard">
+<div class="card desk-form" id="cioFormCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-leaf-branch"></use></svg></span><span id="cioFormTitle">Request a Booth</span><button type="button" class="help-dot" onclick="showHelp(33)" aria-label="What are the rules here?">?</button></h2>
 <label style="margin-top:16px;" id="cioDateLabel">Select Day(s) — tap as many as you need</label>
 <div style="display:flex; gap:8px; margin-bottom:10px;" id="cioBulkBtns">
@@ -3362,9 +3385,9 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <select id="cioDateSelect" style="display:none;" onchange="pickCioSingleDate(this.value)"></select>
 <div id="cioDateList" class="cio-date-list"></div>
-<p class="empty-note" id="cioNoDates" style="display:none; margin:6px 0 0;"></p>
-<div id="cioFeeRow"></div>
-<p class="empty-note" id="cioSundayNote" style="display:none; margin:10px 0 0;"></p>
+<p class="empty-note desk-transient" id="cioNoDates" style="display:none; margin:6px 0 0;"></p>
+<div id="cioFeeRow" class="desk-transient"></div>
+<p class="empty-note desk-transient" id="cioSundayNote" style="display:none; margin:10px 0 0;"></p>
 <button class="primary-btn" id="submitCio" onclick="submitCallInOut()" disabled><svg class="ico"><use href="#i-sprig"></use></svg> Submit</button>
 <div class="status-msg" id="cioStatusMsg"></div>
 </div>
@@ -3424,7 +3447,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div id="taskList"></div>
 <div class="empty-note" id="taskListEmpty" style="display:none;">The Market Manager has not posted any tasks right now.</div>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Log Hours You Worked</h2>
 <p class="empty-note" style="margin-top:0;">For work the Market Manager did not post as a task &mdash; committee and Board meetings, presenting your own proposal, or anything the office agreed to beforehand. The Guide has the Market Managers approve these, so they wait for a sign-off before they post to your total.</p>
 <label for="hrsDate">Date</label>
@@ -3541,7 +3564,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <input type="text" id="pmSearch" placeholder="Search by business name" oninput="renderPointsManagerSearch(this.value)">
 <div id="pmSearchResults"></div>
 </div>
-<div class="card" id="pmSelectedCard" style="display:none;">
+<div class="card desk-form" id="pmSelectedCard" style="display:none;">
 <h2 id="pmSelectedName"></h2>
 <p class="empty-note" id="pmSelectedTotal"></p>
 <label for="pmPopup">Satellite Event (optional)</label>
@@ -3567,7 +3590,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </section>
 <section id="screen-popups" class="screen">
 <div class="screen-head" id="head-popups"></div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-tent"></use></svg></span>PopUp Events<button type="button" class="help-dot" onclick="showHelp(43)" aria-label="What are the rules here?">?</button></h2>
 <label for="ppName">Event Name</label>
 <input type="text" id="ppName" placeholder="e.g. Ithaca Festival Tabling">
@@ -3589,7 +3612,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </section>
 <section id="screen-wintermarketadmin" class="screen">
 <div class="screen-head" id="head-wintermarketadmin"></div>
-<div class="card">
+<div class="card desk-form">
 <label for="wmDate">Date<button type="button" class="help-dot" onclick="showHelp(44)" aria-label="What are the rules here?">?</button></label>
 <input type="date" id="wmDate">
 <div class="lotto-dates" id="wmDateChips"></div>
@@ -3619,7 +3642,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div id="reqReviewList"></div>
 <div class="status-msg" id="reqReviewMsg"></div>
 </div>
-<div class="card" id="reqRosterCard" style="display:none;">
+<div class="card desk-form" id="reqRosterCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span><span id="reqRosterTitle"></span></h2>
 <p class="req-detail" id="reqRosterDetail"></p>
 <div class="req-example-note" id="reqRosterExample" style="display:none;"></div>
@@ -3643,7 +3666,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div class="status-msg" id="reqRosterMsg"></div>
 <button class="ghost-btn" onclick="closeRequirementRoster()">Close</button>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Add a Requirement<button type="button" class="help-dot" onclick="showHelp(61)" aria-label="What are the rules here?">?</button></h2>
 <label for="reqNewName">Name</label>
 <input type="text" id="reqNewName" placeholder="e.g. Cannabis Showcase Event Permit">
@@ -3696,7 +3719,7 @@ anyone has been enforcing it lately. When practice and paper disagree, this is t
 a manager or the Board can point to when a decision needs justifying. Each row names the document it
 comes from.</p>
 <div id="mrGroups"></div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>What Changed</h2>
 <label for="mrMinutes">Board minutes reference for changes you make now</label>
 <input type="text" id="mrMinutes" placeholder="e.g. Board meeting 12 Nov 2027, item 4">
@@ -3739,7 +3762,7 @@ comes from.</p>
 <button class="ghost-btn" onclick="showScreen('boardcycle')">See the meeting calendar</button>
 <button class="ghost-btn" onclick="showScreen('marketrules')">What is on the books</button>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Add Your Own</h2>
 <label for="bfNewTitle">Topic</label>
 <input type="text" id="bfNewTitle" placeholder="What needs deciding">
@@ -3754,7 +3777,7 @@ comes from.</p>
 <section id="screen-mydocs" class="screen">
 <div class="screen-head" id="head-mydocs"></div>
 <p class="empty-note" id="mdSummary" style="margin-top:0;"></p>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>What the Market Needs From You<button type="button" class="help-dot" onclick="showHelp(62)" aria-label="What are the rules here?">?</button></h2>
 <div id="mdList"></div>
 <div class="empty-note" id="mdEmpty" style="display:none;">Nothing is outstanding. The office has not assigned you any documents.</div>
@@ -3802,7 +3825,7 @@ comes from.</p>
 <div class="empty-note" id="fnEmpty" style="display:none;">No fines this season.</div>
 <button class="ghost-btn" onclick="showScreen('standing')">Open Vendor Standing</button>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Add a Fine</h2>
 <label for="fnVendor">Vendor</label>
 <select id="fnVendor"></select>
@@ -3831,7 +3854,7 @@ comes from.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Membership Composition<button type="button" class="help-dot" onclick="showPlanned('composition')" aria-label="What are the rules here?">?</button></h2>
 <div id="compBody"></div>
 </div>
-<div class="card manager-only">
+<div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>Record a Class Change</h2>
 <p class="empty-note" style="margin-top:0;">The Guide makes this a Board decision: a vacancy is determined, the committee recommends against its own rubric, the Board approves. The app cannot see any of that happen &mdash; it does the arithmetic and keeps the record.</p>
 <div id="compClass">
@@ -4069,7 +4092,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <select id="cmteSelect" onchange="renderCommittees()"></select>
 <p class="empty-note" id="cmteNote" style="margin-bottom:0;"></p>
 </div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Members</h2>
 <div id="cmteMembers"></div>
 <label for="cmteSearch" style="margin-top:12px;">Add a vendor</label>
@@ -4116,7 +4139,7 @@ already assign a task to one vendor from Work Hours Tasks.</p>
 </section>
 <section id="screen-taskmanager" class="screen">
 <div class="screen-head" id="head-taskmanager"></div>
-<div class="card">
+<div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Post a Task<button type="button" class="help-dot" onclick="showHelp(56)" aria-label="What are the rules here?">?</button></h2>
 <label for="tkTitle">Title</label>
 <input type="text" id="tkTitle" placeholder="e.g. Group Photo of All Vendors">
@@ -6886,7 +6909,7 @@ const AUDIT_VENDOR_ACTIONS = ['submitBoothShare', 'deleteBoothShare', 'claimSele
 'saveTasks', 'saveOps', 'loadAllData', 'payFeeCart', 'addFeeToCart'];
 
 async function runSelfAudit() {
-const out = { ownership: [], roles: [], descriptions: [], guards: [] };
+const out = { ownership: [], roles: [], descriptions: [], guards: [], residue: [] };
 
 // --- 1. Ownership -------------------------------------------------------
 for (const spec of AUDIT_OWNERSHIP_KEYS) {
@@ -6932,6 +6955,7 @@ out.guards.push({ fn: n });
 
 // --- 2. Role exposure ---------------------------------------------------
 const wasRole = currentRole, wasVendor = currentVendorId, wasScreen = ifmCurrentScreen;
+deskHandoverQuiet = true;
 for (const role of AUDIT_ROLES) {
 currentRole = role;
 if (role === 'vendor' && !currentVendorId && cache.vendors.length) currentVendorId = cache.vendors[0].vendorId;
@@ -6952,6 +6976,7 @@ if (uniq.length) out.roles.push({ role: role, screen: name, controls: uniq });
 }
 currentRole = wasRole; currentVendorId = wasVendor;
 setRoleHeader(wasRole || 'vendor');
+deskHandoverQuiet = false;
 const inFold = (() => { const s = document.getElementById('screen-selfaudit'); return s && s.closest('.fold-body'); })();
 if (wasScreen && wasScreen !== 'selfaudit' && !inFold) { try { showScreen(wasScreen); } catch (e) {} }
 
@@ -6979,6 +7004,47 @@ else if (!titlesAgree(help.title, title)) out.descriptions.push({ screen: name,
 d: 'Screen is called \u201C' + title + '\u201D; its help dot opens \u201C' + help.title + '\u201D.' });
 }
 });
+
+// --- 5. Screen residue --------------------------------------------------
+// A fifth fault class, found when a deal posted by one vendor left its green
+// confirmation sitting on the next vendor's screen. The data was filtered
+// correctly; the leftover was DOM text and module globals that no re-render
+// touches. Hand the desk over and see whether anything visible stayed behind.
+{
+const before = currentRole;
+deskHandoverQuiet = false;
+setRoleHeader(before || 'vendor');
+const stuck = [...document.querySelectorAll('.status-msg')]
+.filter(el => el.classList.contains('show') || el.innerHTML.trim())
+.map(el => el.id || '(unnamed)');
+if (stuck.length) out.residue.push({ what: 'Status messages',
+d: 'Survived a desk hand-over: ' + stuck.join(', ') + '. clearDeskState() should have emptied these.' });
+if ((typeof promoSelectedDates !== 'undefined' && promoSelectedDates.size) ||
+(typeof selectedCioDates !== 'undefined' && selectedCioDates.size)) {
+out.residue.push({ what: 'Date selections',
+d: 'A date selection set survived a desk hand-over, so the next person inherits days they did not pick.' });
+}
+const typed = [...document.querySelectorAll('.desk-form input, .desk-form textarea, .desk-form select')]
+.filter(e => e.type !== 'hidden' && !e.classList.contains('keep-on-handover') &&
+(e.tagName === 'SELECT' ? e.selectedIndex > 0
+: (e.type === 'checkbox' || e.type === 'radio') ? e.checked : String(e.value).trim()))
+.map(e => e.id || '(unnamed)');
+if (typed.length) out.residue.push({ what: 'Half-typed forms',
+d: 'Still holding the previous occupant\u2019s words: ' + typed.join(', ') + '.' });
+const derived = [...document.querySelectorAll('.desk-transient')]
+.filter(e => e.innerHTML.trim()).map(e => e.id || '(unnamed)');
+if (derived.length) out.residue.push({ what: 'Worked-out blocks',
+d: 'Text computed from state that has been cleared, still on the page: ' + derived.join(', ') + '.' });
+// Enrolment gap: an action form is one with a status box in it. If such a card
+// carries fields but no desk-form mark, nothing sweeps it and this fault will
+// come back on a tool nobody thought about.
+const unenrolled = [...document.querySelectorAll('.card')]
+.filter(c => c.querySelector('.status-msg') && !c.classList.contains('desk-form') &&
+c.querySelector('input:not([type=hidden]), textarea'))
+.map(c => (c.id || (c.querySelector('h2') ? c.querySelector('h2').textContent.trim().replace(/\s+/g,' ').slice(0,34) : '(unnamed card)')));
+if (unenrolled.length) out.residue.push({ what: 'Forms not enrolled',
+d: 'Cards that take entries and report back, but are not marked <code>desk-form</code>, so nothing clears them when the desk changes hands: ' + unenrolled.join(' \u00b7 ') + '.' });
+}
 
 return out;
 }
@@ -7022,11 +7088,14 @@ r.descriptions.map(o => '<code>' + esc(o.screen) + '</code> \u2014 ' + esc(o.d))
 section('Write guards', r.guards.length,
 'Functions that write the market\u2019s own records without checking the role of whoever called them. Hiding a button does not withhold the power behind it. Writes a vendor is meant to make on their own behalf are named in <code>AUDIT_VENDOR_ACTIONS</code> and left out; anything appearing here has not been decided either way.',
 r.guards.map(o => '<code>' + esc(o.fn) + '</code>'));
-const total = r.ownership.length + r.roles.length + r.descriptions.length + r.guards.length;
+section('Screen residue', r.residue.length,
+'What one person left on the screen that the next person inherits. The data on every screen is filtered by whose it is; a status message, a date selection or a half-typed form is not data, and no re-render clears it. Found when a posted deal left its confirmation on the next vendor\u2019s screen, above a list correctly saying they had posted nothing.',
+r.residue.map(o => '<b>' + esc(o.what) + '</b> \u2014 ' + esc(o.d)));
+const total = r.ownership.length + r.roles.length + r.descriptions.length + r.guards.length + r.residue.length;
 const sum = document.getElementById('saSummary');
 if (sum) sum.textContent = total
-? total + ' finding' + (total === 1 ? '' : 's') + ' across four faults. Each is a class, not an incident \u2014 fix the class.'
-: 'Nothing found in any of the four faults. That is not the same as no bugs: this walks only what it knows to look for.';
+? total + ' finding' + (total === 1 ? '' : 's') + ' across five faults. Each is a class, not an incident \u2014 fix the class.'
+: 'Nothing found in any of the five faults. That is not the same as no bugs: this walks only what it knows to look for.';
 }
 function renderSeedMerge() {
 const wrap = document.getElementById('smList');
@@ -7373,7 +7442,56 @@ window.addEventListener('popstate', () => {
 disarmBackGesture();
 if (ifmGoBack()) armBackGesture();
 });
+// When the desk changes hands -- one vendor to another, vendor to manager,
+// anyone to the kiosk -- the DATA re-renders but the SCREEN does not. Status
+// messages, half-filled forms and selection sets are plain globals and DOM
+// text; they survive the switch and read as though they belong to whoever is
+// looking now. That is how a deal posted by one vendor left a green "Posted
+// for Saturday" banner sitting on the next vendor's Sales & Promotions screen,
+// under a list that correctly said nothing was posted.
+//
+// The rule: screen residue belongs to the person who made it, and leaves with
+// them. Anything added here must be state a NEW occupant should not inherit.
+// Data lives in cache and is filtered by vendorId -- it does not belong here.
+function clearDeskState() {
+// Every transient feedback box, wherever it lives. New tools get this free.
+document.querySelectorAll('.status-msg').forEach(el => {
+el.className = 'status-msg';
+el.innerHTML = '';
+});
+// Selection sets and edit handles that name a particular person's work.
+try { promoSelectedDates = new Set(); promoTouched = false; } catch (e) {}
+try { selectedCioDates = new Set(); } catch (e) {}
+try { abEditing = null; abPendingPhoto = null; } catch (e) {}
+try { pmSelectedVendorId = null; } catch (e) {}
+// Blocks whose text was WORKED OUT from state we just cleared. Emptying the
+// state is not enough: "Add day fees -- $40 (Sat 22)" is already written into
+// the page and no re-render runs on a hand-over. Mark any such block
+// `desk-transient` and it is swept here.
+document.querySelectorAll('.desk-transient').forEach(el => {
+el.innerHTML = '';
+el.style.display = 'none';
+});
+// Half-filled forms. The unit of enrolment is the CARD, not the field, so a
+// tool that gains a field later is covered without anyone remembering. Mark
+// an action form `desk-form`; leave settings screens alone, since their inputs
+// show saved values rather than something somebody was part-way through.
+document.querySelectorAll('.desk-form').forEach(card => {
+card.querySelectorAll('input, textarea, select').forEach(el => {
+if (el.type === 'hidden' || el.classList.contains('keep-on-handover')) return;
+// A dropdown left on one vendor's name, or a tick box left ticked, is the
+// same fault as a text box left full: the next person did not choose it.
+if (el.tagName === 'SELECT') { el.selectedIndex = 0; return; }
+if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; return; }
+el.value = '';
+});
+});
+}
+// The Self-Audit walks every role in a loop to see what each one is shown. That
+// is not a desk hand-over and must not wipe what somebody is in the middle of.
+let deskHandoverQuiet = false;
 function setRoleHeader(role) {
+if (!deskHandoverQuiet) clearDeskState();
 ['vendor', 'manager', 'staff', 'volunteer', 'developer', 'kiosk'].forEach(r =>
 document.body.classList.toggle('role-' + r, role === r));
 paintHeaderBadge();
@@ -7601,6 +7719,8 @@ renderUnreservable();
 const PRINCIPLES = [
 { t: 'Optional for vendors, indispensable to the office',
 d: 'The app exists to lighten the Market Manager\u2019s record-keeping, not to make vendors use software. Many have sold here for decades and tell the market things by phone, email, post, or across the desk \u2014 and will keep doing so. Those channels are first-class forever: every record a vendor could enter themselves must also be enterable by the office on their behalf, and no vendor-facing text may speak of the old ways as over. The measure of this app is the manager\u2019s ledger, not the vendor\u2019s screen time.' },
+{ t: 'Grey it out, do not hide it',
+d: 'A tool that does not apply to a vendor right now is dimmed and left where it is, never removed. Hiding it teaches a vendor the market does not have it \u2014 and a vendor who cannot see the Committees drawer has no way to learn that committees are open to them. Dimmed, it stays part of the picture: they can open it and read, in plain words, why it is not theirs at the moment and what would change that. The same goes for a card inside a tool. The vendor desk therefore says it is filtered <em>for</em> them, not that anything is kept <em>from</em> them, and the count in that note must match what they can actually find or the note reads as a lie. Nothing here is a permission control: a dimmed drawer is a statement about relevance, and anything that must be withheld is withheld by <code>requireManager()</code>, not by dimming.' },
 { t: 'Sandbox first, and batch the builds',
 d: 'A new feature is built as a small standalone file and tried on the device before it goes anywhere near the app: an eighteen-kilobyte sandbox costs almost nothing to send and to look at, while the app itself is over a megabyte. The same thrift applies to changes inside the app \u2014 several small edits should ride out together in one build rather than one build each. Where judgement about feel is needed, the sandbox carries the controls so the person deciding can find the answer themselves instead of describing it.' },
 { t: 'The market sets prices, not the app',
@@ -8137,6 +8257,60 @@ closeAllFolds();
 reopenFoldAncestors(fold);
 if (!wasOpen) fold.classList.add('open');
 }
+// A drawer or card that does not apply to this vendor right now is DIMMED,
+// not removed. The vendor can still open it and is told, in plain words, why
+// it is not theirs at the moment and what would change that. A hidden tool
+// teaches a vendor the market does not have it; a dimmed one teaches them the
+// shape of the whole market and where they stand in it.
+//
+// `reason` is written to the vendor: what is not available, why, and what
+// would open it. `tag` is the two or three words on the drawer itself.
+function setDeskRelevance(id, relevant, reason, tag) {
+const el = document.getElementById(id);
+if (!el) return;
+el.style.display = '';
+el.classList.toggle('not-yours', !relevant);
+const bar = el.querySelector(':scope > .fold-bar') || el.querySelector(':scope > h2');
+if (bar) {
+let chip = bar.querySelector('.not-yours-tag');
+if (!relevant) {
+if (!chip) {
+chip = document.createElement('span');
+chip.className = 'not-yours-tag';
+const title = bar.querySelector('.fold-title');
+if (title) title.insertAdjacentElement('afterend', chip);
+else bar.appendChild(chip);
+}
+chip.textContent = tag || 'not yours yet';
+} else if (chip) chip.remove();
+}
+el.dataset.whyNot = relevant ? '' : (reason || '');
+// A dimmed CARD says its piece in place; a dimmed DRAWER says it on opening.
+if (!el.classList.contains('dash-fold')) {
+let why = el.querySelector(':scope > .why-panel');
+if (!relevant) {
+if (!why) {
+why = document.createElement('div');
+why.className = 'why-panel';
+el.appendChild(why);
+}
+why.innerHTML = '<b>Not yours at the moment</b>' + esc(reason || '') +
+'<span class="why-foot">Shown so you can see it exists. Ask the office if you think this is wrong.</span>';
+} else if (why) why.remove();
+}
+}
+function foldWhyPanel(fold) {
+const body = fold.querySelector('.fold-body');
+if (!body) return;
+body.innerHTML = '';
+const why = document.createElement('div');
+why.className = 'why-panel';
+why.innerHTML = '<b>Not yours at the moment</b>' + esc(fold.dataset.whyNot || '') +
+'<span class="why-foot">This drawer is shown, not hidden, so you can see the whole of what the ' +
+'market runs. Ask the office if you think it should be open to you.</span>';
+body.appendChild(why);
+fold.classList.add('open');
+}
 function toggleToolFold(btn, name) {
 armBackGesture();
 const fold = btn.parentElement;
@@ -8144,6 +8318,7 @@ const wasOpen = fold.classList.contains('open');
 closeAllFolds();
 reopenFoldAncestors(fold);
 if (wasOpen) return;
+if (fold.classList.contains('not-yours')) { foldWhyPanel(fold); return; }
 const sec = document.getElementById('screen-' + name);
 const body = fold.querySelector('.fold-body');
 const ph = document.createComment('home-' + name);
@@ -9408,7 +9583,10 @@ const el = document.getElementById(id);
 if (el) el.style.display = visible ? '' : 'none';
 };
 if (currentRole !== 'vendor') {
-['menuWeeklyLottery', 'menuSatAuction', 'commAgOnly', 'menuMyCommittees'].forEach(id => show(id, true));
+['menuWeeklyLottery', 'menuSatAuction', 'commAgOnly', 'menuMyCommittees'].forEach(id => {
+show(id, true);
+setDeskRelevance(id, true);
+});
 return;
 }
 const vendor = currentVendor();
@@ -9416,10 +9594,23 @@ if (!vendor) return;
 const holdsStall = vendorHoldsStall(vendor.vendorId);
 const isFull = vendor.category.endsWith('Full');
 const isAg = vendor.category.startsWith('Ag');
-show('menuWeeklyLottery', !saturdayBoothOf(vendor.vendorId) || shoulderSeasonDeclared());
-show('commAgOnly', isAg);
+const satBooth = saturdayBoothOf(vendor.vendorId);
+const weeklyOpen = !satBooth || shoulderSeasonDeclared();
+setDeskRelevance('menuWeeklyLottery', weeklyOpen,
+'You hold booth ' + satBooth + ' for the season, so you do not sign in for a weekly Sunday booth \u2014 it is already yours. ' +
+'This drawer opens for you if the market declares a shoulder season, and if you will be away, Report an Absence is the tool you want.',
+'you hold a booth');
+setDeskRelevance('commAgOnly', isAg,
+'The Value-Added Farm Products application is for Ag vendors. It is what an Ag vendor files to sell a product ' +
+'made from what they grow. Your membership is recorded as ' + vendor.category + '. If that is wrong, or if your ' +
+'business has changed, the office can record a class change.',
+'Ag vendors');
 const onCmte = committeesFor(vendor.vendorId).length > 0;
-show('menuMyCommittees', onCmte);
+setDeskRelevance('menuMyCommittees', onCmte,
+'You are not on a committee at the moment, so there are no agendas or tasks in front of you here. ' +
+'Committees are open to any vendor \u2014 tell the office or a board member you would like to serve on one, ' +
+'and this drawer fills up with the work in front of it.',
+'not on one yet');
 updateIneligibleLegend();
 const cioSub = document.getElementById('menuCallInSub');
 if (cioSub) {
@@ -9443,14 +9634,19 @@ sub.textContent = isFull
 }
 const note = document.getElementById('menuTailorNote');
 if (note) {
-const hidden = [];
-if (saturdayBoothOf(vendor.vendorId) && !shoulderSeasonDeclared()) hidden.push('the weekly Booth Selection (you hold a reserved booth \u2014 report an absence instead if you\u2019ll be away)');
-if (!isAg) hidden.push('the Value-Added Farm Products application');
-if (!onCmte) hidden.push('the Committees drawer (you don\u2019t currently serve on one)');
-note.textContent = hidden.length
-? 'This menu is filtered to what applies to a ' + vendor.category + ' vendor. Not shown: ' + hidden.join('; ') + '.'
-: '';
-note.style.display = hidden.length ? '' : 'none';
+// Count every dimmed thing, drawer or card. A card inside a tool is not on
+// the desk itself, but the vendor still meets it, and the count must match
+// what they can actually find or the note reads as wrong.
+const dimmed = document.querySelectorAll('#main .not-yours').length;
+note.textContent = 'This desk is filtered specifically for you \u2014 ' +
+(/^[AEIOU]/i.test(vendor.category) ? 'an ' : 'a ') + vendor.category +
+' vendor' + (satBooth ? ' holding booth ' + satBooth : '') + '. ' +
+(dimmed
+? 'Nothing is hidden from you. ' + (dimmed === 1 ? 'One tool is' : dimmed + ' tools are') +
+' greyed out because ' + (dimmed === 1 ? 'it does' : 'they do') + ' not apply to you right now; ' +
+'open ' + (dimmed === 1 ? 'it' : 'them') + ' and the app will tell you why, and what would change that.'
+: 'Every tool here applies to you right now.');
+note.style.display = '';
 }
 }
 const SCREEN_HELP = {"evacuation": 50, "stallimprove": 49, "dataexport": 46, "calloutpatterns": 45, "pointsmanager": 42, "winterbooths": 28, "standing": 25, "leaves": 24, "whrate": 23, "satlottery": 21, "popupsvendor": 8, "winter": 5};
@@ -11646,7 +11842,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-34';
+const BUILD_ID = '14-37';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
