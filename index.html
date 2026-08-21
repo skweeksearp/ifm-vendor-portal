@@ -257,16 +257,26 @@ padding: 12px 14px; border-bottom: 1px solid #ccc; background: var(--paper);
 .pr-h1 { font-size: 21px; font-weight: 800; margin: 0; font-family: 'Manrope', sans-serif; }
 .pr-sub { font-size: 13px; margin: 3px 0 16px; }
 .pr-h2 { font-size: 16px; font-weight: 800; margin: 20px 0 8px; border-bottom: 2px solid #000; padding-bottom: 4px; font-family: 'Manrope', sans-serif; }
-.pr-booths { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
-.pr-booth { border: 1px solid #000; border-radius: 4px; padding: 4px 8px; font-size: 15px; font-weight: 700; text-align: center; }
-.pr-booth small { font-weight: 400; font-size: 10px; display: block; opacity: 0.75; }
-.pr-booth.taken { background: #eee; text-decoration: line-through; }
+table.pr-list td.bnum { width: 52px; font-weight: 800; font-size: 15px; }
+/* A booth already given out is greyed rather than struck through: the name in
+   the last column has to stay readable, since that is the record of who got
+   it. */
+table.pr-list tr.taken td { background: #f0f0f0; }
 .pr-tier { font-size: 13px; font-weight: 800; margin: 16px 0 4px; text-transform: uppercase; letter-spacing: 0.05em; }
 table.pr-list { width: 100%; border-collapse: collapse; }
 table.pr-list th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; border-bottom: 1px solid #000; padding: 4px; }
 table.pr-list td { font-size: 14px; padding: 9px 4px; border-bottom: 1px dotted #888; vertical-align: bottom; }
 table.pr-list td.rank { width: 26px; font-weight: 800; }
 table.pr-list td.pick { width: 78px; border-bottom: 1.5px solid #000; }
+/* The booth table's last column carries a business name, not initials, so it
+   needs real width -- at 78px "The Gardens of Earthly Mirth" wrapped to four
+   lines and dragged the whole row down with it. Fixed layout so the columns
+   hold their widths whatever the longest name happens to be. */
+table.pr-booths-list { table-layout: fixed; }
+table.pr-booths-list td.bnum { width: 8%; }
+table.pr-booths-list th:nth-child(2), table.pr-booths-list td:nth-child(2) { width: 22%; }
+table.pr-booths-list th:nth-child(3), table.pr-booths-list td:nth-child(3) { width: 38%; }
+table.pr-booths-list td.pick { width: 32%; font-size: 13px; }
 .pr-mappage { margin-top: 26px; }
 .pr-map { width: 100%; height: auto; display: block; }
 .pr-maplegend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; margin-bottom: 8px; }
@@ -297,7 +307,7 @@ body:not(.kiosk-mode) #app { max-width: 640px; }
 .print-shell { display: block; overflow: visible; }
 #lottoPrintSheet { padding: 0; overflow: visible; }
 html, body { background: #fff !important; color: #000 !important; }
-tr, .pr-booth { break-inside: avoid; }
+tr { break-inside: avoid; }
 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .pr-mappage { break-before: page; break-inside: avoid; margin-top: 0; }
 .pr-map { width: auto; height: 250mm; max-width: 100%; margin: 0 auto; display: block; }
@@ -10464,13 +10474,23 @@ html += '<p class="pr-h2">Available Booths \u2014 ' + stillOpen.length + ' of ' 
 if (!openBooths.length) {
 html += '<p class="pr-empty">No open booths for this date \u2014 no absences on file.</p>';
 } else {
-html += '<div class="pr-booths">' + openBooths.map(b => {
+// A list, in the same table as the vendors below it, rather than a wrapped
+// row of boxes. On paper the boxes were worse than on screen: their widths
+// varied with the length of the vacating vendor's name, so nothing lined up
+// and the eye had no column to run down. The last column is left blank on
+// purpose -- this sheet is worked on with a pen while booths are called.
+html += '<table class="pr-list pr-booths-list"><thead><tr><th>Booth</th><th>Where</th>' +
+'<th>Why it is free</th><th>Given to</th></tr></thead><tbody>';
+html += openBooths.map(b => {
 const holder = Object.keys(rec.assignments).find(vid => rec.assignments[vid] === b.num);
-return '<span class="pr-booth' + (holder ? ' taken' : '') + '">' + b.num + '<small>' +
-(holder ? 'taken \u2014 ' + esc(boothVendorName(holder))
-: (b.vacatedBy ? 'was ' + esc(b.vacatedBy) : 'always open')) +
-'</small></span>';
-}).join('') + '</div>';
+const booth = cache.booths.find(x => x.num === b.num);
+return '<tr' + (holder ? ' class="taken"' : '') + '>' +
+'<td class="bnum">' + esc(b.num) + '</td>' +
+'<td>' + esc((booth && booth.section) || '') + '</td>' +
+'<td>' + (b.vacatedBy ? esc(b.vacatedBy) + ' is away' : 'Open every market') + '</td>' +
+'<td class="pick">' + (holder ? esc(boothVendorName(holder)) : '') + '</td></tr>';
+}).join('');
+html += '</tbody></table>';
 }
 html += '<p class="pr-h2">' + (sat ? 'Vendors Who Requested a Booth, in Calling Order' : 'Signed-In Vendors, in Choosing Order') + '</p>';
 let rank = 0, any = false;
@@ -12238,7 +12258,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-52';
+const BUILD_ID = '14-53';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
