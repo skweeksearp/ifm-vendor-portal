@@ -11616,7 +11616,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-10';
+const BUILD_ID = '14-11';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -12600,31 +12600,15 @@ time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 clock.innerHTML = esc(time) + (zone ? '<span class="zone">' + esc(zone) + '</span>' : '');
 }
 }
-// The map lies under the whole screen, but the search bars cover its top and
-// the day strip its bottom. Fitting to the window put booths beneath both.
-// This is the band actually left to look at.
-function kioskViewInset() {
-const wrap = document.getElementById('kioskMapWrap');
-if (!wrap) return { top: 0, bottom: 0 };
-const wr = wrap.getBoundingClientRect();
-let top = 0, bottom = 0;
-const bar = document.querySelector('#screen-kiosk .kiosk-bar');
-if (bar) { const r = bar.getBoundingClientRect(); if (r.height) top = Math.max(0, r.bottom - wr.top + 10); }
-const strip = document.getElementById('kioskToday');
-if (strip) { const r = strip.getBoundingClientRect(); if (r.height) bottom = Math.max(0, wr.bottom - r.top + 8); }
-return { top: top, bottom: bottom };
-}
 function fitKioskMap() {
 const wrap = document.getElementById('kioskMapWrap');
 const scale = document.getElementById('kioskMapScale');
 const canvas = document.getElementById('kioskBoothCanvas');
 if (!wrap || !scale || !canvas) return;
-const inset = kioskViewInset();
-const w = wrap.clientWidth || 0;
-const h = Math.max(80, (wrap.clientHeight || 0) - inset.top - inset.bottom);
+const w = wrap.clientWidth || 0, h = wrap.clientHeight || 0;
 if (!w) return;
 const cb = kioskContent();
-kioskBaseScale = Math.min(w / cb.w, h ? h / cb.h : w / cb.w) * 0.96;
+kioskBaseScale = Math.min(w / cb.w, h ? h / cb.h : w / cb.w);
 sizeKioskParkLayer();
 applyKioskTransform();
 }
@@ -12634,17 +12618,8 @@ function kioskContent() {
 const raw = kioskContentRaw();
 const th = KIOSK_NORTH * Math.PI / 180;
 const cx = raw.x + raw.w / 2, cy = raw.y + raw.h / 2;
-const cos = Math.cos(th), sin = Math.sin(th);
-let rx0 = Infinity, ry0 = Infinity, rx1 = -Infinity, ry1 = -Infinity;
-(kioskContentPts || []).forEach(p => {
-const dx = p.x - cx, dy = p.y - cy;
-const x = cx + dx * cos - dy * sin;
-const y = cy + dx * sin + dy * cos;
-if (x < rx0) rx0 = x; if (y < ry0) ry0 = y;
-if (x > rx1) rx1 = x; if (y > ry1) ry1 = y;
-});
-const W = rx1 > rx0 ? rx1 - rx0 : Math.abs(raw.w * cos) + Math.abs(raw.h * sin);
-const H = ry1 > ry0 ? ry1 - ry0 : Math.abs(raw.w * sin) + Math.abs(raw.h * cos);
+const W = Math.abs(raw.w * Math.cos(th)) + Math.abs(raw.h * Math.sin(th));
+const H = Math.abs(raw.w * Math.sin(th)) + Math.abs(raw.h * Math.cos(th));
 const canvas = document.getElementById('kioskBoothCanvas');
 if (canvas) {
 canvas.classList.add('north-map');
@@ -12684,13 +12659,11 @@ const wrap = document.getElementById('kioskMapWrap');
 const scale = document.getElementById('kioskMapScale');
 const canvas = document.getElementById('kioskBoothCanvas');
 if (!wrap || !scale || !canvas) return;
-const inset = kioskViewInset();
-const w = wrap.clientWidth || 0;
-const h = Math.max(80, (wrap.clientHeight || 0) - inset.top - inset.bottom);
+const w = wrap.clientWidth || 0, h = wrap.clientHeight || 0;
 const cb = kioskContent();
 const k = kioskBaseScale * kioskZoom;
 const tx = (w - cb.w * k) / 2 - cb.x * k;
-const ty = inset.top + (h - cb.h * k) / 2 - cb.y * k;
+const ty = (h - cb.h * k) / 2 - cb.y * k;
 scale.style.top = '0';
 scale.style.transform =
 'translate(' + (tx + kioskPanX) + 'px, ' + (ty + kioskPanY) + 'px) scale(' + k + ')';
