@@ -5404,7 +5404,7 @@ const IFM_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzqoNF62WqybRV8
 // happened from a different block than the declaration.
 var ifmWarmAge = null, ifmWarmUsed = false, ifmBootMs = null, ifmBootDone = false;
 var ifmWarmBytes = null, ifmWarmKept = null, ifmWarmDropped = [], ifmWarmError = null,
-    ifmPhotoMs = null, ifmPrimeMs = null;
+    ifmPhotoMs = null, ifmPrimeMs = null, ifmRecordsMs = null;
 function ifmFetch(url, opts, ms) {
 const ctl = new AbortController();
 const t = setTimeout(() => ctl.abort(), ms || 8000);
@@ -7848,10 +7848,33 @@ try { runScreenInit(sec.id.replace('screen-', '')); } catch (e) {}
 });
 } catch (e) { /* the poll will catch it on its next round */ }
 }
+// NOTHING ON THE LANDING SCREEN NEEDS THE MARKET'S RECORDS.
+//
+// It is six buttons saying who you are. It was nonetheless made to wait for
+// the whole sheet before it would draw, so a phone that had never opened this
+// app sat looking at nothing for ten seconds.
+//
+// The screen is drawn first now and the records fetched behind it. The one
+// place that genuinely cannot proceed without them is the vendor picker --
+// it IS a list of vendors -- and that waits on its own, with something to read
+// while it does. Every other desk is entered by choosing a role, by which time
+// the records have almost always arrived.
+let ifmDataReady = null;
 async function init() {
 const bootStarted = Date.now();
 freeFloatingSheets();
-await loadAllData();
+paintPickerBackHand();
+paintLandingLogo();
+stampBuild();
+document.getElementById('loading').style.display = 'none';
+let kioskFirst = false;
+try { kioskFirst = localStorage.getItem('ifm-kiosk-device') === '1'; } catch (e) {}
+if (!kioskFirst) showLanding();
+ifmBootMs = Date.now() - bootStarted;
+
+ifmDataReady = loadAllData();
+await ifmDataReady;
+ifmRecordsMs = Date.now() - bootStarted;
 if (storageBroken && IFM_BACKEND_URL) {
 const n = document.createElement('div');
 n.className = 'empty-note offline-note';
@@ -7860,15 +7883,10 @@ document.body.classList.add('ifm-offline');
 document.body.appendChild(n);
 setTimeout(() => n.remove(), 9000);
 }
-paintPickerBackHand();
-paintLandingLogo();
-stampBuild();
 document.getElementById('hrsDate').value = todayISO();
 renderCioDateList();
 refreshAllDateChips();
 document.getElementById('btnAnnualFull').classList.add('selected');
-document.getElementById('loading').style.display = 'none';
-ifmBootMs = Date.now() - bootStarted;
 // Login is never persisted or synced. A quick app-switch keeps your place because
 // the page stays alive; a cold open always lands on the sign-in screen.
 // One exception: a device set up as the kiosk resumes kiosk mode after any reload.
@@ -8052,9 +8070,19 @@ document.getElementById('bizName').textContent = 'Volunteers / Partners';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 the hands beyond the booths';
 }
 }
-function enterAsVendor() {
+async function enterAsVendor() {
 document.body.classList.remove('kiosk-mode');
 document.getElementById('landing').style.display = 'none';
+document.getElementById('main').style.display = 'none';
+document.getElementById('picker').style.display = 'block';
+// Waits visibly, and only here, rather than the whole app waiting invisibly on
+// its behalf. On any phone that has opened the app before, this is instant.
+if (ifmDataReady && !(cache.vendors || []).length) {
+const list = document.getElementById('vendorList');
+if (list) list.innerHTML = '<p class="empty-note">Fetching the market\u2019s records\u2026 ' +
+'this is only slow the first time on a new phone.</p>';
+try { await ifmDataReady; } catch (e) {}
+}
 showPicker();
 }
 async function enterAsManager() {
@@ -10886,9 +10914,15 @@ const rows = [];
 const row = (k, v, note) => rows.push('<div class="tracker-row"><div class="t-title">' + k +
 '</div><div class="t-note"><b>' + v + '</b>' + (note ? ' \u2014 ' + note : '') + '</div></div>');
 
-row('Time to a usable screen', ifmBootMs === null ? 'not recorded' : ifmBootMs + ' ms',
-ifmWarmUsed ? 'opened from the copy on this device'
-: 'no copy was available, so it waited for the sheet');
+// Two different numbers, kept apart because they answer two different
+// complaints. The first is "the app takes ages to open". The second is "I
+// tapped Members and then sat there".
+row('Time to the first screen', ifmBootMs === null ? 'not recorded' : ifmBootMs + ' ms',
+'nothing on the landing screen needs the records, so it no longer waits for them');
+row('Time to the records', ifmRecordsMs === null ? 'still fetching'
+: ifmRecordsMs + ' ms',
+ifmWarmUsed ? 'read from the copy on this device'
+: 'no copy on this device, so this waited for the sheet \u2014 only the first time');
 
 if (ifmWarmUsed && ifmWarmAge !== null) {
 const mins = Math.round(ifmWarmAge / 60000);
@@ -12641,7 +12675,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-58';
+const BUILD_ID = '14-59';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
