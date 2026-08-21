@@ -1955,6 +1955,9 @@ I sell food (prepared food or produce)
 <option value="percent">% off</option>
 <option value="dollars">$ off</option>
 <option value="bundle">Bundle price</option>
+<option value="bogo">Buy one, get one</option>
+<option value="freebie">Something free with a purchase</option>
+<option value="own">Say it in your own words</option>
 </select>
 <div id="promoValPercent" style="margin-top:8px;">
 <input type="number" id="promoPercent" min="1" max="90" step="1" placeholder="Percent off, e.g. 10">
@@ -1965,6 +1968,21 @@ I sell food (prepared food or produce)
 <div id="promoValBundle" style="display:none; margin-top:8px; gap:8px;">
 <input type="number" id="promoBundleN" min="2" step="1" placeholder="How many, e.g. 2" style="margin-bottom:8px;">
 <input type="number" id="promoBundlePrice" min="0.5" step="0.5" placeholder="For how much, e.g. 9">
+</div>
+<div id="promoValBogo" style="display:none; margin-top:8px;">
+<select id="promoBogoWhat" onchange="onPromoBogoChange()">
+<option value="free">the second one free</option>
+<option value="half">the second one half price</option>
+<option value="percent">the second one at a discount</option>
+</select>
+<input type="number" id="promoBogoPct" min="1" max="90" step="1" placeholder="Percent off the second, e.g. 25" style="display:none; margin-top:8px;">
+</div>
+<div id="promoValFree" style="display:none; margin-top:8px;">
+<input type="text" id="promoFreeItem" maxlength="40" placeholder="What is free, e.g. a cup of cider">
+</div>
+<div id="promoValOwn" style="display:none; margin-top:8px;">
+<input type="text" id="promoOwnText" maxlength="80" placeholder="e.g. Free drink with any sandwich">
+<p class="empty-note" style="margin:6px 0 0;">Written exactly as you type it. Keep it short &mdash; it has to read across a booth on the kiosk.</p>
 </div>
 <label>Which market days?</label>
 <p class="empty-note" id="promoKioskDay" style="margin:0 0 8px;"></p>
@@ -11618,7 +11636,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-17';
+const BUILD_ID = '14-18';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14291,19 +14309,34 @@ wrap.appendChild(chip);
 }
 function onPromoTypeChange() {
 const t = document.getElementById('promoType').value;
-document.getElementById('promoValPercent').style.display = t === 'percent' ? 'block' : 'none';
-document.getElementById('promoValDollars').style.display = t === 'dollars' ? 'block' : 'none';
-document.getElementById('promoValBundle').style.display = t === 'bundle' ? 'block' : 'none';
+const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? 'block' : 'none'; };
+show('promoValPercent', t === 'percent');
+show('promoValDollars', t === 'dollars');
+show('promoValBundle', t === 'bundle');
+show('promoValBogo', t === 'bogo');
+show('promoValFree', t === 'freebie');
+show('promoValOwn', t === 'own');
+const lbl = document.querySelector('label[for="promoItem"]');
+if (lbl) lbl.textContent = t === 'freebie' ? 'What do they have to buy?'
+: t === 'own' ? 'What\u2019s on offer? (for your own records)' : 'What\u2019s on offer?';
+onPromoBogoChange();
+}
+function onPromoBogoChange() {
+const s = document.getElementById('promoBogoWhat');
+const pct = document.getElementById('promoBogoPct');
+if (s && pct) pct.style.display = s.value === 'percent' ? 'block' : 'none';
 }
 async function addVendorPromo() {
 const vendor = currentVendor();
 if (!vendor) return;
 const item = document.getElementById('promoItem').value.trim();
-if (!item) {
-showMsg('promoMsg', 'err', 'Say what is on offer first.');
+const ptype = document.getElementById('promoType').value;
+if (!item && ptype !== 'own') {
+showMsg('promoMsg', 'err', ptype === 'freebie'
+? 'Say what they have to buy first.'
+: 'Say what is on offer first.');
 return;
 }
-const ptype = document.getElementById('promoType').value;
 let text = '';
 if (ptype === 'percent') {
 const pc = Math.round(Number(document.getElementById('promoPercent').value));
@@ -14319,7 +14352,7 @@ showMsg('promoMsg', 'err', 'A star needs a real deal \u2014 dollars off must be 
 return;
 }
 text = '$' + fmtMoney(d) + ' off ' + item;
-} else {
+} else if (ptype === 'bundle') {
 const n = Math.round(Number(document.getElementById('promoBundleN').value));
 const pr = Number(document.getElementById('promoBundlePrice').value);
 if (!(n >= 2) || !(pr > 0)) {
@@ -14327,6 +14360,31 @@ showMsg('promoMsg', 'err', 'A bundle needs at least 2 for a price above zero \u2
 return;
 }
 text = n + ' for $' + fmtMoney(pr) + ' \u2014 ' + item;
+} else if (ptype === 'bogo') {
+const what = document.getElementById('promoBogoWhat').value;
+if (what === 'percent') {
+const pc = Math.round(Number(document.getElementById('promoBogoPct').value));
+if (!(pc >= 1 && pc <= 90)) {
+showMsg('promoMsg', 'err', 'Say how much off the second one \u2014 between 1 and 90 percent.');
+return;
+}
+text = 'Buy one ' + item + ', get one ' + pc + '% off';
+} else {
+text = 'Buy one ' + item + ', get one ' + (what === 'free' ? 'free' : 'half price');
+}
+} else if (ptype === 'freebie') {
+const free = document.getElementById('promoFreeItem').value.trim();
+if (!free) {
+showMsg('promoMsg', 'err', 'Say what they get free.');
+return;
+}
+text = free.charAt(0).toUpperCase() + free.slice(1) + ' free with ' + item;
+} else if (ptype === 'own') {
+text = document.getElementById('promoOwnText').value.trim();
+if (!text) {
+showMsg('promoMsg', 'err', 'Write the offer in your own words first.');
+return;
+}
 }
 if (!promoSelectedDates.size) {
 showMsg('promoMsg', 'err', 'Pick at least one market day for it to run.');
