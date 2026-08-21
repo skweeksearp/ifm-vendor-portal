@@ -2237,6 +2237,14 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
+<div class="dash-fold" data-fold="snaptokens" id="menuSnapTokens">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaptokens')">
+<span class="fold-title">SNAP Tokens</span>
+<span class="fold-sub" id="foldSubSnap">Whether you take them, and what you have turned in</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="mycommittees" id="menuMyCommittees">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mycommittees')">
 <span class="fold-title">Committees</span>
@@ -2419,6 +2427,14 @@ I sell food (prepared food or produce)
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'aboutedit')">
 <span class="fold-title">Information Screen Subjects</span>
 <span class="fold-sub">The photographs and stories the kiosk shows the public</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="st-snap">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaplog')">
+<span class="fold-title">SNAP Token Collection</span>
+<span class="fold-sub">Who turned in how many tokens, on which market day</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -3083,6 +3099,50 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Map piece kinds</div><div class="comm-desc">Placed pieces record only the kind&rsquo;s key, and the pieces themselves live in the sheet, not in the build. Renaming or removing a kind orphans every piece already placed under the old key &mdash; so a kind&rsquo;s key is permanent even when its label changes.</div></div>
 <div class="comm-item"><div class="comm-title">Beta Reset must not ship</div><div class="comm-desc">Any build headed for real market use sets <code>BETA_RESET_TOOLS</code> to <code>false</code>. The reset desk rewrites records for every phone; it exists only to clean up after testing. A new storage key must also be added to <code>BETA_RESET_KEYS</code> as traffic or as configuration &mdash; a key in neither group is silently spared, and the screen&rsquo;s three lists are drawn from that same table.</div></div>
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
+</div>
+</section>
+<section id="screen-snaptokens" class="screen">
+<div class="screen-head" id="head-snaptokens"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Do You Take SNAP?<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_VENDOR)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" id="snapWhoNote" style="margin-top:0;"></p>
+<div class="row" id="snapToggleRow" style="display:flex; gap:8px;">
+<button type="button" class="primary-btn" id="snapYes" onclick="setSnapAccepts(true)">I accept SNAP</button>
+<button type="button" class="ghost-btn" id="snapNo" onclick="setSnapAccepts(false)">I do not accept SNAP</button>
+</div>
+<div class="status-msg" id="snapVendorMsg"></div>
+</div>
+<div class="card" id="snapVendorSeasonCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
+<div id="snapVendorSeason"></div>
+</div>
+<div class="card" id="snapVendorLogCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Every Time You Turned Tokens In</h2>
+<p class="empty-note" style="margin-top:0;">The office records each one. If a line is wrong, or one is missing, tell the office &mdash; their count is the one that pays out.</p>
+<div id="snapVendorLog" class="drawer-list"></div>
+</div>
+</section>
+<section id="screen-snaplog" class="screen">
+<div class="screen-head" id="head-snaplog"></div>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Take In Tokens<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_MGR)" aria-label="What are the rules here?">?</button></h2>
+<label for="snapDate">Market day</label>
+<select id="snapDate" onchange="renderSnapDay()"></select>
+<label for="snapVendor">Vendor</label>
+<select id="snapVendor"></select>
+<label for="snapCount">How many tokens</label>
+<input type="number" id="snapCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 24">
+<div class="status-msg" id="snapMsg"></div>
+<button type="button" class="primary-btn" onclick="recordSnap()">Record and tell the vendor</button>
+<p class="empty-note" id="snapValueNote" style="margin-top:8px;"></p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Taken In On This Day</h2>
+<div id="snapDayList" class="drawer-list"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
+<div id="snapSeason"></div>
 </div>
 </section>
 <section id="screen-yearend" class="screen">
@@ -6569,6 +6629,7 @@ cache.requirements = requirements === STORAGE_MISSING
 cache.requirements.reqs = cache.requirements.reqs || [];
 cache.requirements.status = cache.requirements.status || {};
 cache.ops = ops === STORAGE_MISSING ? { noshow: {}, fines: [], waived: {} } : (ops || {});
+try { await loadSnap(); } catch (e) { snapCache = snapCache || { accepts: {}, entries: [] }; }
 cache.ops.fines = cache.ops.fines || [];
 cache.ops.noshow = cache.ops.noshow || {};
 cache.ops.fines = cache.ops.fines || [];
@@ -8436,6 +8497,286 @@ wrap.appendChild(c);
 }
 // 2026 fee schedule; annual fees are approved yearly by the Board.
 let vpCache = null;
+// SNAP TOKENS
+//
+// A shopper spends SNAP at the market office and gets wooden tokens; they buy
+// food with the tokens; the vendor brings the tokens back and the market pays
+// them out. So the log is: this vendor turned in this many tokens on this
+// market day. The manager keeps the log; the vendor gets told.
+//
+// Two decisions worth stating, because both could have gone the other way:
+//
+// WHO ACCEPTS. Ag vendors take SNAP, craft vendors cannot -- SNAP buys food.
+// So the toggle STARTS on for Ag and off for craft, of any membership class.
+// But a starting point is not a fact: the moment a vendor sets it themselves
+// that choice is recorded and the default never overrides it again. A vendor
+// selling honey and beeswax candles knows better than a rule about categories.
+//
+// WHAT A TOKEN IS WORTH. Not in the Guide, so it is a market setting rather
+// than a number buried in code. The log stores the COUNT, which is the fact;
+// money is worked out at reading time and says so.
+let snapCache = null;
+function snapDefaultAccepts(v) {
+return !!v && /^Ag\b/.test(String(v.category || ''));
+}
+function snapAccepts(vendorId) {
+const v = cache.vendors.find(x => x.vendorId === vendorId);
+const set = (snapCache && snapCache.accepts) || {};
+if (Object.prototype.hasOwnProperty.call(set, vendorId)) return !!set[vendorId];
+return snapDefaultAccepts(v);
+}
+function snapIsChosen(vendorId) {
+const set = (snapCache && snapCache.accepts) || {};
+return Object.prototype.hasOwnProperty.call(set, vendorId);
+}
+async function loadSnap() {
+const v = await storageGet('ifm-snap');
+if (v !== STORAGE_MISSING && v) snapCache = v;
+if (!snapCache) snapCache = { accepts: {}, entries: [] };
+snapCache.accepts = snapCache.accepts || {};
+snapCache.entries = snapCache.entries || [];
+return snapCache;
+}
+async function saveSnap() { await storageSet('ifm-snap', snapCache); }
+function snapEntriesFor(vendorId, year) {
+return (snapCache ? snapCache.entries : [])
+.filter(e => e.vendorId === vendorId && (!year || String(e.date).slice(0, 4) === String(year)))
+.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+function snapTotal(list) { return list.reduce((s, e) => s + Number(e.tokens || 0), 0); }
+function snapMoney(tokens) { return tokens * (ruleNum('snapTokenValue') || 1); }
+
+// ---- the vendor's half ---------------------------------------------------
+async function initSnapVendorScreen() {
+await loadSnap();
+renderSnapVendor();
+}
+function renderSnapVendor() {
+const v = currentVendor();
+if (!v) return;
+const on = snapAccepts(v.vendorId);
+const chosen = snapIsChosen(v.vendorId);
+
+const yes = document.getElementById('snapYes'), no = document.getElementById('snapNo');
+if (yes && no) {
+yes.className = on ? 'primary-btn' : 'ghost-btn';
+no.className = on ? 'ghost-btn' : 'primary-btn';
+}
+const note = document.getElementById('snapWhoNote');
+if (note) {
+note.innerHTML = on
+? 'SNAP tokens are wooden tokens a shopper buys at the office with their SNAP benefit. ' +
+'You take them like cash, bring them back to the office, and the market pays you out.' +
+(chosen ? '' : ' <em>This is set on for you because you sell food \u2014 change it if that is wrong.</em>')
+: 'You are down as not taking SNAP tokens.' +
+(chosen ? '' : ' <em>This is set off for you because SNAP buys food and yours is not a food business ' +
+'\u2014 change it if that is wrong.</em>');
+}
+// The two cards below go quiet when the answer is no. Dimmed, not hidden:
+// a vendor should be able to see what they would be looking at if they said
+// yes, and the reason the app thinks they said no.
+setDeskRelevance('snapVendorSeasonCard', on,
+'You are down as not taking SNAP tokens, so there is nothing to total. Say you accept them above ' +
+'and this fills in as you turn tokens in at the office.');
+setDeskRelevance('snapVendorLogCard', on,
+'Nothing to list while you are down as not taking SNAP. If you have taken tokens anyway \u2014 a ' +
+'shopper handed one over and you took it \u2014 the office can still redeem them, and saying you ' +
+'accept SNAP above will show them here.');
+
+const year = seasonYear();
+const mine = snapEntriesFor(v.vendorId, year);
+const total = snapTotal(mine);
+const season = document.getElementById('snapVendorSeason');
+if (season) {
+season.innerHTML =
+'<div class="tracker-row"><div class="t-title">Tokens turned in, ' + year +
+'</div><div class="t-note"><b>' + total + '</b> \u00b7 $' + fmtMoney(snapMoney(total)) + '</div></div>' +
+'<div class="tracker-row"><div class="t-title">Times you turned tokens in</div>' +
+'<div class="t-note">' + mine.length + '</div></div>' +
+(mine.length ? '<div class="tracker-row"><div class="t-title">Most recent</div><div class="t-note">' +
+esc(formatDisplayDate(mine[0].date)) + '</div></div>' : '');
+}
+const log = document.getElementById('snapVendorLog');
+if (log) {
+log.innerHTML = '';
+if (!mine.length) {
+log.innerHTML = '<p class="empty-note">Nothing recorded yet this season.</p>';
+} else {
+mine.forEach(e => {
+const row = document.createElement('div');
+row.className = 'attn-item';
+row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div>';
+row.querySelector('.attn-t').textContent = formatDisplayDate(e.date);
+row.querySelector('.attn-m').textContent = e.tokens + ' token' + (e.tokens === 1 ? '' : 's') +
+' \u00b7 $' + fmtMoney(snapMoney(e.tokens)) +
+' \u00b7 recorded by the office ' + shortDate(e.recordedAt);
+log.appendChild(row);
+});
+setTimeout(() => { fitListToRows(log, '.attn-item', 5.4); markListEnds(log); }, 0);
+}
+}
+renderSnapDeskSub();
+}
+// Written on every desk render, not only when the drawer is opened. A drawer
+// bar belongs to the desk, and a desk is redrawn for whoever is at it.
+function renderSnapDeskSub() {
+const sub = document.getElementById('foldSubSnap');
+const v = currentVendor();
+if (!sub || !v) return;
+const on = snapAccepts(v.vendorId);
+const total = snapTotal(snapEntriesFor(v.vendorId, seasonYear()));
+sub.textContent = !on ? 'You are down as not accepting SNAP'
+: (total ? total + ' token' + (total === 1 ? '' : 's') + ' turned in this season'
+: 'You accept SNAP \u2014 nothing turned in yet this season');
+}
+async function setSnapAccepts(yes) {
+const v = currentVendor();
+if (!v) return;
+await loadSnap();
+// Recorded explicitly, so the category default never overrides it again --
+// the same rule the seeded records follow. A vendor who says no and then sees
+// the app quietly say yes next season would rightly stop trusting it.
+snapCache.accepts[v.vendorId] = !!yes;
+await saveSnap();
+renderSnapVendor();
+showMsg('snapVendorMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+(yes ? 'Noted \u2014 you accept SNAP tokens. The office sees this when they take tokens in.'
+: 'Noted \u2014 you do not accept SNAP tokens.'));
+}
+
+// ---- the manager's half --------------------------------------------------
+async function initSnapLogScreen() {
+if (!requireMarketRole()) return;
+await loadSnap();
+const sel = document.getElementById('snapDate');
+const chosen = sel.value;
+sel.innerHTML = '';
+const days = allMarketDatesInSeason(seasonYear())
+.filter(m => m.date <= todayISO()).slice(-24).reverse();
+days.forEach(m => {
+const o = document.createElement('option');
+o.value = m.date;
+o.textContent = formatDisplayDate(m.date);
+sel.appendChild(o);
+});
+if (chosen && [...sel.options].some(o => o.value === chosen)) sel.value = chosen;
+const note = document.getElementById('snapValueNote');
+if (note) note.textContent = 'A token counts as $' + fmtMoney(ruleNum('snapTokenValue') || 1) +
+'. The log keeps the number of tokens, which is the fact; the money is worked out from that, ' +
+'so changing the rate later re-values every past line. Change it in Market Rules if it is wrong.';
+renderSnapVendorChoices();
+renderSnapDay();
+renderSnapSeason();
+}
+function renderSnapVendorChoices() {
+const sel = document.getElementById('snapVendor');
+if (!sel) return;
+const chosen = sel.value;
+sel.innerHTML = '';
+// Everyone is listed, because a craft vendor might legitimately have taken a
+// token by mistake and it still has to be redeemed. But the ones who say they
+// take SNAP come first, and the rest are marked.
+const list = cache.vendors.slice().sort(byBusinessName);
+const yes = list.filter(v => snapAccepts(v.vendorId));
+const no = list.filter(v => !snapAccepts(v.vendorId));
+const add = (v, tail) => {
+const o = document.createElement('option');
+o.value = v.vendorId;
+o.textContent = v.businessName + (tail || '');
+sel.appendChild(o);
+};
+yes.forEach(v => add(v));
+no.forEach(v => add(v, ' \u2014 says they do not take SNAP'));
+if (chosen && [...sel.options].some(o => o.value === chosen)) sel.value = chosen;
+}
+async function recordSnap() {
+if (!requireMarketRole()) return;
+await loadSnap();
+const date = document.getElementById('snapDate').value;
+const vendorId = document.getElementById('snapVendor').value;
+const tokens = Math.round(Number(document.getElementById('snapCount').value));
+if (!date || !vendorId) { showMsg('snapMsg', 'err', 'Pick a market day and a vendor.'); return; }
+if (!(tokens > 0)) { showMsg('snapMsg', 'err', 'How many tokens? It has to be at least one.'); return; }
+snapCache.entries.push({
+id: 'S' + Date.now(),
+vendorId: vendorId, date: date, tokens: tokens,
+recordedAt: new Date().toISOString(),
+recordedBy: currentRole
+});
+await saveSnap();
+document.getElementById('snapCount').value = '';
+const name = (cache.vendors.find(v => v.vendorId === vendorId) || {}).businessName || 'the vendor';
+showMsg('snapMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + tokens +
+' token' + (tokens === 1 ? '' : 's') + ' recorded for ' + esc(name) +
+'. It is on their desk now.');
+renderSnapDay();
+renderSnapSeason();
+}
+async function undoSnap(id) {
+if (!requireMarketRole()) return;
+await loadSnap();
+snapCache.entries = snapCache.entries.filter(e => e.id !== id);
+await saveSnap();
+renderSnapDay(); renderSnapSeason();
+showMsg('snapMsg', 'ok', 'Line removed. The vendor\u2019s desk will show the correction.');
+}
+function renderSnapDay() {
+const wrap = document.getElementById('snapDayList');
+if (!wrap) return;
+const date = document.getElementById('snapDate').value;
+const rows = (snapCache ? snapCache.entries : []).filter(e => e.date === date)
+.slice().sort((a, b) => String(b.recordedAt).localeCompare(String(a.recordedAt)));
+wrap.innerHTML = '';
+if (!rows.length) {
+wrap.innerHTML = '<p class="empty-note">Nothing taken in on this day yet.</p>';
+return;
+}
+rows.forEach(e => {
+const v = cache.vendors.find(x => x.vendorId === e.vendorId) || {};
+const row = document.createElement('div');
+row.className = 'attn-item';
+row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div>' +
+'<div class="attn-acts"></div>';
+row.querySelector('.attn-t').textContent = v.businessName || e.vendorId;
+row.querySelector('.attn-m').textContent = e.tokens + ' token' + (e.tokens === 1 ? '' : 's') +
+' \u00b7 $' + fmtMoney(snapMoney(e.tokens));
+const b = document.createElement('button');
+b.type = 'button'; b.className = 'ghost-btn'; b.textContent = 'Remove';
+b.onclick = () => undoSnap(e.id);
+row.querySelector('.attn-acts').appendChild(b);
+wrap.appendChild(row);
+});
+const total = snapTotal(rows);
+const foot = document.createElement('p');
+foot.className = 'empty-note';
+foot.innerHTML = '<b>' + total + ' token' + (total === 1 ? '' : 's') + ' this day \u00b7 $' +
+fmtMoney(snapMoney(total)) + '</b> across ' + rows.length + ' vendor' + (rows.length === 1 ? '' : 's') + '.';
+wrap.appendChild(foot);
+setTimeout(() => { fitListToRows(wrap, '.attn-item', 5.4); markListEnds(wrap); }, 0);
+}
+function renderSnapSeason() {
+const el = document.getElementById('snapSeason');
+if (!el) return;
+const year = seasonYear();
+const rows = (snapCache ? snapCache.entries : []).filter(e => String(e.date).slice(0, 4) === String(year));
+const total = snapTotal(rows);
+const byVendor = {};
+rows.forEach(e => { byVendor[e.vendorId] = (byVendor[e.vendorId] || 0) + Number(e.tokens || 0); });
+const names = Object.keys(byVendor)
+.map(id => ({ id: id, n: byVendor[id],
+name: (cache.vendors.find(v => v.vendorId === id) || {}).businessName || id }))
+.sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+let html = '<div class="tracker-row"><div class="t-title">Tokens taken in, ' + year +
+'</div><div class="t-note"><b>' + total + '</b> \u2014 $' + fmtMoney(snapMoney(total)) +
+' owed to vendors across ' + names.length + ' business' + (names.length === 1 ? '' : 'es') + '</div></div>';
+names.slice(0, 12).forEach(x => {
+html += '<div class="tracker-row"><div class="t-title">' + esc(x.name) +
+'</div><div class="t-note">' + x.n + ' \u00b7 $' + fmtMoney(snapMoney(x.n)) + '</div></div>';
+});
+if (names.length > 12) html += '<p class="empty-note">and ' + (names.length - 12) + ' more.</p>';
+el.innerHTML = html;
+}
+
 async function loadVp() {
 const v = await storageGet('ifm-feepays');
 if (v !== STORAGE_MISSING) vpCache = v;
@@ -8717,7 +9058,7 @@ document.getElementById('volRoleCard').innerHTML =
 '<p class="empty-note">' + r.note + '</p>';
 }
 // ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
-const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'hours', 'fPoints', 'mycommittees',
+const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
 'fShare', 'directory', 'venmopay', 'mydocs', 'myattend', 'guide', 'communicate'];
 let deskDragAttached = false;
 let deskOrderCache = null;
@@ -9011,6 +9352,8 @@ showScreen('staff');
 }
 const HELP_FEE_STATEMENT = 64;
 const HELP_YEAR_END = 65;
+const HELP_SNAP_MGR = 66;
+const HELP_SNAP_VENDOR = 67;
 const HELP_TEXTS = [
 {
 "title": "Sharing Someone’s Booth",
@@ -9275,6 +9618,14 @@ const HELP_TEXTS = [
 {
 "title": "Year-End Money Worksheet",
 "body": "<p>Every money figure this app holds for one year, on one page for whoever does the market's books.</p><p><b>It is a worksheet, not a set of accounts.</b> The app has never seen a bank statement, a cash drawer, or a single expense. It holds what the office typed in while running markets.</p><p>Four kinds of fact are kept apart and never added together. <em>Recorded as received</em> is the nearest thing to income it has. <em>Membership share installments</em> are <b>equity, not income</b> — a member buys a share and can be repaid it on leaving, and booking that as revenue would overstate what the market earned and understate what it owes its members. <em>Vendor-reported</em> payments are unconfirmed by anybody. And the last section lists what the app cannot see, which for a tax return matters more than what it can.</p><p>Two figures are inferred rather than stored, and the page says so on itself: renewals hold a postmark but not an amount, and day fees hold who paid but not how much.</p>"
+},
+{
+"title": "SNAP Token Collection",
+"body": "<p>A shopper spends their SNAP benefit at the office and gets wooden tokens. They buy food with the tokens. The vendor brings the tokens back and the market pays them out. This is the log of that last step.</p><p>Record the market day, the vendor and the number of tokens. The vendor is told on their own desk the moment you submit — they do not have to ask whether it was counted.</p><p><b>Every vendor is listed, not only the ones who take SNAP.</b> A craft vendor might have taken a token by mistake, and it still has to be redeemed; they are simply marked in the list.</p><p>The log stores the <em>number of tokens</em>, because that is the fact. The money is worked out from the token value in Market Rules at the moment you read it — so changing that rate re-values every past line.</p>"
+},
+{
+"title": "SNAP Tokens",
+"body": "<p>SNAP tokens are wooden tokens a shopper buys at the office with their SNAP benefit. You take them like cash, bring them back to the office, and the market pays you out.</p><p>The toggle starts <b>on for Ag vendors and off for craft vendors</b>, of any membership class, because SNAP buys food. That is a starting point, not a judgement about your business — the moment you set it yourself, your choice is recorded and the category default never overrides it again.</p><p>Saying no dims the rest of this drawer rather than hiding it, so you can see what you would be looking at if you said yes.</p><p>Every time the office takes tokens in from you it appears here and on your desk. <b>The office's count is the one that pays out</b> — if a line is wrong or one is missing, tell them.</p>"
 }
 ];
 function showHelp(i) {
@@ -10013,6 +10364,8 @@ banked: Math.max(worked - accrued, 0)
 function runScreenInit(name) {
 if (name === 'bootreport') initBootReportScreen();
 if (name === 'yearend') initYearEndScreen();
+if (name === 'snaplog') initSnapLogScreen();
+if (name === 'snaptokens') initSnapVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
 if (name === 'directory') renderDirectory('');
 if (name === 'lottery') { initLotteryScreen(); centreLiveMap('lottoMapWrap'); }
@@ -10154,6 +10507,8 @@ volunteer:         { title: 'Volunteers / Partners' },
 venmopay:          { title: 'Pay Fees' },
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
+snaplog:           { title: 'SNAP Token Collection' },
+snaptokens:        { title: 'SNAP Tokens' },
 yearend:           { title: 'Year-End Money Worksheet' },
 bootreport:        { title: 'How This Opening Went' },
 selfaudit:         { title: 'Self-Audit' },
@@ -10285,6 +10640,7 @@ setDeskRelevance('commAgOnly', isAg,
 'made from what they grow. Your membership is recorded as ' + vendor.category + '. If that is wrong, or if your ' +
 'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0;
+renderSnapDeskSub();
 setDeskRelevance('menuMyCommittees', onCmte,
 'You are not on a committee at the moment, so there are no agendas or tasks in front of you here. ' +
 'Committees are open to any vendor \u2014 tell the office or a board member you would like to serve on one, ' +
@@ -13024,7 +13380,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-64';
+const BUILD_ID = '14-65';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -18222,6 +18578,15 @@ function vendorAlertItems() {
 const out = [];
 const me = currentVendorId;
 if (!me) return out;
+// SNAP tokens taken in by the office. Settled the moment it is recorded --
+// there is no decision pending, the market simply owes the money -- so it
+// arrives as a piece of news the vendor can read and dismiss.
+snapEntriesFor(me, null).slice(0, 12).forEach(e => {
+out.push({ key: 'snap:' + e.id, state: 'yes', label: 'Recorded', go: 'snaptokens',
+t: e.tokens + ' SNAP token' + (e.tokens === 1 ? '' : 's') + ' taken in',
+m: formatDisplayDate(e.date) + ' \u00b7 $' + fmtMoney(snapMoney(e.tokens)) +
+' \u00b7 recorded by the office ' + shortDate(e.recordedAt) });
+});
 (cache.tasks || []).forEach(task => {
 (task.claims || []).filter(c => c.vendorId === me).forEach(c => {
 if (c.status === 'reported') {
@@ -18304,6 +18669,7 @@ if (!card) return;
 await loadAlertSeen();
 await loadImprovements();
 await loadVp();
+await loadSnap();
 const seen = alertSeenCache[currentVendorId] || [];
 const items = vendorAlertItems().filter(a => !seen.includes(a.key));
 const list = document.getElementById('vendorAlertList');
@@ -18891,6 +19257,7 @@ const RULE_DEFS = [
 { g: 'Daily selling fees', id: 'feeSun', l: 'Sunday', u: '$', d: 30, src: 'Guide, Daily Selling Fees' },
 { g: 'Daily selling fees', id: 'feeWed', l: 'Wednesday', u: '$', d: 20, src: 'Guide, Daily Selling Fees' },
 { g: 'Daily selling fees', id: 'feeWinter', l: 'Winter Market', u: '$', d: 30, src: 'Guide, Daily Selling Fees' },
+{ g: 'SNAP', id: 'snapTokenValue', l: 'What one SNAP token is worth', u: '$', d: 1, src: 'Set by the market \u2014 not in the Guide' },
 { g: 'Fines', id: 'fineCallOut', l: 'Late absence notice, and each further offense adds the same again', u: '$', d: 50, src: 'Guide, Vendor Rules and Fines' },
 { g: 'Fines', id: 'fineStall', l: 'Items left at close, first offense', u: '$', d: 10, src: 'Guide, Maintenance and Cleaning' },
 { g: 'Fines', id: 'fineStallMult', l: 'What that fine is multiplied by each time it happens again', u: '\u00d7', d: 2, src: 'Guide, Maintenance and Cleaning' },
