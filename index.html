@@ -2626,7 +2626,7 @@ onfocus="if (foolGuardFocus(this)) return; noteKioskActivity();">
 </div>
 <div class="kiosk-clock" id="kioskClock"></div>
 <div class="kiosk-panel" id="kioskDestruct" style="display:none;">
-<div class="kp-head" id="kdHead">IFM PAVILION // AUTONOMOUS DEFENCE</div>
+<div class="kp-head" id="kdHead">IFM PAVILION // AUTONOMOUS DEFENSE</div>
 <div class="kp-stream" id="kdStream"></div>
 <div class="kp-warn" id="kdWarn">SELF-DESTRUCT SEQUENCE INITIATED</div>
 <div class="kp-count" id="kdCountLine"></div>
@@ -3398,7 +3398,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <button type="button" class="ob-kind selected" data-k="Out"><b>An absence</b><span>They will be away</span></button>
 <button type="button" class="ob-kind" data-k="In"><b>A booth request</b><span>They want a booth</span></button>
 <button type="button" class="ob-kind" data-k="share"><b>A booth share</b><span>Two businesses, one booth</span></button>
-<button type="button" class="ob-kind" data-k="doc"><b>A document</b><span>Insurance, permit, licence</span></button>
+<button type="button" class="ob-kind" data-k="doc"><b>A document</b><span>Insurance, permit, license</span></button>
 <button type="button" class="ob-kind" data-k="improve"><b>An improvement proposal</b><span>Work on their booth, for B&amp;G</span></button>
 </div>
 <div id="obShareWrap" style="display:none;">
@@ -3791,7 +3791,7 @@ comes from.</p>
 <p class="req-detail">This screen changes numbers and dates. It cannot change how the market works.</p>
 <p class="req-detail">Adding a booth request to Sunday, reordering who chooses first in a Booth Selection, adding a new approval step, changing who a rule applies to, or adding a screen &mdash; all of that is a change to the app itself and needs whoever maintains it. The same goes for anything not listed above: if a number is not on this screen, it is still written into the code.</p>
 <p class="req-detail">Two things this screen does not do on its own. It does not rewrite a season that has already closed &mdash; a fee changed today does not restate last year&rsquo;s invoices. And on a device with no shared storage, a change made here stays on that device.</p>
-<p class="req-detail">New licences, permits and certificates do not belong here at all: add those in <b>Vendor Requirements</b>, which was built for exactly that.</p>
+<p class="req-detail">New licenses, permits and certificates do not belong here at all: add those in <b>Vendor Requirements</b>, which was built for exactly that.</p>
 </div>
 </section>
 <section id="screen-boardflags" class="screen">
@@ -3987,7 +3987,7 @@ comes from.</p>
 <div class="empty-note" id="rnEmpty" style="display:none;">Nothing matches that filter.</div>
 </div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Membership Share Instalments<button type="button" class="help-dot" onclick="showPlanned('certificate')" aria-label="What are the rules here?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Membership Share Installments<button type="button" class="help-dot" onclick="showPlanned('certificate')" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" id="rnCertSummary" style="margin-top:0;"></p>
 <label for="rnCertFilter">Show</label>
 <select id="rnCertFilter" onchange="renderRenewalShares()">
@@ -7222,7 +7222,7 @@ const derived = [...document.querySelectorAll('.desk-transient')]
 .filter(e => e.innerHTML.trim()).map(e => e.id || '(unnamed)');
 if (derived.length) out.residue.push({ what: 'Worked-out blocks',
 d: 'Text computed from state that has been cleared, still on the page: ' + derived.join(', ') + '.' });
-// Enrolment gap: an action form is one with a status box in it. If such a card
+// Enrollment gap: an action form is one with a status box in it. If such a card
 // carries fields but no desk-form mark, nothing sweeps it and this fault will
 // come back on a tool nobody thought about.
 const unenrolled = [...document.querySelectorAll('.card')]
@@ -7768,7 +7768,7 @@ document.querySelectorAll('.desk-transient').forEach(el => {
 el.innerHTML = '';
 el.style.display = 'none';
 });
-// Half-filled forms. The unit of enrolment is the CARD, not the field, so a
+// Half-filled forms. The unit of enrollment is the CARD, not the field, so a
 // tool that gains a field later is covered without anyone remembering. Mark
 // an action form `desk-form`; leave settings screens alone, since their inputs
 // show saved values rather than something somebody was part-way through.
@@ -7844,7 +7844,7 @@ what: 'Who returned forms and fees, postmarked when, year by year.',
 unblocks: 'Renewal Tracker; real evidence for the quit-watch list.' },
 { t: 'Share payment history', keeper: 'The bookkeeper',
 what: 'Who has paid what toward the $300 membership share, and when.',
-unblocks: 'Membership Share Instalments \u2014 every Full Member starts at $0 without it.' },
+unblocks: 'Membership Share Installments \u2014 every Full Member starts at $0 without it.' },
 { t: 'Warning history', keeper: 'Office files and board minutes',
 what: 'Which vendors have received which disciplinary warnings, and when.',
 unblocks: 'Disciplinary Record \u2014 stage two only means something if someone remembers stage one.' },
@@ -8018,7 +8018,7 @@ d: 'The app exists to lighten the Market Manager\u2019s record-keeping, not to m
 { t: 'Grey it out, do not hide it',
 d: 'A tool that does not apply to a vendor right now is dimmed and left where it is, never removed. Hiding it teaches a vendor the market does not have it \u2014 and a vendor who cannot see the Committees drawer has no way to learn that committees are open to them. Dimmed, it stays part of the picture: they can open it and read, in plain words, why it is not theirs at the moment and what would change that. The same goes for a card inside a tool. The vendor desk therefore says it is filtered <em>for</em> them, not that anything is kept <em>from</em> them, and the count in that note must match what they can actually find or the note reads as a lie. Nothing here is a permission control: a dimmed drawer is a statement about relevance, and anything that must be withheld is withheld by <code>requireManager()</code>, not by dimming.' },
 { t: 'Sandbox first, and batch the builds',
-d: 'A new feature is built as a small standalone file and tried on the device before it goes anywhere near the app: an eighteen-kilobyte sandbox costs almost nothing to send and to look at, while the app itself is over a megabyte. The same thrift applies to changes inside the app \u2014 several small edits should ride out together in one build rather than one build each. Where judgement about feel is needed, the sandbox carries the controls so the person deciding can find the answer themselves instead of describing it.' },
+d: 'A new feature is built as a small standalone file and tried on the device before it goes anywhere near the app: an eighteen-kilobyte sandbox costs almost nothing to send and to look at, while the app itself is over a megabyte. The same thrift applies to changes inside the app \u2014 several small edits should ride out together in one build rather than one build each. Where judgment about feel is needed, the sandbox carries the controls so the person deciding can find the answer themselves instead of describing it.' },
 { t: 'The market sets prices, not the app',
 d: 'One of the greatest functions of a live market is discovering what a product is worth. Price fluctuation by vendors is to be encouraged, never restricted \u2014 abundant harvest, price falls; early frost, it rises; end of day, clear the table. The app therefore stores no prices, caps no prices, compares no prices across days, and gives nobody pricing surveillance. The only thing it constrains is the sale star, which is a message to customers meaning \u201Cmarked down from today\u2019s price\u201D and so must have the shape of a markdown. The base price is none of the app\u2019s business. We want the market to be free.' },
 { t: 'Participation, not punishment',
@@ -8052,7 +8052,7 @@ const APP_GLOSSARY = [
 { t: 'Help dot', d: 'The circled question mark beside a heading. Its promise is always the same \u2014 \u201Cwhat are the rules here?\u201D \u2014 answered with the Guide\u2019s own rules, or with the explainer behind a cone.' },
 { t: 'Cone', d: 'The traffic cone on a tile: a job the market runs on a schedule that this app cannot do for it yet, parked where the tool will live. A coned tool can be built (the screen exists, unvalidated) or not built. When the cone comes off, the tool is real.' },
 { t: 'Explainer', d: 'The popup behind a coned tile\u2019s help dot \u2014 what the tool is for, the rules it will carry, and what blocks it.' },
-{ t: 'Chip', d: 'A booth on a map: the tappable numbered square. Its colour is its state \u2014 open, taken, yours, matched.' },
+{ t: 'Chip', d: 'A booth on a map: the tappable numbered square. Its color is its state \u2014 open, taken, yours, matched.' },
 { t: 'Badge', d: 'The small letters riding a chip: U upgraded electric, NP no parking, CP compact parking, NF no food, W water nearby.' },
 { t: 'Sprite', d: 'A small marker the app puts on a map on its own, from live data \u2014 the orange eight-pointed sale star in front of a booth with a deal on. The pink deal dot was its ancestor. A sprite appears because something is true; a piece appears because someone placed it.' },
 { t: 'Birth stamp', d: 'What a seeded field was worth when the app invented it. Kept beside the records so that later, the app can tell its own fiction from something a person entered: a field still matching its stamp is the app\u2019s to correct, a field that has moved belongs to whoever moved it, permanently. Nothing the seed never set carries a stamp at all.' },
@@ -8100,7 +8100,7 @@ const lines = [];
 const full = vendor.category.endsWith('Full');
 lines.push({ key: 'annual', label: 'Annual Vendor Fee (' + (full ? 'Full Member, $230' : 'Easy Entry, $115') + ')',
 amount: full ? 230 : 115, note: 'due Dec 31' });
-if (full) lines.push({ key: 'share', label: 'Membership share instalment', amount: 100,
+if (full) lines.push({ key: 'share', label: 'Membership share installment', amount: 100,
 note: '$100 of the $300 Certificate, due Dec 31 with renewal' });
 const led = buildHoursLedger(vendor.vendorId, new Date().getFullYear());
 if (led.owed > 0) lines.push({ key: 'hours', label: 'Work-hour balance \u2014 only if you choose to pay instead of work',
@@ -8890,7 +8890,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Vendor Requirements",
-"body": "<p>A place to define any licence, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents come to the office by post. A vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>; marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
+"body": "<p>A place to define any license, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents come to the office by post. A vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>; marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
 },
 {
 "title": "Permits & Documents",
@@ -8941,12 +8941,12 @@ renewal: { built: true, t: 'Renewal Tracker', when: 'Annual &mdash; December int
 body: '<p>Track every vendor through the renewal window and show, at a glance, who has not returned forms and fees.</p>' +
 '<p>Renewals are due postmarked by 31 December. Postmarked 1&ndash;15 January they carry a $100 surcharge. After 15 January the vendor&rsquo;s place at the market ends. The Guide words this &ldquo;considered to have left the market,&rdquo; but nobody has left &mdash; the market is closing the door, and it is worth saying so plainly when the letter goes out. No vendor may attend a 2026 market until all outstanding fees and fines are paid.</p>' +
 '<p>This is the most consequential process the market runs each year and the app has no notion of renewal status at all. It would also give the quit-watch list real evidence instead of inference from attendance.</p>' +
-'<p>Membership share instalments live on this screen too, because that is when the money moves: the $100 a year toward the $300 share is due with renewal, by December 31.</p>' +
+'<p>Membership share installments live on this screen too, because that is when the money moves: the $100 a year toward the $300 share is due with renewal, by December 31.</p>' +
 '<p><b>Blocked on a record we do not have.</b> The office keeps the renewal records this tool needs \u2014 who returned forms and fees, postmarked when, year by year. Until that archive reaches the app, every status here is placeholder and the tool cannot proceed. An export in any form \u2014 even a spreadsheet \u2014 unblocks it.</p>' },
 insurance: { built: true, t: 'Insurance &amp; Permit Expiry', when: 'Annual, and on expiry',
 body: '<p>Hold the expiry date of every document a vendor needs, and surface what lapses in the next thirty days.</p>' +
-'<p>Every vendor must carry $1,000,000 business liability insurance naming IFM as additionally insured, filed annually. Food vendors additionally hold Article 20-C, health department or home processing permits; some hold farm winery licences or fire permits. A vendor whose certificate is not on file may not sell, and one whose policy omits IFM counts as uninsured.</p>' +
-'<p>Built, on the manager side, as <b>Vendor Requirements</b> \u2014 expiry dates are held there against every licence, permit and certificate the market requires, and anything inside thirty days is called out. What is still missing is this vendor-facing view of it.</p>' },
+'<p>Every vendor must carry $1,000,000 business liability insurance naming IFM as additionally insured, filed annually. Food vendors additionally hold Article 20-C, health department or home processing permits; some hold farm winery licenses or fire permits. A vendor whose certificate is not on file may not sell, and one whose policy omits IFM counts as uninsured.</p>' +
+'<p>Built, on the manager side, as <b>Vendor Requirements</b> \u2014 expiry dates are held there against every license, permit and certificate the market requires, and anything inside thirty days is called out. What is still missing is this vendor-facing view of it.</p>' },
 venmopay: { built: true, t: 'Pay Fees with Venmo', when: 'Mock-up \u2014 awaiting the office and the Board',
 body: '<p>The idea: fees join a payment basket from wherever a vendor meets them \u2014 the Work Hours drawer, day fees beside a booth request, renewal on this screen \u2014 then one Venmo payment settles the basket, like any shopping cart. The office opens a Venmo business profile, and every fee in the app grows a Pay with Venmo button that opens the app with the amount and a bookkeeping note prefilled \u2014 so each payment arrives already labelled for reconciliation. Venmo\u2019s business rate is 1.9% + $0.10 per payment, cheaper than typical card processing.</p>' +
 '<p>What blocks it: the office has no Venmo business profile yet, and the Guide\u2019s deadlines are postmark rules \u2014 the Board would need to bless an electronic timestamp as meeting a deadline, decide who absorbs the 1.9%, and keep checks co-equal. The bookkeeper should weigh in on 1099-K handling.</p>' +
@@ -8972,9 +8972,9 @@ compliance: { built: true, t: 'Booth Compliance Clocks', when: 'Seasonal, and pe
 body: '<p>Per-booth deadline tracking for the Buildings &amp; Grounds cycle.</p>' +
 '<p>B&amp;G inspects at the start of each season and reports who is out of compliance. Plans to correct are due within 60 days of notice. Every booth must be brought up to current safety guidelines every two years regardless of when it was reserved, and a new reservation holder is contacted within 60 days of transfer. A vendor giving up a booth leaves it clean and serviceable.</p>' +
 '<p><b>Blocked on a record we do not have.</b> Every clock here starts from a dated event \u2014 last inspection, notice given, reservation transferred \u2014 and B&amp;G keeps those dates, not the app. Until that record reaches the app there is nothing to count sixty days from, and this tool cannot proceed.</p>' },
-certificate: { built: true, t: 'Membership Share Instalments', when: 'Annual &mdash; with renewal',
+certificate: { built: true, t: 'Membership Share Installments', when: 'Annual &mdash; with renewal',
 body: '<p>Track who is partway through paying for their membership share \u2014 the Guide calls it the Certificate of Membership.</p>' +
-'<p>It costs $300 and is required of every Full Member. It may be paid as three annual $100 instalments due by 31 December with the other annual fees, or as a lump sum when the membership is awarded. It carries $100 of equity, refundable by written request on leaving, and is not complete or valid for equity until paid in full. That makes it a buy-in, not a certificate.</p>' +
+'<p>It costs $300 and is required of every Full Member. It may be paid as three annual $100 installments due by 31 December with the other annual fees, or as a lump sum when the membership is awarded. It carries $100 of equity, refundable by written request on leaving, and is not complete or valid for equity until paid in full. That makes it a buy-in, not a certificate.</p>' +
 '<p><b>Blocked on a record we do not have.</b> The bookkeeper&rsquo;s payment history is what this needs \u2014 who has paid what toward the $300, and when. Every Full Member starts at $0 here until that record reaches the app. A spreadsheet unblocks it.</p>' },
 composition: { built: true, t: 'Membership Composition', when: 'Whenever a Full Membership vacancy opens',
 body: '<p>One computed readout of where the roster stands against the 60/40 rule.</p>' +
@@ -8987,7 +8987,7 @@ body: '<p>Carry the stage a vendor is at through the three-step process, across 
 '<p><b>Blocked on a record we do not have.</b> The warning history itself \u2014 which vendors have received which warnings, and when \u2014 lives in office files and board minutes, not in the app. Until that record reaches the app, this tool starts everyone at a clean slate it cannot vouch for, and cannot proceed.</p>' },
 boardflags: { built: true, t: 'Flagged for Attention by the Manager', when: 'Standing \u2014 read before each meeting',
 body: '<p>Two kinds of thing collect here. The first is where this app and the market\u2019s own documents disagree, or where a rule is written loosely enough that the app had to guess. The second is rules that are real, approved and currently ignored because nothing has gone wrong yet.</p>' +
-'<p>The second kind is the point. A market where everyone cleans their booth does not need the $10 fine, and a market where nobody parks in the fire lane does not need the escalating warning. Those rules exist for the season when that stops being true, and by then the record that would let anyone enforce them fairly \u2014 who was warned, when, how many times \u2014 does not exist. The Guide sets fines that increase with each offence, which is unenforceable without the first offence written down.</p>' +
+'<p>The second kind is the point. A market where everyone cleans their booth does not need the $10 fine, and a market where nobody parks in the fire lane does not need the escalating warning. Those rules exist for the season when that stops being true, and by then the record that would let anyone enforce them fairly \u2014 who was warned, when, how many times \u2014 does not exist. The Guide sets fines that increase with each offense, which is unenforceable without the first offense written down.</p>' +
 '<p>Nothing here is an accusation or a recommendation. It is a reading list: what the documents say, what the app does, and where the two have not been reconciled.</p>' +
 '<p>What you decide travels. A rule you start enforcing, or knowingly leave alone, shows up as a note on the screens where that rule actually bites \u2014 so whoever is running the market day sees the ruling without coming here to look for it. Anything you send to the Board joins a review list you can export from Data Export.</p>' },
 lookback: { built: true, t: 'Food Committee Look-Back', when: 'Periodic survey',
@@ -11417,7 +11417,7 @@ counter: { label: 'Counter or shelving', checks: [
 ] },
 enclosure: { label: 'Enclosure or partition', checks: [
 'No more than 30% of the opening enclosed above counter height',
-'Nothing past the centerline of the posts toward a neighbouring booth',
+'Nothing past the centerline of the posts toward a neighboring booth',
 'Coordinate with the adjacent stall \u2014 share supports where possible',
 'Keep the view through the market and down the pavilion open',
 ] },
@@ -12155,7 +12155,7 @@ const PLAIN_WORDS_CHANGED = [
 const PLAIN_WORDS_KEPT = [
 { a: 'Easy Entry', d: 'A membership class, not a stage of experience. It describes how a vendor entered rather than how long they have been here \u2014 the roster holds Easy Entry vendors with eighteen years at market. Easy Entry vendors do not vote, hold no share, and may reserve Sunday booths only.' },
 { a: 'Member, and vendor', d: 'The Guide\u2019s glossary makes these technical: a Member votes and is Full, a vendor does not vote. Everyone says vendor for everybody. This app follows the everyday use and says Full Member wherever voting or reserving actually turns on it.' },
-{ a: 'Good standing', d: 'Purely administrative: fees paid, work hours up to date, insurance valid and naming IFM as additionally insured. It is not a judgement of conduct, and nothing about being a good neighbour enters into it.' },
+{ a: 'Good standing', d: 'Purely administrative: fees paid, work hours up to date, insurance valid and naming IFM as additionally insured. It is not a judgment of conduct, and nothing about being a good neighbor enters into it.' },
 { a: 'Shoulder season', d: 'The late-November and December tail, when the dock wing (booths 45\u201358) and the circle end (69\u201378) close section by section and reserved holders may join the weekly Booth Selection. The Operations Manager declares it; the calendar does not.' },
 { a: 'Unreservable booths', d: 'Named for what cannot be done with them. In practice they are the booths the Operations Manager hands out day by day as part of the Thursday round. The list is set before the March Booth Selection each year.' },
 { a: 'Non-working fee', d: '$25 for each work hour owed and not worked, due 28 February. It is the price of not working the hours, not a fee for something called non-working.' },
@@ -12182,7 +12182,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-49';
+const BUILD_ID = '14-50';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -12523,7 +12523,7 @@ body: '<p>The food you buy here can come on a real plate. The reusable-dish prog
 '<p>Less trash, better meals, and a little more of the market\u2019s spirit: things worth keeping get taken care of. The people who run the Dish Truck have their own story to tell \u2014 this page is holding a spot for it, in their words.</p>' },
 { id: 'music', title: 'Today\u2019s Music', sub: 'Who\u2019s playing at the market',
 photo: 'seed:music', credit: 'Standing illustration \u2014 replaced each market day',
-permit: 'Confirm the licence for this illustration before the kiosk goes public.', hidden: false,
+permit: 'Confirm the license for this illustration before the kiosk goes public.', hidden: false,
 body: '<p>Live music has been part of market days for decades \u2014 always by musicians the market has welcomed. You\u2019ll hear them along the aisles and grounds.</p>' +
 '<p>For today\u2019s lineup, ask at the market office \u2014 and if a busker catches your ear, tell them so.</p>' +
 '<p><em>Staff: replace this picture with today\u2019s performers from the Information Screen Subjects tool on the staff desk.</em></p>' }
@@ -13655,7 +13655,7 @@ const list = mode === 'product'
 ['Frozen pizza', 'Four cheeses, none from a cow near here'],
 ['Hot dogs', 'Ingredients available on request'],
 ['Cheese in a can', 'Shelf stable until the heat death of the universe'],
-['Blue raspberry slushie', 'A colour, not a fruit']]
+['Blue raspberry slushie', 'A color, not a fruit']]
 : [['McDonald\u2019s', 'Booth 14 \u00b7 open till two'],
 ['Taco Bell', 'Booth 33 \u00b7 the corner booth, naturally'],
 ['KFC', 'Booth 41 \u00b7 eleven herbs, none local'],
@@ -13681,7 +13681,7 @@ start: () => {
 const panel = document.getElementById('kioskDestruct');
 const line = document.getElementById('kdCountLine');
 if (!panel || !line) return;
-document.getElementById('kdHead').textContent = 'IFM PAVILION // AUTONOMOUS DEFENCE';
+document.getElementById('kdHead').textContent = 'IFM PAVILION // AUTONOMOUS DEFENSE';
 document.getElementById('kdWarn').textContent = 'SELF-DESTRUCT SEQUENCE INITIATED';
 line.textContent = 'DETONATION IN ';
 const count = document.createElement('span');
@@ -15063,7 +15063,7 @@ effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
 due: '2026-04-01' },
 { id: 'REQ-cannabis-micro', name: 'Cannabis Microbusiness License',
 issuer: 'NYS Office of Cannabis Management',
-detail: 'The all-in-one licence letting a small operator cultivate, process and sell its own cannabis. Held by the business, not the market.',
+detail: 'The all-in-one license letting a small operator cultivate, process and sell its own cannabis. Held by the business, not the market.',
 appliesTo: 'selected', categories: [], vendorIds: [],
 effective: '2026-08-06', renewal: 'expiry', blocking: true,
 example: 'Seeded as an example. New York legalised cannabis sales at farmers\u2019 markets on 6 August 2026 (S.10113/A.11217). No vendor has been attached to this requirement \u2014 add them as they apply, or delete it if the market decides not to host cannabis sales.',
@@ -15073,7 +15073,7 @@ issuer: 'NYS Office of Cannabis Management',
 detail: 'Location-specific permit for selling cannabis away from a fixed retail premises. Requires local municipal approval as well as the state permit, and carries state rules on age verification and security. A permit covers an approved event at an approved location, so it is per market rather than per season.',
 appliesTo: 'selected', categories: [], vendorIds: [],
 effective: '2026-08-06', renewal: 'event', blocking: true,
-example: 'Seeded as an example alongside the microbusiness licence. The market itself would also need to be an approved location before any of this applies \u2014 that approval is the market\u2019s job, not a vendor record, and is not tracked here.',
+example: 'Seeded as an example alongside the microbusiness license. The market itself would also need to be an approved location before any of this applies \u2014 that approval is the market\u2019s job, not a vendor record, and is not tracked here.',
 link: '' },
 ];
 const RENEWAL_LABEL = { annual: 'Renews annually', expiry: 'Renews on expiry',
@@ -16531,7 +16531,12 @@ document.getElementById('prSummary').textContent = posted
 ' attendance points awarded \u00b7 ' + plan.reduce((s, p) => s + p.expire, 0) +
 ' from ' + (year - 1) + ' retired \u00b7 ' + ruleNum('ptsYear') + ' membership points each, to everyone.';
 document.getElementById('prPost').style.display = posted ? 'none' : 'block';
-plan.slice().sort((a, b) => b.net - a.net).slice(0, 40).forEach(p => {
+// Two jobs, previously one sort. WHICH forty appear is a judgment: the
+// largest movements are the ones worth eyeballing before posting. The order
+// they are then read in is not a judgment -- it is a list of people, so it is
+// alphabetical, and somebody looking for a particular vendor can find them.
+plan.slice().sort((a, b) => Math.abs(b.net) - Math.abs(a.net)).slice(0, 40)
+.sort(byBusinessName).forEach(p => {
 const row = document.createElement('div');
 row.className = 'req-row';
 row.innerHTML = '<div class="req-row-main"><div class="req-name">' + esc(p.v.businessName) +
@@ -16546,7 +16551,7 @@ wrap.appendChild(row);
 if (plan.length > 40) {
 const more = document.createElement('p');
 more.className = 'empty-note';
-more.textContent = 'Showing the 40 largest movements of ' + plan.length + '.';
+more.textContent = 'The 40 largest movements of ' + plan.length + ', listed alphabetically.';
 wrap.appendChild(more);
 }
 }
@@ -16934,7 +16939,7 @@ return all.length + ' products on record \u00b7 ' + stale + ' past three years a
 },
 },
 certificate: {
-title: 'Membership Share Instalments', subject: 'vendor',
+title: 'Membership Share Installments', subject: 'vendor',
 fields: [
 { id: 'date', label: 'Paid on', type: 'date' },
 { id: 'amount', label: 'Amount ($)', type: 'number' },
@@ -17667,7 +17672,7 @@ t: 'Sunday sign-in location does not match practice',
 d: 'Two ways the app and the printed Guide now disagree about Sunday sign-in. First, place: the Guide says the office, the app says the booth across from it, which is what the market actually does. Second, time: the Guide describes sign-in opening at 6\u00A0PM the Saturday before; the app now opens it at 8:00\u00A0AM on the Sunday itself and closes it at 8:30, a half-hour window on the morning of the market. The second is a deliberate change made in the app ahead of the Guide and needs a board decision recorded against it, or the next printing will contradict the software. A vendor reading the Guide today is told the wrong place and the wrong hours.' },
 { id: 'BF05', kind: 'discrepancy', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
 t: 'Late-absence fine escalation: settled, worth confirming',
-d: 'The fines table footnote says fines increase in $50 increments for each offence, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
+d: 'The fines table footnote says fines increase in $50 increments for each offense, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
 { id: 'BF16', kind: 'gap', cat: 'Booths', src: 'Vendor Guide, Non-reservable Stalls',
 t: 'Unreservable booths: the Guide names Thursday and nothing else',
 d: 'One sentence covers it \u2014 the OpM assigns these stalls on Thursday morning as part of the call-in process. Saturday morning and Sunday are never mentioned in connection with them. Nothing suggests they are withheld: no reservation can be taken on them, both in-person rounds assign from whatever is open, and there is nothing they could be held back for. The app now says they are available to vendors seeking a booth for Saturday or Sunday, first handed out in the Thursday round. Two things for the OpM to confirm. First, that Sunday really does draw from the same pool. Second, whether the office ever holds one back on the day \u2014 for a vendor whose plans changed, or for a second business in the family. The Guide gives no such priority: a vendor\u2019s second business enters the lottery on its own points and status, and a reserved-booth holder may not enter the daily lottery at all outside shoulder season. But discretion is written into the day-of decisions, so a practice could exist that the Guide never records.' },
@@ -17684,8 +17689,8 @@ d: 'The Fines desk now shows, under each late-absence fine, what the vendor\u201
 t: 'A fee may be waived once per calendar year \u2014 nothing counts the waivers',
 d: 'Management may waive a fee at their discretion once per calendar year, with further appeals going to the Board. The app lets a manager waive any number of fines. Without a count, the limit is unenforceable and inconsistent between managers.' },
 { id: 'BF07', kind: 'dormant', cat: 'Fire lane', src: 'Vendor Guide, Fire Lane Policy',
-t: 'Fire lane: the first offence is a verbal warning nobody records',
-d: 'A first offence gets a verbal warning, a second a $50 fine, and it increases from there. Nothing in the market records the verbal warning, so the second offence cannot be shown to be a second. The Ithaca Fire Department sets the rule; a blocked lane during an emergency is the scenario this exists for.' },
+t: 'Fire lane: the first offense is a verbal warning nobody records',
+d: 'A first offense gets a verbal warning, a second a $50 fine, and it increases from there. Nothing in the market records the verbal warning, so the second offense cannot be shown to be a second. The Ithaca Fire Department sets the rule; a blocked lane during an emergency is the scenario this exists for.' },
 { id: 'BF08', kind: 'dormant', cat: 'Booth condition', src: 'Booth Improvement Guidelines, Maintenance',
 t: 'Items left at close carry a $10 fine that doubles \u2014 never applied',
 d: 'Chains, sawhorses, tables, tanks, shelves, ladders and temporary signs must come down after each market, and booth floors left clean. Non-permanent items left behind carry $10, doubled at each occurrence. The app now has a log for it; nobody has ever kept one.' },
@@ -17706,7 +17711,7 @@ t: 'A policy that omits IFM counts as uninsured',
 d: 'Every vendor must carry $1,000,000 liability naming IFM as additionally insured at each location they attend, and may not sell without a current certificate on file. A certificate that lists the vendor only is treated as no certificate. Nobody has been checking the additionally-insured line.' },
 { id: 'BF14', kind: 'dormant', cat: 'Permits', src: 'Vendor Guide, Calendar',
 t: 'Permits must be re-filed on expiry, not annually',
-d: 'Food service, food or home processing, farm winery licence and fire permit are all to be filed with the Operations Manager upon expiry. Expiry dates are scattered across the year and nothing has been tracking them. The new Vendor Requirements screen can, if the Board wants it used.' },
+d: 'Food service, food or home processing, farm winery license and fire permit are all to be filed with the Operations Manager upon expiry. Expiry dates are scattered across the year and nothing has been tracking them. The new Vendor Requirements screen can, if the Board wants it used.' },
 { id: 'BF15', kind: 'dormant', cat: 'Leave of absence', src: 'Vendor Guide, Leave of Absence',
 t: 'An unapproved absence forfeits seniority \u2014 has it ever been applied?',
 d: 'A Leave is one year, needs Board approval, must be requested by December, and fees are still owed. Returning from an unapproved absence forfeits points, banked work hours and any reserved booth. The app implements the forfeit. Applying it to a real person for the first time will be contentious, and better decided in the abstract.' },
@@ -17721,7 +17726,7 @@ t: 'Proof of origin may be requested, and resale is never permitted',
 d: 'Ag products must come from land the vendor owns or operates; artisan and food products must be made by the vendor. The Ag Committee can inspect a farm, and a member filing a complaint may pay a $25 fee refunded if the complaint is upheld. The process exists and has teeth; it needs someone to have kept records first.' },
 { id: 'BF19', kind: 'dormant', cat: 'Safety', src: 'Sexual Harassment Policy',
 t: 'Managers and board officers must report, and the policy must be posted',
-d: 'Anyone in those roles who receives a complaint, observes the behaviour, or suspects it, is required to report it \u2014 and is subject to discipline for failing to. The policy is to be posted prominently in all work locations and provided to every employee, member and vendor. Worth confirming it is actually on the wall.' },
+d: 'Anyone in those roles who receives a complaint, observes the behavior, or suspects it, is required to report it \u2014 and is subject to discipline for failing to. The policy is to be posted prominently in all work locations and provided to every employee, member and vendor. Worth confirming it is actually on the wall.' },
 { id: 'BF20', kind: 'dormant', cat: 'Selling', src: 'Vendor Guide, Daily Selling Guidelines',
 t: 'Nobody may sell for a vendor who is not present',
 d: 'A vendor or their employee must be present in the booth. This bears directly on booth sharing, where two businesses split a booth and each must have someone there for the whole market.' },
@@ -17757,7 +17762,7 @@ t: 'Waterfront Trail: records say three spaces, the map shows two',
 d: 'The third is the market\u2019s own merchandise booth, a permanent structure rather than a temporary vendor space, so only two are ever offered through the weekly Booth Selection. That is the reason the map carries two, and it is written nowhere else \u2014 which leaves anyone reading older paperwork with a count that does not match. The Guide gave the Operations Manager the job of selecting these spaces, so the number and their placement are hers to set; what is missing is a note on the record saying which of the three is not in play and why.' },
 { id: 'BF30', kind: 'dormant', cat: 'Membership', src: 'Vendor Guide, Certificate of Membership',
 t: 'The membership share carries equity, and leaving members may claim it',
-d: '$300 over up to three years, $100 of equity once complete, redeemable by written request on leaving \u2014 and repurchasable in full if they return. Instalments in progress and equity owed to departed members are both financial positions nobody is tracking.' },
+d: '$300 over up to three years, $100 of equity once complete, redeemable by written request on leaving \u2014 and repurchasable in full if they return. Installments in progress and equity owed to departed members are both financial positions nobody is tracking.' },
 { id: 'BF39', kind: 'discrepancy', cat: 'Booths', src: 'Vendor Guide, Reserved Stall Rules \u2014 the \u201Cno food\u201D designation',
 t: 'Which vendors does a No-Food booth actually exclude?',
 d: 'The Guide lets a vendor ask the Board for a no-food designation when food preparation next door would affect their work. It does not say who is then excluded. Prepared-food vendors, clearly. An Ag vendor selling produce, or jam? A baker? The roster cannot help: its category field is Ag/Non-Ag, so it cannot tell a food vendor from an artisan. The app therefore assumes nothing \u2014 a booth is crossed out only for vendors who have ticked \u201CI sell food\u201D on their own profile. Until the rule is settled, a vendor who never opens their profile is told nothing, which is the safer of the two wrong answers.' },
@@ -18044,8 +18049,8 @@ const RULE_DEFS = [
 { g: 'Daily selling fees', id: 'feeSun', l: 'Sunday', u: '$', d: 30, src: 'Guide, Daily Selling Fees' },
 { g: 'Daily selling fees', id: 'feeWed', l: 'Wednesday', u: '$', d: 20, src: 'Guide, Daily Selling Fees' },
 { g: 'Daily selling fees', id: 'feeWinter', l: 'Winter Market', u: '$', d: 30, src: 'Guide, Daily Selling Fees' },
-{ g: 'Fines', id: 'fineCallOut', l: 'Late absence notice, and each further offence adds the same again', u: '$', d: 50, src: 'Guide, Vendor Rules and Fines' },
-{ g: 'Fines', id: 'fineStall', l: 'Items left at close, first offence', u: '$', d: 10, src: 'Guide, Maintenance and Cleaning' },
+{ g: 'Fines', id: 'fineCallOut', l: 'Late absence notice, and each further offense adds the same again', u: '$', d: 50, src: 'Guide, Vendor Rules and Fines' },
+{ g: 'Fines', id: 'fineStall', l: 'Items left at close, first offense', u: '$', d: 10, src: 'Guide, Maintenance and Cleaning' },
 { g: 'Fines', id: 'fineStallMult', l: 'What that fine is multiplied by each time it happens again', u: '\u00d7', d: 2, src: 'Guide, Maintenance and Cleaning' },
 { g: 'Attendance owed', id: 'attSat', l: 'Saturdays for a reserved booth', d: 15, src: 'Guide, Saturday Reserved Stalls' },
 { g: 'Attendance owed', id: 'attCorner', l: 'Saturdays for a corner Ag booth', d: 25, src: 'Guide, Saturday Reserved Stalls' },
@@ -18057,7 +18062,7 @@ const RULE_DEFS = [
 { g: 'Membership', id: 'fullCap', l: 'Cap on Full Members', d: 105, src: 'Guide, 60/40 Membership Rule' },
 { g: 'Membership', id: 'agShare', l: 'Least share that must be agriculture', u: '%', d: 60, src: 'Guide, 60/40 Membership Rule' },
 { g: 'Membership', id: 'certTotal', l: 'Membership share (Certificate of Membership), in full', u: '$', d: 300, src: 'Guide, Certificate of Membership' },
-{ g: 'Membership', id: 'certInstal', l: 'Each annual instalment', u: '$', d: 100, src: 'Guide, Certificate of Membership' },
+{ g: 'Membership', id: 'certInstal', l: 'Each annual installment', u: '$', d: 100, src: 'Guide, Certificate of Membership' },
 { g: 'Points', id: 'ptsYear', l: 'Points for each year at the market', d: 5, src: 'Guide, Vendor Point System' },
 { g: 'Points', id: 'ptsDay', l: 'Points for each market day attended', d: 1, src: 'Guide, Vendor Point System' },
 { g: 'Clocks and warnings', id: 'expiryWarn', l: 'Warn this many days before a document expires', u: 'days', d: 30, src: 'App convention \u2014 the Guide promises reminders but sets no number' },
@@ -18484,8 +18489,8 @@ sub: 'The roster and its paperwork \u2014 who they are, on file',
 tiles: [
 { s: 'records', i: 'i-list', t: 'Vendor Records', d: 'Everything on file, vendor by vendor' },
 { s: 'addvendor', i: 'i-clipboard', t: 'Add New Vendor', d: 'Onboard and draft a welcome letter' },
-{ s: 'requirements', i: 'i-key', t: 'Vendor Requirements', d: 'Licences, permits, insurance and expiry' },
-{ soon: 'renewal', s: 'renewal', i: 'i-arrows-cycle', t: 'Renewal Tracker', d: 'Dec 31, the January window, and share instalments' },
+{ s: 'requirements', i: 'i-key', t: 'Vendor Requirements', d: 'Licenses, permits, insurance and expiry' },
+{ soon: 'renewal', s: 'renewal', i: 'i-arrows-cycle', t: 'Renewal Tracker', d: 'Dec 31, the January window, and share installments' },
 { s: 'composition', i: 'i-columns', t: 'Membership Composition', d: 'The 105 cap, the 60/40 rule, and recording a change of class' },
 ] },
 { key: 'standing', title: 'Points & Standing', icon: 'i-star',
@@ -19252,12 +19257,12 @@ wrap.appendChild(row);
 }
 const BL_SIZE = 12;
 const BL_FIXTURES = [
-{ code: 'c', name: 'Counter', cls: 'f-counter', colour: '#BFB9AC' },
-{ code: 's', name: 'Shelf',   cls: 'f-shelf',   colour: '#8FA5B3' },
-{ code: 't', name: 'Table',   cls: 'f-table',   colour: '#C7A87A' },
-{ code: 'p', name: 'Post',    cls: 'f-post',    colour: '#6B6257' },
-{ code: 'w', name: 'Sink',    cls: 'f-sink',    colour: '#7FB0A5' },
-{ code: 'x', name: 'Blocked', cls: 'f-block',   colour: '#B2564E' },
+{ code: 'c', name: 'Counter', cls: 'f-counter', color: '#BFB9AC' },
+{ code: 's', name: 'Shelf',   cls: 'f-shelf',   color: '#8FA5B3' },
+{ code: 't', name: 'Table',   cls: 'f-table',   color: '#C7A87A' },
+{ code: 'p', name: 'Post',    cls: 'f-post',    color: '#6B6257' },
+{ code: 'w', name: 'Sink',    cls: 'f-sink',    color: '#7FB0A5' },
+{ code: 'x', name: 'Blocked', cls: 'f-block',   color: '#B2564E' },
 ];
 // Built-in counters and shelves read off the Oct 3 2025 booth map — the grey
 // areas in its legend. Floor type (wood, brick, dirt) is a separate field, so
@@ -19386,11 +19391,11 @@ loadBoothLayoutEditor();
 function renderBoothLayoutTools() {
 const wrap = document.getElementById('blTools');
 wrap.innerHTML = '';
-BL_FIXTURES.concat([{ code: '.', name: 'Erase', colour: '#fff' }]).forEach(f => {
+BL_FIXTURES.concat([{ code: '.', name: 'Erase', color: '#fff' }]).forEach(f => {
 const btn = document.createElement('button');
 btn.type = 'button';
 btn.className = 'bl-tool' + (blTool === f.code ? ' selected' : '');
-btn.innerHTML = '<i style="background:' + f.colour + '"></i>' + f.name;
+btn.innerHTML = '<i style="background:' + f.color + '"></i>' + f.name;
 btn.onclick = () => { blTool = f.code; renderBoothLayoutTools(); };
 wrap.appendChild(btn);
 });
@@ -19586,7 +19591,7 @@ inner.style.cssText = 'position:absolute; inset:0; display:grid;' +
 for (let i = 0; i < BL_SIZE * BL_SIZE; i++) {
 const f = blFixture(rec.grid[i]);
 const cell = document.createElement('div');
-if (f) cell.style.background = f.colour;
+if (f) cell.style.background = f.color;
 inner.appendChild(cell);
 }
 box.appendChild(inner);
@@ -19942,7 +19947,7 @@ wrap.appendChild(line);
 if (holder) {
 line.textContent = boothVendorName(holder) + ' has been given this booth on this desk.';
 } else if (toOrg) {
-line.textContent = 'Given to ' + (toOrg.name || 'a community organisation') +
+line.textContent = 'Given to ' + (toOrg.name || 'a community organization') +
 ' for ' + formatDisplayDate(date) + ', so it is not in the day\u2019s pool.';
 } else if (!open) {
 line.textContent = baseline
