@@ -2504,6 +2504,8 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <input type="range" id="ktnFS" min="16" max="160" oninput="tunerSet('size', this.value)"></div>
 <div class="ktn-out" id="ktnOut"></div>
 <div class="ktn-note">Drag the window itself to move it. Tap it without moving to read.</div>
+<button type="button" class="ghost-btn" style="margin:8px 0 0;" onclick="showTunerDefaults()">Show these as defaults</button>
+<div class="ktn-out" id="ktnDefaults" style="display:none; white-space:pre-wrap;"></div>
 </div>
 </div>
 <div id="kioskAboutWin" class="kiosk-about-win"><div id="kioskAboutDots" class="kaw-dots"></div><div id="kioskAboutSlides"></div></div>
@@ -11616,7 +11618,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-15';
+const BUILD_ID = '14-16';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -12382,6 +12384,20 @@ document.getElementById('ktnOut').textContent =
 '\nright ' + c.right + '  bottom ' + c.bottom +
 '\ndrag it on the map to move it';
 }
+}
+function showTunerDefaults() {
+const w = aboutWinPct();
+const c = cache.kioskChrome || {};
+const car = Object.assign({}, CHROME_DEFAULT.carrot, c.carrot || {});
+const log = Object.assign({}, CHROME_DEFAULT.logo, c.logo || {});
+const n = v => Math.round(Number(v) * 100) / 100;
+const out = document.getElementById('ktnDefaults');
+out.style.display = '';
+out.textContent =
+'ABOUT_WIN_DEFAULT = { leftPct: ' + n(w.leftPct) + ', bottomPct: ' + n(w.bottomPct) +
+', wPct: ' + n(w.wPct) + ', hPct: ' + n(w.hPct) + ', r: ' + (aboutWin().r || 15) + ' }\n' +
+'carrot: { rightPct: ' + n(car.rightPct) + ', bottomPct: ' + n(car.bottomPct) + ', sizePct: ' + n(car.sizePct) + ' }\n' +
+'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }';
 }
 function tunerSet(field, v) {
 if (tunerWhich === 'about') {
