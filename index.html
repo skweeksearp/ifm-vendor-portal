@@ -11636,7 +11636,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-18';
+const BUILD_ID = '14-19';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13528,7 +13528,9 @@ if (x === 1080) return { x: -1, y: 0 };
 return { x: 0, y: pos.y < 390 ? 1 : -1 };
 }
 function syncDealStar(canvas, booth, vid, occ) {
-const has = !!(vid && promosForVendorOn(vid, occ.md.date).length);
+const sharers = vid ? boothGuestsOn(booth.num, occ.md.date, vid) : [];
+const has = !!(vid && (promosForVendorOn(vid, occ.md.date).length ||
+sharers.some(g => promosForVendorOn(g.vendorId, occ.md.date).length)));
 let star = canvas.querySelector('.deal-star[data-num="' + booth.num + '"]');
 if (!has) { if (star) star.remove(); return; }
 const pos = BOOTH_COORDS[booth.num];
