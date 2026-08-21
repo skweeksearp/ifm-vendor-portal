@@ -2130,7 +2130,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="fPromos">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitlePromos">Sales &amp; Promotions</span>
-<span class="fold-sub" id="foldSubPromos"></span>
+<span class="fold-sub" id="foldSubPromos">A sale for today&rsquo;s market, straight to the kiosk</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body">
@@ -2172,10 +2172,8 @@ I sell food (prepared food or produce)
 <input type="text" id="promoOwnText" maxlength="80" placeholder="e.g. Free drink with any sandwich">
 <p class="empty-note" style="margin:6px 0 0;">Written exactly as you type it. Keep it short &mdash; it has to read across a booth on the kiosk.</p>
 </div>
-<label>Which market days?</label>
-<p class="empty-note" id="promoKioskDay" style="margin:0 0 8px;"></p>
-<div id="promoDateChips" class="cio-date-list"></div>
-<button type="button" class="primary-btn" onclick="addVendorPromo()">Post It</button>
+<p class="empty-note" id="promoKioskDay" style="margin:10px 0 8px;"></p>
+<button type="button" class="primary-btn" id="promoPostBtn" onclick="addVendorPromo()">Post It</button>
 <div class="status-msg" id="promoMsg"></div>
 <div id="promoList" style="margin-top:12px;"></div>
 </div>
@@ -7614,8 +7612,7 @@ const stuck = [...document.querySelectorAll('.status-msg')]
 .map(el => el.id || '(unnamed)');
 if (stuck.length) out.residue.push({ what: 'Status messages',
 d: 'Survived a desk hand-over: ' + stuck.join(', ') + '. clearDeskState() should have emptied these.' });
-if ((typeof promoSelectedDates !== 'undefined' && promoSelectedDates.size) ||
-(typeof selectedCioDates !== 'undefined' && selectedCioDates.size)) {
+if (typeof selectedCioDates !== 'undefined' && selectedCioDates.size) {
 out.residue.push({ what: 'Date selections',
 d: 'A date selection set survived a desk hand-over, so the next person inherits days they did not pick.' });
 }
@@ -8223,7 +8220,7 @@ el.className = 'status-msg';
 el.innerHTML = '';
 });
 // Selection sets and edit handles that name a particular person's work.
-try { promoSelectedDates = new Set(); promoTouched = false; } catch (e) {}
+try { promoTouched = false; } catch (e) {}
 try { selectedCioDates = new Set(); } catch (e) {}
 try { abEditing = null; abPendingPhoto = null; } catch (e) {}
 try { pmSelectedVendorId = null; } catch (e) {}
@@ -9446,7 +9443,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Sales & Promotions",
-"body": "<p>Anything you post here shows up on the Information Kiosk at the market when a customer taps your booth &mdash; pick the days it runs.</p><p>The star on the map is earned by a concrete deal — a percent off, dollars off, or a bundle price — and the kiosk banner is built from those numbers, so the offer customers see is the offer you entered. Plain announcements belong in your Business Profile, which the kiosk also shows.</p>"
+"body": "<p>Anything you post here shows up on the Information Kiosk at the market when a customer taps your booth &mdash; it runs for the market day you post it on, and nothing else. There is no calendar here on purpose: a sale is something you decide at the stall when the peaches will not last another day, and picking a day made it possible to post one that quietly never appeared because the day chosen was not the day the shopper was standing there. Off a market day the form says so and waits.</p><p>The star on the map is earned by a concrete deal — a percent off, dollars off, or a bundle price — and the kiosk banner is built from those numbers, so the offer customers see is the offer you entered. Plain announcements belong in your Business Profile, which the kiosk also shows.</p>"
 },
 {
 "title": "Your Photo",
@@ -13465,7 +13462,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-68';
+const BUILD_ID = '14-70';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13769,19 +13766,41 @@ const KIOSK_DEAL_MS = 120000;              // two minutes
 const KIOSK_DEAL_CHARS = 58;               // one line, at kiosk size, on any screen
 let kioskDealShownId = null, kioskDealTimer = null, kioskDealSeenAt = null;
 
+// WHICH DAY'S BOOTH.
+//
+// The first version asked where the vendor is standing TODAY. That is right
+// for a deal posted on a market morning and wrong the rest of the time: a
+// vendor posting on Thursday for Saturday has no booth today, so the banner
+// fell back to naming the business -- which is why two vendors read
+// differently. Ask instead about the day the DEAL IS FOR, soonest first, and
+// only fall back to today.
+//
+// A name instead of a booth is still possible and still correct: a vendor who
+// has not been given a booth yet, on a Sunday chosen at the 8:30 meeting, has
+// no booth number to print. Better the business name than a made-up number.
+function kioskDealBooth(p) {
+const today = todayISO();
+const days = (p.dates || []).filter(d => d >= today).sort();
+for (const d of days) {
+const b = vendorBoothOn(p.vendorId, d);
+if (b) return b;
+}
+return vendorBoothOn(p.vendorId, today);
+}
 function kioskDealWords(p) {
-// "Buy one get one free flowers at booth 34" -- the vendor's own words, cut to
-// one line, with the booth on the end because that is the part a shopper acts
-// on. If it will not fit, the booth stays and the words give way; a banner
-// that says what the offer is but not where is no use to anybody.
-const booth = vendorBoothOn(p.vendorId, todayISO());
+// "NEW: buy one get one free flowers at booth 34" -- the vendor's own words,
+// cut to one line, with the booth on the end because that is the part a
+// shopper acts on. If it will not fit, the booth stays and the words give way;
+// a banner that says what the offer is but not where is no use to anybody.
+const booth = kioskDealBooth(p);
 const v = cache.vendors.find(x => x.vendorId === p.vendorId);
+const head = 'New: ';
 const tail = booth ? ' at booth ' + booth
 : (v && v.businessName ? ' at ' + v.businessName : '');
 let words = String(p.text || '').replace(/\s+/g, ' ').trim();
-const room = Math.max(12, KIOSK_DEAL_CHARS - tail.length);
+const room = Math.max(12, KIOSK_DEAL_CHARS - head.length - tail.length);
 if (words.length > room) words = words.slice(0, room - 1).replace(/[\s,;:.-]+$/, '') + '\u2026';
-return (words + tail).trim();
+return (head + words + tail).trim();
 }
 function newestKioskDeal() {
 const list = (cache.promos || []).filter(p => p && p.createdAt);
@@ -16196,7 +16215,8 @@ row.appendChild(btn);
 wrap.appendChild(row);
 });
 }
-let promoSelectedDates = new Set();
+// promoTouched survives; the date set does not. A sale is for the market day
+// it is posted on, so there is no selection left to remember or to clear.
 let promoTouched = false;
 function vendorBoothOn(vendorId, date) {
 const b = cache.booths.find(x => boothOccupant(x, date) === vendorId);
@@ -16209,32 +16229,38 @@ function promosForVendorOn(vendorId, date) {
 return (cache.promos || []).filter(p =>
 p.vendorId === vendorId && (p.dates || []).indexOf(date) >= 0);
 }
-function renderPromoDateChips() {
-const wrap = document.getElementById('promoDateChips');
-if (!wrap) return;
+// A SALE IS FOR TODAY, AND THERE IS NOTHING TO PICK.
+//
+// There used to be a row of dates here and a deal could be posted for any of
+// them. A sale is a thing you decide at the stall when the peaches will not
+// last another day; nobody plans one for a fortnight on a Tuesday. The row of
+// dates asked a question with one sensible answer and made it possible to post
+// a deal that quietly never appeared, because the day chosen was not the day
+// the shopper was standing there.
+//
+// So: a deal is for the market day happening now, and it says which that is
+// rather than making anyone choose. Off a market day there is no such day, and
+// the form says so and dims instead of posting into nowhere.
+function promoLiveDay() {
 const live = kioskMarketDate();
-const note = document.getElementById('promoKioskDay');
-if (note) {
-note.innerHTML = 'The kiosk is showing <strong>' + esc(shortLabel(live.date)) + '</strong>' +
-(live.isToday ? ' (today)' : ' (the next market)') +
-'. Anything you post for another day appears when that day arrives.';
+return live.isToday ? live : null;
 }
-if (!promoTouched && !promoSelectedDates.size) promoSelectedDates.add(live.date);
-wrap.innerHTML = '';
-generateUpcomingMarketDates().forEach(entry => {
-const chip = document.createElement('button');
-chip.type = 'button';
-chip.className = 'cio-date-chip' + (promoSelectedDates.has(entry.date) ? ' selected' : '');
-chip.innerHTML = '<span>' + entry.label + (entry.date === live.date ? ' \u2022 live now' : '') + '</span>' +
-'<span class="check"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></span>';
-chip.onclick = () => {
-promoTouched = true;
-if (promoSelectedDates.has(entry.date)) promoSelectedDates.delete(entry.date);
-else promoSelectedDates.add(entry.date);
-renderPromoDateChips();
-};
-wrap.appendChild(chip);
-});
+function renderPromoDateChips() {
+const note = document.getElementById('promoKioskDay');
+const btn = document.getElementById('promoPostBtn');
+const live = promoLiveDay();
+if (note) {
+note.innerHTML = live
+? 'This goes up for <strong>' + esc(shortLabel(live.date)) + '</strong>, today\u2019s market, ' +
+'and shows on the kiosk within a few seconds.'
+: '<strong>Today is not a market day.</strong> A sale runs for the market it is posted on, so there ' +
+'is nothing for this one to run on yet. Post it when you are set up and it goes straight to the kiosk.';
+}
+if (btn) {
+btn.disabled = !live;
+btn.textContent = live ? 'Post It' : 'Post It \u2014 on a market day';
+btn.style.opacity = live ? '' : '0.45';
+}
 }
 function onPromoTypeChange() {
 const t = document.getElementById('promoType').value;
@@ -16315,7 +16341,13 @@ showMsg('promoMsg', 'err', 'Write the offer in your own words first.');
 return;
 }
 }
-if (!promoSelectedDates.size) {
+const liveDay = promoLiveDay();
+if (!liveDay) {
+showMsg('promoMsg', 'err', 'Today is not a market day, so there is nothing for a sale to run on. ' +
+'Post it when you are at the market.');
+return;
+}
+if (false) {
 showMsg('promoMsg', 'err', 'Pick at least one market day for it to run.');
 return;
 }
@@ -16324,17 +16356,16 @@ cache.promos.push({
 id: 'pr' + Date.now(),
 vendorId: vendor.vendorId,
 text: text,
-dates: [...promoSelectedDates].sort(),
+dates: [liveDay.date],
 createdAt: Date.now()
 });
 await storageSet('ifm-promos', cache.promos);
-const chosen = [...promoSelectedDates].sort();
+const chosen = [liveDay.date];
 document.getElementById('promoItem').value = '';
 document.getElementById('promoPercent').value = '';
 document.getElementById('promoDollars').value = '';
 document.getElementById('promoBundleN').value = '';
 document.getElementById('promoBundlePrice').value = '';
-promoSelectedDates = new Set();
 promoTouched = false;
 renderPromoDateChips();
 renderPromoList();
