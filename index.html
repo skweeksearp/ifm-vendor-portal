@@ -82,10 +82,31 @@ box-shadow: 0 1px 4px rgba(35,42,32,0.06);
 .desk-pinned { margin-bottom: 14px; }
 #ifmSpinner { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
 background: rgba(240,236,222,0.45); z-index: 999; pointer-events: none; }
-.ifm-spin-corn { font-size: 46px; line-height: 1;
-animation: ifmspin 1.1s linear infinite;
-filter: drop-shadow(0 2px 4px rgba(35,42,32,0.25)); }
+/* The waiting screen: a sunflower with the market going round it. Settled in
+   a standalone sandbox on the device, then baked in from the numbers it
+   printed -- see IFM_ORBIT below for the whole arrangement in one place.
+   Every animation here is a plain transform, which the compositor can run
+   without redrawing anything. That matters more than usual: this overlay only
+   appears after half a second of waiting, which is to say it appears exactly
+   when the phone is already working hard. No filters, no drop-shadows, no
+   JavaScript per frame. */
+.ifm-sun { font-size: var(--ifm-sun, 44px); line-height: 1; z-index: 2; }
+.ifm-orbit-hub { position: relative; width: 0; height: 0;
+display: flex; align-items: center; justify-content: center;
+transform: rotate(var(--ifm-angle, 0deg)); }
+.ifm-arm { position: absolute; top: 0; left: 0; width: 0; height: 0;
+z-index: 3;
+animation: ifmspin var(--ifm-lap) linear infinite, ifmdepth var(--ifm-lap) step-end infinite; }
+.ifm-pos { position: absolute; top: 0; left: 0; width: 0; height: 0;
+transform: translateY(calc(-1 * var(--ifm-r))); }
+.ifm-glyph { position: absolute; display: block; line-height: 1;
+font-size: var(--ifm-size); transform: translate(-50%, -50%); }
 @keyframes ifmspin { to { transform: rotate(360deg); } }
+/* Half of every orbit is spent on the far side of the sun. z-index steps
+   rather than blends, so a second animation on the SAME clock as the sweep
+   puts each body behind the sunflower for that half and in front for the
+   other. Nothing to keep in sync: one clock drives both. */
+@keyframes ifmdepth { 0% { z-index: 1; } 50% { z-index: 3; } }
 #ifmUpdateBar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
 z-index: 998; background: #4A6741; color: #fff; border: none; border-radius: 999px;
 padding: 12px 22px; font-family: 'Manrope', -apple-system, sans-serif; font-weight: 700;
@@ -5284,12 +5305,142 @@ const ifmInFlight = new Map();     // key -> pending fetch promise (dedupe)
 const ifmWriteQueue = new Map();   // key -> latest value awaiting POST (coalesced)
 let ifmPosting = false;
 let ifmPendingGets = 0, ifmSpinTimer = null;
+// The whole arrangement of the waiting screen, in one place so it can be
+// changed without hunting. Real orbital data -- a is distance from the sun in
+// AU, yr is the year in Earth years -- then squeezed, because true to scale
+// Neptune takes 684 laps of Mercury to get round once and would appear to sit
+// still. `d` squeezes the distances toward even spacing, `t` and `z` shrink
+// the ratios of the years and the sizes. All four numbers were settled by eye
+// on the device, not chosen here.
+const IFM_ORBIT = {
+sun: '\ud83c\udf3b',                       // sunflower
+sunSize: 44, angle: -32, maxR: 128, base: 4.0,
+d: 0.22, t: 0.37, z: 0.40, size: 20,
+moon: { v: '\ud83d\udc1d', r: 17, scale: 0.5 },   // a bee, circling the honey
+bodies: [
+{ n: 'Mercury', v: '\ud83e\udd6c', a: 0.387,  yr: 0.241,  size: 0.383 },
+{ n: 'Venus',   v: '\ud83e\udd66', a: 0.723,  yr: 0.615,  size: 0.949 },
+{ n: 'Earth',   v: '\ud83c\udf6f', a: 1.000,  yr: 1.000,  size: 1.000 },
+{ n: 'Mars',    v: '\ud83e\udd55', a: 1.524,  yr: 1.881,  size: 0.532 },
+{ n: 'Jupiter', v: '\ud83e\uddc4', a: 5.203,  yr: 11.862, size: 11.21 },
+{ n: 'Saturn',  v: '\ud83e\uddc5', a: 9.537,  yr: 29.457, size: 9.45  },
+{ n: 'Uranus',  v: '\ud83e\udedb', a: 19.191, yr: 84.021, size: 4.01  },
+{ n: 'Neptune', v: '\ud83e\udd6c', a: 30.070, yr: 164.79, size: 3.88  }
+]
+};
+// Not every phone has every character. The pea pod is from Unicode 15 (2022)
+// and wants iOS 16.4 or later; on an older handset it draws as an empty box,
+// and a vendor on a five-year-old phone would see a hole in the sky rather
+// than a vegetable. So each body may carry a fallback, and we check.
+//
+// The check: draw the character and a codepoint nothing supports, and compare
+// widths. A phone with no glyph draws the same empty box for both, so equal
+// widths means the character is missing. Done once, on a canvas, never per
+// frame.
+const IFM_GLYPH_FALLBACK = {
+'\ud83e\udedb': '\ud83e\udd52',   // pea pod -> cucumber
+'\ud83e\uded8': '\ud83e\udd5c'    // beans   -> peanuts
+};
+let ifmGlyphCanvas = null;
+function ifmGlyphMissing(ch) {
+try {
+if (!ifmGlyphCanvas) ifmGlyphCanvas = document.createElement('canvas').getContext('2d');
+const c = ifmGlyphCanvas;
+c.font = '32px sans-serif';
+const tofu = c.measureText('\udbff\udffd').width;   // a codepoint nothing has
+const w = c.measureText(ch).width;
+return Math.abs(w - tofu) < 0.5;
+} catch (e) { return false; }
+}
+function ifmSafeGlyph(ch) {
+const alt = IFM_GLYPH_FALLBACK[ch];
+return (alt && ifmGlyphMissing(ch)) ? alt : ch;
+}
+
+// Distances keep their ends pinned -- Mercury innermost, Neptune outermost --
+// and only the spacing between them moves. Years and sizes must NOT pin their
+// ends, since the whole point there is to shrink the ratio; raising each real
+// ratio to a power does that.
+function ifmSpacing(vals, p) {
+const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+return vals.map(function (v, i) {
+const t = (v - lo) / (hi - lo), e = i / (vals.length - 1);
+return e + (t - e) * p;
+});
+}
+function ifmRatios(vals, p) {
+const lo = Math.min.apply(null, vals);
+return vals.map(function (v) { return Math.pow(v / lo, p); });
+}
+// Built once and kept. The spinner shows and hides constantly; rebuilding
+// forty-odd elements every time would be work done at the worst moment.
+function ifmBuildOrbit() {
+const O = IFM_ORBIT;
+const hub = document.createElement('div');
+hub.className = 'ifm-orbit-hub';
+hub.style.setProperty('--ifm-angle', O.angle + 'deg');
+hub.style.setProperty('--ifm-sun', O.sunSize + 'px');
+const sun = document.createElement('span');
+sun.className = 'ifm-sun';
+sun.textContent = ifmSafeGlyph(O.sun);
+hub.appendChild(sun);
+
+const rT = ifmSpacing(O.bodies.map(function (b) { return b.a; }), O.d);
+const tT = ifmRatios(O.bodies.map(function (b) { return b.yr; }), O.t);
+const zT = ifmRatios(O.bodies.map(function (b) { return b.size; }), O.z);
+const inner = Math.max(O.sunSize * 0.72, 30);
+
+O.bodies.forEach(function (b, i) {
+const r = inner + (O.maxR - inner) * rT[i];
+const lap = O.base * tT[i];
+const size = O.size * zT[i];
+
+const arm = document.createElement('div');
+arm.className = 'ifm-arm';
+arm.style.setProperty('--ifm-lap', lap.toFixed(2) + 's');
+// Scattered rather than lined up on one spoke, which never happens in a real
+// system and looks like a mistake when it does.
+arm.style.animationDelay = '-' + (lap * ((i * 0.37) % 1)).toFixed(2) + 's';
+const pos = document.createElement('div');
+pos.className = 'ifm-pos';
+pos.style.setProperty('--ifm-r', r.toFixed(1) + 'px');
+const glyph = document.createElement('span');
+glyph.className = 'ifm-glyph';
+glyph.style.setProperty('--ifm-size', size.toFixed(1) + 'px');
+glyph.textContent = ifmSafeGlyph(b.v);
+pos.appendChild(glyph);
+
+// The bee hangs inside Earth's frame, so it circles the honey rather than
+// being dragged round the sun sideways. Its lap rides the same squeeze as
+// everything else: true to scale the Moon laps Earth 13.37 times a year,
+// which at any readable Earth speed is a smear rather than a moon.
+if (b.n === 'Earth' && O.moon) {
+const mLap = lap / Math.pow(13.37, O.t);
+const mArm = document.createElement('div');
+mArm.className = 'ifm-arm';
+mArm.style.setProperty('--ifm-lap', mLap.toFixed(3) + 's');
+const mPos = document.createElement('div');
+mPos.className = 'ifm-pos';
+mPos.style.setProperty('--ifm-r', O.moon.r + 'px');
+const mGlyph = document.createElement('span');
+mGlyph.className = 'ifm-glyph';
+mGlyph.style.setProperty('--ifm-size', (size * O.moon.scale).toFixed(1) + 'px');
+mGlyph.textContent = ifmSafeGlyph(O.moon.v);
+mPos.appendChild(mGlyph); mArm.appendChild(mPos); pos.appendChild(mArm);
+}
+
+arm.appendChild(pos);
+hub.appendChild(arm);
+});
+return hub;
+}
 function ifmSpin(on) {
 let el = document.getElementById('ifmSpinner');
 if (on && !el) {
 el = document.createElement('div');
 el.id = 'ifmSpinner';
-el.innerHTML = '<div class="ifm-spin-corn">\ud83c\udf3d</div>';
+try { el.appendChild(ifmBuildOrbit()); }
+catch (e) { el.innerHTML = '<div class="ifm-sun">\ud83c\udf3b</div>'; }
 document.body.appendChild(el);
 }
 if (el) el.style.display = on ? 'flex' : 'none';
@@ -11821,7 +11972,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-38';
+const BUILD_ID = '14-39';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
