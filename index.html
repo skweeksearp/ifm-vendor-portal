@@ -253,7 +253,7 @@ display: flex; gap: 10px; align-items: center; justify-content: space-between;
 padding: 12px 14px; border-bottom: 1px solid #ccc; background: var(--paper);
 }
 .print-bar button { width: auto; margin: 0; padding: 9px 16px; font-size: 15px; }
-#lottoPrintSheet { padding: 18px 16px 40px; overflow-y: auto; flex: 1; }
+#lottoPrintSheet, #feeStmtSheet { padding: 18px 16px 40px; overflow-y: auto; flex: 1; }
 .pr-h1 { font-size: 21px; font-weight: 800; margin: 0; font-family: 'Manrope', sans-serif; }
 .pr-sub { font-size: 13px; margin: 3px 0 16px; }
 .pr-h2 { font-size: 16px; font-weight: 800; margin: 20px 0 8px; border-bottom: 2px solid #000; padding-bottom: 4px; font-family: 'Manrope', sans-serif; }
@@ -303,9 +303,9 @@ body:not(.kiosk-mode) #app { max-width: 640px; }
 @media print {
 @page { margin: 12mm; }
 #app, .print-bar { display: none !important; }
-#lottoPrintBackdrop { display: block !important; position: static; background: none; }
+#lottoPrintBackdrop.open, #feeStmtBackdrop.open { display: block !important; position: static; background: none; }
 .print-shell { display: block; overflow: visible; }
-#lottoPrintSheet { padding: 0; overflow: visible; }
+#lottoPrintSheet, #feeStmtSheet { padding: 0; overflow: visible; }
 html, body { background: #fff !important; color: #000 !important; }
 tr { break-inside: avoid; }
 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -3160,6 +3160,13 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="primary-btn" id="vpCartPayBtn" style="background:#3D95CE; display:none;" onclick="payFeeCart()">Pay with Venmo</button>
 </div>
 <div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Year&rsquo;s Record of Fees<button type="button" class="help-dot" onclick="showHelp(HELP_FEE_STATEMENT)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Everything this app has recorded you paying the market in one year, on one printable page. Useful at tax time &mdash; but read the note on it: it is the app&rsquo;s record, not the office&rsquo;s receipt.</p>
+<label for="fsYear">Which year</label>
+<select id="fsYear" onchange="renderFeeStatement()"></select>
+<button type="button" class="primary-btn" style="margin-top:10px;" onclick="openFeeStatement()">View printable page</button>
+</div>
+<div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Reported Payments</h2>
 <p class="empty-note" style="margin-top:0;">The app cannot see Venmo, so a payment here is a report, not a receipt &mdash; the office confirms it against the actual transfer, matched by the note.</p>
 <div id="vpList"></div>
@@ -5369,6 +5376,10 @@ return new Date(d - tz).toISOString().slice(0, 10);
 //   - if IFM_BACKEND_URL is set, keys live in the Google Sheet via Apps Script
 //   - if it is blank, keys live in this browser's localStorage (solo testing)
 const IFM_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzqoNF62WqybRV8pSrtqY8l0Jk60QiC7h56KCrWLfEcbmX28y-UqQOPZ-Sz6TN7eZqq/exec'; // Sean's Apps Script backend, baked in
+// Warm-boot state. `var` and up here on purpose: these are read during boot,
+// and a `let` further down the file threw "is not defined" because the read
+// happened from a different block than the declaration.
+var ifmWarmAge = null, ifmWarmUsed = false, ifmBootMs = null, ifmBootDone = false;
 function ifmFetch(url, opts, ms) {
 const ctl = new AbortController();
 const t = setTimeout(() => ctl.abort(), ms || 8000);
@@ -5521,14 +5532,49 @@ document.body.appendChild(el);
 }
 if (el) el.style.display = on ? 'flex' : 'none';
 }
-function ifmNoteGet(delta) {
-ifmPendingGets += delta;
-if (ifmPendingGets > 0 && !ifmSpinTimer) {
-ifmSpinTimer = setTimeout(() => { if (ifmPendingGets > 0) ifmSpin(true); }, 500);
-} else if (ifmPendingGets <= 0) {
-if (ifmSpinTimer) { clearTimeout(ifmSpinTimer); ifmSpinTimer = null; }
+// Once the waiting screen is up it runs a whole twelve-second turn before it
+// will come down, and if the fetch is still going at the end of one turn it
+// starts another. Without this it flickered: a fetch that took six hundred
+// milliseconds put the sunflower up and snatched it away again before the eye
+// had settled on it, which reads as a fault rather than as waiting.
+//
+// The cost is real and worth naming: a request that finishes in a second
+// leaves the overlay up for the rest of the twelve. It is TOLERABLE only
+// because the overlay takes no taps -- pointer-events is none, the desk
+// underneath stays live and scrollable, and nothing the person does is
+// blocked. If that ever changes, this has to go.
+const IFM_SPIN_TURN = 12000;
+let ifmSpinShownAt = 0, ifmSpinCycleTimer = null;
+function ifmSpinCycleEnd() {
+ifmSpinCycleTimer = null;
+if (ifmPendingGets > 0) {
+// Still fetching: begin another turn rather than taking it down mid-orbit.
+ifmSpinShownAt = Date.now();
+ifmSpinCycleTimer = setTimeout(ifmSpinCycleEnd, IFM_SPIN_TURN);
+return;
+}
+ifmSpinShownAt = 0;
 ifmSpin(false);
 }
+function ifmNoteGet(delta) {
+ifmPendingGets += delta;
+if (ifmPendingGets > 0) {
+if (!ifmSpinTimer && !ifmSpinShownAt) {
+ifmSpinTimer = setTimeout(() => {
+ifmSpinTimer = null;
+if (ifmPendingGets <= 0) return;
+ifmSpin(true);
+ifmSpinShownAt = Date.now();
+if (ifmSpinCycleTimer) clearTimeout(ifmSpinCycleTimer);
+ifmSpinCycleTimer = setTimeout(ifmSpinCycleEnd, IFM_SPIN_TURN);
+}, 500);
+}
+return;
+}
+// Nothing left to fetch. If it never came up, cancel it; if it is up, leave
+// it to finish its turn -- ifmSpinCycleEnd will take it down.
+if (ifmSpinTimer) { clearTimeout(ifmSpinTimer); ifmSpinTimer = null; }
+if (!ifmSpinShownAt) ifmSpin(false);
 }
 async function ifmPump() {
 if (ifmPosting) return;
@@ -5547,6 +5593,59 @@ body: JSON.stringify({ key: key, value: value }) }, 10000);
 }
 if (typeof window.storage === 'undefined') {
 let ifmPrimed = false, ifmPriming = null;
+// WHY THE APP USED TO SIT THERE FOR TEN SECONDS.
+//
+// The whole market's records come down in ONE request -- that part was always
+// right. What was wrong is that boot WAITED for it. Google Apps Script has to
+// wake a dormant script before it answers, and a cold start is seconds, not
+// milliseconds. Nothing in this app can make Google faster.
+//
+// So: keep the last good answer on the device, and boot from that. The market
+// opens showing real records immediately, the request goes out in the
+// background, and when it lands anything that changed is quietly corrected.
+// The vendor never watches a sunflower.
+//
+// Three things make this safe rather than merely fast:
+//   * The copy is only ever a copy. Every write still goes to the sheet; the
+//     local one is refreshed from the answer, never the other way round.
+//   * A write already queued outranks it, exactly as it outranks the network
+//     answer, so nothing typed a moment ago is overwritten by an older copy.
+//   * It is per-device, in localStorage, so it cannot travel between phones.
+//     Session keys were never in the payload and still are not.
+const IFM_WARM_KEY = 'ifm-warm-v1';
+const IFM_WARM_MAX_AGE = 1000 * 60 * 60 * 24 * 14;   // a fortnight
+const IFM_WARM_BUDGET = 3500000;                      // well under the ~5 MB cap
+
+function ifmWarmLoad() {
+try {
+const raw = localStorage.getItem(IFM_WARM_KEY);
+if (!raw) return false;
+const j = JSON.parse(raw);
+if (!j || !Array.isArray(j.items)) return false;
+if (!j.savedAt || Date.now() - j.savedAt > IFM_WARM_MAX_AGE) {
+localStorage.removeItem(IFM_WARM_KEY);
+return false;
+}
+j.items.forEach(it => {
+const k = String(it.key);
+if (!ifmWriteQueue.has(k)) ifmMem.set(k, String(it.value));
+});
+ifmWarmAge = Date.now() - j.savedAt;
+return j.items.length > 0;
+} catch (e) { return false; }
+}
+function ifmWarmSave(items) {
+try {
+const payload = JSON.stringify({ savedAt: Date.now(), items: items });
+// A sheet that has outgrown the browser's cupboard should not throw every
+// boot -- drop the copy and carry on fetching the slow way.
+if (payload.length > IFM_WARM_BUDGET) { localStorage.removeItem(IFM_WARM_KEY); return; }
+localStorage.setItem(IFM_WARM_KEY, payload);
+} catch (e) {
+try { localStorage.removeItem(IFM_WARM_KEY); } catch (e2) {}
+}
+}
+
 function ifmPrimeAll() {
 if (ifmPrimed) return Promise.resolve();
 if (ifmPriming) return ifmPriming;
@@ -5562,6 +5661,7 @@ if (!ifmWriteQueue.has(k)) ifmMem.set(k, String(it.value));
 if (j.now) ifmLastSync = j.now;
 ifmPrimed = true;
 ifmBackendDownUntil = 0;
+ifmWarmSave(j.items || []);
 } catch (e) {
 // Fall back to per-key fetches rather than showing an empty app.
 noteStorageFailure('prime', e);
@@ -5578,6 +5678,12 @@ if (ifmMem.has(key)) {
 const v = ifmMem.get(key);
 return v === null ? null : { key: key, value: v };
 }
+// Booting from the device copy: a key the copy does not mention is treated as
+// absent for now rather than waited on. Without this the warm boot was no
+// faster at all -- the first key not in the copy blocked on the same cold
+// start we were trying to walk past, and one missing key is enough. The
+// request is already in flight; ifmWarmCatchUp redraws when it lands.
+if (!ifmPrimed && ifmWarmUsed) return null;
 if (!ifmPrimed) await ifmPrimeAll();
 if (ifmPrimed) {
 // The whole tab is in hand; anything absent from it is genuinely missing.
@@ -6242,7 +6348,19 @@ submittedAt: wed.getTime() + Math.floor(rnd('t-' + vid + '-' + d.date) * 16 * 60
 return recs.sort((a, b) => (a.marketDate < b.marketDate ? -1 : a.marketDate > b.marketDate ? 1 : 0));
 }
 async function loadAllData() {
-if (IFM_BACKEND_URL) await ifmPrimeAll();
+// Only the first call does the warm/cold dance. Later calls -- the poll, the
+// warm catch-up -- just re-read whatever ifmMem already holds.
+if (IFM_BACKEND_URL && !ifmBootDone) {
+ifmBootDone = true;
+// A copy on the device means the app can be drawn now and corrected in a
+// moment. No copy -- a phone that has never opened this before -- and there
+// is nothing to draw, so this one time we do wait.
+ifmWarmUsed = ifmWarmLoad();
+if (ifmWarmUsed) { ifmPrimeAll().then(ifmWarmCatchUp); }
+else { await ifmPrimeAll(); }
+} else if (IFM_BACKEND_URL) {
+await ifmPrimeAll();
+}
 const seed = seedData();
 const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops, mapKiosk, mapBooth] = await Promise.all([
 storageGet('ifm-ledger'),
@@ -7642,7 +7760,34 @@ document.querySelectorAll('.modal-backdrop').forEach(m => {
 if (m.parentElement !== document.body) document.body.appendChild(m);
 });
 }
+// The network answer has landed after a warm boot. Everything on screen was
+// drawn from the device copy, so anything that moved in between has to be
+// redrawn -- silently, because the person did not ask for anything and should
+// not be interrupted by records catching up.
+async function ifmWarmCatchUp() {
+// No guard on ifmPrimed here, deliberately. It lives in the storage layer's
+// own scope and is not visible from out here -- reading it threw, silently,
+// inside the catch below, and the app sat on the device copy for ever. This
+// only runs from ifmPrimeAll().then(), so the attempt has already finished;
+// if it failed, re-reading gives back the same values and costs nothing.
+try {
+// ifmMem now holds the sheet's answer. Re-read the caches from it and redraw
+// whatever is on screen. This is the same work the five-second poll does when
+// it finds something changed, and it is deliberately the same code path --
+// two ways of applying an update would drift apart within a build or two.
+await loadAllData();
+renderAll();
+const ae = document.activeElement;
+const typing = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+if (typing) return;   // never yank the ground from under someone mid-sentence
+if (ifmCurrentScreen) { try { runScreenInit(ifmCurrentScreen); } catch (e) {} }
+document.querySelectorAll('.fold-body > .inline-screen.active').forEach(sec => {
+try { runScreenInit(sec.id.replace('screen-', '')); } catch (e) {}
+});
+} catch (e) { /* the poll will catch it on its next round */ }
+}
 async function init() {
+const bootStarted = Date.now();
 freeFloatingSheets();
 await loadAllData();
 if (storageBroken && IFM_BACKEND_URL) {
@@ -7661,6 +7806,7 @@ renderCioDateList();
 refreshAllDateChips();
 document.getElementById('btnAnnualFull').classList.add('selected');
 document.getElementById('loading').style.display = 'none';
+ifmBootMs = Date.now() - bootStarted;
 // Login is never persisted or synced. A quick app-switch keeps your place because
 // the page stays alive; a cold open always lands on the sign-in screen.
 // One exception: a device set up as the kiosk resumes kiosk mode after any reload.
@@ -8159,6 +8305,17 @@ wrap.appendChild(row);
 await loadFeeCart();
 renderFeeCart();
 updatePaySub();
+const ys = document.getElementById('fsYear');
+if (ys) {
+const chosen = ys.value;
+ys.innerHTML = '';
+feeStatementYears().forEach(y => {
+const o = document.createElement('option');
+o.value = String(y); o.textContent = String(y);
+ys.appendChild(o);
+});
+if (chosen && [...ys.options].some(o => o.value === chosen)) ys.value = chosen;
+}
 renderVpList();
 }
 
@@ -8677,14 +8834,15 @@ document.getElementById('main').style.display = 'block';
 setRoleHeader('staff');
 showScreen('staff');
 }
+const HELP_FEE_STATEMENT = 64;
 const HELP_TEXTS = [
 {
-"title": "Sharing Someone\u2019s Booth",
-"body": "<p>If you don&rsquo;t get a booth when the week&rsquo;s selections are made, you may arrange with another vendor to share theirs. Report it here so the office knows where you actually are.</p><p>Per the Vendor Guide: only when no other spaces are available, no more than two businesses in a booth, your own signage, and someone from each business present for the whole market. Management decides day by day &mdash; being allowed once doesn&rsquo;t carry over.</p><p>By board amendment, sharing vendors are no longer required to each occupy half the booth&rsquo;s frontage \u2014 split the space however works for both businesses. The printed Guide still shows the old 50% rule; the amendment supersedes it.</p>"
+"title": "Sharing Someone’s Booth",
+"body": "<p>If you don&rsquo;t get a booth when the week&rsquo;s selections are made, you may arrange with another vendor to share theirs. Report it here so the office knows where you actually are.</p><p>Per the Vendor Guide: only when no other spaces are available, no more than two businesses in a booth, your own signage, and someone from each business present for the whole market. Management decides day by day &mdash; being allowed once doesn&rsquo;t carry over.</p><p>By board amendment, sharing vendors are no longer required to each occupy half the booth&rsquo;s frontage — split the space however works for both businesses. The printed Guide still shows the old 50% rule; the amendment supersedes it.</p>"
 },
 {
 "title": "Sales & Promotions",
-"body": "<p>Anything you post here shows up on the Information Kiosk at the market when a customer taps your booth &mdash; pick the days it runs.</p><p>The star on the map is earned by a concrete deal \u2014 a percent off, dollars off, or a bundle price \u2014 and the kiosk banner is built from those numbers, so the offer customers see is the offer you entered. Plain announcements belong in your Business Profile, which the kiosk also shows.</p>"
+"body": "<p>Anything you post here shows up on the Information Kiosk at the market when a customer taps your booth &mdash; pick the days it runs.</p><p>The star on the map is earned by a concrete deal — a percent off, dollars off, or a bundle price — and the kiosk banner is built from those numbers, so the offer customers see is the offer you entered. Plain announcements belong in your Business Profile, which the kiosk also shows.</p>"
 },
 {
 "title": "Your Photo",
@@ -8692,11 +8850,11 @@ const HELP_TEXTS = [
 },
 {
 "title": "I sell food (prepared food or produce)",
-"body": "<p>Used to flag booths you can't be assigned \u2014 booths marked No Food on the Pavilion map.</p>"
+"body": "<p>Used to flag booths you can't be assigned — booths marked No Food on the Pavilion map.</p>"
 },
 {
 "title": "Vendor",
-"body": "<p>This is your listing in the public Vendor Directory. The booth ID here is for the directory display only \u2014 your official Sat/Sun booth assignment is still managed by Market Staff.</p>"
+"body": "<p>This is your listing in the public Vendor Directory. The booth ID here is for the directory display only — your official Sat/Sun booth assignment is still managed by Market Staff.</p>"
 },
 {
 "title": "Winter Market",
@@ -8720,15 +8878,15 @@ const HELP_TEXTS = [
 },
 {
 "title": "Sunday Booth Selection",
-"body": "<p>Sunday takes no booth requests. Vendors looking for a Sunday booth sign in online from 8:00&nbsp;AM that morning until 8:30&nbsp;AM, or come to the market and sign in in person <strong>between 8:00 and 8:30&nbsp;AM</strong> \u2014 that list is what ranks the room. In-person sign-in is at the booth across from the office, not in the office itself. Booths are not handed out automatically: each vendor present chooses their own from what's open, in points order within their tier.</p>"
+"body": "<p>Sunday takes no booth requests. Vendors looking for a Sunday booth sign in online from 8:00&nbsp;AM that morning until 8:30&nbsp;AM, or come to the market and sign in in person <strong>between 8:00 and 8:30&nbsp;AM</strong> — that list is what ranks the room. In-person sign-in is at the booth across from the office, not in the office itself. Booths are not handed out automatically: each vendor present chooses their own from what's open, in points order within their tier.</p>"
 },
 {
 "title": "Printable Sheet",
-"body": "<p>Open booths plus the signed-in vendors in choosing order, with a blank column to write picks in \u2014 a paper backup for running the meeting. Opens on screen; the Print button inside works wherever your browser offers printing.</p>"
+"body": "<p>Open booths plus the signed-in vendors in choosing order, with a blank column to write picks in — a paper backup for running the meeting. Opens on screen; the Print button inside works wherever your browser offers printing.</p>"
 },
 {
 "title": "Open Booths",
-"body": "<p>Computed from Saturday's holders who reported an absence for this Sunday. When it's a vendor's turn, tap the booth <em>they</em> pick \u2014 tap an assigned one to undo.</p>"
+"body": "<p>Computed from Saturday's holders who reported an absence for this Sunday. When it's a vendor's turn, tap the booth <em>they</em> pick — tap an assigned one to undo.</p>"
 },
 {
 "title": "Sunday Booth Selection",
@@ -8748,11 +8906,11 @@ const HELP_TEXTS = [
 },
 {
 "title": "Printable Sheet",
-"body": "<p>Open booths plus the ranked request list with a blank column for picks \u2014 a paper backup for working the phone list.</p>"
+"body": "<p>Open booths plus the ranked request list with a blank column for picks — a paper backup for working the phone list.</p>"
 },
 {
 "title": "Open Booths",
-"body": "<p>Computed from reserved-booth holders who reported an absence by the Wednesday deadline. When it's a vendor's turn, tap the booth <em>they</em> choose \u2014 tap an assigned one to undo.</p>"
+"body": "<p>Computed from reserved-booth holders who reported an absence by the Wednesday deadline. When it's a vendor's turn, tap the booth <em>they</em> choose — tap an assigned one to undo.</p>"
 },
 {
 "title": "Saturday Booth Selection",
@@ -8760,11 +8918,11 @@ const HELP_TEXTS = [
 },
 {
 "title": "(retired) Add a Vendor to This Saturday",
-"body": "<p>This tool is gone. It existed for the case its own text described \u2014 <em>someone called the office instead</em> \u2014 and that case is now handled properly in <strong>The Old-Fashioned Way</strong>, where a booth request is stamped with how it arrived and judged by <em>when the vendor told the office</em> rather than when it was typed. A request entered there puts the vendor in Saturday's pool by the same route as one submitted from a phone.</p><p>The entry is kept rather than deleted because every help dot in the app is numbered by position in this list, and removing one would silently move all the rest.</p>"
+"body": "<p>This tool is gone. It existed for the case its own text described — <em>someone called the office instead</em> — and that case is now handled properly in <strong>The Old-Fashioned Way</strong>, where a booth request is stamped with how it arrived and judged by <em>when the vendor told the office</em> rather than when it was typed. A request entered there puts the vendor in Saturday's pool by the same route as one submitted from a phone.</p><p>The entry is kept rather than deleted because every help dot in the app is numbered by position in this list, and removing one would silently move all the rest.</p>"
 },
 {
 "title": "Saturday Booth Selection Sheet",
-"body": "<p><strong>Priority order:</strong> Full Ag, then Full Food + Full Artisan together, then Easy Entry Ag vendors with more than 4 years at market, then everyone else Easy Entry (Food, Artisan, and Ag vendors in their first four years). Sorted by points within each tier.</p><p>Vendors without a reserved booth request one any time up to <strong>11:59&nbsp;PM Wednesday</strong>. The OpM then works the ranked list by phone on Thursday morning. Anything still open is handed out at an in-person Booth Selection on Saturday itself, 7:30&nbsp;AM (8:30&nbsp;AM in Nov/Dec). Priority tiers differ from Sunday's \u2014 see below.</p>"
+"body": "<p><strong>Priority order:</strong> Full Ag, then Full Food + Full Artisan together, then Easy Entry Ag vendors with more than 4 years at market, then everyone else Easy Entry (Food, Artisan, and Ag vendors in their first four years). Sorted by points within each tier.</p><p>Vendors without a reserved booth request one any time up to <strong>11:59&nbsp;PM Wednesday</strong>. The OpM then works the ranked list by phone on Thursday morning. Anything still open is handed out at an in-person Booth Selection on Saturday itself, 7:30&nbsp;AM (8:30&nbsp;AM in Nov/Dec). Priority tiers differ from Sunday's — see below.</p>"
 },
 {
 "title": "Work Hour Rate",
@@ -8812,23 +8970,23 @@ const HELP_TEXTS = [
 },
 {
 "title": "Booth Request / Absence",
-"body": "<p>Two opposite jobs share one form. A <strong>booth request</strong> asks for space at a market you don\u2019t hold; an <strong>absence</strong> tells the office you won\u2019t be at one you do. The Guide calls these calling in and calling out.</p><p>Saturday absences are due by <strong>Wed 11:59 PM</strong>. Sunday absences are due by <strong>8:00 AM</strong> that day. Late notice still goes through \u2014 the office would always rather know, even late.</p>"
+"body": "<p>Two opposite jobs share one form. A <strong>booth request</strong> asks for space at a market you don’t hold; an <strong>absence</strong> tells the office you won’t be at one you do. The Guide calls these calling in and calling out.</p><p>Saturday absences are due by <strong>Wed 11:59 PM</strong>. Sunday absences are due by <strong>8:00 AM</strong> that day. Late notice still goes through — the office would always rather know, even late.</p>"
 },
 {
 "title": "Booth Request / Absence",
-"body": "<p>Only Saturdays and Sundays take booth requests. Days with a dot have something recorded \u2014 tap to see who.</p>"
+"body": "<p>Only Saturdays and Sundays take booth requests. Days with a dot have something recorded — tap to see who.</p>"
 },
 {
 "title": "Work Hours This Year",
-"body": "<p>Work hours are how the market gets its shared work done, and every vendor pitches in. Per the Vendor Guide, each Saturday you sell at Steamboat Landing adds 1 hour to your season\u2019s share (max 20), and each Sunday adds half an hour (max 10); satellite markets add nothing. Hours you work pay it down, and at least 2 should be Building &amp; Grounds \u2014 the fall work days are the easy way to clear the whole thing. Submit your log by Dec 31. Hours can be paid instead of worked if the season gets away from you (<span id=\"whRateInline\">$25</span>/hour), by Feb 28), and anything extra you work banks toward future seasons.</p>"
+"body": "<p>Work hours are how the market gets its shared work done, and every vendor pitches in. Per the Vendor Guide, each Saturday you sell at Steamboat Landing adds 1 hour to your season’s share (max 20), and each Sunday adds half an hour (max 10); satellite markets add nothing. Hours you work pay it down, and at least 2 should be Building &amp; Grounds — the fall work days are the easy way to clear the whole thing. Submit your log by Dec 31. Hours can be paid instead of worked if the season gets away from you (<span id=\"whRateInline\">$25</span>/hour), by Feb 28), and anything extra you work banks toward future seasons.</p>"
 },
 {
 "title": "Claim a Task to Earn Work Hours",
-"body": "<p>These are jobs the Market Manager has posted for vendors to pick up, each worth a set number of work hours toward what you owe for the season.</p><p>Claim a spot so you\u2019re not duplicating someone else\u2019s work \u2014 the list is shared with every vendor. Once you claim one, mark it complete within a week of the task date, or within a month if it has no date. The Market Manager reviews it, and the hours post to your total when they sign it off. Miss the window and the spot goes back on the board.</p>"
+"body": "<p>These are jobs the Market Manager has posted for vendors to pick up, each worth a set number of work hours toward what you owe for the season.</p><p>Claim a spot so you’re not duplicating someone else’s work — the list is shared with every vendor. Once you claim one, mark it complete within a week of the task date, or within a month if it has no date. The Market Manager reviews it, and the hours post to your total when they sign it off. Miss the window and the spot goes back on the board.</p>"
 },
 {
 "title": "Sunday Sign-In",
-"body": "<p>If you want a booth this Sunday, sign in online here from 8:00&nbsp;AM that morning until 8:30&nbsp;AM \u2014 or come to the market and sign in in person in the same window, at the booth across from the office. It is a half-hour window on the morning of the market itself: there is no signing in the night before, and no signing in early. Signing in online puts you on the ranked list before the meeting, but either way you need to be there by 8:30&nbsp;AM to choose your booth.</p>"
+"body": "<p>If you want a booth this Sunday, sign in online here from 8:00&nbsp;AM that morning until 8:30&nbsp;AM — or come to the market and sign in in person in the same window, at the booth across from the office. It is a half-hour window on the morning of the market itself: there is no signing in the night before, and no signing in early. Signing in online puts you on the ranked list before the meeting, but either way you need to be there by 8:30&nbsp;AM to choose your booth.</p>"
 },
 {
 "title": "Legend",
@@ -8836,19 +8994,19 @@ const HELP_TEXTS = [
 },
 {
 "title": "About this",
-"body": "<p>Tap a booth to also see:</p><p>Codes match the Market\u2019s printed Pavilion map:</p>"
+"body": "<p>Tap a booth to also see:</p><p>Codes match the Market’s printed Pavilion map:</p>"
 },
 {
 "title": "Live Booth Layout",
-"body": "<p>Scroll sideways to see the whole Pavilion. Layout follows the Oct 2025 Pavilion map \u2014 grouped by row and section, not drawn to scale. Tap any booth for its details.</p>"
+"body": "<p>Scroll sideways to see the whole Pavilion. Layout follows the Oct 2025 Pavilion map — grouped by row and section, not drawn to scale. Tap any booth for its details.</p>"
 },
 {
 "title": "Work Hours Report",
-"body": "<p>Totals for the current year. Per Vendor Guide Section 11, attendance at Steamboat Landing <em>accrues</em> hours owed \u2014 1 hour per Saturday (max 20/season), 0.5 hour per Sunday (max 10/season) \u2014 and hours vendors log pay that balance down. Satellite markets accrue nothing. The ceiling below caps total hours any one vendor can owe in a season; the Guide's own maximum works out to 30.</p>"
+"body": "<p>Totals for the current year. Per Vendor Guide Section 11, attendance at Steamboat Landing <em>accrues</em> hours owed — 1 hour per Saturday (max 20/season), 0.5 hour per Sunday (max 10/season) — and hours vendors log pay that balance down. Satellite markets accrue nothing. The ceiling below caps total hours any one vendor can owe in a season; the Guide's own maximum works out to 30.</p>"
 },
 {
 "title": "Points Manager",
-"body": "<p>Search for a vendor, then award or adjust points. Every entry is kept \u2014 nothing overwrites past history.</p>"
+"body": "<p>Search for a vendor, then award or adjust points. Every entry is kept — nothing overwrites past history.</p>"
 },
 {
 "title": "PopUp Events",
@@ -8860,7 +9018,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Absence Patterns",
-"body": "<p>Being away is not the problem \u2014 the market plans around an absence it knows about. What this screen watches is whether the office was told in time: absences reported on time, reported late, and days with no notice at all.</p><p>The two deadlines are compared side by side. When one is missed far more often <em>and</em> by several different vendors, that points at the deadline rather than at the people \u2014 a rule worth revisiting, not fifteen separate conversations.</p><p>Only vendors who were late or gave no notice are listed, each shown alongside how often they got it right. Anyone who always gave notice is counted in a closing line rather than named.</p><p>All of this depends on the notice carrying a submission time. Notices the office records on a vendor\u2019s behalf carry the time the vendor told them, whatever the channel \u2014 so a phoned-in notice counts, judged by the phone call, not the typing.</p>"
+"body": "<p>Being away is not the problem — the market plans around an absence it knows about. What this screen watches is whether the office was told in time: absences reported on time, reported late, and days with no notice at all.</p><p>The two deadlines are compared side by side. When one is missed far more often <em>and</em> by several different vendors, that points at the deadline rather than at the people — a rule worth revisiting, not fifteen separate conversations.</p><p>Only vendors who were late or gave no notice are listed, each shown alongside how often they got it right. Anyone who always gave notice is counted in a closing line rather than named.</p><p>All of this depends on the notice carrying a submission time. Notices the office records on a vendor’s behalf carry the time the vendor told them, whatever the channel — so a phoned-in notice counts, judged by the phone call, not the typing.</p>"
 },
 {
 "title": "Data Export",
@@ -8868,15 +9026,15 @@ const HELP_TEXTS = [
 },
 {
 "title": "Facilities Requests",
-"body": "<p>The actual submission form is the Google Form under Communicate \u2192 Facilities. This just tracks status once a request comes in \u2014 add it here by hand.</p>"
+"body": "<p>The actual submission form is the Google Form under Communicate → Facilities. This just tracks status once a request comes in — add it here by hand.</p>"
 },
 {
 "title": "Board Proposals",
-"body": "<p>The actual submission form is the Google Form under Communicate \u2192 Governance. This just tracks status once a proposal comes in \u2014 add it here by hand.</p>"
+"body": "<p>The actual submission form is the Google Form under Communicate → Governance. This just tracks status once a proposal comes in — add it here by hand.</p>"
 },
 {
 "title": "Booth Improvements",
-"body": "<p>Vendor proposals arrive in the queue above: place one on the next B&G agenda (first Monday; drawings due a week prior, so late submissions roll to the following month), then approve, approve with amendments, or return for changes \u2014 with a note that flows back to the vendor.</p><p>The per-booth checklist below is the walkthrough record for the booth itself, independent of any one proposal \u2014 drawings before construction, guidelines review, Food Committee sign-off for cooking canopies, final walkthrough.</p>"
+"body": "<p>Vendor proposals arrive in the queue above: place one on the next B&G agenda (first Monday; drawings due a week prior, so late submissions roll to the following month), then approve, approve with amendments, or return for changes — with a note that flows back to the vendor.</p><p>The per-booth checklist below is the walkthrough record for the booth itself, independent of any one proposal — drawings before construction, guidelines review, Food Committee sign-off for cooking canopies, final walkthrough.</p>"
 },
 {
 "title": "Emergency Evacuation Plan",
@@ -8904,7 +9062,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Post a Task",
-"body": "<p>Shared with every vendor \u2014 this is the same list they see under Work Hours.</p><p>Hours each vendor earns for completing this task. Logged to their work hours automatically when you approve their completion \u2014 they don't log it themselves, so it can't be double-counted.</p>"
+"body": "<p>Shared with every vendor — this is the same list they see under Work Hours.</p><p>Hours each vendor earns for completing this task. Logged to their work hours automatically when you approve their completion — they don't log it themselves, so it can't be double-counted.</p>"
 },
 {
 "title": "Work hours credit",
@@ -8912,15 +9070,15 @@ const HELP_TEXTS = [
 },
 {
 "title": "Needs Your Review",
-"body": "<p>Vendors who reported a task finished, and claims that ran past their deadline. A claim lapses a week after the task date, or a month after it was claimed if the task has no date \u2014 the spot goes back on the board automatically and shows up here.</p>"
+"body": "<p>Vendors who reported a task finished, and claims that ran past their deadline. A claim lapses a week after the task date, or a month after it was claimed if the task has no date — the spot goes back on the board automatically and shows up here.</p>"
 },
 {
 "title": "Ithaca Farmers Market",
-"body": "<p>This is a demo/beta build. The four buttons at the top \u2014 Members/Vendors, Market Manager, Staff, Volunteers/Partners \u2014 stand in for a real login; pick the role you want to preview. <b>Kiosk</b> is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself \u2014 what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
+"body": "<p>This is a demo/beta build. The four buttons at the top — Members/Vendors, Market Manager, Staff, Volunteers/Partners — stand in for a real login; pick the role you want to preview. <b>Kiosk</b> is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
 },
 {
 "title": "Recent Entries",
-"body": "<p>Every market attended and every hour worked, oldest first. <b class=\"d\">Red adds to what you owe</b> \u2014 1 hr per Saturday, \u00bd hr per Sunday. <b class=\"c\">Green is hours you worked, paying it down.</b> Balance is your running total after each line, so it climbs as you attend and falls as you work. Finish the season \"ahead\" and those extra hours bank toward next year.</p>"
+"body": "<p>Every market attended and every hour worked, oldest first. <b class=\"d\">Red adds to what you owe</b> — 1 hr per Saturday, ½ hr per Sunday. <b class=\"c\">Green is hours you worked, paying it down.</b> Balance is your running total after each line, so it climbs as you attend and falls as you work. Finish the season \"ahead\" and those extra hours bank toward next year.</p>"
 },
 {
 "title": "Vendor Requirements",
@@ -8928,11 +9086,15 @@ const HELP_TEXTS = [
 },
 {
 "title": "Permits & Documents",
-"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself to the office by post, by the date shown, then tell the app you have sent it.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up \u2014 the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
+"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself to the office by post, by the date shown, then tell the app you have sent it.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
 },
 {
 "title": "Reviewing What Vendors Have Sent",
-"body": "<p>Every document a vendor says is in the post that nobody has confirmed yet. Marking it received records today as the date it arrived, along with the expiry date you enter, so the thirty-day warning can do its work.</p><p>Sending it back asks for a reason, which the vendor sees, and puts the requirement back to outstanding. Use it for a document that arrived wrong and for one that never arrived at all \u2014 anything reported more than a fortnight ago is marked as worth chasing.</p>"
+"body": "<p>Every document a vendor says is in the post that nobody has confirmed yet. Marking it received records today as the date it arrived, along with the expiry date you enter, so the thirty-day warning can do its work.</p><p>Sending it back asks for a reason, which the vendor sees, and puts the requirement back to outstanding. Use it for a document that arrived wrong and for one that never arrived at all — anything reported more than a fortnight ago is marked as worth chasing.</p>"
+},
+{
+"title": "Year's Record of Fees",
+"body": "<p>Every fee this app has recorded for you in one year, on a page you can print or save as a PDF.</p><p><b>It is not a receipt.</b> The page keeps two lists apart on purpose. <em>Payments you reported</em> are ones you told the app about &mdash; the app cannot see Venmo, a cheque, or cash across the desk, so nothing there has been matched to an actual transfer. <em>Amounts the office recorded</em> are ones the market put on its books; whether they have been paid is a different question this page cannot answer.</p><p>Adding those two together would produce a confident number that nobody has checked, which at tax time is worse than no number at all. So they are never added.</p><p>Ask the office for a statement from their books before you rely on any figure here.</p>"
 }
 ];
 function showHelp(i) {
@@ -10535,6 +10697,124 @@ lotteryMapSVG(date, rec, openBooths) +
 document.getElementById('lottoPrintSheet').innerHTML = html;
 document.getElementById('lottoPrintBackdrop').classList.add('open');
 document.getElementById('lottoPrintSheet').scrollTop = 0;
+}
+// A VENDOR'S YEAR OF FEES, ON ONE PAGE.
+//
+// The hard part of this tool is not the arithmetic, it is being honest about
+// what the app actually knows. It knows two different things and they must not
+// be added together into one confident number:
+//
+//   REPORTED  -- the vendor pressed a button here to say they had paid. The
+//                app cannot see Venmo, or a cheque, or cash across the desk.
+//                Nothing has confirmed these.
+//   RECORDED  -- the office entered it: a fine, a day fee. These the market
+//                itself put on the books.
+//
+// A tax document that blurs the two would be worse than no document, because a
+// vendor would file on it. So they are printed as separate sections with
+// separate totals, and the page says plainly that it is not a receipt and that
+// the office's books are the record. It also does not offer tax advice; it
+// offers a list, which is all anyone should want from a farmers' market app.
+function feeStatementYears() {
+const years = new Set([new Date().getFullYear()]);
+((vpCache && vpCache.items) || []).forEach(it => {
+if (it.date) years.add(Number(String(it.date).slice(0, 4)));
+});
+(((cache.ops || {}).fines) || []).forEach(f => {
+if (f.date) years.add(Number(String(f.date).slice(0, 4)));
+});
+return [...years].filter(y => y > 2000).sort((a, b) => b - a);
+}
+function feeStatementData(vendorId, year) {
+const inYear = d => String(d || '').slice(0, 4) === String(year);
+const reported = ((vpCache && vpCache.items) || [])
+.filter(it => it.vendorId === vendorId && inYear(it.date))
+.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+const fines = (((cache.ops || {}).fines) || [])
+.filter(f => f.vendorId === vendorId && inYear(f.date))
+.map(f => Object.assign({}, f, { waived: !!(cache.ops.waived || {})['F:' + f.id] }))
+.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+const sum = list => Math.round(list.reduce((s, x) => s + Number(x.amount || 0), 0) * 100) / 100;
+return {
+reported: reported, reportedTotal: sum(reported),
+fines: fines.filter(f => !f.waived), finesTotal: sum(fines.filter(f => !f.waived)),
+waived: fines.filter(f => f.waived)
+};
+}
+function renderFeeStatement() { /* the select is the only live control */ }
+function openFeeStatement() {
+const vendor = currentVendor();
+if (!vendor) return;
+const year = Number(document.getElementById('fsYear').value) || new Date().getFullYear();
+const d = feeStatementData(vendor.vendorId, year);
+const money = n => '$' + fmtMoney(n);
+let html = '';
+html += '<p class="pr-h1">Record of Fees \u2014 ' + esc(vendor.businessName) + '</p>';
+html += '<p class="pr-sub">Ithaca Farmers Market \u00b7 ' + year +
+' \u00b7 printed ' + new Date().toLocaleDateString('en-US',
+{ month: 'short', day: 'numeric', year: 'numeric' }) + '</p>';
+
+html += '<p class="pr-h2">What this page is</p>';
+html += '<p style="font-size:13.5px; line-height:1.5; margin:0 0 4px;">' +
+'This is what the market\u2019s app has recorded for ' + esc(vendor.businessName) +
+' during ' + year + '. <b>It is not a receipt and it is not issued by the market office.</b> ' +
+'The two lists below are different in kind and are deliberately not added together. ' +
+'Before relying on any figure here, check it against the office\u2019s books \u2014 they are the record, and this is not.</p>';
+
+html += '<p class="pr-h2">Payments you reported (' + d.reported.length + ')</p>';
+if (!d.reported.length) {
+html += '<p style="font-size:13.5px;">None reported in ' + year + '.</p>';
+} else {
+html += '<table class="pr-list"><thead><tr><th>Date</th><th>What for</th><th>Amount</th></tr></thead><tbody>';
+d.reported.forEach(it => {
+html += '<tr><td>' + esc(formatDisplayDate(it.date)) + '</td><td>' + esc(it.label || '') +
+'</td><td>' + money(it.amount) + '</td></tr>';
+});
+html += '</tbody></table>';
+html += '<p style="font-size:15px; font-weight:800; margin:8px 0 0;">Reported total: ' +
+money(d.reportedTotal) + '</p>';
+html += '<p style="font-size:13px; margin:4px 0 0;">You told the app you had paid these. ' +
+'The app cannot see Venmo, a cheque, or cash handed across the desk, so <b>nothing here has been ' +
+'confirmed against a transfer</b>. Any of these may be unmatched, duplicated, or already settled another way.</p>';
+}
+
+html += '<p class="pr-h2">Amounts the office recorded against you (' + d.fines.length + ')</p>';
+if (!d.fines.length) {
+html += '<p style="font-size:13.5px;">None recorded in ' + year + '.</p>';
+} else {
+html += '<table class="pr-list"><thead><tr><th>Date</th><th>Reason</th><th>Amount</th></tr></thead><tbody>';
+d.fines.forEach(f => {
+html += '<tr><td>' + esc(formatDisplayDate(f.date)) + '</td><td>' + esc(f.reason || '') +
+(f.note ? ' \u2014 ' + esc(f.note) : '') + '</td><td>' + money(f.amount) + '</td></tr>';
+});
+html += '</tbody></table>';
+html += '<p style="font-size:15px; font-weight:800; margin:8px 0 0;">Recorded total: ' + money(d.finesTotal) + '</p>';
+html += '<p style="font-size:13px; margin:4px 0 0;">The office put these on the books. ' +
+'Whether they have been <em>paid</em> is a separate question this page cannot answer.</p>';
+}
+if (d.waived.length) {
+html += '<p style="font-size:13px; margin:8px 0 0;">' + d.waived.length +
+' further amount' + (d.waived.length === 1 ? ' was' : 's were') +
+' waived, and ' + (d.waived.length === 1 ? 'is' : 'are') + ' not counted above.</p>';
+}
+
+html += '<p class="pr-h2">Before you use this at tax time</p>';
+html += '<ul style="font-size:13.5px; line-height:1.6; margin:0; padding-left:18px;">' +
+'<li>Ask the office for a statement from their books. This page is a convenience, not a substitute.</li>' +
+'<li>Membership share installments are not a fee \u2014 they buy equity in the market, which is ' +
+'refundable on leaving. Whether that is deductible is not a question this app can answer.</li>' +
+'<li>Work hours you worked rather than paid appear nowhere here, because no money changed hands.</li>' +
+'<li>The market is not giving tax advice and neither is this page. Your accountant is.</li>' +
+'</ul>';
+html += '<p style="font-size:12px; margin:18px 0 0; color:#444;">Produced by the IFM Vendor Portal, build ' +
+esc(BUILD_ID) + '. Records shown are those held in the app at the time of printing.</p>';
+
+document.getElementById('feeStmtSheet').innerHTML = html;
+document.getElementById('feeStmtBackdrop').classList.add('open');
+document.getElementById('feeStmtSheet').scrollTop = 0;
+}
+function closeFeeStatement() {
+document.getElementById('feeStmtBackdrop').classList.remove('open');
 }
 function closeLottoPrint() {
 document.getElementById('lottoPrintBackdrop').classList.remove('open');
@@ -12258,7 +12538,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-53';
+const BUILD_ID = '14-56';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20492,6 +20772,15 @@ init();</script>
   </div>
 </div>
 
+<div id="feeStmtBackdrop" class="modal-backdrop">
+  <div class="print-shell">
+    <div class="print-bar">
+      <button type="button" class="ghost-btn" onclick="closeFeeStatement()">Close</button>
+      <button type="button" onclick="window.print()">Print or save as PDF</button>
+    </div>
+    <div id="feeStmtSheet"></div>
+  </div>
+</div>
 <div id="lottoPrintBackdrop" class="modal-backdrop">
   <div class="print-shell">
     <div class="print-bar">
