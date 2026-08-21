@@ -5594,18 +5594,27 @@ if (el) el.style.display = on ? 'flex' : 'none';
 // because the overlay takes no taps -- pointer-events is none, the desk
 // underneath stays live and scrollable, and nothing the person does is
 // blocked. If that ever changes, this has to go.
-const IFM_SPIN_TURN = 12000;
+// It comes down when the waiting is over, and not a moment after.
+//
+// It used to hold a full twelve-second turn whatever happened, so an app that
+// had finished in two and a half seconds sat under an orbiting sunflower for
+// another ten and read as still loading. That is a loading screen lying about
+// the thing it exists to report.
+//
+// What twelve seconds was really solving was the opposite fault: a fetch that
+// finished in six hundred milliseconds put the sunflower up and snatched it
+// away before the eye had settled, which reads as a fault. A floor fixes that
+// without the lie. Below the floor it waits out the remainder; above it, it
+// leaves the instant the fetching stops.
+const IFM_SPIN_MIN = 1800;
 let ifmSpinShownAt = 0, ifmSpinCycleTimer = null;
-function ifmSpinCycleEnd() {
-ifmSpinCycleTimer = null;
-if (ifmPendingGets > 0) {
-// Still fetching: begin another turn rather than taking it down mid-orbit.
-ifmSpinShownAt = Date.now();
-ifmSpinCycleTimer = setTimeout(ifmSpinCycleEnd, IFM_SPIN_TURN);
-return;
-}
-ifmSpinShownAt = 0;
-ifmSpin(false);
+function ifmSpinSettle() {
+if (ifmSpinCycleTimer) { clearTimeout(ifmSpinCycleTimer); ifmSpinCycleTimer = null; }
+if (ifmPendingGets > 0) return;          // still fetching; leave it up
+if (!ifmSpinShownAt) { ifmSpin(false); return; }
+const shown = Date.now() - ifmSpinShownAt;
+if (shown >= IFM_SPIN_MIN) { ifmSpinShownAt = 0; ifmSpin(false); return; }
+ifmSpinCycleTimer = setTimeout(ifmSpinSettle, IFM_SPIN_MIN - shown);
 }
 function ifmNoteGet(delta) {
 ifmPendingGets += delta;
@@ -5617,15 +5626,14 @@ if (ifmPendingGets <= 0) return;
 ifmSpin(true);
 ifmSpinShownAt = Date.now();
 if (ifmSpinCycleTimer) clearTimeout(ifmSpinCycleTimer);
-ifmSpinCycleTimer = setTimeout(ifmSpinCycleEnd, IFM_SPIN_TURN);
 }, 500);
 }
 return;
 }
-// Nothing left to fetch. If it never came up, cancel it; if it is up, leave
-// it to finish its turn -- ifmSpinCycleEnd will take it down.
+// Nothing left to fetch. If it never came up, cancel it; if it is up, let it
+// settle -- straight away if it has been up long enough to be seen properly.
 if (ifmSpinTimer) { clearTimeout(ifmSpinTimer); ifmSpinTimer = null; }
-if (!ifmSpinShownAt) ifmSpin(false);
+ifmSpinSettle();
 }
 async function ifmPump() {
 if (ifmPosting) return;
@@ -12780,7 +12788,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-62';
+const BUILD_ID = '14-63';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
