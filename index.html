@@ -11636,7 +11636,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-19';
+const BUILD_ID = '14-20';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -12670,6 +12670,33 @@ kioskFitOffX += d.cx - d.frameCx;
 kioskFitOffY += d.cy - d.frameCy;
 applyKioskTransform();
 }
+// The compass and the logo sit over the map at fixed corners, so on a screen
+// of a different shape they can land on the booths. Give way to them: a few
+// percent off the map costs nothing, and a booth nobody can read costs a
+// customer finding a vendor.
+for (let i = 0; i < 8 && kioskChromeCollides(); i++) {
+kioskBaseScale *= 0.96;
+applyKioskTransform();
+}
+}
+function kioskChromeCollides() {
+const guards = [];
+document.querySelectorAll('#screen-kiosk .north-rose, #screen-kiosk .kiosk-logo').forEach(el => {
+const r = el.getBoundingClientRect();
+if (r.width && getComputedStyle(el).opacity !== '0') guards.push(r);
+});
+if (!guards.length) return false;
+const pad = 6;
+const chips = document.querySelectorAll('#kioskBoothCanvas .booth-chip, #kioskBoothCanvas .map-structure');
+for (const el of chips) {
+const c = el.getBoundingClientRect();
+if (!c.width) continue;
+for (const g of guards) {
+if (c.right > g.left - pad && c.left < g.right + pad &&
+c.bottom > g.top - pad && c.top < g.bottom + pad) return true;
+}
+}
+return false;
 }
 // The box the map actually occupies once drawn, and the frame it sits in.
 function kioskDrawnBox() {
