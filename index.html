@@ -2997,6 +2997,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
+<div class="comm-item"><div class="comm-title">A booth on any map</div><div class="comm-desc">Every booth on every live map opens the booth sheet, and every booth means <em>every</em> booth &mdash; including ones already spoken for. A booth that is taken is exactly the booth a vendor rings up to ask about, and a chip that does nothing is the office being told to go and look it up somewhere else. The sheet takes a context saying which desk it was opened from, and offers that desk&rsquo;s action inside it; where there is no action, it still says everything known about the booth. A map that offers less than another map is a fault, not a simplification.</div></div>
 <div class="comm-item"><div class="comm-title">A card that takes an entry and reports back</div><div class="comm-desc">Mark it <code>desk-form</code>. When the desk changes hands &mdash; one vendor to another, vendor to manager, anyone to the kiosk &mdash; <code>clearDeskState()</code> empties every field inside it, along with every <code>.status-msg</code> on the page. Without the mark, nothing sweeps it, and the next person opens the tool to find the last person&rsquo;s words and the last person&rsquo;s green confirmation. A block whose text is <em>worked out</em> from state rather than typed &mdash; a running total, a note that appears only for certain days &mdash; gets <code>desk-transient</code> instead. A field that must survive a hand-over because it shows a saved setting rather than something part-typed gets <code>keep-on-handover</code>. The Self-Audit&rsquo;s fifth fault names any card it finds unenrolled, so this is checkable rather than remembered.</div></div>
 <div class="comm-item"><div class="comm-title">Correcting a seeded record</div><div class="comm-desc">Changing a value in <code>BOOTH_SEED</code>, <code>DEMO_VENDORS_SEED</code>, <code>REQUIREMENT_SEED</code> or the Winter dates now reaches sheets that already exist — but only where nobody has edited that field. Adding a <em>new</em> collection to the seed means adding it to <code>SEED_MERGE</code> as well, or its records become permanent the first time they are written. And when a seed value changes for a record that may already be in the wild under the old value, name the old value in <code>LEGACY_SEED_BIRTH</code> so sheets written before the stamps existed can still be corrected. Watch the size of the birth keys: booths and vendors sit near 22,000 characters against a cell limit around 50,000.</div></div>
 <div class="comm-item"><div class="comm-title">Reconcilers correct, they do not invent</div><div class="comm-desc">Code that repairs records on load may clear a value that cannot be true, but must never fill in a different one. <code>reconcileBoothReservations</code> used to turn an ineligible Saturday reservation into a Sunday-only booth, granting a vendor a holding they never won at any auction, silently, on every load. Clearing is honest; substituting is a fabrication that later reads as fact.</div></div>
@@ -3554,6 +3555,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" id="stallLayoutNote" style="margin:6px 0 0;"></p>
 </div>
 <div id="boothDetailFacilities" class="facility-list"></div>
+<div id="boothSelActions"></div>
 <button class="primary-btn" id="boothClaimBtn" onclick="claimSelectedBooth()"><svg class="ico"><use href="#i-corn"></use></svg> Choose as Current Vendor</button>
 <button class="ghost-btn" onclick="closeBoothDetail()">Close</button>
 <div class="status-msg" id="boothStatusMsg"></div>
@@ -7452,9 +7454,11 @@ tag.className = 'lotto-booth-who';
 tag.textContent = boothVendorName(vendorId);
 chip.appendChild(tag);
 }
-if (vendorId) chip.onclick = () => opts.onUnassign(booth.num);
-else if (isOpen) chip.onclick = () => opts.onAssign(booth.num);
-else chip.disabled = true;
+// EVERY booth opens, including ones nobody can be given today. A booth that
+// is spoken for is exactly the booth a vendor rings up to ask about, and a
+// disabled chip is the manager being told to look it up somewhere else. The
+// action, where there is one, is offered inside the sheet.
+chip.onclick = () => openBoothDetail(booth.num, { sel: opts.kind });
 canvas.appendChild(chip);
 });
 }
@@ -10479,7 +10483,7 @@ chip.onclick = () => isAssigned ? lottoUnassign(kind, b.num) : lottoAssignNext(k
 container.appendChild(chip);
 });
 renderLottoBoothMap(k.ids.canvas, {
-openBooths, assignments: rec.assignments,
+kind, openBooths, assignments: rec.assignments,
 onAssign: num => lottoAssignNext(kind, num),
 onUnassign: num => lottoUnassign(kind, num)
 });
@@ -11972,7 +11976,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-39';
+const BUILD_ID = '14-40';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -19582,9 +19586,23 @@ arcNote +
 'Grey areas are built-in counters and shelves.';
 }
 }
-function openBoothDetail(num) {
+// The booth sheet is the app's one place that says everything known about a
+// booth: who has it, what it stands on, what it can be plugged into, whether a
+// van fits beside it, and the drawing of the stall itself. It was reachable
+// from the vendor's map and from nowhere else -- so the Market Manager, who is
+// the person actually fielding "what's booth 34 like?" over the phone while
+// running the selection, could not open it. It now takes a CONTEXT saying
+// which desk it was opened from, because the same booth means different things
+// on different screens and the action offered has to match.
+//   undefined       -- the Season-Long Reservations map, as before
+//   {sel:'sunday'}  -- the Sunday Booth Selection desk
+//   {sel:'saturday'}-- the Saturday Booth Selection desk
+let boothDetailCtx = null;
+function openBoothDetail(num, ctx) {
 selectedBoothNum = num;
+boothDetailCtx = ctx || null;
 const booth = cache.booths.find(b => b.num === num);
+if (!booth) return;
 document.getElementById('boothModalBackdrop').style.display = 'flex';
 document.getElementById('boothDetailNum').textContent = num;
 document.getElementById('boothStatusMsg').className = 'status-msg';
@@ -19650,6 +19668,18 @@ facilities.appendChild(span);
 });
 const vendor = currentVendor();
 const claimBtn = document.getElementById('boothClaimBtn');
+// Opened from a selection desk: the sheet is for LOOKING THINGS UP, and the
+// action offered is the one that desk actually performs. Assigning from here
+// also means a mis-tap on the map can no longer hand out a booth by itself.
+if (boothDetailCtx && boothDetailCtx.sel) {
+renderSelectionBoothActions(booth, boothDetailCtx.sel);
+return;
+}
+document.getElementById('boothSelActions').innerHTML = '';
+// No current vendor means a manager or staff member is looking. There is
+// nobody to claim a booth FOR, so the claim button has no meaning; the rest of
+// the sheet is exactly as useful to them as to a vendor, which is the point.
+if (!vendor) { claimBtn.style.display = 'none'; return; }
 if (currentAuction === 'weekly') {
 claimBtn.style.display = 'none';
 } else if (currentAuction === 'annual-sunday') {
@@ -19675,8 +19705,47 @@ claimBtn.style.display = 'block';
 claimBtn.innerHTML = '<svg class="ico"><use href="#i-corn"></use></svg> Choose as ' + vendor.businessName;
 }
 }
+// What the selection desks can do to a booth, said in words before it is done.
+function renderSelectionBoothActions(booth, kind) {
+const claimBtn = document.getElementById('boothClaimBtn');
+if (claimBtn) claimBtn.style.display = 'none';
+const wrap = document.getElementById('boothSelActions');
+if (!wrap) return;
+wrap.innerHTML = '';
+const rec = lottoRec(kind);
+const assignments = (rec && rec.assignments) || {};
+let holder = null;
+Object.keys(assignments).forEach(vid => { if (assignments[vid] === booth.num) holder = vid; });
+
+const line = document.createElement('p');
+line.className = 'empty-note';
+line.style.margin = '0 0 8px';
+line.textContent = holder
+? boothVendorName(holder) + ' has been given this booth on this desk.'
+: 'Not given out on this desk yet.';
+wrap.appendChild(line);
+
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = holder ? 'ghost-btn' : 'primary-btn';
+btn.style.margin = '0 0 8px';
+btn.textContent = holder ? 'Take this booth back' : 'Give this booth to whoever is up';
+btn.onclick = async () => {
+try {
+if (holder) await lottoUnassign(kind, booth.num);
+else await lottoAssignNext(kind, booth.num);
+closeBoothDetail();
+} catch (e) {
+showMsg('boothStatusMsg', 'err', e.message || String(e));
+}
+};
+wrap.appendChild(btn);
+}
 function closeBoothDetail() {
 selectedBoothNum = null;
+boothDetailCtx = null;
+const sel = document.getElementById('boothSelActions');
+if (sel) sel.innerHTML = '';
 document.getElementById('boothModalBackdrop').style.display = 'none';
 }
 function handleBackdropClick(event) {
