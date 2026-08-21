@@ -5813,9 +5813,44 @@ runScreenInit(sec.id.replace('screen-', ''));
 } catch (e) { noteStorageFailure('sync-poll', e); }
 }
 let ifmUpdating = false;
+// THE THING THAT WAS ACTUALLY COSTING TEN SECONDS.
+//
+// To find out whether a new build had been put up, this fetched the WHOLE APP
+// -- six hundred kilobytes -- and read one version string out of it. Every ten
+// minutes, on every wake, and five seconds after every opening. On a market
+// morning, on a phone signal, for one line of text.
+//
+// Worse for anyone testing: five seconds after opening, the app quietly pulled
+// the entire file down again, found a newer build, and reloaded -- pulling it
+// down a THIRD time. From the outside that is a tap, a pause of about ten
+// seconds, and then an app. From the inside every measurement said 0.7 s,
+// because the clock restarts on the reload and the last leg came from cache.
+// Both were true. Only one was being measured.
+//
+// A HEAD request asks the server "has this file changed?" and is answered in a
+// couple of hundred bytes of headers. Only when the answer is yes does the
+// whole file come down. GitHub Pages sends both ETag and Last-Modified, so
+// either will do; if a server sends neither we fall back to the old way rather
+// than never noticing an update at all.
+let ifmFileStamp = null, ifmStampless = false;
 async function ifmCheckForUpdate() {
 if (!/^https?:$/.test(location.protocol)) return;   // only when hosted at a real URL
 try {
+if (!ifmStampless) {
+const head = await ifmFetch(location.pathname, { method: 'HEAD', cache: 'no-store' }, 15000);
+if (!head.ok) return;
+const stamp = head.headers.get('etag') || head.headers.get('last-modified');
+if (!stamp) {
+ifmStampless = true;            // this server will not tell us; ask the long way
+} else if (ifmFileStamp === null) {
+ifmFileStamp = stamp;             // first look: nothing to compare against yet
+return;
+} else if (stamp === ifmFileStamp) {
+return;                           // unchanged. Cost: some headers.
+} else {
+ifmFileStamp = stamp;             // something was deployed -- now it is worth looking
+}
+}
 const r = await ifmFetch(location.pathname, { cache: 'no-store' }, 15000);
 if (!r.ok) return;
 const text = await r.text();
@@ -12696,7 +12731,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-60';
+const BUILD_ID = '14-61';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
