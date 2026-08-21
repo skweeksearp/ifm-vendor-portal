@@ -11616,7 +11616,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-11';
+const BUILD_ID = '14-12';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -12649,6 +12649,9 @@ if (KIOSK_FIT_SKIP.indexOf(l.t) >= 0) return;
 eat(l.x, l.y, String(l.t).length * 7, 16);
 });
 const pad = 10;
+const KIOSK_SOUTH_FEET = 100;
+maxY += KIOSK_SOUTH_FEET * 4;
+pts.push({ x: minX, y: maxY }, { x: maxX, y: maxY });
 kioskContentPts = pts;
 kioskContentBounds = { x: minX - pad, y: minY - pad,
 w: (maxX - minX) + pad * 2, h: (maxY - minY) + pad * 2 };
