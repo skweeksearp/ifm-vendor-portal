@@ -12085,7 +12085,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-42';
+const BUILD_ID = '14-43';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -19822,17 +19822,52 @@ const wrap = document.getElementById('boothSelActions');
 if (!wrap) return;
 wrap.innerHTML = '';
 const rec = lottoRec(kind);
+const date = lottoDateOf(kind);
 const assignments = (rec && rec.assignments) || {};
 let holder = null;
 Object.keys(assignments).forEach(vid => { if (assignments[vid] === booth.num) holder = vid; });
 
+// Whether this booth is in the day's pool at all. Being able to LOOK at a
+// booth and being able to GIVE IT AWAY are two different things, and the
+// sheet was offering the second on every booth it opened -- including ones
+// whose holder is coming, which is not the market's to hand out.
+const open = computeOpenBooths(date).find(b => String(b.num) === String(booth.num));
+const baseline = boothBaselineHolder(booth, date);
+const toOrg = (orgStallsCache || []).find(o => o.date === date && String(o.booth) === String(booth.num));
+
 const line = document.createElement('p');
 line.className = 'empty-note';
 line.style.margin = '0 0 8px';
-line.textContent = holder
-? boothVendorName(holder) + ' has been given this booth on this desk.'
-: 'Not given out on this desk yet.';
 wrap.appendChild(line);
+
+if (holder) {
+line.textContent = boothVendorName(holder) + ' has been given this booth on this desk.';
+} else if (toOrg) {
+line.textContent = 'Given to ' + (toOrg.name || 'a community organisation') +
+' for ' + formatDisplayDate(date) + ', so it is not in the day\u2019s pool.';
+} else if (!open) {
+line.textContent = baseline
+? boothVendorName(baseline) + ' holds this booth and has not reported an absence for ' +
+formatDisplayDate(date) + ', so it is not the market\u2019s to give out today.'
+: 'Not in the pool for ' + formatDisplayDate(date) + '.';
+} else {
+line.textContent = open.vacatedBy
+? 'Open for ' + formatDisplayDate(date) + ' \u2014 ' + open.vacatedBy + ' reported an absence.'
+: 'Open for ' + formatDisplayDate(date) + '.';
+}
+
+// Only a booth that is actually open, or one already handed out here, carries
+// an action. Everything else is a lookup, which is most of why the sheet is
+// reachable from this desk in the first place.
+if (!holder && !open) {
+const hint = document.createElement('p');
+hint.className = 'empty-note';
+hint.style.margin = '0 0 8px';
+hint.textContent = 'If that is wrong \u2014 the vendor rang in and it was not recorded \u2014 ' +
+'put the absence on the books first, in The Old-Fashioned Way, and it will appear here.';
+wrap.appendChild(hint);
+return;
+}
 
 const btn = document.createElement('button');
 btn.type = 'button';
