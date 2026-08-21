@@ -2483,8 +2483,6 @@ Nothing is drawn at random: vendors are ranked by category and points, and each 
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-map-pin"></use></svg></span>Open Booths<button type="button" class="help-dot" onclick="showHelp(12)" aria-label="What are the rules here?">?</button></h2>
 <div id="openBoothChips" class="open-booth-chips"></div>
-<label for="lottoExtra" style="margin-top:14px;">Other Spots (anything not on the map)</label>
-<input type="text" id="lottoExtra" placeholder="e.g. a one-off space not on the map" oninput="saveLotteryMeta()">
 </div>
 <div class="card" id="lottoTurnCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-gavel"></use></svg></span>Now Choosing</h2>
@@ -2541,8 +2539,6 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-map-pin"></use></svg></span>Open Booths<button type="button" class="help-dot" onclick="showHelp(18)" aria-label="What are the rules here?">?</button></h2>
 <div id="satOpenBoothChips" class="open-booth-chips"></div>
-<label for="satLottoExtra" style="margin-top:14px;">Other Spots (anything not on the map)</label>
-<input type="text" id="satLottoExtra" placeholder="e.g. a one-off space not on the map" oninput="saveSatLotteryMeta()">
 </div>
 <div class="card" style="padding: 10px;">
 <h2 style="padding: 8px 8px 0;"><span class="emoji"><svg class="ico"><use href="#i-ruler"></use></svg></span>Live Booth Map<button type="button" class="help-dot" onclick="showHelp(19)" aria-label="What are the rules here?">?</button></h2>
@@ -10475,7 +10471,6 @@ return '<span class="pr-booth' + (holder ? ' taken' : '') + '">' + b.num + '<sma
 : (b.vacatedBy ? 'was ' + esc(b.vacatedBy) : 'always open')) +
 '</small></span>';
 }).join('') + '</div>';
-if (rec.openBooths) html += '<p class="pr-sub">Other spots: ' + esc(rec.openBooths) + '</p>';
 }
 html += '<p class="pr-h2">' + (sat ? 'Vendors Who Requested a Booth, in Calling Order' : 'Signed-In Vendors, in Choosing Order') + '</p>';
 let rank = 0, any = false;
@@ -10581,7 +10576,7 @@ lottoRenderSections('saturday');
 const LOTTO_KINDS = {
 sunday: {
 day: 'Sunday',
-ids: { date: 'lottoDate', chips: 'lottoDateChips', extra: 'lottoExtra',
+ids: { date: 'lottoDate', chips: 'lottoDateChips',
 boothChips: 'openBoothChips', canvas: 'lottoBoothCanvas', turn: 'lottoTurn',
 summary: 'lottoSummary', sections: 'lottoSections',
 addSearch: 'lottoAddSearch', addResults: 'lottoAddResults' },
@@ -10604,7 +10599,7 @@ assignBlocked: pool => pool
 },
 saturday: {
 day: 'Saturday',
-ids: { date: 'satLottoDate', chips: 'satLottoDateChips', extra: 'satLottoExtra',
+ids: { date: 'satLottoDate', chips: 'satLottoDateChips',
 boothChips: 'satOpenBoothChips', canvas: 'satLottoBoothCanvas', turn: 'satLottoTurn',
 summary: 'satLottoSummary', sections: 'satLottoSections',
 noAnswer: 'satNoAnswerBtn', tiebreak: 'satTiebreakNote' },
@@ -10687,17 +10682,20 @@ lottoLoad(kind);
 function lottoLoad(kind) {
 const k = LOTTO_KINDS[kind];
 const rec = lottoRec(kind);
-lottoEl(kind, 'extra').value = rec.openBooths || '';
 renderLottoDateChips(k.ids.chips, k.day, k.ids.date, () => lottoLoad(kind));
 lottoRenderBooths(kind);
 lottoRenderSections(kind);
 if (kind === 'sunday') renderShareReview();
 }
-async function lottoSaveMeta(kind) {
-if (!requireMarketRole()) return;
-lottoRec(kind).openBooths = lottoEl(kind, 'extra').value;
-await storageSet('ifm-lottery', cache.lottery);
-}
+// lottoSaveMeta and its two wrappers are gone with the box they saved. The
+// "Other Spots" note was a free-text line that reached exactly one place -- a
+// sub-heading on the Printable Sheet -- and nothing else in the app read it.
+// It made no booth bookable, put nothing in the day's pool, and appeared on no
+// screen. A field that only records something is worse than no field: it looks
+// like it is doing a job.
+//
+// `openBooths` stays in the stored record so that nothing already written to
+// the sheet is destroyed; it is simply no longer read or written.
 function lottoRenderBooths(kind) {
 const k = LOTTO_KINDS[kind];
 const date = lottoDateOf(kind);
@@ -10945,8 +10943,6 @@ function initLotteryScreen() { lottoInit('sunday'); }
 function initSatLotteryScreen() { lottoInit('saturday'); }
 function loadLotterySheet() { lottoLoad('sunday'); }
 function loadSatLotterySheet() { lottoLoad('saturday'); }
-function saveLotteryMeta() { return lottoSaveMeta('sunday'); }
-function saveSatLotteryMeta() { return lottoSaveMeta('saturday'); }
 function renderLottoAddResults(q) { lottoRenderAddResults('sunday', q); }
 // renderSatLottoAddResults is gone with the box it served. Saturday's pool is
 // built from booth requests on the books -- see satCalledIn() -- and a request
@@ -12242,7 +12238,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-51';
+const BUILD_ID = '14-52';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
