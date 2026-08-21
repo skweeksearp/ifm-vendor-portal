@@ -2997,6 +2997,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
+<div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code> and let <code>freeFloatingSheets()</code> move it to the body at boot. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
 <div class="comm-item"><div class="comm-title">A new live map, or a new layer on an old one</div><div class="comm-desc">Add it to <code>AUDIT_MAPS</code>. The map knows a great deal &mdash; the buildings, the promenade panels, the section labels, the badge on every booth, the placed furniture and outlets &mdash; and a screen that leaves half of it out <em>still looks like a map</em>, which is why the sixth fault counts layers instead of trusting the eye. Where a map is meant to carry less, say so in its <code>without</code> list along with the reason, so a real gap cannot hide behind &ldquo;that one is different&rdquo;.</div></div>
 <div class="comm-item"><div class="comm-title">A booth on any map</div><div class="comm-desc">Every booth on every live map opens the booth sheet, and every booth means <em>every</em> booth &mdash; including ones already spoken for. A booth that is taken is exactly the booth a vendor rings up to ask about, and a chip that does nothing is the office being told to go and look it up somewhere else. The sheet takes a context saying which desk it was opened from, and offers that desk&rsquo;s action inside it; where there is no action, it still says everything known about the booth. A map that offers less than another map is a fault, not a simplification.</div></div>
 <div class="comm-item"><div class="comm-title">A card that takes an entry and reports back</div><div class="comm-desc">Mark it <code>desk-form</code>. When the desk changes hands &mdash; one vendor to another, vendor to manager, anyone to the kiosk &mdash; <code>clearDeskState()</code> empties every field inside it, along with every <code>.status-msg</code> on the page. Without the mark, nothing sweeps it, and the next person opens the tool to find the last person&rsquo;s words and the last person&rsquo;s green confirmation. A block whose text is <em>worked out</em> from state rather than typed &mdash; a running total, a note that appears only for certain days &mdash; gets <code>desk-transient</code> instead. A field that must survive a hand-over because it shows a saved setting rather than something part-typed gets <code>keep-on-handover</code>. The Self-Audit&rsquo;s fifth fault names any card it finds unenrolled, so this is checkable rather than remembered.</div></div>
@@ -3011,7 +3012,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="screen-head" id="head-selfaudit"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What This Checks</h2>
-<p class="empty-note" style="margin-top:0;">Nearly every leak found in testing has belonged to one of six faults, and each one can be looked for by machine. Reports were being fixed one instance at a time while the rest of the class sat undisturbed &mdash; this walks the whole population instead. It cannot judge whether wording is <i>good</i>, only whether it is consistent, and it knows nothing of faults nobody has named yet.</p>
+<p class="empty-note" style="margin-top:0;">Nearly every leak found in testing has belonged to one of seven faults, and each one can be looked for by machine. Reports were being fixed one instance at a time while the rest of the class sat undisturbed &mdash; this walks the whole population instead. It cannot judge whether wording is <i>good</i>, only whether it is consistent, and it knows nothing of faults nobody has named yet.</p>
 <p class="empty-note" id="saSummary" style="margin-bottom:0;"></p>
 <button type="button" class="ghost-btn" onclick="renderSelfAudit()">Run the audit again</button>
 </div>
@@ -3141,7 +3142,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="dash-fold" data-fold="dev-selfaudit">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'selfaudit')">
 <span class="fold-title">Self-Audit</span>
-<span class="fold-sub">Walks the whole app for the six faults that keep being found one at a time &mdash; ownership, role exposure, description drift, unguarded writes, screen residue, map parity</span>
+<span class="fold-sub">Walks the whole app for the seven faults that keep being found one at a time &mdash; ownership, role exposure, description drift, unguarded writes, screen residue, map parity, captive sheets</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -7057,7 +7058,7 @@ const AUDIT_VENDOR_ACTIONS = ['submitBoothShare', 'deleteBoothShare', 'claimSele
 'saveTasks', 'saveOps', 'loadAllData', 'payFeeCart', 'addFeeToCart'];
 
 async function runSelfAudit() {
-const out = { ownership: [], roles: [], descriptions: [], guards: [], residue: [], maps: [] };
+const out = { ownership: [], roles: [], descriptions: [], guards: [], residue: [], maps: [], sheets: [] };
 
 // --- 1. Ownership -------------------------------------------------------
 for (const spec of AUDIT_OWNERSHIP_KEYS) {
@@ -7251,6 +7252,16 @@ d: 'No placed furniture or outlets on any map. The layer is wired everywhere \u2
 }
 }
 
+// --- 7. Captive sheets --------------------------------------------------
+// A pop-up owned by a screen works from that screen and nowhere else, and the
+// failure is silent: display:flex on a box whose ancestor is display:none
+// throws nothing and logs nothing. It presents as "the map isn't clickable".
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+const owner = m.closest('section.screen');
+if (owner) out.sheets.push({ sheet: m.id || '(unnamed)',
+d: 'Lives inside <code>' + owner.id + '</code>, so it can only open while that screen is the one showing. Everywhere else the tap does nothing and says nothing.' });
+});
+
 return out;
 }
 function titlesAgree(a, b) {
@@ -7306,6 +7317,9 @@ r.descriptions.map(o => '<code>' + esc(o.screen) + '</code> \u2014 ' + esc(o.d))
 section('Write guards', r.guards.length,
 'Functions that write the market\u2019s own records without checking the role of whoever called them. Hiding a button does not withhold the power behind it. Writes a vendor is meant to make on their own behalf are named in <code>AUDIT_VENDOR_ACTIONS</code> and left out; anything appearing here has not been decided either way.',
 r.guards.map(o => '<code>' + esc(o.fn) + '</code>'));
+section('Captive sheets', r.sheets.length,
+'Pop-up sheets that belong to a screen instead of to the app. One of these opens fine from its own screen and does nothing at all from anywhere else \u2014 no error, no log, just a tap that goes nowhere. <code>freeFloatingSheets()</code> moves them all to the body at boot; anything listed here has been added since in a way that escaped it.',
+r.sheets.map(o => '<code>' + esc(o.sheet) + '</code> \u2014 ' + o.d));
 section('Map parity', r.maps.length,
 'Any live map carrying less than the fullest one. The Steamboat Landing map knows the buildings, the promenade panels, the section labels, the badges on every booth and the placed furniture \u2014 and a screen that leaves half of that out still looks like a map, which is why this is checked by counting rather than by eye. Deliberate differences are declared in <code>AUDIT_MAPS</code> with a reason; anything else is a gap.',
 r.maps.map(o => (o.note ? '' : '<b>' + esc(o.map) + '</b> \u2014 ') + o.d));
@@ -7315,11 +7329,11 @@ r.residue.map(o => '<b>' + esc(o.what) + '</b> \u2014 ' + esc(o.d)));
 // A note is a remark, not a finding; it should not make the tally look bad.
 const notes = r.maps.filter(o => o.note).length;
 const total = r.ownership.length + r.roles.length + r.descriptions.length +
-r.guards.length + r.residue.length + (r.maps.length - notes);
+r.guards.length + r.residue.length + r.sheets.length + (r.maps.length - notes);
 const sum = document.getElementById('saSummary');
 if (sum) sum.textContent = total
-? total + ' finding' + (total === 1 ? '' : 's') + ' across six faults. Each is a class, not an incident \u2014 fix the class.'
-: 'Nothing found in any of the six faults. That is not the same as no bugs: this walks only what it knows to look for.';
+? total + ' finding' + (total === 1 ? '' : 's') + ' across seven faults. Each is a class, not an incident \u2014 fix the class.'
+: 'Nothing found in any of the seven faults. That is not the same as no bugs: this walks only what it knows to look for.';
 }
 function renderSeedMerge() {
 const wrap = document.getElementById('smList');
@@ -7539,7 +7553,25 @@ chip.onclick = () => openBoothDetail(booth.num, { sel: opts.kind });
 canvas.appendChild(chip);
 });
 }
+// A pop-up sheet must belong to NO screen.
+//
+// The booth sheet was written inside <section id="screen-booths">, which is
+// display:none whenever another screen is showing. Opening it from anywhere
+// else set display:flex on a nought-by-nought box inside a hidden ancestor:
+// the tap did nothing, silently, with no error to find. It looked like the map
+// was not clickable. The map was fine.
+//
+// Anything that floats over the whole app is moved to the body at boot, so no
+// screen can take it away with it. Done to the class rather than to the one
+// that was reported, because the same words appear in the same shape wherever
+// a sheet is written next to the screen that first needed it.
+function freeFloatingSheets() {
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+if (m.parentElement !== document.body) document.body.appendChild(m);
+});
+}
 async function init() {
+freeFloatingSheets();
 await loadAllData();
 if (storageBroken && IFM_BACKEND_URL) {
 const n = document.createElement('div');
@@ -12053,7 +12085,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-41';
+const BUILD_ID = '14-42';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
