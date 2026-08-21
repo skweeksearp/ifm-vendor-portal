@@ -243,8 +243,7 @@ border: 1px solid rgba(35,42,32,0.15);
 .lotto-key i.available { background: var(--leaf); }
 .lotto-key i.assigned { background: var(--sunflower); }
 .lotto-key i.reserved { background: #4A5568; }
-#lottoPrintBackdrop { display: none; }
-#lottoPrintBackdrop.open { display: flex; align-items: stretch; }
+#lottoPrintBackdrop.open, #feeStmtBackdrop.open { align-items: stretch; }
 .print-shell {
 flex: 1; background: #fff; color: #000; display: flex; flex-direction: column; overflow: hidden;
 }
@@ -748,11 +747,17 @@ border: 1px solid var(--paper-dim); background: var(--paper-dim);
 }
 .facility-chip.warn { background: #F1E1D5; }
 .facility-chip.good { background: #E3EAD9; }
+/* Hidden until something opens it. This used to be display:flex, so a new
+   backdrop was visible from boot unless whoever added it also remembered a
+   rule to hide it -- which is how the fee statement ended up covering the
+   whole app on load. Defaults should fail closed. Anything already shown by
+   setting style.display directly still works: an inline style outranks this. */
 .modal-backdrop {
 position: fixed; inset: 0; z-index: 500;
 background: rgba(35, 42, 32, 0.5);
-display: flex; align-items: flex-end; justify-content: center;
+display: none; align-items: flex-end; justify-content: center;
 }
+.modal-backdrop.open { display: flex; }
 .modal-sheet {
 width: 100%; max-width: 480px;
 background: var(--paper);
@@ -3069,7 +3074,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
 <div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in The Old-Fashioned Way puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
-<div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code> and let <code>freeFloatingSheets()</code> move it to the body at boot. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
+<div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code>, let <code>freeFloatingSheets()</code> move it to the body at boot, and show it by adding the class <code>open</code> &mdash; never by copying another sheet&rsquo;s markup and hoping. <code>.modal-backdrop</code> is <code>display:none</code> until opened, which it was not always: it used to be <code>display:flex</code>, so a new backdrop was on screen from boot unless whoever added it also wrote a rule to hide it. That shipped once, and because a backdrop covers everything at <code>z-index:500</code> it did not look like a stuck sheet, it looked like the whole app had stopped working. Defaults should fail closed. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
 <div class="comm-item"><div class="comm-title">A new live map, or a new layer on an old one</div><div class="comm-desc">Add it to <code>AUDIT_MAPS</code>. The map knows a great deal &mdash; the buildings, the promenade panels, the section labels, the badge on every booth, the placed furniture and outlets &mdash; and a screen that leaves half of it out <em>still looks like a map</em>, which is why the sixth fault counts layers instead of trusting the eye. Where a map is meant to carry less, say so in its <code>without</code> list along with the reason, so a real gap cannot hide behind &ldquo;that one is different&rdquo;.</div></div>
 <div class="comm-item"><div class="comm-title">A booth on any map</div><div class="comm-desc">Every booth on every live map opens the booth sheet, and every booth means <em>every</em> booth &mdash; including ones already spoken for. A booth that is taken is exactly the booth a vendor rings up to ask about, and a chip that does nothing is the office being told to go and look it up somewhere else. The sheet takes a context saying which desk it was opened from, and offers that desk&rsquo;s action inside it; where there is no action, it still says everything known about the booth. A map that offers less than another map is a fault, not a simplification.</div></div>
 <div class="comm-item"><div class="comm-title">A card that takes an entry and reports back</div><div class="comm-desc">Mark it <code>desk-form</code>. When the desk changes hands &mdash; one vendor to another, vendor to manager, anyone to the kiosk &mdash; <code>clearDeskState()</code> empties every field inside it, along with every <code>.status-msg</code> on the page. Without the mark, nothing sweeps it, and the next person opens the tool to find the last person&rsquo;s words and the last person&rsquo;s green confirmation. A block whose text is <em>worked out</em> from state rather than typed &mdash; a running total, a note that appears only for certain days &mdash; gets <code>desk-transient</code> instead. A field that must survive a hand-over because it shows a saved setting rather than something part-typed gets <code>keep-on-handover</code>. The Self-Audit&rsquo;s fifth fault names any card it finds unenrolled, so this is checkable rather than remembered.</div></div>
@@ -7450,6 +7455,14 @@ document.querySelectorAll('.modal-backdrop').forEach(m => {
 const owner = m.closest('section.screen');
 if (owner) out.sheets.push({ sheet: m.id || '(unnamed)',
 d: 'Lives inside <code>' + owner.id + '</code>, so it can only open while that screen is the one showing. Everywhere else the tap does nothing and says nothing.' });
+// The other half of the same fault: a sheet that is showing when nothing
+// opened it. A backdrop covers the whole screen at z-index 500, so one left
+// visible makes the entire app untappable, and it looks like the app is
+// broken rather than like a sheet is open. Found the hard way.
+if (!m.classList.contains('open') && getComputedStyle(m).display !== 'none') {
+out.sheets.push({ sheet: m.id || '(unnamed)',
+d: 'Is on screen without having been opened. It covers everything at z-index 500, so nothing else in the app can be tapped.' });
+}
 });
 
 return out;
@@ -12538,7 +12551,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-56';
+const BUILD_ID = '14-57';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
