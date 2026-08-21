@@ -2487,11 +2487,6 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 </div>
 </div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Add a Vendor to This Saturday<button type="button" class="help-dot" onclick="showHelp(20)" aria-label="What are the rules here?">?</button></h2>
-<input type="text" id="satLottoAddSearch" placeholder="Search by business name" oninput="renderSatLottoAddResults(this.value)">
-<div id="satLottoAddResults"></div>
-</div>
-<div class="card">
 <p class="empty-note" id="satTiebreakNote" style="margin-bottom:0;"></p>
 </div>
 <div id="satLottoSections"></div>
@@ -2997,6 +2992,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
+<div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in The Old-Fashioned Way puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
 <div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code> and let <code>freeFloatingSheets()</code> move it to the body at boot. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
 <div class="comm-item"><div class="comm-title">A new live map, or a new layer on an old one</div><div class="comm-desc">Add it to <code>AUDIT_MAPS</code>. The map knows a great deal &mdash; the buildings, the promenade panels, the section labels, the badge on every booth, the placed furniture and outlets &mdash; and a screen that leaves half of it out <em>still looks like a map</em>, which is why the sixth fault counts layers instead of trusting the eye. Where a map is meant to carry less, say so in its <code>without</code> list along with the reason, so a real gap cannot hide behind &ldquo;that one is different&rdquo;.</div></div>
 <div class="comm-item"><div class="comm-title">A booth on any map</div><div class="comm-desc">Every booth on every live map opens the booth sheet, and every booth means <em>every</em> booth &mdash; including ones already spoken for. A booth that is taken is exactly the booth a vendor rings up to ask about, and a chip that does nothing is the office being told to go and look it up somewhere else. The sheet takes a context saying which desk it was opened from, and offers that desk&rsquo;s action inside it; where there is no action, it still says everything known about the booth. A map that offers less than another map is a fault, not a simplification.</div></div>
@@ -8648,7 +8644,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Sunday Booth Selection",
-"body": "<p>Sunday takes no booth requests. Vendors looking for a Sunday booth sign in online from 6:00&nbsp;PM the Saturday before until 8:30&nbsp;AM, or come to the market and sign in in person <strong>before 8:30&nbsp;AM</strong> \u2014 that list is what ranks the room. In-person sign-in is at the booth across from the office, not in the office itself. Booths are not handed out automatically: each vendor present chooses their own from what's open, in points order within their tier.</p>"
+"body": "<p>Sunday takes no booth requests. Vendors looking for a Sunday booth sign in online from 8:00&nbsp;AM that morning until 8:30&nbsp;AM, or come to the market and sign in in person <strong>between 8:00 and 8:30&nbsp;AM</strong> \u2014 that list is what ranks the room. In-person sign-in is at the booth across from the office, not in the office itself. Booths are not handed out automatically: each vendor present chooses their own from what's open, in points order within their tier.</p>"
 },
 {
 "title": "Printable Sheet",
@@ -8668,7 +8664,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Sign In a Vendor",
-"body": "<p>Vendors who signed in online from 6:00&nbsp;PM Saturday onward are already on the list below. Add anyone who signs in in person at the booth across from the office before 8:30&nbsp;AM. Only signed-in vendors get a turn to choose.</p>"
+"body": "<p>Vendors who signed in online from 8:00&nbsp;AM this morning are already on the list below. Add anyone who signs in in person at the booth across from the office before 8:30&nbsp;AM. Only signed-in vendors get a turn to choose.</p>"
 },
 {
 "title": "Saturday Booth Selection",
@@ -8687,8 +8683,8 @@ const HELP_TEXTS = [
 "body": "<p>Scroll sideways for the whole Pavilion. Tap an open booth to assign it to the next vendor in line; tap an assigned one to undo.</p>"
 },
 {
-"title": "Add a Vendor to This Saturday",
-"body": "<p>Only vendors who submitted a booth request show up below automatically. Use this if someone called the office instead.</p>"
+"title": "(retired) Add a Vendor to This Saturday",
+"body": "<p>This tool is gone. It existed for the case its own text described \u2014 <em>someone called the office instead</em> \u2014 and that case is now handled properly in <strong>The Old-Fashioned Way</strong>, where a booth request is stamped with how it arrived and judged by <em>when the vendor told the office</em> rather than when it was typed. A request entered there puts the vendor in Saturday's pool by the same route as one submitted from a phone.</p><p>The entry is kept rather than deleted because every help dot in the app is numbered by position in this list, and removing one would silently move all the rest.</p>"
 },
 {
 "title": "Saturday Booth Selection Sheet",
@@ -8756,7 +8752,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Sunday Sign-In",
-"body": "<p>If you want a booth this Sunday, sign in online here any time from 6:00&nbsp;PM the Saturday before until 8:30&nbsp;AM \u2014 or come to the market and sign in in person <strong>before 8:30&nbsp;AM</strong>, at the booth across from the office. Signing in online puts you on the ranked list before the meeting, but either way you need to be there by 8:30&nbsp;AM to choose your booth.</p>"
+"body": "<p>If you want a booth this Sunday, sign in online here from 8:00&nbsp;AM that morning until 8:30&nbsp;AM \u2014 or come to the market and sign in in person in the same window, at the booth across from the office. It is a half-hour window on the morning of the market itself: there is no signing in the night before, and no signing in early. Signing in online puts you on the ranked list before the meeting, but either way you need to be there by 8:30&nbsp;AM to choose your booth.</p>"
 },
 {
 "title": "Legend",
@@ -10476,7 +10472,6 @@ day: 'Saturday',
 ids: { date: 'satLottoDate', chips: 'satLottoDateChips', extra: 'satLottoExtra',
 boothChips: 'satOpenBoothChips', canvas: 'satLottoBoothCanvas', turn: 'satLottoTurn',
 summary: 'satLottoSummary', sections: 'satLottoSections',
-addSearch: 'satLottoAddSearch', addResults: 'satLottoAddResults',
 noAnswer: 'satNoAnswerBtn', tiebreak: 'satTiebreakNote' },
 defaultDate: () => nextSaturday(),
 sections: () => saturdayLottoSections(),
@@ -10548,8 +10543,10 @@ function lottoInit(kind) {
 if (kind === 'saturday') renderShoulderSeasonCard();
 const dateInput = lottoEl(kind, 'date');
 if (!dateInput.value) dateInput.value = LOTTO_KINDS[kind].defaultDate();
-lottoEl(kind, 'addSearch').value = '';
-lottoEl(kind, 'addResults').innerHTML = '';
+// Sunday still signs vendors in by hand at the 8:30 meeting; Saturday no
+// longer has this box at all, so ask before reaching for it.
+const addBox = lottoEl(kind, 'addSearch');
+if (addBox) { addBox.value = ''; lottoEl(kind, 'addResults').innerHTML = ''; }
 lottoLoad(kind);
 }
 function lottoLoad(kind) {
@@ -10768,6 +10765,7 @@ function lottoRenderAddResults(kind, query) {
 if (currentRole !== 'manager') return;
 const q = query.trim().toLowerCase();
 const results = lottoEl(kind, 'addResults');
+if (!results) return;
 results.innerHTML = '';
 if (q.length < 2) return;
 const rec = lottoRec(kind);
@@ -10787,8 +10785,8 @@ async function lottoAddVendor(kind, vendorId) {
 if (!requireManager()) return;
 lottoRec(kind).manualCheck[vendorId] = true;
 await storageSet('ifm-lottery', cache.lottery);
-lottoEl(kind, 'addSearch').value = '';
-lottoEl(kind, 'addResults').innerHTML = '';
+const box = lottoEl(kind, 'addSearch');
+if (box) { box.value = ''; lottoEl(kind, 'addResults').innerHTML = ''; }
 lottoRenderBooths(kind);
 lottoRenderSections(kind);
 }
@@ -10799,7 +10797,12 @@ function loadSatLotterySheet() { lottoLoad('saturday'); }
 function saveLotteryMeta() { return lottoSaveMeta('sunday'); }
 function saveSatLotteryMeta() { return lottoSaveMeta('saturday'); }
 function renderLottoAddResults(q) { lottoRenderAddResults('sunday', q); }
-function renderSatLottoAddResults(q) { lottoRenderAddResults('saturday', q); }
+// renderSatLottoAddResults is gone with the box it served. Saturday's pool is
+// built from booth requests on the books -- see satCalledIn() -- and a request
+// that arrived by phone is entered in The Old-Fashioned Way, where it is
+// stamped with how it came and when the vendor actually told the office.
+// Sunday keeps its own version: that desk is a sign-in sheet at the 8:30
+// meeting, and nothing else feeds it.
 async function initHoursReportScreen() {
 document.getElementById('hrsGoalTotal').value = cache.hoursGoals.total;
 document.getElementById('hrsGoalBG').value = cache.hoursGoals.bg;
@@ -12085,7 +12088,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-43';
+const BUILD_ID = '14-46';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -12111,15 +12114,17 @@ return { vendorId: null, source: 'open' };
 }
 function sundaySignInWindow(sundayDate) {
 if (!sundayDate) return { open: false, reason: 'Pick a Sunday above first.' };
-const opens = new Date(sundayDate + 'T18:00:00');
-opens.setDate(opens.getDate() - 1);
+// Sign-in opens at 8:00 AM on the Sunday itself and closes at 8:30, when the
+// meeting begins. It used to open at 6:00 PM the Saturday before; the window
+// is now an hour and a half on the morning of the market.
+const opens = new Date(sundayDate + 'T08:00:00');
 const closes = new Date(sundayDate + 'T08:30:00');
 const now = new Date();
 if (now < opens) {
 return {
 open: false,
 reason: 'Opens ' + opens.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) +
-' at 6:00\u00A0PM.'
+' at 8:00\u00A0AM.'
 };
 }
 if (now > closes) return { open: false, reason: 'Sign-in closed at 8:30\u00A0AM, when the meeting begins. Ask at the booth across from the office.' };
@@ -12155,7 +12160,7 @@ btn.className = signedIn ? 'ghost-btn' : '';
 status.textContent = win.open
 ? (signedIn
 ? 'You\u2019re signed in. Be at the booth across from the office by 8:30\u00A0AM \u2014 the list is called in points order within your category.'
-: 'Sign-in is open now.')
+: 'Sign-in is open now, and closes at 8:30\u00A0AM when the meeting begins.')
 : win.reason;
 }
 async function toggleSundaySignIn() {
@@ -12234,7 +12239,7 @@ wrap.scrollLeft = Math.max(0, Math.round(mid - wrap.clientWidth / 2));
 function renderBooths() {
 const note = document.getElementById('auctionRuleNote');
 if (currentAuction === 'weekly') {
-note.textContent = 'Sunday Booth Selection, the \u201Clottery\u201D: Sunday booths default to whoever holds them Saturday, unless that vendor reported an absence for this date. Everything left over goes to the 8:30\u00A0AM meeting \u2014 vendors seeking one of those booths sign in online from 6:00\u00A0PM Saturday onward or in person before 8:30\u00A0AM, then choose in points order.';
+note.textContent = 'Sunday Booth Selection, the \u201Clottery\u201D: Sunday booths default to whoever holds them Saturday, unless that vendor reported an absence for this date. Everything left over goes to the 8:30\u00A0AM meeting \u2014 vendors seeking one of those booths sign in between 8:00 and 8:30\u00A0AM that morning, online or in person, then choose in points order.';
 } else if (currentAuction === 'annual-sat') {
 note.textContent = 'Season-Long Booth Reservations, the \u201Cauction\u201D — Full Members: choose in points order for a season-long booth, valid Saturday and Sunday. 9 dock-wing booths are offered to propane-using Full vendors first. Corner booths are Ag-only — tap a booth to check.';
 } else {
@@ -17565,7 +17570,7 @@ t: 'Are corner booths Ag-only always, or only in the season-long reservations?',
 d: 'The Guide restricts corner booths to Agriculture vendors in the sentence about the annual event \u2014 the season-long reservations. The app scopes the restriction to that event alone. If the Operations Manager treats them as Ag-only in the weekly Booth Selections too, the app is wrong every week.' },
 { id: 'BF04', kind: 'discrepancy', cat: 'Booth Selection', src: 'Vendor Guide, Sunday',
 t: 'Sunday sign-in location does not match practice',
-d: 'The Guide says vendors sign in at the office. The app implements online sign-in from 6 PM Saturday plus in-person at the booth across from the office, which is what the market actually does. Either the Guide or the app should change; at present a vendor reading the Guide is told the wrong place.' },
+d: 'Two ways the app and the printed Guide now disagree about Sunday sign-in. First, place: the Guide says the office, the app says the booth across from it, which is what the market actually does. Second, time: the Guide describes sign-in opening at 6\u00A0PM the Saturday before; the app now opens it at 8:00\u00A0AM on the Sunday itself and closes it at 8:30, a half-hour window on the morning of the market. The second is a deliberate change made in the app ahead of the Guide and needs a board decision recorded against it, or the next printing will contradict the software. A vendor reading the Guide today is told the wrong place and the wrong hours.' },
 { id: 'BF05', kind: 'discrepancy', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
 t: 'Late-absence fine escalation: settled, worth confirming',
 d: 'The fines table footnote says fines increase in $50 increments for each offence, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
@@ -20098,8 +20103,8 @@ const show = selectedStatus === 'In' && sundays.length > 0;
 note.style.display = show ? '' : 'none';
 if (show) {
 note.innerHTML = 'Heads up: Sunday takes no booth request. Sunday booths are settled by ' +
-'signing in \u2014 online from 6:00\u00A0PM Saturday until 8:30\u00A0AM, or in person ' +
-'before 8:30\u00A0AM at the booth across from the office. Requesting a booth for ' +
+'signing in \u2014 online or in person between 8:00 and 8:30\u00A0AM that morning, ' +
+'at the booth across from the office. Requesting a booth for ' +
 (sundays.length === 1 ? 'a Sunday' : 'Sundays') + ' still logs fine if you mean it as a ' +
 'season start or finish notice.';
 }
@@ -20163,8 +20168,8 @@ still.innerHTML = satBooth
 ? '<strong>When you would still request:</strong> to tell the office when you are starting and ' +
 'finishing for the season; during shoulder season, when reserved-booth holders may join the weekly ' +
 'Booth Selection; or to ask for a Waterfront Trail space, reserved in advance through Booth Selection.'
-: '<strong>Sundays take no booth request</strong> \u2014 sign in instead, online from 6:00\u00A0PM ' +
-'Saturday until 8:30\u00A0AM or in person before 8:30\u00A0AM at the booth across from the office, ' +
+: '<strong>Sundays take no booth request</strong> \u2014 sign in instead, between 8:00 and ' +
+'8:30\u00A0AM that morning, online or in person at the booth across from the office, ' +
 'and choose your booth when your turn comes.';
 }
 selectedStatus = cioMode === 'absence' ? 'Out' : 'In';
