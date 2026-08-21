@@ -9078,6 +9078,23 @@ return '<div class="' + wrapClass + ' badge" style="color:' + b.color + '">' +
 }
 return '<div class="' + wrapClass + ' badge" style="background:' + b.bg + '">' + b.emoji + '</div>';
 }
+// Every list of people reads alphabetically unless the ORDER ITSELF carries
+// meaning. Looking someone up should not require knowing their standing
+// first, and a list ordered by points quietly publishes a ranking that most
+// screens have no business publishing.
+//
+// The exceptions, and they are the only ones: the Booth Selection desks and
+// the tier tables inside them, where points order IS the rule being applied;
+// the Points ledger, which is a ranking on purpose; and Absence Patterns,
+// which puts the vendors who need a phone call at the top. Those sort by
+// what they mean and then alphabetically within it, so ties never shuffle
+// about between one look and the next.
+function byBusinessName(a, b) {
+const av = a && a.businessName !== undefined ? a : (a && a.v) || {};
+const bv = b && b.businessName !== undefined ? b : (b && b.v) || {};
+return String(av.businessName || '').localeCompare(String(bv.businessName || ''),
+'en', { sensitivity: 'base', numeric: true });
+}
 function renderVendorList(filterText) {
 const list = document.getElementById('vendorList');
 list.innerHTML = '';
@@ -9086,7 +9103,7 @@ const q = (filterText || '').trim().toLowerCase();
 // someone up by name should not require knowing their standing first.
 const matches = cache.vendors.filter(v =>
 !q || v.businessName.toLowerCase().includes(q) || v.lastName.toLowerCase().includes(q)
-).sort((a, b) => a.businessName.localeCompare(b.businessName, 'en', { sensitivity: 'base', numeric: true }));
+).sort(byBusinessName);
 pagedList('picker', list, matches, filterText, v => {
 const btn = document.createElement('button');
 btn.className = 'vendor-option';
@@ -10035,7 +10052,7 @@ const matches = cache.vendors.filter(v =>
 vField(v, 'products').toLowerCase().includes(q) ||
 vField(v, 'primaryContact').toLowerCase().includes(q) ||
 vField(v, 'address').toLowerCase().includes(q)
-);
+).sort(byBusinessName);
 document.getElementById('dirCount').textContent = matches.length + ' of ' + cache.vendors.length + ' vendors';
 // Four whole rows and a glimpse of the fifth.
 setTimeout(() => { fitListToRows(list, '.dir-card', 4.6); markListEnds(list); }, 0);
@@ -10893,7 +10910,7 @@ function renderHoursReport() {
 const totalGoal = document.getElementById('hrsGoalTotal').value;
 const bgGoal = document.getElementById('hrsGoalBG').value;
 const year = new Date().getFullYear();
-const rows = cache.vendors.map(v => {
+const rows = cache.vendors.slice().sort(byBusinessName).map(v => {
 const led = buildHoursLedger(v.vendorId, year);
 const owedBG = bgGoal !== '' ? Math.max(Number(bgGoal) - led.bgWorked, 0) : null;
 const shortBG = owedBG !== null && owedBG > 0;
@@ -10905,7 +10922,8 @@ flagged: led.owed > 0 || shortBG
 };
 }).sort((a, b) => {
 if (b.owedTotal !== a.owedTotal) return b.owedTotal - a.owedTotal;
-return (b.owedBG || 0) - (a.owedBG || 0);
+if ((b.owedBG || 0) !== (a.owedBG || 0)) return (b.owedBG || 0) - (a.owedBG || 0);
+return byBusinessName(a, b);
 });
 const flaggedCount = rows.filter(r => r.flagged).length;
 const totalOwed = rows.reduce((s, r) => s + r.owedTotal, 0);
@@ -10932,7 +10950,8 @@ const q = query.trim().toLowerCase();
 const results = document.getElementById('pmSearchResults');
 results.innerHTML = '';
 if (q.length < 2) return;
-const matches = cache.vendors.filter(v => v.businessName.toLowerCase().includes(q)).slice(0, 8);
+const matches = cache.vendors.filter(v => v.businessName.toLowerCase().includes(q))
+.sort(byBusinessName).slice(0, 8);
 matches.forEach(v => {
 const row = document.createElement('div');
 row.className = 'lotto-add-result';
@@ -11246,7 +11265,8 @@ b.noShow = (b.noShow || 0) + 1;
 const rows = Object.keys(byVendor)
 .map(id => ({ id: id, v: cache.vendors.find(x => x.vendorId === id), ...byVendor[id] }))
 .filter(r => r.v && (r.late || r.noShow))
-.sort((a, b) => (b.late + (b.noShow || 0) * 2) - (a.late + (a.noShow || 0) * 2));
+.sort((a, b) => ((b.late + (b.noShow || 0) * 2) - (a.late + (a.noShow || 0) * 2))
+|| byBusinessName(a, b));
 const clean = Object.keys(byVendor).filter(id => !byVendor[id].late && !byVendor[id].noShow).length;
 if (!rows.length) {
 container.innerHTML = '<p class="empty-note">Every absence this season reached the office on time' +
@@ -12162,7 +12182,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-48';
+const BUILD_ID = '14-49';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13924,7 +13944,7 @@ renderKioskMap(occ);
 renderKioskDetail(occ);
 return;
 }
-const matches = cache.vendors.filter(v => kioskMatches(v, q, 'product'));
+const matches = cache.vendors.filter(v => kioskMatches(v, q, 'product')).sort(byBusinessName);
 kioskMatchBooths = new Set();
 matches.forEach(v => {
 const b = occ.byVendor[v.vendorId];
@@ -13970,7 +13990,7 @@ renderKioskMap(occ);
 }
 return;
 }
-const matches = cache.vendors.filter(v => kioskMatches(v, q, mode));
+const matches = cache.vendors.filter(v => kioskMatches(v, q, mode)).sort(byBusinessName);
 kioskMatchBooths = new Set();
 matches.forEach(v => {
 const b = occ.byVendor[v.vendorId];
@@ -15101,7 +15121,7 @@ function reqVendors(req) {
 if (!req) return [];
 if (req.appliesTo === 'all') return cache.vendors.slice();
 if (req.appliesTo === 'category') {
-return cache.vendors.filter(v => (req.categories || []).includes(v.category));
+return cache.vendors.filter(v => (req.categories || []).includes(v.category)).sort(byBusinessName);
 }
 return (req.vendorIds || [])
 .map(id => cache.vendors.find(v => v.vendorId === id))
@@ -15540,7 +15560,7 @@ const order = { impossible: 0, risk: 1, short: 2, met: 3 };
 shown = shown.slice().sort((a, b) =>
 order[a.verdict] - order[b.verdict] ||
 (a.need - a.done) - (b.need - b.done) ||
-a.v.businessName.localeCompare(b.v.businessName));
+byBusinessName(a, b));
 if (!shown.length) {
 empty.style.display = 'block';
 empty.textContent = 'Nothing matches that filter.';
@@ -16384,7 +16404,7 @@ const total = ruleNum('certTotal');
 const step = ruleNum('certInstal');
 const filter = document.getElementById('rnCertFilter').value;
 const rows = cache.vendors.filter(v => v.category.endsWith('Full'))
-.map(v => ({ v: v, paid: certPaid(v.vendorId) }));
+.map(v => ({ v: v, paid: certPaid(v.vendorId) })).sort(byBusinessName);
 const done = rows.filter(r => r.paid >= total).length;
 const owed = rows.reduce((s, r) => s + Math.max(0, total - r.paid), 0);
 document.getElementById('rnCertSummary').textContent =
@@ -16429,7 +16449,7 @@ const empty = document.getElementById('rnEmpty');
 wrap.innerHTML = '';
 const filter = document.getElementById('rnFilter').value;
 const term = document.getElementById('rnSearch').value.trim().toLowerCase();
-const rows = cache.vendors.map(v => ({ v: v, st: renewalStatus(v.vendorId, year) }));
+const rows = cache.vendors.map(v => ({ v: v, st: renewalStatus(v.vendorId, year) })).sort(byBusinessName);
 const counts = {};
 rows.forEach(r => { counts[r.st.state] = (counts[r.st.state] || 0) + 1; });
 document.getElementById('rnSummary').textContent =
@@ -16484,7 +16504,7 @@ r.vendorId === v.vendorId && r.rollover === prior && r.type === 'Attendance')
 .reduce((s, r) => s + Number(r.points || 0), 0);
 return { v: v, attended: attended, expire: priorEntry,
 net: ruleNum('ptsYear') + attended * ruleNum('ptsDay') - priorEntry };
-}).filter(p => p.attended || p.expire);
+}).filter(p => p.attended || p.expire).sort(byBusinessName);
 }
 function initPointsRollScreen() {
 const sel = document.getElementById('prYear');
