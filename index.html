@@ -2304,7 +2304,8 @@ I sell food (prepared food or produce)
 </div>
 <div class="desk-section" id="deskLogisticsHead">
 <h3>Market Logistics</h3>
-<p>Where you are standing, on which day, and what happens there. Everything above this line is true of you wherever you trade; everything below it is about one morning in one place.</p>
+<p>Where you are standing, on which day, and what happens there. Everything above this line is true of you wherever you trade; everything below it is about one morning in one place &mdash; so it asks which place.</p>
+<div id="vendorVenuePicker"></div>
 </div>
 <div class="dash-fold" data-fold="boothassign">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
@@ -11348,6 +11349,25 @@ if (!date) return null;
 const b = cache.booths.find(x => boothBaselineHolder(x, date) === vendorId);
 return b ? b.num : null;
 }
+// The picker scopes the LOGISTICS SECTION and nothing above it. That is the
+// whole difference between this and the version that was reverted: a vendor's
+// points and hours are not asked which market they belong to, because they do
+// not belong to one.
+function applyVenueToLogistics() {
+buildVenuePicker('vendorVenuePicker', () => { applyVendorVisibility(); applyDeskOrder(); });
+const dash = document.getElementById('screen-dashboard');
+const head = document.getElementById('deskLogisticsHead');
+if (!dash || !head) return;
+let below = false;
+[...dash.children].forEach(el => {
+if (el === head) { below = true; return; }
+if (!below || !el.classList.contains('dash-fold')) return;
+const key = el.getAttribute('data-fold');
+if (!key) return;
+const lookup = key === 'winter' ? 'winter-vendor' : key;
+el.style.display = belongsHere(lookup) ? '' : 'none';
+});
+}
 function applyVendorVisibility() {
 const show = (id, visible) => {
 const el = document.getElementById(id);
@@ -11376,6 +11396,7 @@ setDeskRelevance('commAgOnly', isAg,
 'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0;
 renderSnapDeskSub();
+applyVenueToLogistics();
 setDeskRelevance('menuMyCommittees', onCmte,
 'You are not on a committee at the moment, so there are no agendas or tasks in front of you here. ' +
 'Committees are open to any vendor \u2014 tell the office or a board member you would like to serve on one, ' +
@@ -14115,7 +14136,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-77';
+const BUILD_ID = '14-78';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20696,9 +20717,16 @@ const sec = document.createElement('div');
 sec.className = 'desk-section';
 sec.innerHTML = '<h3>Market Logistics</h3><p>Which market, which day, which booth. ' +
 'Everything above this line is the market\u2019s memory of its vendors and holds good wherever ' +
-'they are trading; everything below it is the running of one site on one morning.</p>';
+'they are trading; everything below it is the running of one site on one morning \u2014 so it ' +
+'asks which site.</p><div id="mgrVenuePicker"></div>';
 grid.appendChild(sec);
+buildVenuePicker('mgrVenuePicker', renderManagerFolders);
 }
+// Below the line, a group belongs to a place. Booth Selection is the Steamboat
+// rounds -- the Saturday auction, the Sunday meeting, the unreservable list --
+// and showing it while a manager is looking at Triphammer made it look like a
+// tool that was broken rather than a tool for somewhere else.
+if (MGR_LOGISTICS.indexOf(f.key) >= 0 && !belongsHere(f.key)) return;
 if (f.s) { grid.appendChild(buildToolFold(f)); return; }
 const fold = document.createElement('div');
 fold.className = 'dash-fold';
