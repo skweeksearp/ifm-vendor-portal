@@ -1348,6 +1348,29 @@ body.kiosk-mode .booth-chip.selected,
 body.kiosk-mode .booth-chip.kiosk-hit {
 background: #D8A93B; color: #17170F; border-color: #F0C97A;
 }
+/* SNAP stalls get their own colour rather than borrowing the search
+   highlight: a shopper who has searched for apples AND turned SNAP on needs
+   to see which stalls are both, and one colour for two meanings cannot. */
+body.kiosk-mode .booth-chip.kiosk-snap {
+background: #2F6FB0; color: #FFFFFF; border-color: #1F4E80;
+box-shadow: 0 0 0 2px rgba(47,111,176,0.45);
+}
+body.kiosk-mode .booth-chip.kiosk-snap.kiosk-match {
+background: #F5AECB; color: #6E1F42; border-color: #1F4E80;
+box-shadow: 0 0 0 3px #2F6FB0;
+}
+.kiosk-snap-btn {
+width: 100%; padding: 10px 8px; border-radius: 10px; cursor: pointer;
+border: 1px solid #B9B199; background: rgba(255,255,255,0.86);
+color: #3D4A33; font-family: inherit; font-weight: 800;
+font-size: clamp(16px, 1.5vw, 19px); line-height: 1.15; text-align: center;
+min-height: 44px;
+}
+.kiosk-snap-btn.on {
+background: #2F6FB0; border-color: #1F4E80; color: #fff;
+}
+.ksnap-strip { color: #2F6FB0; font-weight: 700; }
+.ksnap-strip::before { content: '  \2022  '; color: inherit; }
 body.kiosk-mode .booth-chip.kiosk-match {
 background: #F5AECB; color: #6E1F42; border-color: #E585AF;
 box-shadow: 0 0 0 2px rgba(229,133,175,0.4);
@@ -2828,6 +2851,8 @@ inputmode="search" enterkeyhint="search"
 placeholder="Find something"
 oninput="kioskTyped('product')" onkeydown="kioskProductKey(event)"
 onfocus="if (foolGuardFocus(this)) return; noteKioskActivity();">
+<button type="button" id="kioskSnapBtn" class="kiosk-snap-btn"
+onclick="toggleKioskSnap()">Who takes SNAP?</button>
 </div>
 <div class="kiosk-newdeal" id="kioskNewDeal" style="display:none;"><span id="kioskNewDealText"></span></div>
 <div class="kiosk-clock" id="kioskClock"></div>
@@ -14154,7 +14179,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-3';
+const BUILD_ID = '15-4';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14412,6 +14437,8 @@ kioskSelectedBooth = null;
 kioskSelectedStructure = null;
 kioskMatchBooths = new Set();
 kioskMatchStructures = new Set();
+kioskSnapOn = false;
+kioskSnapBooths = new Set();
 kioskTaps = [];
 kioskPointers = new Map();
 kioskPinch = null; kioskDrag = null; kioskGestureMoved = false;
@@ -15195,9 +15222,69 @@ kioskSelectedBooth = null;
 kioskSelectedStructure = null;
 kioskMatchBooths = new Set();
 kioskMatchStructures = new Set();
+kioskSnapOn = false;
+applyKioskSnap();
 const results = document.getElementById('kioskResults');
 if (results) results.innerHTML = '';
 renderKiosk();
+}
+// ===========================================================================
+// WHO TAKES SNAP
+//
+// A shopper holding EBT wants one question answered before they walk in, and
+// the office already knows the answer for anyone who has told it.
+//
+// The honesty problem: snapAccepts() falls back to a DEFAULT of yes for Ag
+// vendors who have never been asked. That default is fine on a vendor's own
+// desk, where it is a suggestion they can correct. On the kiosk it would be a
+// promise made to a stranger on a vendor's behalf, and sending somebody to a
+// stall that cannot take their tokens is worse than not answering. So the map
+// lights only vendors who have SAID yes, and the note says plainly that
+// others may take it too.
+// ===========================================================================
+let kioskSnapOn = false;
+let kioskSnapBooths = new Set();
+function kioskSnapStalls() {
+const occ = kioskOccupancy();
+const said = new Set(), unsaid = new Set();
+Object.keys(occ.byBooth).forEach(num => {
+const vid = occ.byBooth[num];
+if (snapIsChosen(vid)) { if (snapAccepts(vid)) said.add(num); }
+else if (snapDefaultAccepts(cache.vendors.find(v => v.vendorId === vid))) unsaid.add(num);
+});
+return { said: said, unsaid: unsaid };
+}
+// Said on the day strip rather than beside the button: the left-hand column
+// is 210px wide, and a sentence there wraps to six lines and swallows the
+// map on a phone held sideways. The strip is the full width of the screen.
+function kioskSnapStripText() {
+if (!kioskSnapOn) return '';
+const n = kioskSnapBooths.size;
+if (!n) return '<span class="ksnap-strip">no stall has told us about SNAP \u2014 ask at the stall</span>';
+return '<span class="ksnap-strip">SNAP in blue \u2014 others may take it, ask</span>';
+}
+function toggleKioskSnap() {
+noteKioskActivity();
+kioskSnapOn = !kioskSnapOn;
+applyKioskSnap();
+}
+function applyKioskSnap() {
+const btn = document.getElementById('kioskSnapBtn');
+if (!btn) return;
+if (kioskSnapOn) {
+kioskSnapBooths = kioskSnapStalls().said;
+btn.classList.add('on');
+btn.textContent = kioskSnapBooths.size
+? kioskSnapBooths.size + ' take SNAP \u00b7 tap to hide'
+: 'None known \u00b7 tap to hide';
+} else {
+kioskSnapBooths = new Set();
+btn.classList.remove('on');
+btn.textContent = 'Who takes SNAP?';
+}
+const occ = kioskOccupancy();
+renderKioskMap(occ);
+renderKioskClock(occ, Object.keys(occ.byBooth).length);
 }
 function noteKioskActivity() {
 if (kioskIdleTimer) clearTimeout(kioskIdleTimer);
@@ -15216,11 +15303,11 @@ function renderKioskClock(occ, n) {
 const el = document.getElementById('kioskToday');
 if (!el) return;
 if (!occ) { occ = kioskOccupancy(); n = Object.keys(occ.byBooth).length; }
-el.textContent =
+el.innerHTML = esc(
 new Date(occ.md.date + 'T12:00:00').toLocaleDateString('en-US',
 { weekday: 'long', month: 'long', day: 'numeric' }) +
 '  \u2022  ' + n + ' vendor' + (n === 1 ? '' : 's') +
-(occ.md.isToday ? ' here today' : ' expected');
+(occ.md.isToday ? ' here today' : ' expected')) + kioskSnapStripText();
 const clock = document.getElementById('kioskClock');
 if (clock) {
 const now = new Date();
@@ -16202,6 +16289,7 @@ const chipSpin = wedge ? spin : 0;
 const org = (occ.byOrg || {})[booth.num];
 const cls = 'booth-chip ' + (vid || org ? 'kiosk-here' : 'available') +
 (kioskMatchBooths.has(booth.num) ? ' kiosk-match' : '') +
+(kioskSnapBooths.has(booth.num) ? ' kiosk-snap' : '') +
 (kioskSelectedBooth === booth.num ? ' kiosk-hit' : '') +
 (spin ? (wedge ? ' arc-wedge' : ' arc-link link-' + booth.num) : '');
 let chip = existing[booth.num];
