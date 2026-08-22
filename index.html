@@ -14181,7 +14181,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-8';
+const BUILD_ID = '15-9';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14624,13 +14624,13 @@ const ABOUT_PHOTO_BUDGET = 44000;
 // times the width of a phone, and a window fixed at 162px would shrink to a
 // stamp on it. Percentages keep the same visual weight on any screen.
 // (Radius stays in pixels \u2014 a corner should not grow with the display.)
-const ABOUT_WIN_DEFAULT = { leftPct: 55.2, bottomPct: 6.43, wPct: 38.67, hPct: 27.17, r: 15 };
+const ABOUT_WIN_DEFAULT = { leftPct: 57.33, bottomPct: 11.94, wPct: 38.67, hPct: 27.17, r: 15 };
 // The carrot and the logo have chosen homes too, so a fresh install \u2014 or any
 // build that lands before someone has saved a layout \u2014 already looks right.
 const CHROME_DEFAULT = {
-carrot: { rightPct: 80.53, bottomPct: 6.96, sizePct: 8.00 },
+carrot: { rightPct: 82.93, bottomPct: 4.59, sizePct: 8.00 },
 logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 },
-snap:   { rightPct: 26.10, bottomPct: 82.60, sizePx: 16 }
+snap:   { rightPct: 24.80, bottomPct: 4.33, sizePx: 11 }
 };
 function kioskStageSize() {
 const stage = document.getElementById('kioskStage');
