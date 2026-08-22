@@ -1360,11 +1360,11 @@ background: #F5AECB; color: #6E1F42; border-color: #1F4E80;
 box-shadow: 0 0 0 3px #2F6FB0;
 }
 .kiosk-snap-btn {
-position: absolute; z-index: 15;
-padding: 10px 8px; border-radius: 10px; cursor: pointer;
+position: absolute; z-index: 15; width: auto; white-space: nowrap;
+padding: 10px 14px; border-radius: 10px; cursor: pointer;
 border: 1px solid #B9B199; background: rgba(255,255,255,0.86);
 color: #3D4A33; font-family: inherit; font-weight: 800;
-line-height: 1.15; text-align: center; text-wrap: balance;
+line-height: 1.15; text-align: center;
 min-height: 44px;
 }
 .kiosk-snap-btn.on {
@@ -2843,7 +2843,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <button type="button" id="kioskZoomReset" class="kiosk-zoomreset"
 style="display:none;" onclick="resetKioskZoom()">Fit map</button>
 <button type="button" id="kioskSnapBtn" class="kiosk-snap-btn"
-onclick="toggleKioskSnap()">Who takes SNAP?</button>
+onclick="toggleKioskSnap()">Who accepts SNAP-Tokens?</button>
 <div class="kiosk-logo"><img class="ifm-logo" alt="Ithaca Farmers Market"></div>
 </div>
 <div class="kiosk-bar">
@@ -14181,7 +14181,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-6';
+const BUILD_ID = '15-8';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14630,7 +14630,7 @@ const ABOUT_WIN_DEFAULT = { leftPct: 55.2, bottomPct: 6.43, wPct: 38.67, hPct: 2
 const CHROME_DEFAULT = {
 carrot: { rightPct: 80.53, bottomPct: 6.96, sizePct: 8.00 },
 logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 },
-snap:   { rightPct: 72.66, bottomPct: 45.60, sizePct: 25.86 }
+snap:   { rightPct: 26.10, bottomPct: 82.60, sizePx: 16 }
 };
 function kioskStageSize() {
 const stage = document.getElementById('kioskStage');
@@ -14672,17 +14672,19 @@ const s = kioskStageSize();
 return {
 right: Math.round(c.rightPct / 100 * s.w),
 bottom: Math.round(c.bottomPct / 100 * s.h),
-size: Math.round(c.sizePct / 100 * s.w)
+size: c.sizePx != null ? Math.round(c.sizePx) : Math.round(c.sizePct / 100 * s.w)
 };
 }
 function setChromePx(which, px) {
 const s = kioskStageSize();
 cache.kioskChrome = cache.kioskChrome || {};
-cache.kioskChrome[which] = {
+const out = {
 rightPct: +(px.right / s.w * 100).toFixed(2),
-bottomPct: +(px.bottom / s.h * 100).toFixed(2),
-sizePct: +(px.size / s.w * 100).toFixed(2)
+bottomPct: +(px.bottom / s.h * 100).toFixed(2)
 };
+if (CHROME_DEFAULT[which] && CHROME_DEFAULT[which].sizePx != null) out.sizePx = Math.round(px.size);
+else out.sizePct = +(px.size / s.w * 100).toFixed(2);
+cache.kioskChrome[which] = out;
 }
 function applyChromeStyle() {
 const c = { carrot: chromePx('carrot'), logo: chromePx('logo'), snap: chromePx('snap') };
@@ -14698,16 +14700,23 @@ const snap = document.getElementById('kioskSnapBtn');
 const cs = chromePx('snap');
 if (snap && cs) {
 const st = kioskStageSize();
-cs.size = Math.max(72, Math.min(cs.size, Math.round(st.w)));
-cs.right = Math.max(0, Math.min(cs.right, Math.round(st.w - cs.size)));
-snap.style.right = cs.right + 'px';
+snap.style.fontSize = Math.max(11, Math.min(48, cs.size)) + 'px';
 snap.style.bottom = cs.bottom + 'px';
 snap.style.left = 'auto'; snap.style.top = 'auto';
-snap.style.width = cs.size + 'px';
-// Type sized against the button, not the screen: this is the only chrome a
-// finger has to hit and read at any width the developer chooses.
-snap.style.fontSize = Math.max(14, Math.min(19, Math.round(cs.size / 11))) + 'px';
-snap.style.padding = (cs.size < 130 ? '8px 5px' : '10px 8px');
+// The width is whatever the words need at that type size, so the offset has
+// to be clamped after the browser has laid it out or a wide label pushes the
+// button off the near edge.
+snap.style.right = cs.right + 'px';
+let wide = snap.getBoundingClientRect().width;
+for (let i = 0; i < 8 && wide > st.w; i++) {
+const now = Number(snap.style.fontSize.replace('px', ''));
+const next = Math.max(9, Math.min(now - 1, Math.floor(now * (st.w / wide))));
+if (next === now) break;
+snap.style.fontSize = next + 'px';
+wide = snap.getBoundingClientRect().width;
+}
+const capped = Math.max(0, Math.min(cs.right, Math.round(st.w - wide)));
+if (capped !== cs.right) snap.style.right = capped + 'px';
 }
 const logo = document.querySelector('.kiosk-logo');
 if (logo && c.logo) {
@@ -15041,16 +15050,16 @@ document.getElementById('ktnOut').textContent =
 } else {
 const c = chromeState(tunerWhich) || { right: 0, bottom: 0, size: 34 };
 const fs = document.getElementById('ktnFS');
-fs.min = tunerWhich === 'carrot' ? 16 : (tunerWhich === 'snap' ? 72 : 30);
-fs.max = tunerWhich === 'carrot' ? 160
-: (tunerWhich === 'snap' ? Math.round(kioskStageSize().w) : 400);
+fs.min = tunerWhich === 'carrot' ? 16 : (tunerWhich === 'snap' ? 11 : 30);
+fs.max = tunerWhich === 'carrot' ? 160 : (tunerWhich === 'snap' ? 48 : 400);
 fs.value = c.size;
 document.getElementById('ktnS').textContent = c.size + 'px';
 const cp = (cache.kioskChrome || {})[tunerWhich] || {};
-const NAMES = { carrot: 'carrot', logo: 'logo', snap: 'SNAP button width' };
+const NAMES = { carrot: 'carrot', logo: 'logo', snap: 'SNAP button type' };
 document.getElementById('ktnOut').textContent =
 (NAMES[tunerWhich] || tunerWhich) + ' size ' + c.size + ' px' +
 (cp.sizePct ? '  (saved as ' + cp.sizePct + '%)' : '') +
+(cp.sizePx ? '  (saved in points, not scaled)' : '') +
 '\nright ' + c.right + '  bottom ' + c.bottom +
 '\ndrag it on the map to move it';
 }
@@ -15069,7 +15078,7 @@ out.textContent =
 ', wPct: ' + n(w.wPct) + ', hPct: ' + n(w.hPct) + ', r: ' + (aboutWin().r || 15) + ' }\n' +
 'carrot: { rightPct: ' + n(car.rightPct) + ', bottomPct: ' + n(car.bottomPct) + ', sizePct: ' + n(car.sizePct) + ' }\n' +
 'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }\n' +
-'snap:   { rightPct: ' + n(snp.rightPct) + ', bottomPct: ' + n(snp.bottomPct) + ', sizePct: ' + n(snp.sizePct) + ' }';
+'snap:   { rightPct: ' + n(snp.rightPct) + ', bottomPct: ' + n(snp.bottomPct) + ', sizePx: ' + Math.round(snp.sizePx) + ' }';
 }
 function tunerSet(field, v) {
 if (tunerWhich === 'about') {
@@ -15304,12 +15313,12 @@ if (kioskSnapOn) {
 kioskSnapBooths = kioskSnapStalls().said;
 btn.classList.add('on');
 btn.textContent = kioskSnapBooths.size
-? kioskSnapBooths.size + ' take SNAP \u00b7 tap to hide'
-: 'None known \u00b7 tap to hide';
+? kioskSnapBooths.size + ' accept SNAP-Tokens \u00b7 tap to hide'
+: 'None listed \u00b7 tap to hide';
 } else {
 kioskSnapBooths = new Set();
 btn.classList.remove('on');
-btn.textContent = 'Who takes SNAP?';
+btn.textContent = 'Who accepts SNAP-Tokens?';
 }
 const occ = kioskOccupancy();
 renderKioskMap(occ);
