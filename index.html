@@ -897,30 +897,18 @@ body.kiosk-mode input.kiosk-search:focus { border-color: #D8A93B; background: rg
 body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 400; }
 .kiosk-search:focus { border-color: #7FA36A; }
 
-/* The venue picker. Three across, always, at any width -- a row of three that
-   wraps to two-and-one reads as a list rather than a switch, and a switch is
-   what this is. */
-.venue-picker {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
-  margin: 0 0 10px; padding: 5px;
-  background: var(--paper-dim, #E6E2D2); border-radius: 14px;
+/* Off-season drawers: filed by the calendar, dimmed but never locked.
+   Softer than .not-yours -- nothing is being withheld, it is just not the
+   season for it, so the drawer still opens for anyone planning ahead. */
+.dash-fold.off-season > .fold-bar .fold-title,
+.dash-fold.off-season > .fold-bar .fold-sub { opacity: .5; }
+.dash-fold.off-season > .fold-bar .fold-chev { opacity: .35; }
+.season-tag {
+  font-size: 11px; font-weight: 800; letter-spacing: .04em;
+  text-transform: uppercase; color: #8A8268;
+  border: 1px solid #C9C2A8; border-radius: 4px; padding: 1px 5px;
+  white-space: nowrap;
 }
-.venue-picker button {
-  padding: 9px 6px; border-radius: 10px; border: none; background: transparent;
-  color: var(--ink-dim, #8A8A86); font-family: inherit; text-align: center;
-  font-size: clamp(13px, 2.9vw, 16px); font-weight: 700; line-height: 1.2;
-  min-height: 44px;
-}
-.venue-picker button .vsub {
-  display: block; font-size: 11.5px; font-weight: 500; opacity: 0.85;
-  margin-top: 2px; line-height: 1.2;
-}
-.venue-picker button.on {
-  background: #fff; color: var(--ink);
-  box-shadow: 0 1px 3px rgba(35,42,32,0.16);
-}
-
-
 .venue-note { font-size: 13.5px; color: var(--ink-dim, #8A8A86); line-height: 1.5;
   margin: -4px 0 12px; }
 
@@ -2143,7 +2131,7 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <a class="fold-bar" style="text-decoration:none; display:flex; margin-bottom:10px;" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><span class="fold-title">Vendor Guide</span><span class="fold-sub">Opens on the market’s site ↗</span></a>
 </div>
 
-<div class="dash-fold" data-fold="fProfile">
+<div class="dash-fold" data-fold="fProfile" data-fixed="1">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Business Profile</span>
 <span class="fold-sub" id="foldSubProfile">Your photo, contact details, products and links</span>
@@ -4676,48 +4664,26 @@ Unlimited people (e.g. a cleanup day)
 // Landing has ninety-three booths, a selection process, a pavilion to inspect
 // and a kiosk in the middle of it. The Winter Market is forty-four spaces at
 // Triphammer with its own dates. A PopUp is a one-off somewhere else entirely.
-// They were drawers on one desk, which put the Winter Market three taps below
-// a heading about Steamboat and made it look like a footnote to it.
 //
-// So there is a picker at the top of the desk instead, and the desk changes.
+// Two arrangements came before this one. Drawers on one desk put the Winter
+// Market three taps below a heading about Steamboat and made it look like a
+// footnote. A three-button picker at the top of the desk fixed that but made
+// every visit start with a question most people never needed to answer.
 //
-// The important part is what does NOT move. A vendor's points, hours, fines,
-// profile and committees are the same wherever they are standing -- those
-// belong to the vendor, not to a field -- so they appear on every venue rather
-// than being filed under one. Only the tools that are genuinely about a PLACE
-// follow the picker.
-//
-// This is a view, not a role: it lives on the device, changes nothing in the
-// records, and two people looking at different venues are looking at the same
-// market.
-const VENUES = [
-  { k: 'steamboat', t: 'Steamboat Landing', s: 'The Saturday and Sunday market' },
-  { k: 'winter',    t: 'Winter Market',     s: 'Triphammer, through the cold months' },
-  { k: 'offsite',   t: 'Offsite & PopUps',  s: 'One-off markets elsewhere' }
-];
-let currentVenue = 'steamboat';
-try {
-  const v = localStorage.getItem('ifm-venue');
-  if (v && VENUES.some(x => x.k === v)) currentVenue = v;
-} catch (e) {}
-function venueTitle(k) { const v = VENUES.find(x => x.k === (k || currentVenue)); return v ? v.t : ''; }
-// Which drawers belong to a place. Anything not named here belongs to the
-// vendor rather than to a field, and shows wherever they are.
-const VENUE_OF = {
-  // manager groups
-  selection: 'steamboat', marketday: 'steamboat', booths: 'steamboat',
-  winter: 'winter', popups: 'offsite',
-  // vendor drawers
-  boothassign: 'steamboat', callin: 'steamboat', callout: 'steamboat',
-  fCio: 'steamboat', lottery: 'steamboat', auction: 'steamboat', fShare: 'steamboat',
-  fPromos: 'steamboat',
-  'winter-vendor': 'winter', popupsvendor: 'offsite'
-};
-function belongsHere(key) {
-  const v = VENUE_OF[key];
-  return !v || v === currentVenue;
+// The calendar turns the desk. Nobody picks a venue: January through March
+// the market trades at Triphammer, the rest of the year at Steamboat Landing,
+// and the desks lead with wherever that is. Everything about a vendor --
+// points, hours, fees, documents -- belongs to the vendor, not to a field,
+// and keeps the same spot on the desk all year. Out-of-season drawers park
+// at the bottom, dimmed with a tag, still openable for planning ahead.
+// Reads Date, so Pretend It Is Another Day turns the desk too.
+function seasonNow() {
+  return new Date().getMonth() <= 2 ? 'winter' : 'steamboat';
 }
-
+function isMarketDayToday() {
+  const d = new Date().getDay();
+  return seasonNow() === 'winter' ? d === 6 : (d === 0 || d === 6);
+}
 const TUNING_DEFAULTS = {
   kioskIdleMs:    20000,   // shopper walks away -> kiosk forgets them
   kioskDealMs:   120000,   // a new sale stays on the banner
@@ -9727,8 +9693,16 @@ document.getElementById('volRoleCard').innerHTML =
 '<p class="empty-note">' + r.note + '</p>';
 }
 // ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
-const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'winter', 'popupsvendor', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
-'fShare', 'directory', 'venmopay', 'mydocs', 'myattend', 'guide', 'communicate'];
+// Three zones, top to bottom: in season now, the file cabinet (identical
+// order all year), out of season. Business Profile is fixed above all of it.
+const DESK_STABLE_ORDER = ['hours', 'venmopay', 'fPoints', 'snaptokens', 'mydocs',
+'mycommittees', 'directory', 'communicate', 'myattend', 'guide', 'popupsvendor'];
+const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos', 'fShare'];
+function deskDefaultOrder() {
+  return seasonNow() === 'winter'
+    ? ['winter'].concat(DESK_STABLE_ORDER, DESK_STEAMBOAT_ORDER)
+    : DESK_STEAMBOAT_ORDER.concat(DESK_STABLE_ORDER, ['winter']);
+}
 let deskDragAttached = false;
 let deskOrderCache = null;
 async function loadDeskOrders() {
@@ -9743,18 +9717,18 @@ const all = await loadDeskOrders();
 let saved = all[currentVendorId];
 if (!Array.isArray(saved)) saved = deskOrderCache && deskOrderCache.id === currentVendorId ? deskOrderCache.order : null;
 updateDeskOrderReset(Array.isArray(saved));
-if (!Array.isArray(saved)) saved = DESK_DEFAULT_ORDER;
+if (!Array.isArray(saved)) saved = deskDefaultOrder();
 const dash = document.getElementById('screen-dashboard');
 const note = document.getElementById('menuTailorNote');
 const byKey = {};
-dash.querySelectorAll(':scope > .dash-fold').forEach(f => { if (f.dataset.fold) byKey[f.dataset.fold] = f; });
+dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])').forEach(f => { if (f.dataset.fold) byKey[f.dataset.fold] = f; });
 const seq = saved.filter(k => byKey[k]);
-dash.querySelectorAll(':scope > .dash-fold').forEach(f => { if (f.dataset.fold && !seq.includes(f.dataset.fold)) seq.push(f.dataset.fold); });
+dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])').forEach(f => { if (f.dataset.fold && !seq.includes(f.dataset.fold)) seq.push(f.dataset.fold); });
 seq.forEach(k => dash.insertBefore(byKey[k], note));
 }
 async function saveDeskOrder() {
 const dash = document.getElementById('screen-dashboard');
-const order = Array.from(dash.querySelectorAll(':scope > .dash-fold')).map(f => f.dataset.fold).filter(Boolean);
+const order = Array.from(dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])')).map(f => f.dataset.fold).filter(Boolean);
 deskOrderCache = { id: currentVendorId, order: order };
 const all = await loadDeskOrders();
 all[currentVendorId] = order;
@@ -9770,7 +9744,7 @@ deskOrderCache = null;
 await storageSet('ifm-desk-order', all);
 const dash = document.getElementById('screen-dashboard');
 const note = document.getElementById('menuTailorNote');
-DESK_DEFAULT_ORDER.forEach(k => {
+deskDefaultOrder().forEach(k => {
 const f = dash.querySelector(':scope > .dash-fold[data-fold="' + k + '"]');
 if (f) dash.insertBefore(f, note);
 });
@@ -9790,7 +9764,7 @@ dash.addEventListener('pointerdown', e => {
 const bar = e.target.closest('.fold-bar');
 if (!bar) return;
 const fold = bar.closest('.dash-fold');
-if (!fold || fold.parentElement !== dash) return;
+if (!fold || fold.parentElement !== dash || fold.dataset.fixed) return;
 startY = e.clientY; startX = e.clientX; moved = false; pid = e.pointerId;
 pressTimer = setTimeout(() => {
 dragging = fold;
@@ -11306,12 +11280,26 @@ const b = cache.booths.find(x => boothBaselineHolder(x, date) === vendorId);
 return b ? b.num : null;
 }
 function applyVenueToDesk() {
-buildVenuePicker('vendorVenuePicker', () => { applyVendorVisibility(); applyDeskOrder(); });
-document.querySelectorAll('#screen-dashboard .dash-fold[data-fold]').forEach(f => {
-const key = f.getAttribute('data-fold');
-const lookup = key === 'winter' ? 'winter-vendor' : key;
-f.style.display = belongsHere(lookup) ? '' : 'none';
-});
+buildSeasonNote('vendorVenuePicker');
+const s = seasonNow();
+const away = s === 'winter'
+  ? 'Out of season \u2014 Steamboat Landing returns in April'
+  : 'Out of season \u2014 opens in January, Saturdays at Triphammer';
+DESK_STEAMBOAT_ORDER.forEach(k => setFoldSeason(k, s === 'steamboat', away));
+setFoldSeason('winter', s === 'winter', away);
+}
+// A dimmed drawer keeps its tag in the sub line and still opens: nothing is
+// withheld, it is just filed by the calendar.
+function setFoldSeason(key, inSeason, awayNote) {
+const f = document.querySelector('#screen-dashboard .dash-fold[data-fold="' + key + '"]');
+if (!f) return;
+f.style.display = '';
+f.classList.toggle('off-season', !inSeason);
+const sub = f.querySelector(':scope > .fold-bar .fold-sub');
+if (!sub) return;
+if (sub.dataset.plain === undefined) sub.dataset.plain = sub.innerHTML;
+sub.innerHTML = inSeason ? sub.dataset.plain
+  : '<span class="season-tag">Out of season</span> \u00b7 ' + awayNote.replace('Out of season \u2014 ', '');
 }
 function applyVendorVisibility() {
 const show = (id, visible) => {
@@ -14081,7 +14069,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-75';
+const BUILD_ID = '15-1';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20569,47 +20557,16 @@ renderManagerAlerts();
 renderManagerFolders();
 loadImprovements().then(renderManagerAlerts);
 }
-// Drawn at the top of whichever desk asks for it. One function, both desks:
-// the picker is the same object in both places and must not drift.
-function buildVenuePicker(hostId, onPick) {
+// One quiet line where the three-button picker used to be. It names the
+// season and states the architecture: the calendar leads, the records stay.
+function buildSeasonNote(hostId) {
 const host = document.getElementById(hostId);
 if (!host) return;
-host.innerHTML = '';
-const row = document.createElement('div');
-row.className = 'venue-picker';
-VENUES.forEach(v => {
-const b = document.createElement('button');
-b.type = 'button';
-b.className = v.k === currentVenue ? 'on' : '';
-b.innerHTML = '<span>' + esc(v.t) + '</span><span class="vsub">' + esc(v.s) + '</span>';
-b.onclick = () => {
-if (currentVenue === v.k) return;
-currentVenue = v.k;
-try { localStorage.setItem('ifm-venue', v.k); } catch (e) {}
-closeAllFolds();
-onPick();
-};
-row.appendChild(b);
-});
-host.appendChild(row);
-const note = document.createElement('p');
-note.className = 'venue-note';
-note.innerHTML = venueNote();
-host.appendChild(note);
-}
-// Said plainly, because the honest answer is lopsided: almost everything the
-// app does was built for Steamboat Landing, and a person switching to Winter
-// and finding four drawers should be told why rather than left wondering what
-// broke.
-function venueNote() {
-const keeps = 'Points, hours, fees, documents and everything else about a vendor stay on every one of these \u2014 they belong to the vendor, not to a field.';
-if (currentVenue === 'steamboat') return 'Ninety-three booths, the selection rounds, the pavilion and the kiosk. ' + keeps;
-if (currentVenue === 'winter') return 'Forty-four spaces at Triphammer Marketplace, Saturdays ' +
-'January to March, 10:30\u00A0AM to 2\u00A0PM. The day fee is $30 and staff collect it on site during ' +
-'the market rather than at set-up. <b>The 60/40 rule does not apply here</b> \u2014 it governs who holds ' +
-'one of the 105 Full Memberships, market-wide, not who stands where on a given day. ' + keeps;
-return 'One-off markets away from Steamboat Landing. This is the thinnest of the three: ' +
-'a PopUp is a date, a place and who is coming. ' + keeps;
+const s = seasonNow();
+host.innerHTML = '<p class="venue-note">' + (s === 'winter'
+  ? '<b>Winter Market season</b> \u2014 Saturdays at Triphammer through March. '
+  : '<b>Steamboat Landing season.</b> Today\u2019s tools sit on top. ') +
+'Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot on this desk all year.</p>';
 }
 function buildToolFold(t) {
 const fold = document.createElement('div');
@@ -20634,20 +20591,50 @@ fold.appendChild(body);
 return fold;
 }
 function renderManagerFolders() {
-buildVenuePicker('mgrVenuePicker', renderManagerFolders);
+buildSeasonNote('mgrVenuePicker');
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 grid.innerHTML = '';
-MGR_FOLDERS.filter(f => belongsHere(f.key)).forEach(f => {
-if (f.s) { grid.appendChild(buildToolFold(f)); return; }
+const s = seasonNow();
+// Which folders belong to a place. Everything unlisted is about vendors,
+// money, the board or the record, and keeps its spot all year.
+const OWNED = { selection: 'steamboat', marketday: 'steamboat', booths: 'steamboat', winter: 'winter' };
+const inSeason = [], stable = [], off = [];
+MGR_FOLDERS.forEach(f => {
+const own = OWNED[f.key];
+if (!own) stable.push(f);
+else if (own === s) inSeason.push(f);
+else off.push(f);
+});
+// On a market day the day's own folder rises to the very top.
+if (isMarketDayToday()) {
+const lead = s === 'winter' ? 'winter' : 'marketday';
+const k = inSeason.findIndex(f => f.key === lead);
+if (k > 0) inSeason.unshift(inSeason.splice(k, 1)[0]);
+}
+inSeason.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
+stable.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
+off.forEach(f => grid.appendChild(buildMgrFolder(f, true)));
+}
+function buildMgrFolder(f, offSeason) {
+if (f.s) return buildToolFold(f);
+const marketDayLead = !offSeason && isMarketDayToday() &&
+f.key === (seasonNow() === 'winter' ? 'winter' : 'marketday');
+let sub;
+if (offSeason) {
+sub = '<span class="season-tag">Out of season</span> \u00b7 ' +
+(f.key === 'winter' ? 'Opens in January \u2014 Saturdays at Triphammer' : 'Steamboat Landing returns in April');
+} else {
+sub = (marketDayLead ? '<b>It\u2019s market day.</b> ' : '') + esc(f.sub);
+}
 const fold = document.createElement('div');
-fold.className = 'dash-fold';
+fold.className = 'dash-fold' + (offSeason ? ' off-season' : '');
 fold.dataset.fold = 'mgr-' + f.key;
 const bar = document.createElement('button');
 bar.type = 'button';
 bar.className = 'fold-bar';
 bar.innerHTML = '<span class="fold-title">' + esc(f.title) + '</span>' +
-'<span class="fold-sub">' + esc(f.sub) + '</span>' +
+'<span class="fold-sub">' + sub + '</span>' +
 '<span class="fold-chev">\u203a</span>';
 bar.onclick = () => toggleFold(bar);
 fold.appendChild(bar);
@@ -20655,8 +20642,7 @@ const body = document.createElement('div');
 body.className = 'fold-body';
 f.tiles.forEach(t => body.appendChild(buildToolFold(t)));
 fold.appendChild(body);
-grid.appendChild(fold);
-});
+return fold;
 }
 let vrFilter = 'all';
 let vrOpenVendor = null;
