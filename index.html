@@ -2429,6 +2429,14 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="wednesday">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'wednesday')">
+<span class="fold-title">Wednesday Market</span>
+<span class="fold-sub">East Hill Plaza &middot; May&ndash;October, 3&ndash;6&nbsp;PM</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="popupsvendor">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'popupsvendor')">
 <span class="fold-title">PopUp Events</span>
@@ -2439,6 +2447,40 @@ I sell food (prepared food or produce)
 </div>
 <p class="empty-note" id="menuTailorNote" style="margin: 14px 0 4px; text-align:center;"></p>
 <button type="button" class="ghost-btn" id="deskOrderReset" style="display:none;" onclick="resetDeskOrder(this)">Put the drawers back in their usual order</button>
+</section>
+<section id="screen-wednesday" class="screen">
+<div class="screen-head" id="head-wednesday"></div>
+<div class="card">
+<div class="stat-row">
+<div class="stat"><div class="stat-num">May&ndash;Oct</div><div class="stat-label">Season</div></div>
+<div class="stat"><div class="stat-num">3&ndash;6&nbsp;PM</div><div class="stat-label">Wednesdays</div></div>
+<div class="stat"><div class="stat-num">$20</div><div class="stat-label">Daily Fee</div></div>
+</div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-map-pin"></use></svg></span>Getting a Space<button type="button" class="help-dot" onclick="showHelp(71)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">There is nothing to sign up for. No lottery, no reserved spaces, no call-in.
+Turn up and sell.</p>
+<p class="empty-note">Arrive at least fifteen minutes before three, and be set up and ready when the
+market opens. Set up next to whoever arrived before you. Do not drive onto or across the green space.</p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>The Day Fee</h2>
+<p class="empty-note" style="margin-top:0;">Twenty dollars, and staff come round for it at the start of the market
+rather than during set-up. You do not pay ahead.</p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>How It Counts<button type="button" class="help-dot" onclick="showHelp(72)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Wednesday is a satellite market, so attending does not add work hours to
+what you owe &mdash; and does not subtract any either. Both Full Members and Easy Entry vendors may sell here.</p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This App Does Not Know</h2>
+<p class="empty-note" style="margin-top:0;">The Guide sets out how Wednesday runs but no attendance is recorded here,
+because nobody signs up. If the office starts keeping a Wednesday list, this drawer is where it will appear.</p>
+<p class="empty-note">East Hill Plaza is held on a lease and the location can change from year to year. The office
+announces any change.</p>
+</div>
 </section>
 <section id="screen-winter" class="screen">
 <div class="screen-head" id="head-winter"></div>
@@ -4677,12 +4719,30 @@ Unlimited people (e.g. a cleanup day)
 // and keeps the same spot on the desk all year. Out-of-season drawers park
 // at the bottom, dimmed with a tag, still openable for planning ahead.
 // Reads Date, so Pretend It Is Another Day turns the desk too.
+const VENUE_SEASONS = {
+  steamboat: [3, 11],
+  wednesday: [4, 9],
+  winter:    [0, 2]
+};
+function venueInSeason(k, d) {
+  const span = VENUE_SEASONS[k];
+  if (!span) return true;
+  const m = (d || new Date()).getMonth();
+  return m >= span[0] && m <= span[1];
+}
 function seasonNow() {
-  return new Date().getMonth() <= 2 ? 'winter' : 'steamboat';
+  return venueInSeason('winter') ? 'winter' : 'steamboat';
+}
+function venueRunsToday(k) {
+  if (!venueInSeason(k)) return false;
+  const d = new Date().getDay();
+  if (k === 'wednesday') return d === 3;
+  if (k === 'winter') return d === 6;
+  if (k === 'steamboat') return d === 0 || d === 6;
+  return false;
 }
 function isMarketDayToday() {
-  const d = new Date().getDay();
-  return seasonNow() === 'winter' ? d === 6 : (d === 0 || d === 6);
+  return venueRunsToday('steamboat') || venueRunsToday('winter') || venueRunsToday('wednesday');
 }
 const TUNING_DEFAULTS = {
   kioskIdleMs:    20000,   // shopper walks away -> kiosk forgets them
@@ -9695,13 +9755,19 @@ document.getElementById('volRoleCard').innerHTML =
 // ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
 // Three zones, top to bottom: in season now, the file cabinet (identical
 // order all year), out of season. Business Profile is fixed above all of it.
+// The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = ['hours', 'venmopay', 'fPoints', 'snaptokens', 'mydocs',
-'mycommittees', 'directory', 'communicate', 'myattend', 'guide', 'popupsvendor'];
+'mycommittees', 'directory', 'communicate', 'myattend', 'guide'];
+// Steamboat's day-to-day tools, on top while Steamboat is running.
 const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos', 'fShare'];
+// The other three markets, always adjacent and always in this order, so a
+// vendor learns one place to look for all of them. Which are running is said
+// on each bar rather than by moving them about.
+const DESK_OTHER_MARKETS = ['winter', 'wednesday', 'popupsvendor'];
 function deskDefaultOrder() {
-  return seasonNow() === 'winter'
-    ? ['winter'].concat(DESK_STABLE_ORDER, DESK_STEAMBOAT_ORDER)
-    : DESK_STEAMBOAT_ORDER.concat(DESK_STABLE_ORDER, ['winter']);
+  return venueInSeason('steamboat')
+    ? DESK_STEAMBOAT_ORDER.concat(DESK_STABLE_ORDER, DESK_OTHER_MARKETS)
+    : DESK_STABLE_ORDER.concat(DESK_STEAMBOAT_ORDER, DESK_OTHER_MARKETS);
 }
 let deskDragAttached = false;
 let deskOrderCache = null;
@@ -10284,6 +10350,14 @@ const HELP_TEXTS = [
 {
 "title": "Triphammer Paperwork",
 "body": "<p><b>The app does not know what the mall asks for, and does not pretend to.</b> The 2026 Vendor Guide gives the Winter Market a location, hours and a day fee, and says nothing about extra paperwork. It points at a separate <em>Winter Market Guidelines</em> document that the app has never seen.</p><p>So this tool provides the shape of a list and waits to be told what goes in it. A tool that guessed at &ldquo;certificate of insurance, food licence, mall vendor agreement&rdquo; would look authoritative and be fiction — and a vendor turned away at the door because the app listed the wrong thing is worse than an empty list that admits what it does not know.</p><p>Name what Triphammer actually requires and every vendor holding a space there gets a row. Tap to mark each thing as received. Removing a requirement takes the record of who handed it in with it, rather than leaving ticks pointing at something that no longer exists.</p>"
+},
+{
+"title": "Getting a Space",
+"body": "<p>Wednesday is the one market with no process in front of it. The Vendor Guide is explicit: there is no lottery for Wednesday markets, and there are no reserved or assigned spaces (p.11). Nothing to call in for, nothing to win, no points involved.</p><p>What replaces it is a queue on the ground. Arrive at least fifteen minutes before the market starts, be set up and ready to sell by opening time, and set up next to the person who arrived before you \u2014 so the row fills in arrival order rather than by anyone's say-so. Vendors should not drive onto or across the green space.</p><p>Because nothing is assigned, the app has nothing to record here and does not pretend otherwise.</p>"
+},
+{
+"title": "How It Counts",
+"body": "<p>Wednesday at East Hill is a satellite market, and satellite markets sit outside the work-hours arithmetic. A Saturday at Steamboat Landing earns one hour toward what you owe and a Sunday earns half an hour; Wednesday, Downtown and the Winter Market earn none (Guide p.31). Attending does not add to your obligation and does not reduce it either.</p><p>Who may sell: both Full Members and Easy Entry vendors (Guide p.26). Unlike a Saturday stall, Wednesday is not something a Full Membership gives you first claim on \u2014 everyone stands in the same arrival order.</p>"
 }
 ];
 function showHelp(i) {
@@ -11148,6 +11222,7 @@ managerdash:       { title: 'Market Manager', home: true },
 staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
 winter:            { title: 'Winter Market' },
+wednesday:         { title: 'Wednesday at East Hill' },
 winterbooths:      { title: 'Winter Market Booths' },
 standing:          { title: 'Vendor Standing' },
 records:           { title: 'Vendor Records' },
@@ -11281,25 +11356,35 @@ return b ? b.num : null;
 }
 function applyVenueToDesk() {
 buildSeasonNote('vendorVenuePicker');
-const s = seasonNow();
-const away = s === 'winter'
-  ? 'Out of season \u2014 Steamboat Landing returns in April'
-  : 'Out of season \u2014 opens in January, Saturdays at Triphammer';
-DESK_STEAMBOAT_ORDER.forEach(k => setFoldSeason(k, s === 'steamboat', away));
-setFoldSeason('winter', s === 'winter', away);
+DESK_STEAMBOAT_ORDER.forEach(k => setFoldSeason(k, 'steamboat'));
+setFoldSeason('winter', 'winter');
+setFoldSeason('wednesday', 'wednesday');
+setFoldSeason('popupsvendor', null);
 }
-// A dimmed drawer keeps its tag in the sub line and still opens: nothing is
-// withheld, it is just filed by the calendar.
-function setFoldSeason(key, inSeason, awayNote) {
+const VENUE_RETURNS = {
+  steamboat: 'back in April, Saturdays at Steamboat Landing',
+  wednesday: 'back in May, Wednesdays at East Hill Plaza',
+  winter: 'back in January, Saturdays at Triphammer'
+};
+// A drawer that is out of season is dimmed and tagged, never hidden and never
+// locked: a vendor planning ahead in March can still read what Wednesday asks
+// of them. Nothing moves with the calendar -- only what the bar says.
+function setFoldSeason(key, venue) {
 const f = document.querySelector('#screen-dashboard .dash-fold[data-fold="' + key + '"]');
 if (!f) return;
 f.style.display = '';
+const inSeason = !venue || venueInSeason(venue);
 f.classList.toggle('off-season', !inSeason);
 const sub = f.querySelector(':scope > .fold-bar .fold-sub');
 if (!sub) return;
 if (sub.dataset.plain === undefined) sub.dataset.plain = sub.innerHTML;
-sub.innerHTML = inSeason ? sub.dataset.plain
-  : '<span class="season-tag">Out of season</span> \u00b7 ' + awayNote.replace('Out of season \u2014 ', '');
+if (!inSeason) {
+sub.innerHTML = '<span class="season-tag">Out of season</span> \u00b7 ' + VENUE_RETURNS[venue];
+} else if (venue && venueRunsToday(venue)) {
+sub.innerHTML = '<span class="season-tag">Today</span> \u00b7 ' + sub.dataset.plain;
+} else {
+sub.innerHTML = sub.dataset.plain;
+}
 }
 function applyVendorVisibility() {
 const show = (id, visible) => {
@@ -14069,7 +14154,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-1';
+const BUILD_ID = '15-2';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20457,6 +20542,13 @@ note.style.textAlign = 'center';
 note.textContent = 'Committee time counts toward your work hours \u2014 log it under Work Hours as usual.';
 body.appendChild(note);
 }
+// Which manager folders belong to a place. Everything unlisted is about
+// vendors, money, the board or the record, and keeps its spot all year.
+// Module scope on purpose: buildMgrFolder reads it too, and a const inside
+// one function is invisible from the next.
+const MGR_VENUE_OF = { selection: 'steamboat', marketday: 'steamboat', booths: 'steamboat',
+winter: 'winter', wednesday: 'wednesday', popups: null };
+const MGR_OTHER_MARKETS = ['winter', 'wednesday', 'popups'];
 const MGR_FOLDERS = [
 { s: 'callinout', i: 'i-phone', t: 'The Old-Fashioned Way', d: 'Take anything a vendor sends by phone, email, mail, or across the desk \u2014 absences, requests, shares, documents, proposals' },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
@@ -20529,6 +20621,12 @@ tiles: [
 { s: 'winterpaperwork', i: 'i-document', t: 'Triphammer Paperwork', d: 'Whatever the mall needs from a vendor before they can trade there' },
 { s: 'winterrules', i: 'i-scale', t: 'How Winter Differs', d: 'What carries over from Steamboat and what does not' },
 ] },
+{ key: 'wednesday', title: 'Wednesday Market', icon: 'i-sun-rays',
+sub: 'East Hill Plaza \u2014 Wednesdays, May to October, 3 to 6 PM',
+tiles: [
+{ s: 'wednesday', i: 'i-tent', t: 'How Wednesday Runs', d: 'No lottery, no assigned spaces, arrival order &middot; the $20 fee collected on site' },
+{ s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
+] },
 { key: 'popups', title: 'PopUp Markets', icon: 'i-tent',
 sub: 'One-off markets away from Steamboat Landing',
 tiles: [
@@ -20562,11 +20660,15 @@ loadImprovements().then(renderManagerAlerts);
 function buildSeasonNote(hostId) {
 const host = document.getElementById(hostId);
 if (!host) return;
-const s = seasonNow();
-host.innerHTML = '<p class="venue-note">' + (s === 'winter'
-  ? '<b>Winter Market season</b> \u2014 Saturdays at Triphammer through March. '
-  : '<b>Steamboat Landing season.</b> Today\u2019s tools sit on top. ') +
-'Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot on this desk all year.</p>';
+const live = [];
+if (venueInSeason('steamboat')) live.push('Steamboat Landing');
+if (venueInSeason('wednesday')) live.push('Wednesday at East Hill');
+if (venueInSeason('winter')) live.push('the Winter Market');
+let lead;
+if (live.length === 1) lead = '<b>' + live[0] + '</b> is running.';
+else lead = '<b>' + live.slice(0, -1).join(', ') + '</b> and <b>' + live[live.length - 1] + '</b> are running.';
+host.innerHTML = '<p class="venue-note">' + lead +
+' Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot on this desk all year.</p>';
 }
 function buildToolFold(t) {
 const fold = document.createElement('div');
@@ -20595,40 +20697,36 @@ buildSeasonNote('mgrVenuePicker');
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 grid.innerHTML = '';
-const s = seasonNow();
-// Which folders belong to a place. Everything unlisted is about vendors,
-// money, the board or the record, and keeps its spot all year.
-const OWNED = { selection: 'steamboat', marketday: 'steamboat', booths: 'steamboat', winter: 'winter' };
 const inSeason = [], stable = [], off = [];
 MGR_FOLDERS.forEach(f => {
-const own = OWNED[f.key];
-if (!own) stable.push(f);
-else if (own === s) inSeason.push(f);
-else off.push(f);
+if (MGR_OTHER_MARKETS.indexOf(f.key) !== -1) { off.push(f); return; }
+const own = MGR_VENUE_OF[f.key];
+if (!own || venueInSeason(own)) inSeason.push(f);
+else stable.push(f);
 });
-// On a market day the day's own folder rises to the very top.
-if (isMarketDayToday()) {
-const lead = s === 'winter' ? 'winter' : 'marketday';
-const k = inSeason.findIndex(f => f.key === lead);
+// Steamboat's own folders lead while Steamboat is running; the market-day
+// folder leads the lot on a Saturday or Sunday. The other three markets sit
+// together at the foot, in a fixed order, tagged rather than shuffled.
+if (venueRunsToday('steamboat')) {
+const k = inSeason.findIndex(f => f.key === 'marketday');
 if (k > 0) inSeason.unshift(inSeason.splice(k, 1)[0]);
 }
+off.sort((a, b) => MGR_OTHER_MARKETS.indexOf(a.key) - MGR_OTHER_MARKETS.indexOf(b.key));
 inSeason.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
 stable.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
 off.forEach(f => grid.appendChild(buildMgrFolder(f, true)));
 }
-function buildMgrFolder(f, offSeason) {
+function buildMgrFolder(f, grouped) {
 if (f.s) return buildToolFold(f);
-const marketDayLead = !offSeason && isMarketDayToday() &&
-f.key === (seasonNow() === 'winter' ? 'winter' : 'marketday');
+const venue = MGR_VENUE_OF[f.key];
+const inSeason = !venue || venueInSeason(venue);
 let sub;
-if (offSeason) {
-sub = '<span class="season-tag">Out of season</span> \u00b7 ' +
-(f.key === 'winter' ? 'Opens in January \u2014 Saturdays at Triphammer' : 'Steamboat Landing returns in April');
-} else {
-sub = (marketDayLead ? '<b>It\u2019s market day.</b> ' : '') + esc(f.sub);
-}
+if (!inSeason) sub = '<span class="season-tag">Out of season</span> \u00b7 ' + VENUE_RETURNS[venue];
+else if (venue && venueRunsToday(venue)) sub = '<span class="season-tag">Today</span> \u00b7 ' + esc(f.sub);
+else if (!grouped && venueRunsToday('steamboat') && f.key === 'marketday') sub = '<b>It\u2019s market day.</b> ' + esc(f.sub);
+else sub = esc(f.sub);
 const fold = document.createElement('div');
-fold.className = 'dash-fold' + (offSeason ? ' off-season' : '');
+fold.className = 'dash-fold' + (inSeason ? '' : ' off-season');
 fold.dataset.fold = 'mgr-' + f.key;
 const bar = document.createElement('button');
 bar.type = 'button';
