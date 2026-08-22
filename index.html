@@ -1360,7 +1360,8 @@ background: #F5AECB; color: #6E1F42; border-color: #1F4E80;
 box-shadow: 0 0 0 3px #2F6FB0;
 }
 .kiosk-snap-btn {
-width: 100%; padding: 10px 8px; border-radius: 10px; cursor: pointer;
+position: absolute; z-index: 15;
+padding: 10px 8px; border-radius: 10px; cursor: pointer;
 border: 1px solid #B9B199; background: rgba(255,255,255,0.86);
 color: #3D4A33; font-family: inherit; font-weight: 800;
 font-size: clamp(16px, 1.5vw, 19px); line-height: 1.15; text-align: center;
@@ -2821,6 +2822,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <button type="button" id="ktnTabAbout" onclick="tunerTarget('about')">Window</button>
 <button type="button" id="ktnTabCarrot" onclick="tunerTarget('carrot')">Carrot</button>
 <button type="button" id="ktnTabLogo" onclick="tunerTarget('logo')">Logo</button>
+<button type="button" id="ktnTabSnap" onclick="tunerTarget('snap')">SNAP</button>
 </div>
 <div id="ktnRowW"><label>Width <span id="ktnW"></span></label>
 <input type="range" id="ktnFW" min="56" max="900" oninput="tunerSet('w', this.value)"></div>
@@ -2840,6 +2842,8 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <div id="kioskLearn" class="kiosk-learn" style="display:none;" onclick="closeKioskLearn(event)"></div>
 <button type="button" id="kioskZoomReset" class="kiosk-zoomreset"
 style="display:none;" onclick="resetKioskZoom()">Fit map</button>
+<button type="button" id="kioskSnapBtn" class="kiosk-snap-btn"
+onclick="toggleKioskSnap()">Who takes SNAP?</button>
 <div class="kiosk-logo"><img class="ifm-logo" alt="Ithaca Farmers Market"></div>
 </div>
 <div class="kiosk-bar">
@@ -2851,8 +2855,6 @@ inputmode="search" enterkeyhint="search"
 placeholder="Find something"
 oninput="kioskTyped('product')" onkeydown="kioskProductKey(event)"
 onfocus="if (foolGuardFocus(this)) return; noteKioskActivity();">
-<button type="button" id="kioskSnapBtn" class="kiosk-snap-btn"
-onclick="toggleKioskSnap()">Who takes SNAP?</button>
 </div>
 <div class="kiosk-newdeal" id="kioskNewDeal" style="display:none;"><span id="kioskNewDealText"></span></div>
 <div class="kiosk-clock" id="kioskClock"></div>
@@ -14179,7 +14181,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-4';
+const BUILD_ID = '15-5';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14627,7 +14629,8 @@ const ABOUT_WIN_DEFAULT = { leftPct: 55.2, bottomPct: 6.43, wPct: 38.67, hPct: 2
 // build that lands before someone has saved a layout \u2014 already looks right.
 const CHROME_DEFAULT = {
 carrot: { rightPct: 80.53, bottomPct: 6.96, sizePct: 8.00 },
-logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 }
+logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 },
+snap:   { rightPct: 72.66, bottomPct: 45.60, sizePct: 25.86 }
 };
 function kioskStageSize() {
 const stage = document.getElementById('kioskStage');
@@ -14682,7 +14685,7 @@ sizePct: +(px.size / s.w * 100).toFixed(2)
 };
 }
 function applyChromeStyle() {
-const c = { carrot: chromePx('carrot'), logo: chromePx('logo') };
+const c = { carrot: chromePx('carrot'), logo: chromePx('logo'), snap: chromePx('snap') };
 const rose = document.querySelector('.north-rose');
 if (rose && c.carrot) {
 rose.style.right = c.carrot.right + 'px';
@@ -14690,6 +14693,14 @@ rose.style.bottom = c.carrot.bottom + 'px';
 rose.style.left = 'auto'; rose.style.top = 'auto';
 const glyph = rose.querySelector('.cr-carrot');
 if (glyph) glyph.style.fontSize = c.carrot.size + 'px';
+}
+const snap = document.getElementById('kioskSnapBtn');
+const cs = chromePx('snap');
+if (snap && cs) {
+snap.style.right = cs.right + 'px';
+snap.style.bottom = cs.bottom + 'px';
+snap.style.left = 'auto'; snap.style.top = 'auto';
+snap.style.width = cs.size + 'px';
 }
 const logo = document.querySelector('.kiosk-logo');
 if (logo && c.logo) {
@@ -14996,7 +15007,7 @@ const show = tunerOn() && currentRole === 'kiosk';
 panel.style.display = show ? '' : 'none';
 if (!show) return;
 document.body.classList.add('tuning');
-['About','Carrot','Logo'].forEach(k =>
+['About','Carrot','Logo','Snap'].forEach(k =>
 document.getElementById('ktnTab' + k).className = (tunerWhich === k.toLowerCase() ? 'on' : ''));
 const isAbout = tunerWhich === 'about';
 document.getElementById('ktnRowW').style.display = isAbout ? '' : 'none';
@@ -15023,13 +15034,14 @@ document.getElementById('ktnOut').textContent =
 } else {
 const c = chromeState(tunerWhich) || { right: 0, bottom: 0, size: 34 };
 const fs = document.getElementById('ktnFS');
-fs.min = tunerWhich === 'carrot' ? 16 : 30;
+fs.min = tunerWhich === 'carrot' ? 16 : (tunerWhich === 'snap' ? 120 : 30);
 fs.max = tunerWhich === 'carrot' ? 160 : 400;
 fs.value = c.size;
 document.getElementById('ktnS').textContent = c.size + 'px';
 const cp = (cache.kioskChrome || {})[tunerWhich] || {};
+const NAMES = { carrot: 'carrot', logo: 'logo', snap: 'SNAP button width' };
 document.getElementById('ktnOut').textContent =
-(tunerWhich === 'carrot' ? 'carrot' : 'logo') + ' size ' + c.size + ' px' +
+(NAMES[tunerWhich] || tunerWhich) + ' size ' + c.size + ' px' +
 (cp.sizePct ? '  (saved as ' + cp.sizePct + '%)' : '') +
 '\nright ' + c.right + '  bottom ' + c.bottom +
 '\ndrag it on the map to move it';
@@ -15040,6 +15052,7 @@ const w = aboutWinPct();
 const c = cache.kioskChrome || {};
 const car = Object.assign({}, CHROME_DEFAULT.carrot, c.carrot || {});
 const log = Object.assign({}, CHROME_DEFAULT.logo, c.logo || {});
+const snp = Object.assign({}, CHROME_DEFAULT.snap, c.snap || {});
 const n = v => Math.round(Number(v) * 100) / 100;
 const out = document.getElementById('ktnDefaults');
 out.style.display = '';
@@ -15047,7 +15060,8 @@ out.textContent =
 'ABOUT_WIN_DEFAULT = { leftPct: ' + n(w.leftPct) + ', bottomPct: ' + n(w.bottomPct) +
 ', wPct: ' + n(w.wPct) + ', hPct: ' + n(w.hPct) + ', r: ' + (aboutWin().r || 15) + ' }\n' +
 'carrot: { rightPct: ' + n(car.rightPct) + ', bottomPct: ' + n(car.bottomPct) + ', sizePct: ' + n(car.sizePct) + ' }\n' +
-'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }';
+'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }\n' +
+'snap:   { rightPct: ' + n(snp.rightPct) + ', bottomPct: ' + n(snp.bottomPct) + ', sizePct: ' + n(snp.sizePct) + ' }';
 }
 function tunerSet(field, v) {
 if (tunerWhich === 'about') {
@@ -15074,7 +15088,8 @@ async function tunerSave() {
 await storageSetShared('ifm-about-win', aboutWinPct());
 await storageSetShared('ifm-kiosk-chrome', {
 carrot: (cache.kioskChrome || {}).carrot || CHROME_DEFAULT.carrot,
-logo: (cache.kioskChrome || {}).logo || CHROME_DEFAULT.logo
+logo: (cache.kioskChrome || {}).logo || CHROME_DEFAULT.logo,
+snap: (cache.kioskChrome || {}).snap || CHROME_DEFAULT.snap
 });
 const out = document.getElementById('ktnOut');
 if (out) out.textContent = 'Saved \u2014 every screen uses this placement.\n' + out.textContent;
@@ -15131,7 +15146,7 @@ const done = () => { if (d && d.moved) win.dataset.justDragged = '1'; d = null; 
 win.addEventListener('pointerup', done);
 win.addEventListener('pointercancel', done);
 }
-[['carrot', '.north-rose'], ['logo', '.kiosk-logo']].forEach(pair => {
+[['carrot', '.north-rose'], ['logo', '.kiosk-logo'], ['snap', '#kioskSnapBtn']].forEach(pair => {
 const which = pair[0], el = document.querySelector(pair[1]);
 if (!el || el.dataset.bound) return;
 el.dataset.bound = '1';
@@ -15154,6 +15169,7 @@ const c = chromeState(which);
 if (!c) return;
 c.right = Math.max(0, Math.min(Math.round(s.width - r.width), Math.round(d.right - (e.clientX - d.sx))));
 c.bottom = Math.max(0, Math.min(Math.round(s.height - r.height), Math.round(d.bottom - (e.clientY - d.sy))));
+if (Math.abs(e.clientX - d.sx) > 2 || Math.abs(e.clientY - d.sy) > 2) el.dataset.justDragged = '1';
 setChromePx(which, c);
 applyChromeStyle(); renderTuner();
 });
@@ -15234,25 +15250,27 @@ renderKiosk();
 // A shopper holding EBT wants one question answered before they walk in, and
 // the office already knows the answer for anyone who has told it.
 //
-// The honesty problem: snapAccepts() falls back to a DEFAULT of yes for Ag
-// vendors who have never been asked. That default is fine on a vendor's own
-// desk, where it is a suggestion they can correct. On the kiosk it would be a
-// promise made to a stranger on a vendor's behalf, and sending somebody to a
-// stall that cannot take their tokens is worse than not answering. So the map
-// lights only vendors who have SAID yes, and the note says plainly that
-// others may take it too.
+// The list arrives already populated: every Ag vendor of any class starts as
+// accepting, craft starts as not, and a vendor's own answer replaces the
+// default for good once given. The kiosk reads that list as it stands rather
+// than holding out for an explicit answer -- the default is the market's own
+// standing knowledge of who takes tokens, and a shopper is better served by
+// it than by a blank map.
+//
+// It is still a default, so the strip tells the shopper to ask at the stall.
 // ===========================================================================
 let kioskSnapOn = false;
 let kioskSnapBooths = new Set();
 function kioskSnapStalls() {
 const occ = kioskOccupancy();
-const said = new Set(), unsaid = new Set();
+const said = new Set(), told = new Set();
 Object.keys(occ.byBooth).forEach(num => {
 const vid = occ.byBooth[num];
-if (snapIsChosen(vid)) { if (snapAccepts(vid)) said.add(num); }
-else if (snapDefaultAccepts(cache.vendors.find(v => v.vendorId === vid))) unsaid.add(num);
+if (!snapAccepts(vid)) return;
+said.add(num);
+if (snapIsChosen(vid)) told.add(num);
 });
-return { said: said, unsaid: unsaid };
+return { said: said, told: told };
 }
 // Said on the day strip rather than beside the button: the left-hand column
 // is 210px wide, and a sentence there wraps to six lines and swallows the
@@ -15260,10 +15278,13 @@ return { said: said, unsaid: unsaid };
 function kioskSnapStripText() {
 if (!kioskSnapOn) return '';
 const n = kioskSnapBooths.size;
-if (!n) return '<span class="ksnap-strip">no stall has told us about SNAP \u2014 ask at the stall</span>';
-return '<span class="ksnap-strip">SNAP in blue \u2014 others may take it, ask</span>';
+if (!n) return '<span class="ksnap-strip">no stall here today is listed as taking SNAP</span>';
+return '<span class="ksnap-strip">SNAP stalls in blue \u2014 worth asking to be sure</span>';
 }
 function toggleKioskSnap() {
+const btn = document.getElementById('kioskSnapBtn');
+if (btn && btn.dataset.justDragged) { delete btn.dataset.justDragged; return; }
+if (tunerOn()) return;
 noteKioskActivity();
 kioskSnapOn = !kioskSnapOn;
 applyKioskSnap();
@@ -15372,7 +15393,7 @@ applyKioskTransform();
 }
 function kioskChromeCollides() {
 const guards = [];
-document.querySelectorAll('#screen-kiosk .north-rose, #screen-kiosk .kiosk-logo').forEach(el => {
+document.querySelectorAll('#screen-kiosk .north-rose, #screen-kiosk .kiosk-logo, #kioskSnapBtn').forEach(el => {
 const r = el.getBoundingClientRect();
 if (r.width && getComputedStyle(el).opacity !== '0') guards.push(r);
 });
