@@ -921,6 +921,26 @@ body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 4
   box-shadow: 0 1px 3px rgba(35,42,32,0.16);
 }
 .venue-picker button.cannot { opacity: 0.42; }
+
+/* A DESK IN TWO PARTS.
+   The vendor record comes first -- who they are, what they have earned, what
+   they owe. Then, plainly separated and plainly second, the logistics of
+   standing in a field somewhere on a given morning.
+   The divider is not decoration: it is the app saying which of the two it
+   thinks is the more important, and the manager's desk says the same thing in
+   the same words. */
+.desk-section {
+  margin: 26px 0 10px; padding: 0 2px;
+  border-top: 2px solid var(--paper-dim, #E6E2D2);
+}
+.desk-section h3 {
+  margin: 14px 0 2px; font-size: clamp(17px, 3.4vw, 21px); font-weight: 800;
+  color: var(--ink); letter-spacing: -0.01em;
+}
+.desk-section p {
+  margin: 0 0 6px; font-size: 13.5px; line-height: 1.5;
+  color: var(--ink-dim, #8A8A86);
+}
 @media (max-height: 520px) {
   .venue-picker button .vsub { display: none; }
   .venue-picker button { padding: 8px 6px; min-height: 40px; }
@@ -2120,6 +2140,33 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <div id="vendorAlertList"></div>
 </div>
 <div class="desk-pinned" id="deskProfilePinned">
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="dash-fold" data-fold="myattend">
+<button type="button" class="fold-bar" onclick="showPlanned('myattend')">
+<svg class="ico soon-cone" style="position:static; margin:0;"><use href="#i-cone"></use></svg>
+<span class="fold-title" style="opacity:.72;">Market Days</span>
+<span class="fold-sub">Not built · your season so far</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="guide">
+<a class="fold-bar" style="text-decoration:none; display:flex; margin-bottom:10px;" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><span class="fold-title">Vendor Guide</span><span class="fold-sub">Opens on the market’s site ↗</span></a>
+</div>
+
 <div class="dash-fold" data-fold="fProfile">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Business Profile</span>
@@ -2175,58 +2222,89 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
-</div>
-<div class="dash-fold" data-fold="fPromos">
+<div class="dash-fold" data-fold="fPoints">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title" id="foldTitlePromos">Sales &amp; Promotions</span>
-<span class="fold-sub" id="foldSubPromos">A sale for today&rsquo;s market, straight to the kiosk</span>
+<span class="fold-title" id="foldTitlePoints">Points</span>
+<span class="fold-sub" id="foldSubPoints"></span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body">
-<div class="card desk-form" id="promoCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>Sales &amp; Promotions<button type="button" class="help-dot" onclick="showHelp(1)" aria-label="What are the rules here?">?</button></h2>
-<label for="promoItem">What&rsquo;s on offer?</label>
-<input type="text" id="promoItem" maxlength="50" placeholder="e.g. sourdough loaves">
-<label for="promoType" style="margin-top:10px;">The deal</label>
-<select id="promoType" onchange="onPromoTypeChange()">
-<option value="percent">% off</option>
-<option value="dollars">$ off</option>
-<option value="bundle">Bundle price</option>
-<option value="bogo">Buy one, get one</option>
-<option value="freebie">Something free with a purchase</option>
-<option value="own">Say it in your own words</option>
-</select>
-<div id="promoValPercent" style="margin-top:8px;">
-<input type="number" id="promoPercent" min="1" max="90" step="1" placeholder="Percent off, e.g. 10">
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>Points Balance</h2>
+<div class="stat-row">
+<div class="stat">
+<span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>
+<div class="num mono" id="ptsTotal">0</div>
+<div class="label">Total Points</div>
 </div>
-<div id="promoValDollars" style="display:none; margin-top:8px;">
-<input type="number" id="promoDollars" min="0.5" step="0.5" placeholder="Dollars off, e.g. 2">
-</div>
-<div id="promoValBundle" style="display:none; margin-top:8px; gap:8px;">
-<input type="number" id="promoBundleN" min="2" step="1" placeholder="How many, e.g. 2" style="margin-bottom:8px;">
-<input type="number" id="promoBundlePrice" min="0.5" step="0.5" placeholder="For how much, e.g. 9">
-</div>
-<div id="promoValBogo" style="display:none; margin-top:8px;">
-<select id="promoBogoWhat" onchange="onPromoBogoChange()">
-<option value="free">the second one free</option>
-<option value="half">the second one half price</option>
-<option value="percent">the second one at a discount</option>
-</select>
-<input type="number" id="promoBogoPct" min="1" max="90" step="1" placeholder="Percent off the second, e.g. 25" style="display:none; margin-top:8px;">
-</div>
-<div id="promoValFree" style="display:none; margin-top:8px;">
-<input type="text" id="promoFreeItem" maxlength="40" placeholder="What is free, e.g. a cup of cider">
-</div>
-<div id="promoValOwn" style="display:none; margin-top:8px;">
-<input type="text" id="promoOwnText" maxlength="80" placeholder="e.g. Free drink with any sandwich">
-<p class="empty-note" style="margin:6px 0 0;">Written exactly as you type it. Keep it short &mdash; it has to read across a booth on the kiosk.</p>
-</div>
-<p class="empty-note" id="promoKioskDay" style="margin:10px 0 8px;"></p>
-<button type="button" class="primary-btn" id="promoPostBtn" onclick="addVendorPromo()">Post It</button>
-<div class="status-msg" id="promoMsg"></div>
-<div id="promoList" style="margin-top:12px;"></div>
+<div class="stat">
+<span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>
+<div class="num mono" id="ptsYear">0</div>
+<div class="label">Days This Year</div>
 </div>
 </div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-carrot"></use></svg></span>Recent Points History</h2>
+<table class="log" id="ptsHistoryTable">
+<thead><tr><th>Date</th><th>Type</th><th>Pts</th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="empty-note" id="ptsHistoryEmpty" style="display:none;">No points activity on record yet.</div>
+</div>
+</div>
+</div>
+<div class="dash-fold" data-fold="hours">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'hours')">
+<span class="fold-title">Work Hours</span>
+<span class="fold-sub">Log &amp; track your hours</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="venmopay">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'venmopay')">
+<span class="fold-title">Pay Fees</span>
+<span class="fold-sub" id="menuPaySub">Mock-up · Venmo, once the office opens its profile</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="mydocs">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mydocs')">
+<span class="fold-title">Permits &amp; Documents</span>
+<span class="fold-sub"><span id="menuDocsSub">Upload what the office has asked for</span></span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="mycommittees" id="menuMyCommittees">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mycommittees')">
+<span class="fold-title">Committees</span>
+<span class="fold-sub">Agendas and tasks in front of your committees</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="directory">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'directory')">
+<span class="fold-title">Rolodex</span>
+<span class="fold-sub">Browse all 168 vendors</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="communicate">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'communicate')">
+<span class="fold-title">Communicate with the Market</span>
+<span class="fold-sub">Forms, complaints, requests &amp; proposals</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="desk-section" id="deskLogisticsHead">
+<h3>Market Logistics</h3>
+<p>Where you are standing, on which day, and what happens there. Everything above this line is true of you wherever you trade; everything below it is about one morning in one place.</p>
 </div>
 <div class="dash-fold" data-fold="boothassign">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
@@ -2288,78 +2366,6 @@ I sell food (prepared food or produce)
 
 </div>
 </div>
-<div class="dash-fold" data-fold="winter">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
-<span class="fold-title">Winter Market</span>
-<span class="fold-sub">Jan–Mar Saturdays at Triphammer</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="popupsvendor">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'popupsvendor')">
-<span class="fold-title">PopUp Events</span>
-<span class="fold-sub">Satellite markets &amp; one-off tabling</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="hours">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'hours')">
-<span class="fold-title">Work Hours</span>
-<span class="fold-sub">Log &amp; track your hours</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="fPoints">
-<button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title" id="foldTitlePoints">Points</span>
-<span class="fold-sub" id="foldSubPoints"></span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body">
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>Points Balance</h2>
-<div class="stat-row">
-<div class="stat">
-<span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>
-<div class="num mono" id="ptsTotal">0</div>
-<div class="label">Total Points</div>
-</div>
-<div class="stat">
-<span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>
-<div class="num mono" id="ptsYear">0</div>
-<div class="label">Days This Year</div>
-</div>
-</div>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-carrot"></use></svg></span>Recent Points History</h2>
-<table class="log" id="ptsHistoryTable">
-<thead><tr><th>Date</th><th>Type</th><th>Pts</th></tr></thead>
-<tbody></tbody>
-</table>
-<div class="empty-note" id="ptsHistoryEmpty" style="display:none;">No points activity on record yet.</div>
-</div>
-</div>
-</div>
-<div class="dash-fold" data-fold="snaptokens" id="menuSnapTokens">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaptokens')">
-<span class="fold-title">SNAP Tokens</span>
-<span class="fold-sub" id="foldSubSnap">Whether you take them, and what you have turned in</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="mycommittees" id="menuMyCommittees">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mycommittees')">
-<span class="fold-title">Committees</span>
-<span class="fold-sub">Agendas and tasks in front of your committees</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
 <div class="dash-fold" data-fold="fShare">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitleShare">Sharing a Booth</span>
@@ -2393,46 +2399,78 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
-<div class="dash-fold" data-fold="directory">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'directory')">
-<span class="fold-title">Rolodex</span>
-<span class="fold-sub">Browse all 168 vendors</span>
+<div class="dash-fold" data-fold="fPromos">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title" id="foldTitlePromos">Sales &amp; Promotions</span>
+<span class="fold-sub" id="foldSubPromos">A sale for today&rsquo;s market, straight to the kiosk</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body">
+<div class="card desk-form" id="promoCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>Sales &amp; Promotions<button type="button" class="help-dot" onclick="showHelp(1)" aria-label="What are the rules here?">?</button></h2>
+<label for="promoItem">What&rsquo;s on offer?</label>
+<input type="text" id="promoItem" maxlength="50" placeholder="e.g. sourdough loaves">
+<label for="promoType" style="margin-top:10px;">The deal</label>
+<select id="promoType" onchange="onPromoTypeChange()">
+<option value="percent">% off</option>
+<option value="dollars">$ off</option>
+<option value="bundle">Bundle price</option>
+<option value="bogo">Buy one, get one</option>
+<option value="freebie">Something free with a purchase</option>
+<option value="own">Say it in your own words</option>
+</select>
+<div id="promoValPercent" style="margin-top:8px;">
+<input type="number" id="promoPercent" min="1" max="90" step="1" placeholder="Percent off, e.g. 10">
+</div>
+<div id="promoValDollars" style="display:none; margin-top:8px;">
+<input type="number" id="promoDollars" min="0.5" step="0.5" placeholder="Dollars off, e.g. 2">
+</div>
+<div id="promoValBundle" style="display:none; margin-top:8px; gap:8px;">
+<input type="number" id="promoBundleN" min="2" step="1" placeholder="How many, e.g. 2" style="margin-bottom:8px;">
+<input type="number" id="promoBundlePrice" min="0.5" step="0.5" placeholder="For how much, e.g. 9">
+</div>
+<div id="promoValBogo" style="display:none; margin-top:8px;">
+<select id="promoBogoWhat" onchange="onPromoBogoChange()">
+<option value="free">the second one free</option>
+<option value="half">the second one half price</option>
+<option value="percent">the second one at a discount</option>
+</select>
+<input type="number" id="promoBogoPct" min="1" max="90" step="1" placeholder="Percent off the second, e.g. 25" style="display:none; margin-top:8px;">
+</div>
+<div id="promoValFree" style="display:none; margin-top:8px;">
+<input type="text" id="promoFreeItem" maxlength="40" placeholder="What is free, e.g. a cup of cider">
+</div>
+<div id="promoValOwn" style="display:none; margin-top:8px;">
+<input type="text" id="promoOwnText" maxlength="80" placeholder="e.g. Free drink with any sandwich">
+<p class="empty-note" style="margin:6px 0 0;">Written exactly as you type it. Keep it short &mdash; it has to read across a booth on the kiosk.</p>
+</div>
+<p class="empty-note" id="promoKioskDay" style="margin:10px 0 8px;"></p>
+<button type="button" class="primary-btn" id="promoPostBtn" onclick="addVendorPromo()">Post It</button>
+<div class="status-msg" id="promoMsg"></div>
+<div id="promoList" style="margin-top:12px;"></div>
+</div>
+</div>
+</div>
+<div class="dash-fold" data-fold="snaptokens" id="menuSnapTokens">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaptokens')">
+<span class="fold-title">SNAP Tokens</span>
+<span class="fold-sub" id="foldSubSnap">Whether you take them, and what you have turned in</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="winter">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
+<span class="fold-title">Winter Market</span>
+<span class="fold-sub">Jan–Mar Saturdays at Triphammer</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="venmopay">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'venmopay')">
-<span class="fold-title">Pay Fees</span>
-<span class="fold-sub" id="menuPaySub">Mock-up · Venmo, once the office opens its profile</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="mydocs">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mydocs')">
-<span class="fold-title">Permits &amp; Documents</span>
-<span class="fold-sub"><span id="menuDocsSub">Upload what the office has asked for</span></span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="myattend">
-<button type="button" class="fold-bar" onclick="showPlanned('myattend')">
-<svg class="ico soon-cone" style="position:static; margin:0;"><use href="#i-cone"></use></svg>
-<span class="fold-title" style="opacity:.72;">Market Days</span>
-<span class="fold-sub">Not built · your season so far</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="guide">
-<a class="fold-bar" style="text-decoration:none; display:flex; margin-bottom:10px;" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><span class="fold-title">Vendor Guide</span><span class="fold-sub">Opens on the market’s site ↗</span></a>
-</div>
-<div class="dash-fold" data-fold="communicate">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'communicate')">
-<span class="fold-title">Communicate with the Market</span>
-<span class="fold-sub">Forms, complaints, requests &amp; proposals</span>
+<div class="dash-fold" data-fold="popupsvendor">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'popupsvendor')">
+<span class="fold-title">PopUp Events</span>
+<span class="fold-sub">Satellite markets &amp; one-off tabling</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
@@ -9718,7 +9756,14 @@ document.getElementById('volRoleCard').innerHTML =
 '<p class="empty-note">' + r.note + '</p>';
 }
 // ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
-const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'winter', 'popupsvendor', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
+// The desk in two halves, and a vendor rearranging their drawers rearranges
+// WITHIN a half. Sales & Promotions was the first thing on the desk and it is
+// a Steamboat kiosk feature; a vendor's points and hours were below it.
+const DESK_ABOUT_VENDOR = ['fProfile', 'fPoints', 'hours', 'venmopay', 'mydocs',
+'mycommittees', 'directory', 'communicate'];
+const DESK_LOGISTICS = ['boothassign', 'fShare', 'fPromos', 'snaptokens', 'winter', 'popupsvendor'];
+const DESK_DEFAULT_ORDER = DESK_ABOUT_VENDOR.concat(DESK_LOGISTICS);
+const DESK_LEGACY_ORDER = ['fPromos', 'boothassign', 'winter', 'popupsvendor', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
 'fShare', 'directory', 'venmopay', 'mydocs', 'myattend', 'guide', 'communicate'];
 let deskDragAttached = false;
 let deskOrderCache = null;
@@ -9737,11 +9782,18 @@ updateDeskOrderReset(Array.isArray(saved));
 if (!Array.isArray(saved)) saved = DESK_DEFAULT_ORDER;
 const dash = document.getElementById('screen-dashboard');
 const note = document.getElementById('menuTailorNote');
+const head = document.getElementById('deskLogisticsHead');
 const byKey = {};
 dash.querySelectorAll(':scope > .dash-fold').forEach(f => { if (f.dataset.fold) byKey[f.dataset.fold] = f; });
 const seq = saved.filter(k => byKey[k]);
 dash.querySelectorAll(':scope > .dash-fold').forEach(f => { if (f.dataset.fold && !seq.includes(f.dataset.fold)) seq.push(f.dataset.fold); });
-seq.forEach(k => dash.insertBefore(byKey[k], note));
+// Each drawer goes back into the half it belongs to. An order saved before the
+// desk was split would otherwise pull the logistics drawers up above the
+// divider and quietly undo it for whoever had ever dragged anything.
+seq.forEach(k => {
+const before = DESK_LOGISTICS.indexOf(k) >= 0 ? note : (head || note);
+dash.insertBefore(byKey[k], before);
+});
 }
 async function saveDeskOrder() {
 const dash = document.getElementById('screen-dashboard');
@@ -14063,7 +14115,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-76';
+const BUILD_ID = '14-77';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20460,25 +20512,6 @@ body.appendChild(note);
 }
 const MGR_FOLDERS = [
 { s: 'callinout', i: 'i-phone', t: 'The Old-Fashioned Way', d: 'Take anything a vendor sends by phone, email, mail, or across the desk \u2014 absences, requests, shares, documents, proposals' },
-{ key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
-sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
-tiles: [
-{ s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
-{ s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
-{ s: 'auction', i: 'i-gavel',
-t: () => selectionSeason() + ' Season-Long Booth Reservations',
-d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
-{ s: 'orgstalls', i: 'i-tent', t: 'Community Organizations', d: 'A stall for a non-profit \u2014 once a season, when space allows' },
-{ s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
-] },
-{ key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
-sub: 'The plan for the day itself',
-tiles: [
-{ s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
-{ s: 'snaplog', i: 'i-gem', t: 'SNAP Token Collection', d: 'Who turned in how many tokens' },
-{ s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
-{ ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
-] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
 sub: 'The roster and its paperwork \u2014 who they are, on file',
 tiles: [
@@ -20508,6 +20541,41 @@ tiles: [
 { s: 'taskmanager', i: 'i-clipboard', t: 'Work Hours Tasks', d: 'Post tasks for vendors to claim' },
 { s: 'whrate', i: 'i-gem', t: 'Work Hour Rate', d: 'Dollar value of an hour owed' },
 ] },
+{ key: 'board', title: 'Board & Committees', icon: 'i-columns',
+sub: 'What is in front of the board, and who serves',
+tiles: [
+{ s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
+{ s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
+{ s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
+{ soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
+{ soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
+{ s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Download CSVs for the board' },
+] },
+{ key: 'record', title: 'Records', icon: 'i-document',
+sub: 'The rule as written, and the gap between paper and practice',
+tiles: [
+{ s: 'marketrules', i: 'i-scale', t: 'On the Books', d: 'The written rule, enforced or not &mdash; fees, fines, deadlines, minimums' },
+{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Flagged for Attention', d: 'Rules nobody is enforcing, and what you decided to do about it' },
+{ s: 'plainwords', i: 'i-quill', t: 'Plain Words', d: 'What this app calls things, and what the Guide calls them' },
+] },{ key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
+sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
+tiles: [
+{ s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
+{ s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
+{ s: 'auction', i: 'i-gavel',
+t: () => selectionSeason() + ' Season-Long Booth Reservations',
+d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
+{ s: 'orgstalls', i: 'i-tent', t: 'Community Organizations', d: 'A stall for a non-profit \u2014 once a season, when space allows' },
+{ s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
+] },
+{ key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
+sub: 'The plan for the day itself',
+tiles: [
+{ s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
+{ s: 'snaplog', i: 'i-gem', t: 'SNAP Token Collection', d: 'Who turned in how many tokens' },
+{ s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
+{ ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
+] },
 { key: 'booths', title: 'The Pavilion', icon: 'i-wrench',
 sub: 'The building itself \u2014 what is built, laid out, inspected and repaired',
 tiles: [
@@ -20535,23 +20603,7 @@ sub: 'One-off markets away from Steamboat Landing',
 tiles: [
 { s: 'popups', i: 'i-tent', t: 'PopUp Events', d: 'Add or delete satellite market events' },
 ] },
-{ key: 'board', title: 'Board & Committees', icon: 'i-columns',
-sub: 'What is in front of the board, and who serves',
-tiles: [
-{ s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
-{ s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
-{ s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
-{ soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
-{ soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
-{ s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Download CSVs for the board' },
-] },
-{ key: 'record', title: 'Records', icon: 'i-document',
-sub: 'The rule as written, and the gap between paper and practice',
-tiles: [
-{ s: 'marketrules', i: 'i-scale', t: 'On the Books', d: 'The written rule, enforced or not &mdash; fees, fines, deadlines, minimums' },
-{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Flagged for Attention', d: 'Rules nobody is enforcing, and what you decided to do about it' },
-{ s: 'plainwords', i: 'i-quill', t: 'Plain Words', d: 'What this app calls things, and what the Guide calls them' },
-] }
+
 ];
 function initManagerDash() {
 renderManagerAlerts();
@@ -20628,11 +20680,25 @@ body.className = 'fold-body';
 fold.appendChild(body);
 return fold;
 }
+// The manager's desk says the same thing as the vendor's, in the same words.
+// The vendor record is the market's memory and belongs at the top; the
+// logistics of one field on one morning belong below a line that says so.
+const MGR_LOGISTICS = ['selection', 'marketday', 'booths', 'winter', 'popups'];
 function renderManagerFolders() {
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 grid.innerHTML = '';
+let dividerDone = false;
 MGR_FOLDERS.forEach(f => {
+if (!dividerDone && MGR_LOGISTICS.indexOf(f.key) >= 0) {
+dividerDone = true;
+const sec = document.createElement('div');
+sec.className = 'desk-section';
+sec.innerHTML = '<h3>Market Logistics</h3><p>Which market, which day, which booth. ' +
+'Everything above this line is the market\u2019s memory of its vendors and holds good wherever ' +
+'they are trading; everything below it is the running of one site on one morning.</p>';
+grid.appendChild(sec);
+}
 if (f.s) { grid.appendChild(buildToolFold(f)); return; }
 const fold = document.createElement('div');
 fold.className = 'dash-fold';
