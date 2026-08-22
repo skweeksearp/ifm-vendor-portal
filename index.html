@@ -897,6 +897,24 @@ body.kiosk-mode input.kiosk-search:focus { border-color: #D8A93B; background: rg
 body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 400; }
 .kiosk-search:focus { border-color: #7FA36A; }
 
+/* The pretending band. Deliberately loud and deliberately at the very top of
+   everything, including the kiosk: the danger of this tool is not that it
+   works, it is that somebody forgets it is on and reads a screen full of
+   answers about the wrong week. */
+#pretendBand {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: repeating-linear-gradient(135deg, #7B2D8E 0 14px, #61237040 14px 28px);
+  color: #fff; padding: 7px 12px calc(7px + env(safe-area-inset-top, 0px));
+  font-size: clamp(13px, 2.6vw, 16px); font-weight: 700; text-align: center;
+  line-height: 1.35; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+#pretendBand button {
+  margin-left: 10px; font-size: inherit; font-weight: 700;
+  padding: 3px 12px; border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.85); background: rgba(255,255,255,0.14); color: #fff;
+}
+body.pretending { padding-top: 42px; }
+
 /* THE NEW-DEAL BANNER.
    Pink, bold, orange around every letter, right across the screen under the
    search bars, for two minutes or until somebody else posts one.
@@ -3215,6 +3233,50 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="primary-btn" style="margin-top:10px;" onclick="openYearEnd()">View printable page</button>
 </div>
 </section>
+<section id="screen-tuning" class="screen">
+<div class="screen-head" id="head-tuning"></div>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>How Long Things Wait<button type="button" class="help-dot" onclick="showHelp(HELP_TUNING)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">These decide how the app <em>feels</em> rather than what it does. Every one was a guess when it was written, and every one is better settled by standing in front of the thing at the market than by reasoning about it. Changes take effect at once &mdash; no reload &mdash; so you can watch the difference.</p>
+<div id="tuningRows"></div>
+<div class="status-msg" id="tuningMsg"></div>
+<div class="row" style="display:flex; gap:8px; margin-top:10px;">
+<button type="button" class="ghost-btn" onclick="resetTuning()">Put them all back</button>
+<button type="button" class="ghost-btn" onclick="showTuningToBakeIn()">Show these as defaults</button>
+</div>
+<textarea id="tuningOut" readonly rows="8" style="width:100%; margin-top:8px; display:none; font-family:ui-monospace,Menlo,monospace; font-size:15px; padding:10px; border:1px solid var(--paper-dim); border-radius:10px;"></textarea>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Two That Matter Beyond Feel</h2>
+<div class="comm-item"><div class="comm-title">How often the app asks the sheet</div><div class="comm-desc">This one is not taste. At 168 phones, every second you take off it multiplies: shorter means fresher records and more load on a Google Apps Script that answers one caller at a time, and a market morning is when both matter most. The shipped 11 seconds carries a random extra of up to a fifth on each phone, deliberately &mdash; without that scatter they would all ask in the same second. <b>This is the number to settle before a real rollout.</b></div></div>
+<div class="comm-item"><div class="comm-title">Shortest the loader will show</div><div class="comm-desc">Not a delay. It is a floor that stops the sunflower appearing and vanishing before your eye has settled on it, which reads as a fault. Set it to nothing and quick fetches will flicker.</div></div>
+</div>
+</section>
+<section id="screen-pretend" class="screen">
+<div class="screen-head" id="head-pretend"></div>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Pretend It Is Another Day<button type="button" class="help-dot" onclick="showHelp(HELP_PRETEND)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Much of this app only does anything on a particular date &mdash; the Sunday sign-in window, the Wednesday absence deadline, posting a sale, the season rolling over. This makes the whole app believe it is a day of your choosing so you can see those things without waiting for them.</p>
+<div id="pretendState"></div>
+<label for="pretendDate">Which day</label>
+<input type="date" id="pretendDate">
+<label for="pretendTime">And what time (optional)</label>
+<input type="time" id="pretendTime">
+<p class="empty-note" style="margin:6px 0 0;">Leave the time blank and the real clock keeps ticking on the pretend day. Name a time to sit at a particular moment &mdash; 8:29 AM on a Sunday, say.</p>
+<div class="status-msg" id="pretendMsg"></div>
+<div class="row" style="display:flex; gap:8px; margin-top:10px;">
+<button type="button" class="primary-btn" onclick="startPretending()">Start pretending</button>
+<button type="button" class="ghost-btn" onclick="stopPretending()">Stop pretending</button>
+</div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This Does Not Protect You From</h2>
+<p class="empty-note" style="margin-top:0;">Worth reading once.</p>
+<div class="comm-item"><div class="comm-title">Anything you save is saved for real</div><div class="comm-desc">Record an absence while pretending it is next Sunday and a real record is written to the market&rsquo;s sheet, dated next Sunday, visible to the office and to that vendor. That is deliberate &mdash; a testing mode that quietly threw writes away would prove nothing about whether saving works &mdash; but it means <b>you have to clean up after yourself</b>.</div></div>
+<div class="comm-item"><div class="comm-title">It is this device only</div><div class="comm-desc">Nobody else&rsquo;s phone is affected, and it does not travel through the sheet. Your friend testing on Android will still be in the real week.</div></div>
+<div class="comm-item"><div class="comm-title">It stays on until you turn it off</div><div class="comm-desc">Closing the app does not clear it. The purple band across the top is there so this is never a surprise.</div></div>
+</div>
+</section>
 <section id="screen-bootreport" class="screen">
 <div class="screen-head" id="head-bootreport"></div>
 <div class="card">
@@ -3359,6 +3421,22 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'appglossary')">
 <span class="fold-title">App Glossary</span>
 <span class="fold-sub">What this app calls its own parts &mdash; desks, tools, chips, help dots, cones and the rest</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="dev-tuning">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'tuning')">
+<span class="fold-title">How Long Things Wait</span>
+<span class="fold-sub">Kiosk idle, the sale banner, how often the app asks the sheet &mdash; this device only</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="dev-pretend">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'pretend')">
+<span class="fold-title">Pretend It Is Another Day</span>
+<span class="fold-sub">For testing anything that only happens on a certain date &mdash; this device only</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -4441,7 +4519,100 @@ Unlimited people (e.g. a cleanup day)
 </section>
 </main>
 </div>
-</div><script>const DEMO_VENDORS_SEED = [
+</div><script>
+// ===========================================================================
+// PRETENDING IT IS ANOTHER DAY
+//
+// Much of this app only does anything on a particular date: the Sunday sign-in
+// window is ninety minutes on a Sunday morning, absences are judged against a
+// Wednesday deadline, a sale only posts on a market day, the season rolls over
+// in the winter. None of that can be tested by waiting.
+//
+// So Date itself is replaced, here, before a single other line runs. Every
+// piece of the app then agrees about what day it is without any of it having
+// to know it is being lied to -- which is the point: a testing switch that
+// only some functions honour would produce results that mean nothing.
+//
+// Three things this deliberately does NOT do:
+//   * It does not travel. The setting is in localStorage on one device, like
+//     the kiosk flag. Nobody else's phone is affected.
+//   * It does not hide. Whenever it is on there is a band across the top of
+//     every screen saying so, in every role. Forgetting is the whole danger.
+//   * It does not fake the WRITES. Anything saved while pretending is saved
+//     with the pretend date and goes to the real sheet, exactly as it would
+//     have. That is the honest choice -- a testing mode that quietly discarded
+//     writes would prove nothing about whether saving works -- but it means
+//     the tester has to clean up after themselves, and the band says so.
+// ===========================================================================
+(function () {
+  var raw = null;
+  try { raw = localStorage.getItem('ifm-pretend-date'); } catch (e) {}
+  if (!raw) return;
+  var iso = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+  var timePart = String(raw).slice(11, 16);
+  var Real = Date;
+  // Keep the real time of day unless a time was named, so a clock on screen
+  // still ticks and anything measuring an interval still measures it.
+  function pretendNow() {
+    var now = new Real();
+    var t = timePart && /^\d{2}:\d{2}$/.test(timePart)
+      ? timePart : ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+    var d = new Real(iso + 'T' + t + ':' + ('0' + now.getSeconds()).slice(-2));
+    return d.getTime();
+  }
+  function Fake(a, b, c, d, e, f, g) {
+    if (!(this instanceof Fake)) return new Real(pretendNow()).toString();
+    if (arguments.length === 0) return new Real(pretendNow());
+    if (arguments.length === 1) return new Real(a);
+    return new Real(a, b, c || 1, d || 0, e || 0, f || 0, g || 0);
+  }
+  Fake.prototype = Real.prototype;
+  Fake.now = function () { return pretendNow(); };
+  Fake.parse = Real.parse;
+  Fake.UTC = Real.UTC;
+  window.__ifmRealDate = Real;
+  window.__ifmPretend = raw;
+  window.Date = Fake;
+})();
+// ===========================================================================
+// TUNING
+//
+// A handful of numbers decide how the app FEELS rather than what it does: how
+// long the kiosk waits before forgetting a shopper, how long a new sale shouts
+// about itself, how often the app asks the sheet for news. Every one of them
+// was a guess when it was written, and every one is best settled by standing
+// in front of the thing at the market rather than by reasoning about it here.
+//
+// So they are adjustable, on this device only, and every screen that uses one
+// reads it fresh rather than capturing it at boot -- otherwise changing a
+// number would need a reload and nobody would bother comparing.
+//
+// The DEFAULTS below are the shipped values. Anything changed is remembered on
+// this device alone and never travels; the tool shows what is standard beside
+// whatever you have set, so it is always clear what a vendor's phone does.
+const TUNING_DEFAULTS = {
+  kioskIdleMs:    20000,   // shopper walks away -> kiosk forgets them
+  kioskDealMs:   120000,   // a new sale stays on the banner
+  kioskDealWatchMs: 2000,  // how often the kiosk looks for a new sale
+  kioskExitTaps:      6,   // taps to leave kiosk mode
+  kioskExitWindowMs: 2000, // ...within this long
+  spinFloorMs:     1800,   // shortest the loader will show, to stop it flickering
+  pollMs:         11000    // how often the app asks the sheet for news
+};
+let TUNING = Object.assign({}, TUNING_DEFAULTS);
+try {
+  const saved = JSON.parse(localStorage.getItem('ifm-tuning') || '{}');
+  Object.keys(TUNING_DEFAULTS).forEach(k => {
+    if (typeof saved[k] === 'number' && isFinite(saved[k]) && saved[k] > 0) TUNING[k] = saved[k];
+  });
+} catch (e) {}
+function tune(k) { return TUNING[k] !== undefined ? TUNING[k] : TUNING_DEFAULTS[k]; }
+function tuningChanged() {
+  return Object.keys(TUNING_DEFAULTS).filter(k => TUNING[k] !== TUNING_DEFAULTS[k]);
+}
+
+const DEMO_VENDORS_SEED = [
 { vendorId: 'V001', businessName: 'Always Growing Farm', lastName: 'Calabrese', category: 'Ag Full', joinYear: 2023, avatar: 'wheat' },
 { vendorId: 'V002', businessName: 'Autumn’s Harvest Farm, LLC', lastName: 'Haws', category: 'Ag Full', joinYear: 2008, avatar: 'wheat' },
 { vendorId: 'V003', businessName: 'Birdskog Farm', lastName: 'Granskog', category: 'Ag Full', joinYear: 2016, avatar: 'basket' },
@@ -5736,15 +5907,16 @@ if (el) el.style.display = on ? 'flex' : 'none';
 // away before the eye had settled, which reads as a fault. A floor fixes that
 // without the lie. Below the floor it waits out the remainder; above it, it
 // leaves the instant the fetching stops.
-const IFM_SPIN_MIN = 1800;
+
 let ifmSpinShownAt = 0, ifmSpinCycleTimer = null;
 function ifmSpinSettle() {
 if (ifmSpinCycleTimer) { clearTimeout(ifmSpinCycleTimer); ifmSpinCycleTimer = null; }
 if (ifmPendingGets > 0) return;          // still fetching; leave it up
 if (!ifmSpinShownAt) { ifmSpin(false); return; }
 const shown = Date.now() - ifmSpinShownAt;
-if (shown >= IFM_SPIN_MIN) { ifmSpinShownAt = 0; ifmSpin(false); return; }
-ifmSpinCycleTimer = setTimeout(ifmSpinSettle, IFM_SPIN_MIN - shown);
+const floor = tune('spinFloorMs');
+if (shown >= floor) { ifmSpinShownAt = 0; ifmSpin(false); return; }
+ifmSpinCycleTimer = setTimeout(ifmSpinSettle, floor - shown);
 }
 function ifmNoteGet(delta) {
 ifmPendingGets += delta;
@@ -6064,7 +6236,9 @@ document.addEventListener(ev, ifmNoteTouch, { passive: true, capture: true });
 (function schedulePoll() {
 setTimeout(() => {
 (ifmAwake() ? ifmPollChanges() : Promise.resolve()).finally(schedulePoll);
-}, 11000 + Math.random() * 2000);
+// The jitter matters at 168 phones: without it they would all ask the sheet
+// in the same second, and Apps Script would answer them one at a time.
+}, tune('pollMs') + Math.random() * (tune('pollMs') * 0.18));
 })();
 document.addEventListener('visibilitychange', () => {
 if (!document.hidden) { ifmLastTouch = Date.now(); ifmPollChanges(); ifmCheckForUpdate(); }
@@ -8016,6 +8190,148 @@ canvas.appendChild(chip);
 // screen can take it away with it. Done to the class rather than to the one
 // that was reported, because the same words appear in the same shape wherever
 // a sheet is written next to the screen that first needed it.
+// The band. Put up at boot, before anything else is drawn, and never taken
+// down while the setting is on.
+function paintPretendBand() {
+const on = window.__ifmPretend;
+let band = document.getElementById('pretendBand');
+document.body.classList.toggle('pretending', !!on);
+if (!on) { if (band) band.remove(); return; }
+if (!band) {
+band = document.createElement('div');
+band.id = 'pretendBand';
+document.body.insertBefore(band, document.body.firstChild);
+}
+const iso = String(on).slice(0, 10), t = String(on).slice(11, 16);
+const d = new Date(iso + 'T12:00:00');
+band.innerHTML = '';
+const txt = document.createElement('span');
+txt.textContent = 'Pretending it is ' +
+d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) +
+(t ? ' at ' + t : '') + ' \u00b7 this device only \u00b7 anything you save is saved for real';
+band.appendChild(txt);
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.textContent = 'Stop';
+btn.onclick = stopPretending;
+band.appendChild(btn);
+}
+function startPretending() {
+const date = document.getElementById('pretendDate').value;
+const time = document.getElementById('pretendTime').value;
+if (!date) { showMsg('pretendMsg', 'err', 'Pick a day first.'); return; }
+try { localStorage.setItem('ifm-pretend-date', time ? date + 'T' + time : date); }
+catch (e) { showMsg('pretendMsg', 'err', 'This browser will not let the app remember it.'); return; }
+// A reload, because half the app worked out its dates as it started. Setting
+// this without one would leave some screens in this week and some in that.
+location.reload();
+}
+function stopPretending() {
+try { localStorage.removeItem('ifm-pretend-date'); } catch (e) {}
+location.reload();
+}
+const TUNING_UI = [
+{ k: 'kioskIdleMs', t: 'Kiosk waits before forgetting a shopper', u: 's', div: 1000, min: 3, max: 300, step: 1,
+  d: 'A shopper walks away mid-search. This is how long their search stays on screen for the next person.' },
+{ k: 'kioskDealMs', t: 'A new sale stays on the banner', u: 's', div: 1000, min: 10, max: 900, step: 5,
+  d: 'Or until another vendor posts one, whichever comes first.' },
+{ k: 'kioskDealWatchMs', t: 'Kiosk looks for a new sale every', u: 's', div: 1000, min: 1, max: 60, step: 1,
+  d: 'Compares two numbers and nothing else, so this is cheap.' },
+{ k: 'pollMs', t: 'App asks the sheet for news every', u: 's', div: 1000, min: 3, max: 300, step: 1,
+  d: 'See the note below before changing this one.' },
+{ k: 'spinFloorMs', t: 'Shortest the loader will show', u: 's', div: 1000, min: 0, max: 20, step: 0.1,
+  d: 'A floor against flicker, not a delay.' },
+{ k: 'kioskExitTaps', t: 'Taps to leave kiosk mode', u: '', div: 1, min: 2, max: 15, step: 1,
+  d: 'On the Kiosk button at the bottom of the sign-in screen.' },
+{ k: 'kioskExitWindowMs', t: 'Those taps must land within', u: 's', div: 1000, min: 1, max: 20, step: 0.5,
+  d: 'Longer is easier to do by accident; shorter is harder to do on purpose.' }
+];
+function initTuningScreen() {
+const wrap = document.getElementById('tuningRows');
+if (!wrap) return;
+wrap.innerHTML = '';
+TUNING_UI.forEach(row => {
+const now = tune(row.k) / row.div, std = TUNING_DEFAULTS[row.k] / row.div;
+const changed = tune(row.k) !== TUNING_DEFAULTS[row.k];
+const box = document.createElement('div');
+box.style.margin = '0 0 14px';
+const lab = document.createElement('label');
+lab.setAttribute('for', 'tn-' + row.k);
+paintTuningLabel(lab, row);
+const inp = document.createElement('input');
+inp.type = 'number'; inp.id = 'tn-' + row.k;
+inp.min = row.min; inp.max = row.max; inp.step = row.step; inp.value = now;
+inp.inputMode = 'decimal';
+inp.oninput = () => {
+setTuning(row.k, Number(inp.value) * row.div, row);
+paintTuningLabel(lab, row);
+};
+const note = document.createElement('p');
+note.className = 'empty-note'; note.style.margin = '4px 0 0';
+note.textContent = row.d;
+box.appendChild(lab); box.appendChild(inp); box.appendChild(note);
+wrap.appendChild(box);
+});
+const changed = tuningChanged();
+showMsg('tuningMsg', changed.length ? 'warn' : 'ok', changed.length
+? changed.length + ' setting' + (changed.length === 1 ? '' : 's') + ' differ' + (changed.length === 1 ? 's' : '') +
+' from standard on this device. Every other phone is on the shipped numbers.'
+: 'Everything is on the shipped numbers.');
+}
+function paintTuningLabel(lab, row) {
+const now = tune(row.k) / row.div, std = TUNING_DEFAULTS[row.k] / row.div;
+const changed = tune(row.k) !== TUNING_DEFAULTS[row.k];
+lab.innerHTML = esc(row.t) +
+' <span class="val" style="float:right; text-transform:none; letter-spacing:0; font-weight:700;">' +
+'<span style="color:' + (changed ? '#B4472F' : 'var(--ink)') + '">' + esc(String(now)) + esc(row.u) + '</span>' +
+(changed ? ' <span style="color:var(--ink-dim,#8a8a86); font-weight:600;">was ' +
+esc(String(std)) + esc(row.u) + '</span>' : '') + '</span>';
+}
+function setTuning(k, v, row) {
+if (!(v > 0) && k !== 'spinFloorMs') return;
+if (!isFinite(v) || v < 0) return;
+if (row && (v / row.div < row.min || v / row.div > row.max)) return;
+TUNING[k] = v;
+try { localStorage.setItem('ifm-tuning', JSON.stringify(TUNING)); } catch (e) {}
+// Anything already counting down keeps its old number until it next resets;
+// say so rather than let it look as though the change did not take.
+if (k === 'kioskIdleMs' && currentRole === 'kiosk') noteKioskActivity();
+const changed = tuningChanged();
+showMsg('tuningMsg', 'ok', 'Set. ' + (changed.length ? changed.length + ' differ' +
+(changed.length === 1 ? 's' : '') + ' from standard.' : 'Back to the shipped numbers.') +
+' A timer already running keeps its old value until it next starts.');
+}
+function resetTuning() {
+TUNING = Object.assign({}, TUNING_DEFAULTS);
+try { localStorage.removeItem('ifm-tuning'); } catch (e) {}
+initTuningScreen();
+document.getElementById('tuningOut').style.display = 'none';
+}
+function showTuningToBakeIn() {
+const box = document.getElementById('tuningOut');
+const lines = ['IFM tuning \u2014 numbers to bake in', ''];
+Object.keys(TUNING_DEFAULTS).forEach(k => {
+lines.push('  ' + (k + '                  ').slice(0, 19) + tune(k) +
+(tune(k) === TUNING_DEFAULTS[k] ? '' : '   (standard ' + TUNING_DEFAULTS[k] + ')'));
+});
+lines.push('', 'TUNING = ' + JSON.stringify(TUNING));
+box.value = lines.join('\n');
+box.style.display = 'block';
+}
+function initPretendScreen() {
+const st = document.getElementById('pretendState');
+const on = window.__ifmPretend;
+if (st) {
+st.innerHTML = on
+? '<div class="tracker-row"><div class="t-title">Right now</div><div class="t-note"><b>Pretending it is ' +
+esc(String(on).replace('T', ' at ')) + '</b> \u2014 the whole app agrees, including the kiosk</div></div>'
+: '<div class="tracker-row"><div class="t-title">Right now</div><div class="t-note">' +
+'<b>Not pretending.</b> The app is in the real week \u2014 ' + esc(todayISO()) + '</div></div>';
+}
+const di = document.getElementById('pretendDate'), ti = document.getElementById('pretendTime');
+if (di && !di.value) di.value = on ? String(on).slice(0, 10) : todayISO();
+if (ti && !ti.value && on && String(on).length > 10) ti.value = String(on).slice(11, 16);
+}
 function freeFloatingSheets() {
 document.querySelectorAll('.modal-backdrop').forEach(m => {
 if (m.parentElement !== document.body) document.body.appendChild(m);
@@ -8064,6 +8380,7 @@ const bootStarted = Date.now();
 // How long the browser spent before a line of this ran: fetching the file
 // over the network and reading it. Measured, not assumed.
 try { ifmParseMs = Math.round(performance.now()); } catch (e) {}
+paintPretendBand();
 freeFloatingSheets();
 paintPickerBackHand();
 paintLandingLogo();
@@ -9436,6 +9753,8 @@ const HELP_FEE_STATEMENT = 64;
 const HELP_YEAR_END = 65;
 const HELP_SNAP_MGR = 66;
 const HELP_SNAP_VENDOR = 67;
+const HELP_PRETEND = 68;
+const HELP_TUNING = 69;
 const HELP_TEXTS = [
 {
 "title": "Sharing Someone’s Booth",
@@ -9708,6 +10027,14 @@ const HELP_TEXTS = [
 {
 "title": "SNAP Tokens",
 "body": "<p>SNAP tokens are wooden tokens a shopper buys at the office with their SNAP benefit. You take them like cash, bring them back to the office, and the market pays you out.</p><p>The toggle starts <b>on for Ag vendors and off for craft vendors</b>, of any membership class, because SNAP buys food. That is a starting point, not a judgement about your business — the moment you set it yourself, your choice is recorded and the category default never overrides it again.</p><p>Saying no dims the rest of this drawer rather than hiding it, so you can see what you would be looking at if you said yes.</p><p>Every time the office takes tokens in from you it appears here and on your desk. <b>The office's count is the one that pays out</b> — if a line is wrong or one is missing, tell them.</p>"
+},
+{
+"title": "Pretend It Is Another Day",
+"body": "<p>Much of this app only does anything on a particular date. The Sunday sign-in window is ninety minutes on a Sunday morning; absences are judged against a Wednesday deadline; a sale only posts on a market day; the season rolls over in the winter. None of that can be tested by waiting.</p><p>This replaces the clock for the whole app at once, before any of it starts, so every screen agrees about what day it is. A switch that only some functions honoured would give answers that meant nothing.</p><p><b>Three things it does not do.</b> It does not travel &mdash; the setting lives on this device only, like the kiosk flag. It does not hide &mdash; a purple band sits across the top of every screen, in every role, while it is on. And it does not fake your saving: <b>anything you record while pretending is written to the real sheet with the pretend date on it</b>, where the office and that vendor will see it. That is deliberate, because a mode that quietly discarded writes would prove nothing about whether saving works &mdash; but it means you have to clean up after yourself.</p><p>Setting or clearing it reloads the app, because half of it works out its dates as it starts.</p>"
+},
+{
+"title": "How Long Things Wait",
+"body": "<p>A handful of numbers decide how the app <em>feels</em> rather than what it does: how long the kiosk waits before forgetting a shopper, how long a new sale shouts about itself, how often the app asks the sheet for news. Every one was a guess when it was written, and every one is better settled by standing in front of the thing at the market than by reasoning about it.</p><p>Changes take effect at once, with no reload, so you can watch the difference. A timer already counting down keeps its old number until it next starts.</p><p><b>This device only.</b> Nothing here travels, and every other phone stays on the shipped numbers &mdash; which the tool shows beside anything you have changed, so it is always clear what a vendor sees.</p><p>Two of these are more than taste. <em>How often the app asks the sheet</em> trades freshness against load on a Google Apps Script that answers one caller at a time, and at 168 phones that matters most on a market morning; it is the number to settle before a real rollout. <em>Shortest the loader will show</em> is a floor against flicker, not a delay &mdash; set it to nothing and quick fetches will blink.</p><p><b>Show these as defaults</b> prints the numbers to bake into the next build.</p>"
 }
 ];
 function showHelp(i) {
@@ -10445,6 +10772,8 @@ banked: Math.max(worked - accrued, 0)
 }
 function runScreenInit(name) {
 if (name === 'bootreport') initBootReportScreen();
+if (name === 'pretend') initPretendScreen();
+if (name === 'tuning') initTuningScreen();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
@@ -10592,6 +10921,8 @@ seedmerge:         { title: 'Seed Corrections' },
 snaplog:           { title: 'SNAP Token Collection' },
 snaptokens:        { title: 'SNAP Tokens' },
 yearend:           { title: 'Year-End Money Worksheet' },
+tuning:            { title: 'How Long Things Wait' },
+pretend:           { title: 'Pretend It Is Another Day' },
 bootreport:        { title: 'How This Opening Went' },
 selfaudit:         { title: 'Self-Audit' },
 orgstalls:         { title: 'Community Organizations' },
@@ -13462,7 +13793,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-70';
+const BUILD_ID = '14-72';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -13744,7 +14075,7 @@ if (currentRole === 'kiosk') renderKioskClock();
 // seconds to appear has already stopped being news to the person standing
 // there. This compares two numbers and does nothing else.
 if (kioskDealWatch) clearInterval(kioskDealWatch);
-kioskDealWatch = setInterval(refreshKioskDeal, 2000);
+kioskDealWatch = setInterval(refreshKioskDeal, tune('kioskDealWatchMs'));
 const stage = document.getElementById('kioskStage');
 if (stage) stage.addEventListener('pointerdown', noteKioskTap, true);
 bindKioskMapGestures();
@@ -13762,7 +14093,7 @@ kioskResizeBound = true;
 // The banner announces the ARRIVAL of a deal, so it is driven by when the deal
 // was posted, not by which day it applies to. A deal posted now for tomorrow
 // is still news now.
-const KIOSK_DEAL_MS = 120000;              // two minutes
+
 const KIOSK_DEAL_CHARS = 58;               // one line, at kiosk size, on any screen
 let kioskDealShownId = null, kioskDealTimer = null, kioskDealSeenAt = null;
 
@@ -13824,13 +14155,13 @@ if (!p) { hideKioskDeal(); return; }
 // Tuesday at whoever walked past.
 if (kioskDealSeenAt === null) { kioskDealSeenAt = Date.now(); }
 const age = Date.now() - Number(p.createdAt);
-if (age > KIOSK_DEAL_MS) { hideKioskDeal(); return; }
+if (age > tune('kioskDealMs')) { hideKioskDeal(); return; }
 if (p.id === kioskDealShownId) return;         // already up; leave it be
 kioskDealShownId = p.id;
 document.getElementById('kioskNewDealText').textContent = kioskDealWords(p);
 el.style.display = 'block';
 if (kioskDealTimer) clearTimeout(kioskDealTimer);
-kioskDealTimer = setTimeout(hideKioskDeal, Math.max(1000, KIOSK_DEAL_MS - age));
+kioskDealTimer = setTimeout(hideKioskDeal, Math.max(1000, tune('kioskDealMs') - age));
 }
 let kioskResizeBound = false;
 const KIOSK_TZ = 'America/New_York';
@@ -13838,8 +14169,6 @@ let kioskClockTimer = null;
 let kioskDealWatch = null;
 let kioskIdleTimer = null;
 let kioskTaps = [];
-const KIOSK_EXIT_TAPS = 6;
-const KIOSK_EXIT_WINDOW_MS = 2000;
 function noteKioskTap(ev) {
 noteKioskActivity();
 const t = ev && ev.target;
@@ -13850,8 +14179,8 @@ if (ev && ev.isPrimary === false) { kioskTaps = []; return; }
 if (kioskPointers.size > 1) { kioskTaps = []; return; }
 const now = Date.now();
 kioskTaps.push(now);
-kioskTaps = kioskTaps.filter(t => now - t <= KIOSK_EXIT_WINDOW_MS);
-if (kioskTaps.length >= KIOSK_EXIT_TAPS) {
+kioskTaps = kioskTaps.filter(t => now - t <= tune('kioskExitWindowMs'));
+if (kioskTaps.length >= tune('kioskExitTaps')) {
 kioskTaps = [];
 showLanding();
 }
@@ -14509,12 +14838,11 @@ const results = document.getElementById('kioskResults');
 if (results) results.innerHTML = '';
 renderKiosk();
 }
-const KIOSK_IDLE_MS = 20000;
 function noteKioskActivity() {
 if (kioskIdleTimer) clearTimeout(kioskIdleTimer);
 kioskIdleTimer = setTimeout(() => {
 if (currentRole === 'kiosk') resetKiosk();
-}, KIOSK_IDLE_MS);
+}, tune('kioskIdleMs'));
 }
 function reopenKioskResults(which) {
 noteKioskActivity();
