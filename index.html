@@ -14154,7 +14154,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-2';
+const BUILD_ID = '15-3';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20581,6 +20581,7 @@ tiles: [
 ] },
 { key: 'standing', title: 'Points & Standing', icon: 'i-star',
 sub: 'How each vendor is doing \u2014 points, absences, fines and discipline',
+head: buildStandingLookup,
 tiles: [
 { s: 'pointsmanager', i: 'i-star', t: 'Points Manager', d: "Award or adjust a vendor's points" },
 { soon: 'pointsroll', s: 'pointsroll', i: 'i-star', t: 'Annual Points Rollover', d: 'Sets the ranking every selection uses' },
@@ -20670,6 +20671,215 @@ else lead = '<b>' + live.slice(0, -1).join(', ') + '</b> and <b>' + live[live.le
 host.innerHTML = '<p class="venue-note">' + lead +
 ' Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot on this desk all year.</p>';
 }
+// ===========================================================================
+// ONE VENDOR, WHOLE STANDING
+//
+// The drawer below holds nine tools, each answering one question about every
+// vendor. A manager with a particular vendor in front of them had to open all
+// nine and hold the answers in their head. This asks the same nine questions
+// of one vendor and prints the answers in the drawer's own order, under the
+// drawer's own headings, so the summary and the tools cannot drift apart.
+//
+// It reads. It never writes: every change still happens in the tool that owns
+// it, so there is one place where each fact can be altered.
+//
+// Where a tool is not built, the section says so. A blank section and a
+// section that means "nothing is recorded" look identical on a page, and
+// telling a manager a vendor has no fines when the app has never been able to
+// hold a fine would be a lie the app told confidently.
+// ===========================================================================
+function buildStandingLookup() {
+const card = document.createElement('div');
+card.className = 'card desk-form';
+card.innerHTML =
+'<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Look Up One Vendor</h2>' +
+'<p class="empty-note" style="margin-top:0;">Everything this drawer knows about a single vendor, on one page.</p>';
+const input = document.createElement('input');
+input.type = 'text';
+input.id = 'psLookup';
+input.placeholder = 'Search by business or last name';
+input.autocomplete = 'off';
+input.oninput = () => renderStandingLookupResults(input.value);
+card.appendChild(input);
+const results = document.createElement('div');
+results.id = 'psLookupResults';
+results.className = 'desk-transient';
+card.appendChild(results);
+const out = document.createElement('div');
+out.id = 'psLookupSummary';
+out.className = 'desk-transient';
+card.appendChild(out);
+return card;
+}
+function renderStandingLookupResults(query) {
+const q = String(query || '').trim().toLowerCase();
+const results = document.getElementById('psLookupResults');
+const out = document.getElementById('psLookupSummary');
+if (!results) return;
+results.innerHTML = '';
+if (q.length < 2) { if (out) out.innerHTML = ''; return; }
+const hits = (cache.vendors || [])
+.filter(v => String(v.businessName || '').toLowerCase().includes(q) ||
+String(v.lastName || '').toLowerCase().includes(q))
+.sort(byBusinessName)
+.slice(0, 8);
+if (!hits.length) {
+results.innerHTML = '<p class="empty-note" style="margin-bottom:0;">No vendor by that name. ' +
+'The Rolodex lists everyone on the roster.</p>';
+return;
+}
+hits.forEach(v => {
+const row = document.createElement('button');
+row.type = 'button';
+row.className = 'ghost-btn';
+row.style.cssText = 'text-align:left; margin-top:6px;';
+row.textContent = v.businessName + (v.lastName ? ' \u00b7 ' + v.lastName : '');
+row.onclick = () => {
+results.innerHTML = '';
+const el = document.getElementById('psLookup');
+if (el) el.value = v.businessName;
+renderStandingLookup(v.vendorId);
+};
+results.appendChild(row);
+});
+}
+function psSection(title, built, lines, missing) {
+let inner;
+if (!built) {
+inner = '<p class="empty-note" style="margin:0;"><span class="soon-tag">Not built</span> ' +
+esc(missing) + '</p>';
+} else if (!lines.length) {
+inner = '<p class="empty-note" style="margin:0;">Nothing on record.</p>';
+} else {
+inner = lines.map(l => '<div class="tracker-row"><div class="t-title">' + l + '</div></div>').join('');
+}
+return '<div class="card' + (built ? '' : ' not-yours') + '" style="margin-top:10px;">' +
+'<h2 style="font-size:16px;">' + esc(title) + '</h2>' + inner + '</div>';
+}
+function renderStandingLookup(vendorId) {
+const out = document.getElementById('psLookupSummary');
+if (!out) return;
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+if (!v) { out.innerHTML = ''; return; }
+const year = seasonYear();
+const money = n => '$' + Number(n || 0).toFixed(2).replace(/\.00$/, '');
+let html = '<div class="card" style="margin-top:12px;">' +
+'<h2 style="margin-bottom:4px;">' + esc(v.businessName) + '</h2>' +
+'<p class="empty-note" style="margin:0;">' + esc(v.category || '') +
+(v.joinYear ? ' \u00b7 joined ' + esc(String(v.joinYear)) : '') +
+' \u00b7 season ' + year + '</p></div>';
+
+// --- Points Manager
+const entries = (cache.ledger || []).filter(r => r.vendorId === vendorId);
+const ptLines = [];
+if (entries.length) {
+ptLines.push('<b>' + vendorPoints(vendorId) + '</b> points in total, over ' +
+entries.length + (entries.length === 1 ? ' entry' : ' entries'));
+entries.slice(-3).reverse().forEach(r => {
+ptLines.push(esc(r.date || '') + ' \u00b7 ' + (Number(r.points) >= 0 ? '+' : '') +
+Number(r.points || 0) + ' \u00b7 ' + esc(r.type || '') +
+(r.note ? ' \u2014 ' + esc(r.note) : ''));
+});
+}
+html += psSection('Points Manager', true, ptLines, '');
+
+// --- Annual Points Rollover
+html += psSection('Annual Points Rollover', false, [],
+'No rollover has been run in this app, so nothing here says which year this vendor\u2019s ' +
+'ranking was last set from.');
+
+// --- Vendor Standing
+const st = vendorStanding(v);
+html += psSection('Vendor Standing', true,
+st.ok ? ['In good standing \u2014 may take a space']
+: st.reasons.map(r => '<b>On hold</b> \u2014 ' + esc(r)), '');
+
+// --- Leaves of Absence
+const leave = vendorLeave(vendorId, year);
+const lvLines = [];
+if (leave) {
+lvLines.push(esc(String(leave.year)) + ' Leave of Absence \u00b7 ' + esc(leave.status || 'requested') +
+(leave.returned ? ' \u00b7 returned' : ''));
+(leaveIssues(leave) || []).forEach(i => lvLines.push('<b>Flag</b> \u2014 ' + esc(i)));
+}
+html += psSection('Leaves of Absence', true, lvLines, '');
+
+// --- Absence Patterns
+const notices = seasonNotices(vendorId) || [];
+const late = notices.filter(n => n.late);
+const noShows = [];
+Object.keys((cache.ops && cache.ops.noshow) || {}).forEach(d => {
+if ((cache.ops.noshow[d] || []).indexOf(vendorId) !== -1) noShows.push(d);
+});
+const abLines = [];
+if (notices.length || noShows.length) {
+abLines.push((notices.length - late.length) + ' notice' + (notices.length - late.length === 1 ? '' : 's') +
+' on time \u00b7 <b>' + late.length + '</b> late \u00b7 <b>' + noShows.length + '</b> with no notice');
+late.slice(-3).reverse().forEach(n => abLines.push('Late \u00b7 ' + esc(n.day) + ' ' + esc(n.date) +
+(n.hours ? ' \u00b7 ' + n.hours + 'h past the deadline' : '')));
+noShows.slice(-3).reverse().forEach(d => abLines.push('No notice \u00b7 ' + esc(d)));
+}
+html += psSection('Absence Patterns', true, abLines, '');
+
+// --- Attendance Requirement
+html += psSection('Attendance Requirement', false, [],
+'What holding a reserved booth obliges is not recorded anywhere, so the app cannot say ' +
+'whether this vendor has met it.');
+
+// --- Fines & Penalties
+const fines = (((cache.ops || {}).fines) || []).filter(f => f.vendorId === vendorId);
+const waivedOf = f => !!((cache.ops || {}).waived || {})['F:' + f.id];
+const live = fines.filter(f => !waivedOf(f));
+const fnLines = [];
+if (fines.length) {
+fnLines.push('<b>' + money(live.reduce((s, f) => s + Number(f.amount || 0), 0)) +
+'</b> standing, over ' + live.length + ' fine' + (live.length === 1 ? '' : 's') +
+(fines.length - live.length ? ' \u00b7 ' + (fines.length - live.length) + ' waived' : ''));
+fines.slice(-4).reverse().forEach(f => fnLines.push(esc(f.date || '') + ' \u00b7 ' +
+money(f.amount) + ' \u00b7 ' + esc(f.reason || 'Unstated') +
+(waivedOf(f) ? ' \u00b7 <b>waived</b>' : '')));
+}
+html += psSection('Fines & Penalties', true, fnLines, '');
+
+// --- Disciplinary Record
+html += psSection('Disciplinary Record', false, [],
+'No stage, warning or hearing is stored in this app. If this vendor has been through ' +
+'anything, it is on paper in the office.');
+
+// --- Year-End Money Worksheet
+const ren = ((cache.ops || {}).renewal || {})[year] || {};
+const mnLines = [];
+const r = ren[vendorId];
+if (r && r.postmarked) mnLines.push('Renewal recorded \u00b7 postmarked ' + esc(String(r.postmarked)));
+let dayPaid = 0;
+Object.keys((cache.ops || {}).dayfees || {}).forEach(d => {
+if (String(d).slice(0, 4) !== String(year)) return;
+if ((cache.ops.dayfees[d] || []).indexOf(vendorId) !== -1) dayPaid++;
+});
+if (dayPaid) mnLines.push(dayPaid + ' day fee' + (dayPaid === 1 ? '' : 's') + ' recorded as received');
+const reported = ((vpCache && vpCache.items) || [])
+.filter(it => it.vendorId === vendorId && String(it.date || '').slice(0, 4) === String(year));
+if (reported.length) {
+mnLines.push('<b>' + money(reported.reduce((s, it) => s + Number(it.amount || 0), 0)) +
+'</b> reported by the vendor and not yet confirmed, over ' + reported.length + ' payment' +
+(reported.length === 1 ? '' : 's'));
+}
+if (mnLines.length) mnLines.push('<i>Reported and recorded are kept apart and never added together.</i>');
+html += psSection('Year-End Money Worksheet', true, mnLines, '');
+
+// --- Work hours, which the standing rests on even though it lives elsewhere
+const hl = buildHoursLedger(vendorId, year);
+html += psSection('Work Hours (from the Work Hours drawer)', true,
+hl.accrued || hl.worked
+? [Number(hl.accrued).toFixed(1) + ' accrued \u00b7 ' + Number(hl.worked).toFixed(1) + ' worked \u00b7 <b>' +
+Number(hl.owed).toFixed(1) + '</b> owed' + (hl.banked ? ' \u00b7 ' + Number(hl.banked).toFixed(1) + ' banked' : ''),
+Number(hl.bgWorked).toFixed(1) + ' of those with Building & Grounds \u2014 two hours a season are required']
+: [], '');
+
+html += '<p class="empty-note" style="margin-top:10px;">Read-only. Every figure here is changed in the ' +
+'tool it belongs to, below.</p>';
+out.innerHTML = html;
+}
 function buildToolFold(t) {
 const fold = document.createElement('div');
 fold.className = 'dash-fold';
@@ -20738,6 +20948,7 @@ bar.onclick = () => toggleFold(bar);
 fold.appendChild(bar);
 const body = document.createElement('div');
 body.className = 'fold-body';
+if (f.head) body.appendChild(f.head());
 f.tiles.forEach(t => body.appendChild(buildToolFold(t)));
 fold.appendChild(body);
 return fold;
