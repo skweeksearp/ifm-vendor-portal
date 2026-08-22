@@ -897,6 +897,35 @@ body.kiosk-mode input.kiosk-search:focus { border-color: #D8A93B; background: rg
 body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 400; }
 .kiosk-search:focus { border-color: #7FA36A; }
 
+/* The venue picker. Three across, always, at any width -- a row of three that
+   wraps to two-and-one reads as a list rather than a switch, and a switch is
+   what this is. */
+.venue-picker {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  margin: 0 0 10px; padding: 5px;
+  background: var(--paper-dim, #E6E2D2); border-radius: 14px;
+}
+.venue-picker button {
+  padding: 9px 6px; border-radius: 10px; border: none; background: transparent;
+  color: var(--ink-dim, #8A8A86); font-family: inherit; text-align: center;
+  font-size: clamp(13px, 2.9vw, 16px); font-weight: 700; line-height: 1.2;
+  min-height: 44px;
+}
+.venue-picker button .vsub {
+  display: block; font-size: 11.5px; font-weight: 500; opacity: 0.85;
+  margin-top: 2px; line-height: 1.2;
+}
+.venue-picker button.on {
+  background: #fff; color: var(--ink);
+  box-shadow: 0 1px 3px rgba(35,42,32,0.16);
+}
+@media (max-height: 520px) {
+  .venue-picker button .vsub { display: none; }
+  .venue-picker button { padding: 8px 6px; min-height: 40px; }
+}
+.venue-note { font-size: 13.5px; color: var(--ink-dim, #8A8A86); line-height: 1.5;
+  margin: -4px 0 12px; }
+
 /* The pretending band. Deliberately loud and deliberately at the very top of
    everything, including the kiosk: the danger of this tool is not that it
    works, it is that somebody forgets it is on and reads a screen full of
@@ -2145,6 +2174,7 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
+<div id="vendorVenuePicker"></div>
 <div class="dash-fold" data-fold="fPromos">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitlePromos">Sales &amp; Promotions</span>
@@ -2253,6 +2283,10 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+
+
+</div>
+</div>
 <div class="dash-fold" data-fold="winter">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
 <span class="fold-title">Winter Market</span>
@@ -2268,8 +2302,6 @@ I sell food (prepared food or produce)
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
-</div>
-</div>
 </div>
 <div class="dash-fold" data-fold="hours">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'hours')">
@@ -2457,6 +2489,7 @@ I sell food (prepared food or produce)
 </section>
 <section id="screen-managerdash" class="screen">
 <div class="screen-head" id="head-managerdash"></div>
+<div id="mgrVenuePicker"></div>
 <div class="dash-fold" id="mgrAlerts" data-fold="mgrattn" style="display:none; margin-bottom:14px;">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Needs Attention</span>
@@ -3231,6 +3264,36 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <select id="yeYear" onchange="renderYearEndPreview()"></select>
 <div id="yePreview" style="margin-top:10px;"></div>
 <button type="button" class="primary-btn" style="margin-top:10px;" onclick="openYearEnd()">View printable page</button>
+</div>
+</section>
+<section id="screen-winterpaperwork" class="screen">
+<div class="screen-head" id="head-winterpaperwork"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Triphammer Paperwork<button type="button" class="help-dot" onclick="showHelp(HELP_WINTER_PAPER)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;"><b>The app does not know what the mall asks for.</b> The 2026 Vendor Guide names the Winter Market&rsquo;s location, hours and day fee, and says nothing about extra paperwork; it points at a separate <em>Winter Market Guidelines</em> document that is not in the app. So nothing is assumed here. Name what Triphammer actually requires and this becomes a list you can work down.</p>
+<div class="status-msg" id="wpMsg"></div>
+</div>
+<div class="card desk-form manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>What Triphammer Asks For</h2>
+<label for="wpNewName">Add something the mall requires</label>
+<input type="text" id="wpNewName" placeholder="e.g. Certificate of insurance naming the mall">
+<label for="wpNewNote">Anything worth remembering about it</label>
+<input type="text" id="wpNewNote" placeholder="e.g. must name Triphammer Marketplace as additional insured">
+<button type="button" class="primary-btn" onclick="addWinterRequirement()">Add it</button>
+<div id="wpReqList" style="margin-top:12px;"></div>
+</div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Who Has Handed What In</h2>
+<p class="empty-note" style="margin-top:0;">Only vendors down for a Triphammer space are listed. Tap a name to mark what has arrived.</p>
+<div id="wpVendorList" class="drawer-list"></div>
+</div>
+</section>
+<section id="screen-winterrules" class="screen">
+<div class="screen-head" id="head-winterrules"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>How Winter Differs</h2>
+<p class="empty-note" style="margin-top:0;">Everything the app learned running Steamboat Landing carries over to Triphammer <em>except where the market itself works differently</em>. This is that list, so a manager does not have to hold it in their head or find out the hard way.</p>
+<div id="winterRulesList"></div>
 </div>
 </section>
 <section id="screen-tuning" class="screen">
@@ -4591,6 +4654,55 @@ Unlimited people (e.g. a cleanup day)
 // The DEFAULTS below are the shipped values. Anything changed is remembered on
 // this device alone and never travels; the tool shows what is standard beside
 // whatever you have set, so it is always clear what a vendor's phone does.
+// ===========================================================================
+// WHICH MARKET
+//
+// The market runs in three places and they are not the same market. Steamboat
+// Landing has ninety-three booths, a selection process, a pavilion to inspect
+// and a kiosk in the middle of it. The Winter Market is forty-four spaces at
+// Triphammer with its own dates. A PopUp is a one-off somewhere else entirely.
+// They were drawers on one desk, which put the Winter Market three taps below
+// a heading about Steamboat and made it look like a footnote to it.
+//
+// So there is a picker at the top of the desk instead, and the desk changes.
+//
+// The important part is what does NOT move. A vendor's points, hours, fines,
+// profile and committees are the same wherever they are standing -- those
+// belong to the vendor, not to a field -- so they appear on every venue rather
+// than being filed under one. Only the tools that are genuinely about a PLACE
+// follow the picker.
+//
+// This is a view, not a role: it lives on the device, changes nothing in the
+// records, and two people looking at different venues are looking at the same
+// market.
+const VENUES = [
+  { k: 'steamboat', t: 'Steamboat Landing', s: 'The Saturday and Sunday market' },
+  { k: 'winter',    t: 'Winter Market',     s: 'Triphammer, through the cold months' },
+  { k: 'offsite',   t: 'Offsite & PopUps',  s: 'One-off markets elsewhere' }
+];
+let currentVenue = 'steamboat';
+try {
+  const v = localStorage.getItem('ifm-venue');
+  if (v && VENUES.some(x => x.k === v)) currentVenue = v;
+} catch (e) {}
+function venueTitle(k) { const v = VENUES.find(x => x.k === (k || currentVenue)); return v ? v.t : ''; }
+// Which drawers belong to a place. Anything not named here belongs to the
+// vendor rather than to a field, and shows wherever they are.
+const VENUE_OF = {
+  // manager groups
+  selection: 'steamboat', marketday: 'steamboat', booths: 'steamboat',
+  winter: 'winter', popups: 'offsite',
+  // vendor drawers
+  boothassign: 'steamboat', callin: 'steamboat', callout: 'steamboat',
+  fCio: 'steamboat', lottery: 'steamboat', auction: 'steamboat', fShare: 'steamboat',
+  fPromos: 'steamboat',
+  'winter-vendor': 'winter', popupsvendor: 'offsite'
+};
+function belongsHere(key) {
+  const v = VENUE_OF[key];
+  return !v || v === currentVenue;
+}
+
 const TUNING_DEFAULTS = {
   kioskIdleMs:    20000,   // shopper walks away -> kiosk forgets them
   kioskDealMs:   120000,   // a new sale stays on the banner
@@ -8246,6 +8358,149 @@ const TUNING_UI = [
 { k: 'kioskExitWindowMs', t: 'Those taps must land within', u: 's', div: 1000, min: 1, max: 20, step: 0.5,
   d: 'Longer is easier to do by accident; shorter is harder to do on purpose.' }
 ];
+// TRIPHAMMER PAPERWORK
+//
+// The honest state of knowledge: the 2026 Guide gives the Winter Market a
+// location, hours and a day fee, and says nothing about extra paperwork. It
+// points at a separate Winter Market Guidelines document which the app has
+// never seen. So the app does NOT invent a list of forms -- it provides the
+// shape of one and waits to be told, and says on the screen that it is waiting.
+//
+// A tool that guessed at "certificate of insurance, food licence, mall vendor
+// agreement" would look authoritative and be fiction, and a vendor turned away
+// at the door because the app listed the wrong thing is a worse outcome than
+// an empty list that admits what it does not know.
+let winterPaper = null;
+async function loadWinterPaper() {
+const v = await storageGet('ifm-winter-paper');
+if (v !== STORAGE_MISSING && v) winterPaper = v;
+if (!winterPaper) winterPaper = { reqs: [], received: {} };
+winterPaper.reqs = winterPaper.reqs || [];
+winterPaper.received = winterPaper.received || {};
+return winterPaper;
+}
+async function saveWinterPaper() { await storageSet('ifm-winter-paper', winterPaper); }
+function initWinterPaperwork() {
+if (!winterPaper) winterPaper = { reqs: [], received: {} };
+drawWinterPaperwork();                       // draw first, fetch second
+loadWinterPaper().then(drawWinterPaperwork).catch(() => {});
+}
+function winterVendorIds() {
+// Everyone holding a Triphammer space on any winter date, once each.
+const ids = new Set();
+const res = cache.winterReservations || {};
+Object.keys(res).forEach(date => {
+Object.keys(res[date] || {}).forEach(k => { const v = res[date][k]; if (v) ids.add(v); });
+});
+return [...ids];
+}
+function drawWinterPaperwork() {
+const list = document.getElementById('wpReqList');
+if (list) {
+list.innerHTML = '';
+if (!winterPaper.reqs.length) {
+list.innerHTML = '<p class="empty-note">Nothing named yet. Until something is added here, the app ' +
+'makes no claim about what Triphammer requires \u2014 which is the truthful position, not a gap.</p>';
+} else {
+winterPaper.reqs.forEach(r => {
+const row = document.createElement('div');
+row.className = 'attn-item';
+row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div><div class="attn-acts"></div>';
+row.querySelector('.attn-t').textContent = r.name;
+row.querySelector('.attn-m').textContent = r.note || '';
+const b = document.createElement('button');
+b.type = 'button'; b.className = 'ghost-btn'; b.textContent = 'Remove';
+b.onclick = () => removeWinterRequirement(r.id);
+row.querySelector('.attn-acts').appendChild(b);
+list.appendChild(row);
+});
+}
+}
+const vl = document.getElementById('wpVendorList');
+if (!vl) return;
+vl.innerHTML = '';
+const ids = winterVendorIds();
+if (!winterPaper.reqs.length) {
+vl.innerHTML = '<p class="empty-note">Name what the mall asks for above and this fills in.</p>'; return;
+}
+if (!ids.length) {
+vl.innerHTML = '<p class="empty-note">Nobody is down for a Triphammer space yet.</p>'; return;
+}
+ids.map(id => cache.vendors.find(v => v.vendorId === id)).filter(Boolean)
+.sort(byBusinessName).forEach(v => {
+const got = winterPaper.received[v.vendorId] || {};
+const done = winterPaper.reqs.filter(r => got[r.id]).length;
+const row = document.createElement('div');
+row.className = 'attn-item';
+row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div><div class="attn-acts"></div>';
+row.querySelector('.attn-t').textContent = v.businessName;
+row.querySelector('.attn-m').textContent = done + ' of ' + winterPaper.reqs.length + ' in' +
+(done === winterPaper.reqs.length ? ' \u00b7 all clear' : '');
+winterPaper.reqs.forEach(r => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = got[r.id] ? 'primary-btn' : 'ghost-btn';
+b.style.cssText = 'font-size:13px; padding:5px 9px; margin-left:5px;';
+b.textContent = r.name.slice(0, 18);
+b.onclick = () => toggleWinterReceived(v.vendorId, r.id);
+row.querySelector('.attn-acts').appendChild(b);
+});
+vl.appendChild(row);
+});
+setTimeout(() => { fitListToRows(vl, '.attn-item', 5.4); markListEnds(vl); }, 0);
+}
+async function addWinterRequirement() {
+if (!requireManager()) return;
+const name = document.getElementById('wpNewName').value.trim();
+if (!name) { showMsg('wpMsg', 'err', 'Name the thing the mall asks for.'); return; }
+await loadWinterPaper();
+winterPaper.reqs.push({ id: 'wr' + Date.now(), name: name,
+note: document.getElementById('wpNewNote').value.trim() });
+await saveWinterPaper();
+document.getElementById('wpNewName').value = '';
+document.getElementById('wpNewNote').value = '';
+drawWinterPaperwork();
+showMsg('wpMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Added. It now appears against every vendor with a Triphammer space.');
+}
+async function removeWinterRequirement(id) {
+if (!requireManager()) return;
+await loadWinterPaper();
+winterPaper.reqs = winterPaper.reqs.filter(r => r.id !== id);
+// The record of who handed it in goes with it, rather than being left behind
+// pointing at something that no longer exists.
+Object.keys(winterPaper.received).forEach(v => { delete winterPaper.received[v][id]; });
+await saveWinterPaper();
+drawWinterPaperwork();
+}
+async function toggleWinterReceived(vendorId, reqId) {
+if (!requireManager()) return;
+await loadWinterPaper();
+const got = winterPaper.received[vendorId] = winterPaper.received[vendorId] || {};
+if (got[reqId]) delete got[reqId];
+else got[reqId] = { at: new Date().toISOString(), by: currentRole };
+await saveWinterPaper();
+drawWinterPaperwork();
+}
+
+// WHAT CARRIES OVER AND WHAT DOES NOT. Everything here is from the 2026 Guide
+// or is a plain fact about the app, and each line says which.
+const WINTER_DIFFS = [
+{ t: 'The 60/40 rule does not apply here', d: 'It governs who holds one of the 105 Full Memberships, market-wide \u2014 at least 60% agriculture, the rest split evenly between Artisan and Food. It is about membership, not about who stands where on a given day, so it has nothing to say about Triphammer spaces.', s: 'Guide, p.25' },
+{ t: 'The day fee is $30 and staff collect it during the market', d: 'Everywhere else the fee is paid at set-up, before the market opens. At the Winter Market and at Wednesdays, staff collect on site while trading.', s: 'Guide, pp.7 and 14' },
+{ t: 'Saturdays only, January to March, 10:30\u00A0AM to 2\u00A0PM', d: 'Shorter than Steamboat and on one day. Steamboat runs Saturday and Sunday, April to December.', s: 'Guide, p.3' },
+{ t: 'The location is not permanent', d: 'The Guide says the Winter Market\u2019s location may change from year to year depending on lease negotiations. Anything in the app that names Triphammer is naming this year\u2019s hall.', s: 'Guide, p.3' },
+{ t: 'No kiosk', d: 'The public map, the search bars and the sale banner are Steamboat Landing. There is no screen in the hall at Triphammer, so nothing here is built to be read by a shopper.', s: 'the app' },
+{ t: 'No Sales & Promotions', d: 'A sale posted in the app reaches shoppers through the kiosk, and there is no kiosk here. The drawer does not appear on the Winter tab.', s: 'the app' },
+{ t: 'Attendance still counts, work hours do not', d: 'Attending a Winter Market earns a point like any other market day, but Winter days do not add to the Building & Grounds or work-hour requirement.', s: 'the app\u2019s help, from the Guide' },
+{ t: 'How spaces are allocated is still an open question', d: 'The Guide does not describe a selection process for Triphammer the way it does for Steamboat. Until the office says how it actually works, the map lets a manager assign a space by hand and records who has it.', s: 'unanswered' }
+];
+function renderWinterRules() {
+const el = document.getElementById('winterRulesList');
+if (!el) return;
+el.innerHTML = WINTER_DIFFS.map(d =>
+'<div class="comm-item"><div class="comm-title">' + d.t + '</div><div class="comm-desc">' + d.d +
+' <em style="opacity:.7">(' + d.s + ')</em></div></div>').join('');
+}
 function initTuningScreen() {
 const wrap = document.getElementById('tuningRows');
 if (!wrap) return;
@@ -9457,7 +9712,7 @@ document.getElementById('volRoleCard').innerHTML =
 '<p class="empty-note">' + r.note + '</p>';
 }
 // ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
-const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
+const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'winter', 'popupsvendor', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
 'fShare', 'directory', 'venmopay', 'mydocs', 'myattend', 'guide', 'communicate'];
 let deskDragAttached = false;
 let deskOrderCache = null;
@@ -9755,6 +10010,7 @@ const HELP_SNAP_MGR = 66;
 const HELP_SNAP_VENDOR = 67;
 const HELP_PRETEND = 68;
 const HELP_TUNING = 69;
+const HELP_WINTER_PAPER = 70;
 const HELP_TEXTS = [
 {
 "title": "Sharing Someone’s Booth",
@@ -10035,6 +10291,10 @@ const HELP_TEXTS = [
 {
 "title": "How Long Things Wait",
 "body": "<p>A handful of numbers decide how the app <em>feels</em> rather than what it does: how long the kiosk waits before forgetting a shopper, how long a new sale shouts about itself, how often the app asks the sheet for news. Every one was a guess when it was written, and every one is better settled by standing in front of the thing at the market than by reasoning about it.</p><p>Changes take effect at once, with no reload, so you can watch the difference. A timer already counting down keeps its old number until it next starts.</p><p><b>This device only.</b> Nothing here travels, and every other phone stays on the shipped numbers &mdash; which the tool shows beside anything you have changed, so it is always clear what a vendor sees.</p><p>Two of these are more than taste. <em>How often the app asks the sheet</em> trades freshness against load on a Google Apps Script that answers one caller at a time, and at 168 phones that matters most on a market morning; it is the number to settle before a real rollout. <em>Shortest the loader will show</em> is a floor against flicker, not a delay &mdash; set it to nothing and quick fetches will blink.</p><p><b>Show these as defaults</b> prints the numbers to bake into the next build.</p>"
+},
+{
+"title": "Triphammer Paperwork",
+"body": "<p><b>The app does not know what the mall asks for, and does not pretend to.</b> The 2026 Vendor Guide gives the Winter Market a location, hours and a day fee, and says nothing about extra paperwork. It points at a separate <em>Winter Market Guidelines</em> document that the app has never seen.</p><p>So this tool provides the shape of a list and waits to be told what goes in it. A tool that guessed at &ldquo;certificate of insurance, food licence, mall vendor agreement&rdquo; would look authoritative and be fiction — and a vendor turned away at the door because the app listed the wrong thing is worse than an empty list that admits what it does not know.</p><p>Name what Triphammer actually requires and every vendor holding a space there gets a row. Tap to mark each thing as received. Removing a requirement takes the record of who handed it in with it, rather than leaving ticks pointing at something that no longer exists.</p>"
 }
 ];
 function showHelp(i) {
@@ -10774,6 +11034,8 @@ function runScreenInit(name) {
 if (name === 'bootreport') initBootReportScreen();
 if (name === 'pretend') initPretendScreen();
 if (name === 'tuning') initTuningScreen();
+if (name === 'winterpaperwork') initWinterPaperwork();
+if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
@@ -10921,6 +11183,8 @@ seedmerge:         { title: 'Seed Corrections' },
 snaplog:           { title: 'SNAP Token Collection' },
 snaptokens:        { title: 'SNAP Tokens' },
 yearend:           { title: 'Year-End Money Worksheet' },
+winterpaperwork:   { title: 'Triphammer Paperwork' },
+winterrules:       { title: 'How Winter Differs' },
 tuning:            { title: 'How Long Things Wait' },
 pretend:           { title: 'Pretend It Is Another Day' },
 bootreport:        { title: 'How This Opening Went' },
@@ -11026,6 +11290,23 @@ if (!date) return null;
 const b = cache.booths.find(x => boothBaselineHolder(x, date) === vendorId);
 return b ? b.num : null;
 }
+// A vendor's desk, filtered to one place. The drawers that follow the picker
+// are the ones about a FIELD -- booths, absences there, the sale that shows on
+// the kiosk that stands there. Everything else is about the vendor and stays.
+function applyVenueToDesk() {
+buildVenuePicker('vendorVenuePicker', () => { applyVendorVisibility(); applyDeskOrder(); });
+// NOT `> .dash-fold`. The drawers are not all direct children of the desk --
+// several sit two levels down inside a wrapper -- so a child selector reached
+// some of them and silently skipped the rest, including the two this whole
+// feature is about. Ask the desk for every drawer it contains.
+document.querySelectorAll('#screen-dashboard .dash-fold[data-fold]').forEach(f => {
+const key = f.getAttribute('data-fold');
+// The vendor's Winter drawer and the manager's Winter group are both called
+// 'winter', so the vendor one is looked up under a name of its own.
+const lookup = key === 'winter' ? 'winter-vendor' : key;
+f.style.display = belongsHere(lookup) ? '' : 'none';
+});
+}
 function applyVendorVisibility() {
 const show = (id, visible) => {
 const el = document.getElementById(id);
@@ -11054,6 +11335,7 @@ setDeskRelevance('commAgOnly', isAg,
 'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0;
 renderSnapDeskSub();
+applyVenueToDesk();
 setDeskRelevance('menuMyCommittees', onCmte,
 'You are not on a committee at the moment, so there are no agendas or tasks in front of you here. ' +
 'Committees are open to any vendor \u2014 tell the office or a board member you would like to serve on one, ' +
@@ -13793,7 +14075,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-72';
+const BUILD_ID = '14-75';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20191,7 +20473,6 @@ tiles: [
 { s: 'auction', i: 'i-gavel',
 t: () => selectionSeason() + ' Season-Long Booth Reservations',
 d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
-{ s: 'winterbooths', i: 'i-snowflake', t: 'Winter Market Booths', d: 'Triphammer spaces, assigned by date' },
 { s: 'orgstalls', i: 'i-tent', t: 'Community Organizations', d: 'A stall for a non-profit \u2014 once a season, when space allows' },
 { s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
 ] },
@@ -20241,11 +20522,23 @@ tiles: [
 { soon: 'compliance', ot: 'compliance', i: 'i-ruler', t: 'Booth Compliance Clocks', d: 'Inspections, 60-day and two-year clocks' },
 { soon: 'bgwalk', ot: 'bgwalk', i: 'i-wrench', t: 'B&amp;G Walkthrough', d: 'The monthly inspection round' },
 ] },
-{ key: 'season', title: 'Season & Events', icon: 'i-tent',
-sub: 'Dates away from Steamboat Landing',
+// Two drawers rather than one. "Season & Events" held two unrelated things
+// under a heading that named neither: a manager looking for the Winter Market
+// had to know it was filed under a word that could mean anything. The Winter
+// Market is a place with its own dates and its own booths; a PopUp is a
+// one-off somewhere else entirely.
+{ key: 'winter', title: 'Winter Market', icon: 'i-snowflake',
+sub: 'Triphammer \u2014 Saturdays, January to March',
+tiles: [
+{ s: 'wintermarketadmin', i: 'i-snowflake', t: 'Winter Market Dates', d: 'Add or delete Triphammer dates' },
+{ s: 'winterbooths', i: 'i-snowflake', t: 'Winter Market Spaces', d: '44 spaces across two atria, assigned by date &middot; its own map, no kiosk' },
+{ s: 'winterpaperwork', i: 'i-document', t: 'Triphammer Paperwork', d: 'Whatever the mall needs from a vendor before they can trade there' },
+{ s: 'winterrules', i: 'i-scale', t: 'How Winter Differs', d: 'What carries over from Steamboat and what does not' },
+] },
+{ key: 'popups', title: 'PopUp Markets', icon: 'i-tent',
+sub: 'One-off markets away from Steamboat Landing',
 tiles: [
 { s: 'popups', i: 'i-tent', t: 'PopUp Events', d: 'Add or delete satellite market events' },
-{ s: 'wintermarketadmin', i: 'i-snowflake', t: 'Winter Market Dates', d: 'Add or delete Triphammer dates' },
 ] },
 { key: 'board', title: 'Board & Committees', icon: 'i-columns',
 sub: 'What is in front of the board, and who serves',
@@ -20270,6 +20563,48 @@ renderManagerAlerts();
 renderManagerFolders();
 loadImprovements().then(renderManagerAlerts);
 }
+// Drawn at the top of whichever desk asks for it. One function, both desks:
+// the picker is the same object in both places and must not drift.
+function buildVenuePicker(hostId, onPick) {
+const host = document.getElementById(hostId);
+if (!host) return;
+host.innerHTML = '';
+const row = document.createElement('div');
+row.className = 'venue-picker';
+VENUES.forEach(v => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = v.k === currentVenue ? 'on' : '';
+b.innerHTML = '<span>' + esc(v.t) + '</span><span class="vsub">' + esc(v.s) + '</span>';
+b.onclick = () => {
+if (currentVenue === v.k) return;
+currentVenue = v.k;
+try { localStorage.setItem('ifm-venue', v.k); } catch (e) {}
+closeAllFolds();
+onPick();
+};
+row.appendChild(b);
+});
+host.appendChild(row);
+const note = document.createElement('p');
+note.className = 'venue-note';
+note.innerHTML = venueNote();
+host.appendChild(note);
+}
+// Said plainly, because the honest answer is lopsided: almost everything the
+// app does was built for Steamboat Landing, and a person switching to Winter
+// and finding four drawers should be told why rather than left wondering what
+// broke.
+function venueNote() {
+const keeps = 'Points, hours, fees, documents and everything else about a vendor stay on every one of these \u2014 they belong to the vendor, not to a field.';
+if (currentVenue === 'steamboat') return 'Ninety-three booths, the selection rounds, the pavilion and the kiosk. ' + keeps;
+if (currentVenue === 'winter') return 'Forty-four spaces at Triphammer Marketplace, Saturdays ' +
+'January to March, 10:30\u00A0AM to 2\u00A0PM. The day fee is $30 and staff collect it on site during ' +
+'the market rather than at set-up. <b>The 60/40 rule does not apply here</b> \u2014 it governs who holds ' +
+'one of the 105 Full Memberships, market-wide, not who stands where on a given day. ' + keeps;
+return 'One-off markets away from Steamboat Landing. This is the thinnest of the three: ' +
+'a PopUp is a date, a place and who is coming. ' + keeps;
+}
 function buildToolFold(t) {
 const fold = document.createElement('div');
 fold.className = 'dash-fold';
@@ -20293,10 +20628,11 @@ fold.appendChild(body);
 return fold;
 }
 function renderManagerFolders() {
+buildVenuePicker('mgrVenuePicker', renderManagerFolders);
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 grid.innerHTML = '';
-MGR_FOLDERS.forEach(f => {
+MGR_FOLDERS.filter(f => belongsHere(f.key)).forEach(f => {
 if (f.s) { grid.appendChild(buildToolFold(f)); return; }
 const fold = document.createElement('div');
 fold.className = 'dash-fold';
