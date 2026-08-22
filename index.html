@@ -2142,15 +2142,6 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 
 
 
-<div class="dash-fold" data-fold="myattend">
-<button type="button" class="fold-bar" onclick="showPlanned('myattend')">
-<svg class="ico soon-cone" style="position:static; margin:0;"><use href="#i-cone"></use></svg>
-<span class="fold-title" style="opacity:.72;">Market Days</span>
-<span class="fold-sub">Not built · your season so far</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
 <div class="dash-fold" data-fold="guide">
 <a class="fold-bar" style="text-decoration:none; display:flex; margin-bottom:10px;" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><span class="fold-title">Vendor Guide</span><span class="fold-sub">Opens on the market’s site ↗</span></a>
 </div>
@@ -9784,7 +9775,7 @@ document.getElementById('volRoleCard').innerHTML =
 // order all year), out of season. Business Profile is fixed above all of it.
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = ['hours', 'venmopay', 'fPoints', 'snaptokens', 'mydocs',
-'mycommittees', 'directory', 'communicate', 'myattend', 'guide'];
+'mycommittees', 'directory', 'communicate', 'guide'];
 // Steamboat's day-to-day tools, on top while Steamboat is running.
 const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos', 'fShare'];
 // The other three markets, always adjacent and always in this order, so a
@@ -10437,7 +10428,10 @@ venmopay: { built: true, t: 'Pay Fees with Venmo', when: 'Mock-up \u2014 awaitin
 body: '<p>The idea: fees join a payment basket from wherever a vendor meets them \u2014 the Work Hours drawer, day fees beside a booth request, renewal on this screen \u2014 then one Venmo payment settles the basket, like any shopping cart. The office opens a Venmo business profile, and every fee in the app grows a Pay with Venmo button that opens the app with the amount and a bookkeeping note prefilled \u2014 so each payment arrives already labelled for reconciliation. Venmo\u2019s business rate is 1.9% + $0.10 per payment, cheaper than typical card processing.</p>' +
 '<p>What blocks it: the office has no Venmo business profile yet, and the Guide\u2019s deadlines are postmark rules \u2014 the Board would need to bless an electronic timestamp as meeting a deadline, decide who absorbs the 1.9%, and keep checks co-equal. The bookkeeper should weigh in on 1099-K handling.</p>' +
 '<p>What it will never do: the app cannot see inside Venmo, so a tap here is a report, not a receipt \u2014 the office confirms against the real transfer. And nothing about this screen touches vendor pricing; it is only the market\u2019s own fees.</p>' },
-myattend: { built: false, t: 'Market Days', when: 'Through the season',
+// OFF THE DESK. The Market Days drawer was taken off the vendor desk at
+// Sean's instruction. Nothing links here now; the note is kept so the idea
+// and its reasoning survive rather than being rediscovered from scratch.
+myattend: { built: false, t: 'Market Days', when: 'Through the season \u2014 off the vendor desk',
 body: '<p>Your season at a glance: the Saturdays and Sundays you have sold, and how the year is shaping up. Built to help you plan the rest of the season \u2014 and if life is getting in the way, the Exception Request under Communicate with the Market exists for exactly that.</p>' },
 attendreq: { built: true, t: 'Attendance Requirement', when: 'Through the season',
 body: '<p>Measure each vendor against the attendance they owe, while there is still season left to make it up.</p>' +
@@ -14181,7 +14175,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-9';
+const BUILD_ID = '15-10';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
