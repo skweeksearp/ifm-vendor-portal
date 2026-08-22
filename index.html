@@ -1364,7 +1364,7 @@ position: absolute; z-index: 15;
 padding: 10px 8px; border-radius: 10px; cursor: pointer;
 border: 1px solid #B9B199; background: rgba(255,255,255,0.86);
 color: #3D4A33; font-family: inherit; font-weight: 800;
-font-size: clamp(16px, 1.5vw, 19px); line-height: 1.15; text-align: center;
+line-height: 1.15; text-align: center; text-wrap: balance;
 min-height: 44px;
 }
 .kiosk-snap-btn.on {
@@ -14181,7 +14181,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-5';
+const BUILD_ID = '15-6';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14697,10 +14697,17 @@ if (glyph) glyph.style.fontSize = c.carrot.size + 'px';
 const snap = document.getElementById('kioskSnapBtn');
 const cs = chromePx('snap');
 if (snap && cs) {
+const st = kioskStageSize();
+cs.size = Math.max(72, Math.min(cs.size, Math.round(st.w)));
+cs.right = Math.max(0, Math.min(cs.right, Math.round(st.w - cs.size)));
 snap.style.right = cs.right + 'px';
 snap.style.bottom = cs.bottom + 'px';
 snap.style.left = 'auto'; snap.style.top = 'auto';
 snap.style.width = cs.size + 'px';
+// Type sized against the button, not the screen: this is the only chrome a
+// finger has to hit and read at any width the developer chooses.
+snap.style.fontSize = Math.max(14, Math.min(19, Math.round(cs.size / 11))) + 'px';
+snap.style.padding = (cs.size < 130 ? '8px 5px' : '10px 8px');
 }
 const logo = document.querySelector('.kiosk-logo');
 if (logo && c.logo) {
@@ -15034,8 +15041,9 @@ document.getElementById('ktnOut').textContent =
 } else {
 const c = chromeState(tunerWhich) || { right: 0, bottom: 0, size: 34 };
 const fs = document.getElementById('ktnFS');
-fs.min = tunerWhich === 'carrot' ? 16 : (tunerWhich === 'snap' ? 120 : 30);
-fs.max = tunerWhich === 'carrot' ? 160 : 400;
+fs.min = tunerWhich === 'carrot' ? 16 : (tunerWhich === 'snap' ? 72 : 30);
+fs.max = tunerWhich === 'carrot' ? 160
+: (tunerWhich === 'snap' ? Math.round(kioskStageSize().w) : 400);
 fs.value = c.size;
 document.getElementById('ktnS').textContent = c.size + 'px';
 const cp = (cache.kioskChrome || {})[tunerWhich] || {};
