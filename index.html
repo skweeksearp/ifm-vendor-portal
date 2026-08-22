@@ -2154,15 +2154,6 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 
 
 
-<div class="dash-fold" data-fold="myattend">
-<button type="button" class="fold-bar" onclick="showPlanned('myattend')">
-<svg class="ico soon-cone" style="position:static; margin:0;"><use href="#i-cone"></use></svg>
-<span class="fold-title" style="opacity:.72;">Market Days</span>
-<span class="fold-sub">Not built · your season so far</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
-</div>
 <div class="dash-fold" data-fold="guide">
 <a class="fold-bar" style="text-decoration:none; display:flex; margin-bottom:10px;" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><span class="fold-title">Vendor Guide</span><span class="fold-sub">Opens on the market’s site ↗</span></a>
 </div>
@@ -9765,7 +9756,7 @@ const DESK_ABOUT_VENDOR = ['fProfile', 'fPoints', 'hours', 'venmopay', 'mydocs',
 const DESK_LOGISTICS = ['boothassign', 'fShare', 'fPromos', 'snaptokens', 'winter', 'popupsvendor'];
 const DESK_DEFAULT_ORDER = DESK_ABOUT_VENDOR.concat(DESK_LOGISTICS);
 const DESK_LEGACY_ORDER = ['fPromos', 'boothassign', 'winter', 'popupsvendor', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
-'fShare', 'directory', 'venmopay', 'mydocs', 'myattend', 'guide', 'communicate'];
+'fShare', 'directory', 'venmopay', 'mydocs', 'guide', 'communicate'];
 let deskDragAttached = false;
 let deskOrderCache = null;
 async function loadDeskOrders() {
@@ -10406,8 +10397,17 @@ venmopay: { built: true, t: 'Pay Fees with Venmo', when: 'Mock-up \u2014 awaitin
 body: '<p>The idea: fees join a payment basket from wherever a vendor meets them \u2014 the Work Hours drawer, day fees beside a booth request, renewal on this screen \u2014 then one Venmo payment settles the basket, like any shopping cart. The office opens a Venmo business profile, and every fee in the app grows a Pay with Venmo button that opens the app with the amount and a bookkeeping note prefilled \u2014 so each payment arrives already labelled for reconciliation. Venmo\u2019s business rate is 1.9% + $0.10 per payment, cheaper than typical card processing.</p>' +
 '<p>What blocks it: the office has no Venmo business profile yet, and the Guide\u2019s deadlines are postmark rules \u2014 the Board would need to bless an electronic timestamp as meeting a deadline, decide who absorbs the 1.9%, and keep checks co-equal. The bookkeeper should weigh in on 1099-K handling.</p>' +
 '<p>What it will never do: the app cannot see inside Venmo, so a tap here is a report, not a receipt \u2014 the office confirms against the real transfer. And nothing about this screen touches vendor pricing; it is only the market\u2019s own fees.</p>' },
-myattend: { built: false, t: 'Market Days', when: 'Through the season',
-body: '<p>Your season at a glance: the Saturdays and Sundays you have sold, and how the year is shaping up. Built to help you plan the rest of the season \u2014 and if life is getting in the way, the Exception Request under Communicate with the Market exists for exactly that.</p>' },
+// Kept, not deleted. PLANNED is the app's record of what it has decided NOT to
+// build as much as what it will, and a vendor's season-at-a-glance is a real
+// idea that was tried and dropped. Deleting the entry would lose the decision
+// along with the drawer.
+myattend: { built: false, dropped: true, t: 'Market Days (dropped)', when: '\u2014',
+body: '<p>A vendor\u2019s season at a glance \u2014 the days they had sold and how the year was shaping up. ' +
+'The drawer has been taken off the vendor desk and this is not being built.</p>' +
+'<p>It was one of several Steamboat-shaped things sitting above a vendor\u2019s own record: it counted ' +
+'Saturdays and Sundays at the pavilion, which is one market of three or four. Attendance already shows in ' +
+'<strong>Points</strong>, and what a vendor owes in days is measured properly on the manager\u2019s ' +
+'<strong>Attendance Requirement</strong>, while there is still season left to make it up.</p>' },
 attendreq: { built: true, t: 'Attendance Requirement', when: 'Through the season',
 body: '<p>Measure each vendor against the attendance they owe, while there is still season left to make it up.</p>' +
 '<p>A reserved Saturday booth requires 15 Saturdays, a corner Ag booth 25. A reserved Sunday booth requires 12 Sundays. Full Members generally owe 5 days at the pavilion. Falling short costs up to $100 per market at Board discretion, or the reservation itself.</p>' +
@@ -14136,7 +14136,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-78';
+const BUILD_ID = '14-79';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
