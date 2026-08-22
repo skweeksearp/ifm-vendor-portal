@@ -55,8 +55,6 @@ color: var(--ink);
 padding: 10px 16px 10px;
 display: block;
 }
-/* Whether this shows at all is decided in setRoleHeader, inline, which beats
-   anything written here -- so nothing in this block tries to. */
 .evac-bar {
 display: flex; align-items: center; justify-content: center; gap: 8px;
 width: 100%; margin-bottom: 10px; padding: 9px 12px;
@@ -902,11 +900,10 @@ body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 4
 /* The venue picker. Three across, always, at any width -- a row of three that
    wraps to two-and-one reads as a list rather than a switch, and a switch is
    what this is. */
-/* Small, and inside the tool it belongs to rather than over the whole desk. */
 .venue-picker {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
-  margin: 0 0 10px; padding: 4px;
-  background: var(--paper-dim, #E6E2D2); border-radius: 12px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  margin: 0 0 10px; padding: 5px;
+  background: var(--paper-dim, #E6E2D2); border-radius: 14px;
 }
 .venue-picker button {
   padding: 9px 6px; border-radius: 10px; border: none; background: transparent;
@@ -922,31 +919,8 @@ body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 4
   background: #fff; color: var(--ink);
   box-shadow: 0 1px 3px rgba(35,42,32,0.16);
 }
-.venue-picker button.cannot { opacity: 0.42; }
 
-/* A DESK IN TWO PARTS.
-   The vendor record comes first -- who they are, what they have earned, what
-   they owe. Then, plainly separated and plainly second, the logistics of
-   standing in a field somewhere on a given morning.
-   The divider is not decoration: it is the app saying which of the two it
-   thinks is the more important, and the manager's desk says the same thing in
-   the same words. */
-.desk-section {
-  margin: 26px 0 10px; padding: 0 2px;
-  border-top: 2px solid var(--paper-dim, #E6E2D2);
-}
-.desk-section h3 {
-  margin: 14px 0 2px; font-size: clamp(17px, 3.4vw, 21px); font-weight: 800;
-  color: var(--ink); letter-spacing: -0.01em;
-}
-.desk-section p {
-  margin: 0 0 6px; font-size: 13.5px; line-height: 1.5;
-  color: var(--ink-dim, #8A8A86);
-}
-@media (max-height: 520px) {
-  .venue-picker button .vsub { display: none; }
-  .venue-picker button { padding: 8px 6px; min-height: 40px; }
-}
+
 .venue-note { font-size: 13.5px; color: var(--ink-dim, #8A8A86); line-height: 1.5;
   margin: -4px 0 12px; }
 
@@ -2156,6 +2130,15 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 
 
 
+<div class="dash-fold" data-fold="myattend">
+<button type="button" class="fold-bar" onclick="showPlanned('myattend')">
+<svg class="ico soon-cone" style="position:static; margin:0;"><use href="#i-cone"></use></svg>
+<span class="fold-title" style="opacity:.72;">Market Days</span>
+<span class="fold-sub">Not built · your season so far</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="guide">
 <a class="fold-bar" style="text-decoration:none; display:flex; margin-bottom:10px;" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><span class="fold-title">Vendor Guide</span><span class="fold-sub">Opens on the market’s site ↗</span></a>
 </div>
@@ -2215,6 +2198,7 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
+<div id="vendorVenuePicker"></div>
 <div class="dash-fold" data-fold="fPoints">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitlePoints">Points</span>
@@ -2295,11 +2279,7 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="desk-section" id="deskLogisticsHead">
-<h3>Market Logistics</h3>
-<p>Where you are standing, on which day, and what happens there. Everything above this line is true of you wherever you trade; everything below it is about one morning in one place &mdash; so it asks which place.</p>
-<div id="vendorVenuePicker"></div>
-</div>
+
 <div class="dash-fold" data-fold="boothassign">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Booth Assignments</span>
@@ -2522,6 +2502,7 @@ I sell food (prepared food or produce)
 </section>
 <section id="screen-managerdash" class="screen">
 <div class="screen-head" id="head-managerdash"></div>
+<div id="mgrVenuePicker"></div>
 <div class="dash-fold" id="mgrAlerts" data-fold="mgrattn" style="display:none; margin-bottom:14px;">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Needs Attention</span>
@@ -3097,7 +3078,6 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <span><i style="background:#232A20"></i>Wall or fixture</span>
 </div>
 <div id="wbScroller" style="overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;">
-<div id="wbVenuePicker"></div>
 <div id="wbCanvas" class="wm-canvas"></div>
 </div>
 <p class="empty-note" id="wbMapNote" style="padding:0 4px;"></p>
@@ -3231,7 +3211,6 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
 <div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in The Old-Fashioned Way puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
-<div class="comm-item"><div class="comm-title">Anything that assumes Steamboat Landing</div><div class="comm-desc">Steamboat is the biggest of the market&rsquo;s three or four sites and the app was built for it first, so a great deal of it quietly assumes Steamboat without saying so. The fire evacuation sheet was pinned to the top of every screen in every role; it is written for the pavilion, and at Triphammer the mall&rsquo;s own procedure applies. It now says which site it is for.<br><br>When adding anything tied to a place, name the place in the thing itself. And do <em>not</em> answer this by splitting the app into one view per market: that was tried and reverted. The record this app exists to keep is the <strong>vendor record</strong>, and there is one pool of vendors across every market &mdash; their points, hours, standing, documents and history belong to the vendor, not to a field. Dividing the desk by place files one pool of people under three headings and makes the manager choose a market before they can look somebody up. The picker belongs <em>inside the tools that are about a place</em> &mdash; a booth map has to know which hall it is drawing; a vendor record does not.</div></div>
 <div class="comm-item"><div class="comm-title">A screen that needs a record the app may not hold yet</div><div class="comm-desc">Draw first, fetch second. A screen that opens with <code>await loadSomething()</code> before it writes anything to the page will show <em>nothing at all</em> while that one fetch is outstanding &mdash; not a spinner, not a heading, nothing &mdash; and a person tapping it will say the tool is frozen. It is not frozen; it is being polite to a fetch that most of the screen does not depend on. This bites hardest on a <em>new</em> storage key, because until somebody writes to it the sheet has no row and every phone fetches it separately and gets a cold Apps Script. Draw everything already in hand, then call the loader and redraw when it lands. A <em>write</em> still waits, because writing into a half-known list would drop whatever had not arrived. Others that still open this way, should they ever feel slow: <code>initUnreservableScreen</code>, <code>initVenmoPayScreen</code>, <code>renderTaskManager</code>, <code>renderAvailableTasks</code>, <code>renderOrgStalls</code>.</div></div>
 <div class="comm-item"><div class="comm-title">A new tool on the Market Manager&rsquo;s desk</div><div class="comm-desc">Two desks are built two different ways, and a tool added to one does <em>not</em> appear on the other. The <strong>staff</strong> desk is hand-written drawers in the markup. The <strong>Market Manager</strong> desk is generated from the tool registry &mdash; the list of groups and tiles &mdash; so a manager tool has to be added <em>there</em>, whatever the markup says. SNAP Token Collection was written into the markup alone and turned up on the staff desk only, where nobody was looking for it. When testing, look <em>inside</em> the drawer the tool is meant to be in: a document-wide search for the title finds it on the wrong desk and reports success.</div></div>
 <div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code>, let <code>freeFloatingSheets()</code> move it to the body at boot, and show it by adding the class <code>open</code> &mdash; never by copying another sheet&rsquo;s markup and hoping. <code>.modal-backdrop</code> is <code>display:none</code> until opened, which it was not always: it used to be <code>display:flex</code>, so a new backdrop was on screen from boot unless whoever added it also wrote a rule to hide it. That shipped once, and because a backdrop covers everything at <code>z-index:500</code> it did not look like a stuck sheet, it looked like the whole app had stopped working. Defaults should fail closed. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
@@ -3949,7 +3928,6 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="card" style="padding: 10px;">
 <h2 style="padding: 8px 8px 0;"><span class="emoji"><svg class="ico"><use href="#i-ruler"></use></svg></span>Live Booth Layout<button type="button" class="help-dot" onclick="showHelp(40)" aria-label="What are the rules here?">?</button></h2>
-<div id="boothVenuePicker"></div>
 <div id="boothCanvasWrap" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;">
 <div id="boothCanvas" class="booth-canvas">
 </div>
@@ -4501,6 +4479,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <div class="screen-head" id="head-evacuation"></div>
 <div class="card">
 
+
 <p style="font-weight:700; margin-top:12px;">1. Assess<button type="button" class="help-dot" onclick="showHelp(51)" aria-label="What are the rules here?">?</button></p>
 <p style="font-weight:700; margin-top:12px;">2. Call 911</p>
 <p style="font-weight:700; margin-top:12px;">3. Broadcast the evacuation script<button type="button" class="help-dot" onclick="showHelp(52)" aria-label="What are the rules here?">?</button></p>
@@ -4693,26 +4672,24 @@ Unlimited people (e.g. a cleanup day)
 // ===========================================================================
 // WHICH MARKET
 //
-// The market runs in three or four places. Steamboat Landing is the biggest by
-// far -- ninety-three booths, a selection process, a pavilion, a kiosk -- and
-// the app was built for it first, which left almost everything quietly
-// assuming Steamboat without saying so. The fire evacuation sheet pinned to
-// the top of every screen is about Steamboat's pavilion. It did not say so.
+// The market runs in three places and they are not the same market. Steamboat
+// Landing has ninety-three booths, a selection process, a pavilion to inspect
+// and a kiosk in the middle of it. The Winter Market is forty-four spaces at
+// Triphammer with its own dates. A PopUp is a one-off somewhere else entirely.
+// They were drawers on one desk, which put the Winter Market three taps below
+// a heading about Steamboat and made it look like a footnote to it.
 //
-// The correction is NOT to split the app into three. That was tried and it was
-// wrong, for a reason worth writing down: the thing this app exists to keep is
-// the VENDOR RECORD, and there is one pool of vendors across every market. A
-// vendor's points, hours, fines, standing, documents and history do not belong
-// to a field. Dividing the desk by place would file one pool of people under
-// three headings and make the manager choose a market before they could look
-// somebody up.
+// So there is a picker at the top of the desk instead, and the desk changes.
 //
-// So the desk stays whole and the PICKER LIVES IN THE TOOLS THAT ARE ABOUT A
-// PLACE. A booth map has to know which hall it is drawing. A day-fee log has
-// to know which fee. Everything else does not, and is not asked.
+// The important part is what does NOT move. A vendor's points, hours, fines,
+// profile and committees are the same wherever they are standing -- those
+// belong to the vendor, not to a field -- so they appear on every venue rather
+// than being filed under one. Only the tools that are genuinely about a PLACE
+// follow the picker.
 //
-// This is a view, not a role: it lives on the device, changes no records, and
-// two people looking at different markets are looking at the same market.
+// This is a view, not a role: it lives on the device, changes nothing in the
+// records, and two people looking at different venues are looking at the same
+// market.
 const VENUES = [
   { k: 'steamboat', t: 'Steamboat Landing', s: 'The Saturday and Sunday market' },
   { k: 'winter',    t: 'Winter Market',     s: 'Triphammer, through the cold months' },
@@ -8527,7 +8504,6 @@ const WINTER_DIFFS = [
 { t: 'The day fee is $30 and staff collect it during the market', d: 'Everywhere else the fee is paid at set-up, before the market opens. At the Winter Market and at Wednesdays, staff collect on site while trading.', s: 'Guide, pp.7 and 14' },
 { t: 'Saturdays only, January to March, 10:30\u00A0AM to 2\u00A0PM', d: 'Shorter than Steamboat and on one day. Steamboat runs Saturday and Sunday, April to December.', s: 'Guide, p.3' },
 { t: 'The location is not permanent', d: 'The Guide says the Winter Market\u2019s location may change from year to year depending on lease negotiations. Anything in the app that names Triphammer is naming this year\u2019s hall.', s: 'Guide, p.3' },
-{ t: 'The evacuation plan does not apply here', d: 'The market\u2019s Emergency Evacuation Procedure was written for the Steamboat Landing pavilion \u2014 its announcement script tells shoppers to leave through the nearest pavilion exit. At Triphammer the market is a tenant in someone else\u2019s building, and <b>the mall has its own evacuation procedure and its own staff</b>. Find out what theirs is before the first winter market, not during one. The same goes for a PopUp: whoever owns the site owns the plan.', s: 'the plan itself, and the app' },
 { t: 'No kiosk', d: 'The public map, the search bars and the sale banner are Steamboat Landing. There is no screen in the hall at Triphammer, so nothing here is built to be read by a shopper.', s: 'the app' },
 { t: 'No Sales & Promotions', d: 'A sale posted in the app reaches shoppers through the kiosk, and there is no kiosk here. The drawer does not appear on the Winter tab.', s: 'the app' },
 { t: 'Attendance still counts, work hours do not', d: 'Attending a Winter Market earns a point like any other market day, but Winter days do not add to the Building & Grounds or work-hour requirement.', s: 'the app\u2019s help, from the Guide' },
@@ -8867,10 +8843,7 @@ if (!deskHandoverQuiet) clearDeskState();
 document.body.classList.toggle('role-' + r, role === r));
 paintHeaderBadge();
 const evac = document.getElementById('evacBar');
-// Not on a vendor's desk. A vendor in an emergency is being directed by staff,
-// not reading a six-step incident procedure off their phone. It sat above
-// every screen in every role, which put it above a vendor's own record.
-if (evac) evac.style.display = (role === 'manager' || role === 'staff') ? 'flex' : 'none';
+if (evac) evac.style.display = (role === 'vendor' || role === 'manager' || role === 'staff') ? 'flex' : 'none';
 if (role === 'manager') {
 document.getElementById('bizName').textContent = 'Market Manager';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 full admin toolkit';
@@ -9754,15 +9727,8 @@ document.getElementById('volRoleCard').innerHTML =
 '<p class="empty-note">' + r.note + '</p>';
 }
 // ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
-// The desk in two halves, and a vendor rearranging their drawers rearranges
-// WITHIN a half. Sales & Promotions was the first thing on the desk and it is
-// a Steamboat kiosk feature; a vendor's points and hours were below it.
-const DESK_ABOUT_VENDOR = ['fProfile', 'fPoints', 'hours', 'venmopay', 'mydocs',
-'mycommittees', 'directory', 'communicate'];
-const DESK_LOGISTICS = ['boothassign', 'fShare', 'fPromos', 'snaptokens', 'winter', 'popupsvendor'];
-const DESK_DEFAULT_ORDER = DESK_ABOUT_VENDOR.concat(DESK_LOGISTICS);
-const DESK_LEGACY_ORDER = ['fPromos', 'boothassign', 'winter', 'popupsvendor', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
-'fShare', 'directory', 'venmopay', 'mydocs', 'guide', 'communicate'];
+const DESK_DEFAULT_ORDER = ['fPromos', 'boothassign', 'winter', 'popupsvendor', 'hours', 'fPoints', 'snaptokens', 'mycommittees',
+'fShare', 'directory', 'venmopay', 'mydocs', 'myattend', 'guide', 'communicate'];
 let deskDragAttached = false;
 let deskOrderCache = null;
 async function loadDeskOrders() {
@@ -9780,18 +9746,11 @@ updateDeskOrderReset(Array.isArray(saved));
 if (!Array.isArray(saved)) saved = DESK_DEFAULT_ORDER;
 const dash = document.getElementById('screen-dashboard');
 const note = document.getElementById('menuTailorNote');
-const head = document.getElementById('deskLogisticsHead');
 const byKey = {};
 dash.querySelectorAll(':scope > .dash-fold').forEach(f => { if (f.dataset.fold) byKey[f.dataset.fold] = f; });
 const seq = saved.filter(k => byKey[k]);
 dash.querySelectorAll(':scope > .dash-fold').forEach(f => { if (f.dataset.fold && !seq.includes(f.dataset.fold)) seq.push(f.dataset.fold); });
-// Each drawer goes back into the half it belongs to. An order saved before the
-// desk was split would otherwise pull the logistics drawers up above the
-// divider and quietly undo it for whoever had ever dragged anything.
-seq.forEach(k => {
-const before = DESK_LOGISTICS.indexOf(k) >= 0 ? note : (head || note);
-dash.insertBefore(byKey[k], before);
-});
+seq.forEach(k => dash.insertBefore(byKey[k], note));
 }
 async function saveDeskOrder() {
 const dash = document.getElementById('screen-dashboard');
@@ -10403,17 +10362,8 @@ venmopay: { built: true, t: 'Pay Fees with Venmo', when: 'Mock-up \u2014 awaitin
 body: '<p>The idea: fees join a payment basket from wherever a vendor meets them \u2014 the Work Hours drawer, day fees beside a booth request, renewal on this screen \u2014 then one Venmo payment settles the basket, like any shopping cart. The office opens a Venmo business profile, and every fee in the app grows a Pay with Venmo button that opens the app with the amount and a bookkeeping note prefilled \u2014 so each payment arrives already labelled for reconciliation. Venmo\u2019s business rate is 1.9% + $0.10 per payment, cheaper than typical card processing.</p>' +
 '<p>What blocks it: the office has no Venmo business profile yet, and the Guide\u2019s deadlines are postmark rules \u2014 the Board would need to bless an electronic timestamp as meeting a deadline, decide who absorbs the 1.9%, and keep checks co-equal. The bookkeeper should weigh in on 1099-K handling.</p>' +
 '<p>What it will never do: the app cannot see inside Venmo, so a tap here is a report, not a receipt \u2014 the office confirms against the real transfer. And nothing about this screen touches vendor pricing; it is only the market\u2019s own fees.</p>' },
-// Kept, not deleted. PLANNED is the app's record of what it has decided NOT to
-// build as much as what it will, and a vendor's season-at-a-glance is a real
-// idea that was tried and dropped. Deleting the entry would lose the decision
-// along with the drawer.
-myattend: { built: false, dropped: true, t: 'Market Days (dropped)', when: '\u2014',
-body: '<p>A vendor\u2019s season at a glance \u2014 the days they had sold and how the year was shaping up. ' +
-'The drawer has been taken off the vendor desk and this is not being built.</p>' +
-'<p>It was one of several Steamboat-shaped things sitting above a vendor\u2019s own record: it counted ' +
-'Saturdays and Sundays at the pavilion, which is one market of three or four. Attendance already shows in ' +
-'<strong>Points</strong>, and what a vendor owes in days is measured properly on the manager\u2019s ' +
-'<strong>Attendance Requirement</strong>, while there is still season left to make it up.</p>' },
+myattend: { built: false, t: 'Market Days', when: 'Through the season',
+body: '<p>Your season at a glance: the Saturdays and Sundays you have sold, and how the year is shaping up. Built to help you plan the rest of the season \u2014 and if life is getting in the way, the Exception Request under Communicate with the Market exists for exactly that.</p>' },
 attendreq: { built: true, t: 'Attendance Requirement', when: 'Through the season',
 body: '<p>Measure each vendor against the attendance they owe, while there is still season left to make it up.</p>' +
 '<p>A reserved Saturday booth requires 15 Saturdays, a corner Ag booth 25. A reserved Sunday booth requires 12 Sundays. Full Members generally owe 5 days at the pavilion. Falling short costs up to $100 per market at Board discretion, or the reservation itself.</p>' +
@@ -11355,23 +11305,12 @@ if (!date) return null;
 const b = cache.booths.find(x => boothBaselineHolder(x, date) === vendorId);
 return b ? b.num : null;
 }
-// The picker scopes the LOGISTICS SECTION and nothing above it. That is the
-// whole difference between this and the version that was reverted: a vendor's
-// points and hours are not asked which market they belong to, because they do
-// not belong to one.
-function applyVenueToLogistics() {
+function applyVenueToDesk() {
 buildVenuePicker('vendorVenuePicker', () => { applyVendorVisibility(); applyDeskOrder(); });
-const dash = document.getElementById('screen-dashboard');
-const head = document.getElementById('deskLogisticsHead');
-if (!dash || !head) return;
-let below = false;
-[...dash.children].forEach(el => {
-if (el === head) { below = true; return; }
-if (!below || !el.classList.contains('dash-fold')) return;
-const key = el.getAttribute('data-fold');
-if (!key) return;
+document.querySelectorAll('#screen-dashboard .dash-fold[data-fold]').forEach(f => {
+const key = f.getAttribute('data-fold');
 const lookup = key === 'winter' ? 'winter-vendor' : key;
-el.style.display = belongsHere(lookup) ? '' : 'none';
+f.style.display = belongsHere(lookup) ? '' : 'none';
 });
 }
 function applyVendorVisibility() {
@@ -11402,7 +11341,7 @@ setDeskRelevance('commAgOnly', isAg,
 'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0;
 renderSnapDeskSub();
-applyVenueToLogistics();
+applyVenueToDesk();
 setDeskRelevance('menuMyCommittees', onCmte,
 'You are not on a committee at the moment, so there are no agendas or tasks in front of you here. ' +
 'Committees are open to any vendor \u2014 tell the office or a board member you would like to serve on one, ' +
@@ -14142,7 +14081,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-80';
+const BUILD_ID = '14-75';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14291,13 +14230,6 @@ const mid = 500; // canvas x of the service block / main entrance
 wrap.scrollLeft = Math.max(0, Math.round(mid - wrap.clientWidth / 2));
 }
 function renderBooths() {
-// The one tool that has to know which hall it is drawing carries the picker.
-// Steamboat and Triphammer have different maps on different screens; a PopUp
-// has no drawing at all, so it is shown dimmed rather than pretended.
-buildVenuePicker('boothVenuePicker', () => {
-if (currentVenue === 'winter') { showScreen('winterbooths'); runScreenInit('winterbooths'); }
-else renderBooths();
-}, ['steamboat', 'winter']);
 const note = document.getElementById('auctionRuleNote');
 if (currentAuction === 'weekly') {
 note.textContent = 'Sunday Booth Selection, the \u201Clottery\u201D: Sunday booths default to whoever holds them Saturday, unless that vendor reported an absence for this date. Everything left over goes to the 8:30\u00A0AM meeting \u2014 vendors seeking one of those booths sign in between 8:00 and 8:30\u00A0AM that morning, online or in person, then choose in points order.';
@@ -20539,6 +20471,25 @@ body.appendChild(note);
 }
 const MGR_FOLDERS = [
 { s: 'callinout', i: 'i-phone', t: 'The Old-Fashioned Way', d: 'Take anything a vendor sends by phone, email, mail, or across the desk \u2014 absences, requests, shares, documents, proposals' },
+{ key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
+sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
+tiles: [
+{ s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
+{ s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
+{ s: 'auction', i: 'i-gavel',
+t: () => selectionSeason() + ' Season-Long Booth Reservations',
+d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
+{ s: 'orgstalls', i: 'i-tent', t: 'Community Organizations', d: 'A stall for a non-profit \u2014 once a season, when space allows' },
+{ s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
+] },
+{ key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
+sub: 'The plan for the day itself',
+tiles: [
+{ s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
+{ s: 'snaplog', i: 'i-gem', t: 'SNAP Token Collection', d: 'Who turned in how many tokens' },
+{ s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
+{ ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
+] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
 sub: 'The roster and its paperwork \u2014 who they are, on file',
 tiles: [
@@ -20568,41 +20519,6 @@ tiles: [
 { s: 'taskmanager', i: 'i-clipboard', t: 'Work Hours Tasks', d: 'Post tasks for vendors to claim' },
 { s: 'whrate', i: 'i-gem', t: 'Work Hour Rate', d: 'Dollar value of an hour owed' },
 ] },
-{ key: 'board', title: 'Board & Committees', icon: 'i-columns',
-sub: 'What is in front of the board, and who serves',
-tiles: [
-{ s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
-{ s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
-{ s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
-{ soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
-{ soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
-{ s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Download CSVs for the board' },
-] },
-{ key: 'record', title: 'Records', icon: 'i-document',
-sub: 'The rule as written, and the gap between paper and practice',
-tiles: [
-{ s: 'marketrules', i: 'i-scale', t: 'On the Books', d: 'The written rule, enforced or not &mdash; fees, fines, deadlines, minimums' },
-{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Flagged for Attention', d: 'Rules nobody is enforcing, and what you decided to do about it' },
-{ s: 'plainwords', i: 'i-quill', t: 'Plain Words', d: 'What this app calls things, and what the Guide calls them' },
-] },{ key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
-sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
-tiles: [
-{ s: 'satlottery', i: 'i-gavel', t: 'Saturday Booth Selection', d: 'Thursday phone calls, in points order &middot; the &ldquo;lottery&rdquo;' },
-{ s: 'lottery', i: 'i-gavel', t: 'Sunday Booth Selection', d: 'Sunday 8:30 meeting, in points order &middot; the &ldquo;lottery&rdquo;' },
-{ s: 'auction', i: 'i-gavel',
-t: () => selectionSeason() + ' Season-Long Booth Reservations',
-d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
-{ s: 'orgstalls', i: 'i-tent', t: 'Community Organizations', d: 'A stall for a non-profit \u2014 once a season, when space allows' },
-{ s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
-] },
-{ key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
-sub: 'The plan for the day itself',
-tiles: [
-{ s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
-{ s: 'snaplog', i: 'i-gem', t: 'SNAP Token Collection', d: 'Who turned in how many tokens' },
-{ s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
-{ ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
-] },
 { key: 'booths', title: 'The Pavilion', icon: 'i-wrench',
 sub: 'The building itself \u2014 what is built, laid out, inspected and repaired',
 tiles: [
@@ -20630,46 +20546,56 @@ sub: 'One-off markets away from Steamboat Landing',
 tiles: [
 { s: 'popups', i: 'i-tent', t: 'PopUp Events', d: 'Add or delete satellite market events' },
 ] },
-
+{ key: 'board', title: 'Board & Committees', icon: 'i-columns',
+sub: 'What is in front of the board, and who serves',
+tiles: [
+{ s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
+{ s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
+{ s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
+{ soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
+{ soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
+{ s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Download CSVs for the board' },
+] },
+{ key: 'record', title: 'Records', icon: 'i-document',
+sub: 'The rule as written, and the gap between paper and practice',
+tiles: [
+{ s: 'marketrules', i: 'i-scale', t: 'On the Books', d: 'The written rule, enforced or not &mdash; fees, fines, deadlines, minimums' },
+{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Flagged for Attention', d: 'Rules nobody is enforcing, and what you decided to do about it' },
+{ s: 'plainwords', i: 'i-quill', t: 'Plain Words', d: 'What this app calls things, and what the Guide calls them' },
+] },
 ];
 function initManagerDash() {
 renderManagerAlerts();
 renderManagerFolders();
 loadImprovements().then(renderManagerAlerts);
 }
-// Drawn inside whichever TOOL asks for it, never over a whole desk. One
-// function everywhere, so the three markets are named identically wherever a
-// person meets them.
-//
-// `only` names the markets this particular tool can actually show. A booth map
-// that has no drawing of a PopUp field should not offer one -- it should say
-// so, which is what the dimming is for.
-function buildVenuePicker(hostId, onPick, only) {
+// Drawn at the top of whichever desk asks for it. One function, both desks:
+// the picker is the same object in both places and must not drift.
+function buildVenuePicker(hostId, onPick) {
 const host = document.getElementById(hostId);
 if (!host) return;
 host.innerHTML = '';
 const row = document.createElement('div');
 row.className = 'venue-picker';
-const allowed = only || VENUES.map(v => v.k);
-// A tool that cannot show the market you are on should not silently show you
-// another one. Land on the first it can, and say why.
-if (allowed.indexOf(currentVenue) < 0) currentVenue = allowed[0];
 VENUES.forEach(v => {
-const can = allowed.indexOf(v.k) >= 0;
 const b = document.createElement('button');
 b.type = 'button';
-b.className = (v.k === currentVenue ? 'on' : '') + (can ? '' : ' cannot');
-b.innerHTML = '<span>' + esc(v.t) + '</span><span class="vsub">' +
-esc(can ? v.s : 'not in this tool') + '</span>';
+b.className = v.k === currentVenue ? 'on' : '';
+b.innerHTML = '<span>' + esc(v.t) + '</span><span class="vsub">' + esc(v.s) + '</span>';
 b.onclick = () => {
-if (!can || currentVenue === v.k) return;
+if (currentVenue === v.k) return;
 currentVenue = v.k;
 try { localStorage.setItem('ifm-venue', v.k); } catch (e) {}
+closeAllFolds();
 onPick();
 };
 row.appendChild(b);
 });
 host.appendChild(row);
+const note = document.createElement('p');
+note.className = 'venue-note';
+note.innerHTML = venueNote();
+host.appendChild(note);
 }
 // Said plainly, because the honest answer is lopsided: almost everything the
 // app does was built for Steamboat Landing, and a person switching to Winter
@@ -20707,32 +20633,12 @@ body.className = 'fold-body';
 fold.appendChild(body);
 return fold;
 }
-// The manager's desk says the same thing as the vendor's, in the same words.
-// The vendor record is the market's memory and belongs at the top; the
-// logistics of one field on one morning belong below a line that says so.
-const MGR_LOGISTICS = ['selection', 'marketday', 'booths', 'winter', 'popups'];
 function renderManagerFolders() {
+buildVenuePicker('mgrVenuePicker', renderManagerFolders);
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 grid.innerHTML = '';
-let dividerDone = false;
-MGR_FOLDERS.forEach(f => {
-if (!dividerDone && MGR_LOGISTICS.indexOf(f.key) >= 0) {
-dividerDone = true;
-const sec = document.createElement('div');
-sec.className = 'desk-section';
-sec.innerHTML = '<h3>Market Logistics</h3><p>Which market, which day, which booth. ' +
-'Everything above this line is the market\u2019s memory of its vendors and holds good wherever ' +
-'they are trading; everything below it is the running of one site on one morning \u2014 so it ' +
-'asks which site.</p><div id="mgrVenuePicker"></div>';
-grid.appendChild(sec);
-buildVenuePicker('mgrVenuePicker', renderManagerFolders);
-}
-// Below the line, a group belongs to a place. Booth Selection is the Steamboat
-// rounds -- the Saturday auction, the Sunday meeting, the unreservable list --
-// and showing it while a manager is looking at Triphammer made it look like a
-// tool that was broken rather than a tool for somewhere else.
-if (MGR_LOGISTICS.indexOf(f.key) >= 0 && !belongsHere(f.key)) return;
+MGR_FOLDERS.filter(f => belongsHere(f.key)).forEach(f => {
 if (f.s) { grid.appendChild(buildToolFold(f)); return; }
 const fold = document.createElement('div');
 fold.className = 'dash-fold';
@@ -21226,13 +21132,6 @@ const sel = document.getElementById('wbVendor');
 return sel && sel.value ? sel.value : null;
 }
 function renderWinterBooths() {
-// The same picker as the Steamboat map, so a manager can move between the two
-// halls without going back to the desk. A PopUp has no drawing at all, so it
-// is offered dimmed rather than pretended.
-buildVenuePicker('wbVenuePicker', () => {
-if (currentVenue === 'steamboat') { showScreen('booths'); runScreenInit('booths'); }
-else renderWinterBooths();
-}, ['steamboat', 'winter']);
 const dateId = document.getElementById('wbDate').value;
 const canvas = document.getElementById('wbCanvas');
 const size = wmCombinedSize();
