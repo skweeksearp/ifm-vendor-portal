@@ -55,6 +55,8 @@ color: var(--ink);
 padding: 10px 16px 10px;
 display: block;
 }
+/* Whether this shows at all is decided in setRoleHeader, inline, which beats
+   anything written here -- so nothing in this block tries to. */
 .evac-bar {
 display: flex; align-items: center; justify-content: center; gap: 8px;
 width: 100%; margin-bottom: 10px; padding: 9px 12px;
@@ -2121,7 +2123,7 @@ body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
 <button class="switch-btn" onclick="showLanding()"><svg class="ico"><use href="#i-arrows-cycle"></use></svg> Return to login screen</button>
 </div>
 <button type="button" class="evac-bar" id="evacBar" onclick="showScreen('evacuation')">
-<svg class="ico"><use href="#i-flame"></use></svg> Emergency Evacuation Plan &middot; Steamboat Landing
+<svg class="ico"><use href="#i-flame"></use></svg> Emergency Evacuation Plan
 </button>
 <div class="header-main">
 <div class="logo-badge"><img class="ifm-logo" alt="IFM logo"></div>
@@ -4498,7 +4500,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <section id="screen-evacuation" class="screen">
 <div class="screen-head" id="head-evacuation"></div>
 <div class="card">
-<p class="empty-note" style="margin:0 0 10px;"><b>This is the Steamboat Landing plan.</b> It was written for the pavilion &mdash; the announcement script tells shoppers to leave through the nearest pavilion exit &mdash; and it was pinned to the top of every screen without saying so. At the Winter Market you are a tenant in someone else&rsquo;s building: <b>Triphammer Marketplace has its own evacuation procedure and its own staff, and theirs is the one that applies there.</b> Find out what it is before the first winter market, not during one. The same goes for any PopUp: whoever owns the site owns the plan.</p>
+
 <p style="font-weight:700; margin-top:12px;">1. Assess<button type="button" class="help-dot" onclick="showHelp(51)" aria-label="What are the rules here?">?</button></p>
 <p style="font-weight:700; margin-top:12px;">2. Call 911</p>
 <p style="font-weight:700; margin-top:12px;">3. Broadcast the evacuation script<button type="button" class="help-dot" onclick="showHelp(52)" aria-label="What are the rules here?">?</button></p>
@@ -8525,6 +8527,7 @@ const WINTER_DIFFS = [
 { t: 'The day fee is $30 and staff collect it during the market', d: 'Everywhere else the fee is paid at set-up, before the market opens. At the Winter Market and at Wednesdays, staff collect on site while trading.', s: 'Guide, pp.7 and 14' },
 { t: 'Saturdays only, January to March, 10:30\u00A0AM to 2\u00A0PM', d: 'Shorter than Steamboat and on one day. Steamboat runs Saturday and Sunday, April to December.', s: 'Guide, p.3' },
 { t: 'The location is not permanent', d: 'The Guide says the Winter Market\u2019s location may change from year to year depending on lease negotiations. Anything in the app that names Triphammer is naming this year\u2019s hall.', s: 'Guide, p.3' },
+{ t: 'The evacuation plan does not apply here', d: 'The market\u2019s Emergency Evacuation Procedure was written for the Steamboat Landing pavilion \u2014 its announcement script tells shoppers to leave through the nearest pavilion exit. At Triphammer the market is a tenant in someone else\u2019s building, and <b>the mall has its own evacuation procedure and its own staff</b>. Find out what theirs is before the first winter market, not during one. The same goes for a PopUp: whoever owns the site owns the plan.', s: 'the plan itself, and the app' },
 { t: 'No kiosk', d: 'The public map, the search bars and the sale banner are Steamboat Landing. There is no screen in the hall at Triphammer, so nothing here is built to be read by a shopper.', s: 'the app' },
 { t: 'No Sales & Promotions', d: 'A sale posted in the app reaches shoppers through the kiosk, and there is no kiosk here. The drawer does not appear on the Winter tab.', s: 'the app' },
 { t: 'Attendance still counts, work hours do not', d: 'Attending a Winter Market earns a point like any other market day, but Winter days do not add to the Building & Grounds or work-hour requirement.', s: 'the app\u2019s help, from the Guide' },
@@ -8864,7 +8867,10 @@ if (!deskHandoverQuiet) clearDeskState();
 document.body.classList.toggle('role-' + r, role === r));
 paintHeaderBadge();
 const evac = document.getElementById('evacBar');
-if (evac) evac.style.display = (role === 'vendor' || role === 'manager' || role === 'staff') ? 'flex' : 'none';
+// Not on a vendor's desk. A vendor in an emergency is being directed by staff,
+// not reading a six-step incident procedure off their phone. It sat above
+// every screen in every role, which put it above a vendor's own record.
+if (evac) evac.style.display = (role === 'manager' || role === 'staff') ? 'flex' : 'none';
 if (role === 'manager') {
 document.getElementById('bizName').textContent = 'Market Manager';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 full admin toolkit';
@@ -14136,7 +14142,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '14-79';
+const BUILD_ID = '14-80';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
