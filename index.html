@@ -2005,6 +2005,18 @@ background: #fff; font: inherit; font-size: 11px; cursor: pointer; color: inheri
 #meLayerbar button.on { background: var(--ink); color: #FFFDF4; border-color: var(--ink); }
 #meMsg { font-size: 11.5px; margin-top: 8px; min-height: 14px; opacity: 0.75; }
 body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
+/* The chair's notification bar. Deliberately unlike the "Waiting on the
+   Market" card below it: that card is what the market owes this vendor, this
+   bar is what the market is waiting on THEM for. Amber, not the alert
+   palette, because nothing is wrong -- somebody is just owed an answer. */
+.chair-bar {
+display: flex; align-items: center; justify-content: space-between; gap: 10px;
+margin: 0 0 12px 0; padding: 12px 14px; border-radius: 12px; cursor: pointer;
+background: #FBF1D9; border: 1px solid #D8A93B;
+color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
+}
+.chair-bar-text b { display: block; font-size: 16px; }
+.chair-bar-go { flex: 0 0 auto; font-weight: 800; white-space: nowrap; }
 /* Gift certificate print sheet: on paper, only the certificates. */
 #gcPrintArea { display: none; }
 @media print {
@@ -2166,6 +2178,12 @@ display: inline-block; padding: 4px 18px; margin: 6px 0 12px 0; }
 <main>
 <section id="screen-dashboard" class="screen active">
 <div class="screen-head" id="head-dashboard"></div>
+<div class="chair-bar" id="chairAlertBar" style="display:none;"
+role="button" tabindex="0" onclick="showScreen('mycommittees')"
+onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommittees');">
+<div class="chair-bar-text"><b id="chairAlertCount"></b><span id="chairAlertWho"></span></div>
+<span class="chair-bar-go">Review &rsaquo;</span>
+</div>
 <div class="card" id="vendorAlerts" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-envelope"></use></svg></span>Waiting on the Market</h2>
 <p class="empty-note" id="vendorAlertSub" style="margin-top:0;"></p>
@@ -10983,6 +11001,7 @@ if (src && img) img.src = src.getAttribute('src') || src.src;
 }
 function renderAll() {
 paintHeaderBadge();
+renderChairAlertBar();
 const vendor = currentVendor();
 const year = new Date().getFullYear();
 positionHeader('dashboard');
@@ -13945,7 +13964,7 @@ cache.tasks = tasks;
 await saveTasks();
 await syncTaskWorkHours(task, claim);
 if (document.getElementById('tkManagerList')) renderTaskManager();
-if (currentRole === 'vendor') initMyCommitteesScreen();
+if (currentRole === 'vendor') { initMyCommitteesScreen(); renderChairAlertBar(); }
 }
 async function syncTaskWorkHours(task, claim) {
 const hours = Number(task.hours || 0);
@@ -13983,7 +14002,7 @@ cache.tasks = tasks;
 await saveTasks();
 await syncTaskWorkHours(task, claim);
 if (document.getElementById('tkManagerList')) renderTaskManager();
-if (currentRole === 'vendor') initMyCommitteesScreen();
+if (currentRole === 'vendor') { initMyCommitteesScreen(); renderChairAlertBar(); }
 }
 async function dismissLapse(taskId, vendorId, lapsedAt) {
 const tasks = await loadTasks();
@@ -14292,7 +14311,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-16';
+const BUILD_ID = '15-17';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20709,6 +20728,10 @@ const body = document.getElementById('myCmteBody');
 body.innerHTML = '';
 const me = currentVendor();
 const mine = me ? committeesFor(me.vendorId) : [];
+// The chair's review queue leads this screen: it is the one thing here that
+// somebody else is waiting on, and the bar on the desk points straight at it.
+const chairsOf = me ? chairOf(me.vendorId) : [];
+if (chairsOf.length) body.appendChild(buildChairReviewCard(chairsOf));
 if (!mine.length) {
 const card = document.createElement('div');
 card.className = 'card';
@@ -20762,10 +20785,7 @@ card.appendChild(row);
 body.appendChild(card);
 });
 const chairs = chairOf(me.vendorId);
-if (chairs.length) {
-body.appendChild(buildChairReviewCard(chairs));
-body.appendChild(buildChairPostCard(chairs));
-}
+if (chairs.length) body.appendChild(buildChairPostCard(chairs));
 const note = document.createElement('p');
 note.className = 'empty-note';
 note.style.textAlign = 'center';
@@ -20784,6 +20804,39 @@ body.appendChild(note);
 // actually re-hung. The manager's board still shows every task and names
 // who each confirmation goes to; nothing routes around anyone in the dark.
 // ===========================================================================
+// Every chair, every committee: if work has been reported against a task
+// this vendor posted, it is waiting on them and they should not have to go
+// looking for it. The bar names the committee so a vendor who chairs two
+// knows which hat to put on.
+function chairPendingReviews() {
+const out = [];
+if (currentRole !== 'vendor' || !currentVendorId) return out;
+if (!chairOf(currentVendorId).length) return out;
+(cache.tasks || []).forEach(task => {
+if (task.postedById !== currentVendorId) return;
+(task.claims || []).filter(c => c.status === 'reported').forEach(c => out.push({ task, claim: c }));
+});
+return out;
+}
+function renderChairAlertBar() {
+const bar = document.getElementById('chairAlertBar');
+if (!bar) return;
+const pending = chairPendingReviews();
+if (!pending.length) { bar.style.display = 'none'; return; }
+const names = [];
+pending.forEach(p => {
+const cm = COMMITTEES.find(c => c.key === p.task.committee);
+const n = cm ? cm.name : 'your committee';
+if (!names.includes(n)) names.push(n);
+});
+const n = pending.length;
+document.getElementById('chairAlertCount').textContent =
+n + (n === 1 ? ' vendor has reported work finished' : ' vendors have reported work finished');
+document.getElementById('chairAlertWho').textContent =
+'Waiting on you to confirm \u00b7 ' + names.join(', ') +
+(n === 1 ? '' : ' \u00b7 ' + pending.map(p => p.claim.businessName).join(', '));
+bar.style.display = 'flex';
+}
 function buildChairReviewCard(chairs) {
 const card = document.createElement('div');
 card.className = 'card';
