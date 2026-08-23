@@ -2283,6 +2283,14 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="account">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
+<span class="fold-title">My Account</span>
+<span class="fold-sub">Everything you owe the market, on one page</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="venmopay">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'venmopay')">
 <span class="fold-title">Pay Fees</span>
@@ -2503,6 +2511,15 @@ I sell food (prepared food or produce)
 </div>
 <p class="empty-note" id="menuTailorNote" style="margin: 14px 0 4px; text-align:center;"></p>
 <button type="button" class="ghost-btn" id="deskOrderReset" style="display:none;" onclick="resetDeskOrder(this)">Put the drawers back in their usual order</button>
+</section>
+<section id="screen-account" class="screen">
+<div class="screen-head" id="head-account"></div>
+<div class="card manager-only" id="acctPickCard" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Whose account</h2>
+<select id="acctVendor" onchange="renderAccount()"></select>
+</div>
+<div class="empty-note" id="acctSquareState" style="margin:0 0 12px;"></div>
+<div id="acctBody"></div>
 </section>
 <section id="screen-pavrentals" class="screen">
 <div class="screen-head" id="head-pavrentals"></div>
@@ -3635,6 +3652,14 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="dev-handover">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'handover')">
+<span class="fold-title">Handover</span>
+<span class="fold-sub">What must change hands when the market takes the app over &mdash; accounts, keys, and who owns them</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="dev-recordsneeded">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'recordsneeded')">
 <span class="fold-title">Records Needed</span>
@@ -3780,11 +3805,25 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Name things after the market&rsquo;s managers</div><div class="comm-desc">Honor the people who have run the market over the years by putting their names on the things they cared for &mdash; a pavilion section, a bench, a gate, an annual award. The list of names lives with the office and the long memory of the members; the naming itself is a Board decision.</div></div>
 </div>
 </section>
+<section id="screen-handover" class="screen">
+<div class="screen-head" id="head-handover"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Handover</h2>
+<p class="empty-note" style="margin-top:0;">The app is being built on a personal Google account. When the
+Ithaca Farmers Market takes it over they start a fresh backend on an account they control. This is the list
+of what must change hands, and what must be created new rather than transferred.</p>
+<p class="empty-note"><b>The rule that decides each item:</b> anything that can spend the market&rsquo;s money,
+read its payment records, or lock its members out belongs to an account the <i>market</i> controls
+institutionally &mdash; not a developer&rsquo;s personal login, and not the current manager&rsquo;s personal
+login either, which only moves the problem one desk over.</p>
+<div id="handoverList"></div>
+</div>
+</section>
 <section id="screen-recordsneeded" class="screen">
 <div class="screen-head" id="head-recordsneeded"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Records Needed</h2>
-<p class="empty-note" style="margin-top:0;">Nine records, each with a keeper. Any format works &mdash; a spreadsheet is enough. Together they might make one ask at a board meeting rather than nine.</p>
+<p class="empty-note" style="margin-top:0;" id="recordsNeededCount"></p>
 <div id="recordsNeededList"></div>
 </div>
 </section>
@@ -9094,9 +9133,81 @@ unblocks: 'The electrical layer of the booth-pick map. The Map Editor can place 
 what: 'A layout of benches and picnic tables, the names of the playgrounds, and any culturally significant landmarks on the grounds.',
 unblocks: 'The kiosk map as an educational tool \u2014 furniture and landmarks a visitor can find on the map and learn about. The Map Editor on the developer desk can place all of it; it is waiting only on someone to say where things are.' },
 ];
+// The handover list. Ordered hardest-first: the items that cannot simply be
+// copied come before the ones that can.
+const HANDOVER = [
+{ t: 'A Square account and access token, created by the market',
+  who: 'The Ithaca Farmers Market, on an account it controls institutionally',
+  how: 'The market creates its own Square developer application and generates its own PRODUCTION access ' +
+       'token. The token is pasted into the market\u2019s own Apps Script project under Script Properties. ' +
+       'It is never typed into index.html, never emailed, and never read aloud.',
+  why: 'A Square access token grants full access to the account behind it \u2014 payments, refunds, ' +
+       'customer records. A token generated on a developer\u2019s personal account would leave that ' +
+       'person\u2019s Google login and recovery email standing between the world and the market\u2019s ' +
+       'money. It also cannot be handed over cleanly: the only safe transfer is to revoke it and make a ' +
+       'new one, so making it new at handover costs nothing and skips the risk entirely.',
+  hard: true },
+{ t: 'Sandbox credentials revoked, and the developer\u2019s deployment deleted',
+  who: 'Whoever built the app',
+  how: 'Delete the sandbox Apps Script deployment, revoke the sandbox token in the Square developer ' +
+       'console, and confirm no /exec URL from a personal account is still referenced anywhere.',
+  why: 'Development is done against Square\u2019s sandbox, which is harmless while it lives and untidy ' +
+       'if it outlives the handover. Nothing of the builder\u2019s should remain reachable afterwards.',
+  hard: false },
+{ t: 'A Google account owned by the market, not a person',
+  who: 'The market',
+  how: 'A market-owned Google account holds the Sheet, the Apps Script projects, and the GitHub Pages ' +
+       'repository. Individual people are given access to it; the account itself belongs to no one person.',
+  why: 'Every backend key, every archive and every deployment hangs off this account. If it belongs to ' +
+       'somebody who leaves, moves, or falls out with the market, the market loses its records.',
+  hard: true },
+{ t: 'A fresh Sheet and a fresh Apps Script backend',
+  who: 'The market',
+  how: 'New Sheet on the market\u2019s account, the portal\u2019s Apps Script pasted in, deployed as a web ' +
+       'app, and the new /exec URL written into index.html. Then Data Export from the old backend and ' +
+       'import into the new one, so the archive moves as data rather than as an account transfer.',
+  why: 'Real vendor records should start life on the market\u2019s own account. Moving the data rather ' +
+       'than the account means nothing is inherited that nobody can explain later.',
+  hard: false },
+{ t: 'The GitHub repository',
+  who: 'The market',
+  how: 'The repository is transferred or forked to a market-owned GitHub account, and the Pages URL ' +
+       'updated wherever it is printed \u2014 including the gift-certificate sticker roll, which encodes ' +
+       'the app\u2019s address in every QR code.',
+  why: 'The stickers already printed carry whatever address was current when they were ordered. Changing ' +
+       'the app\u2019s address after a roll is printed makes those stickers open the wrong place.',
+  hard: false },
+{ t: 'BETA_RESET_TOOLS set to false',
+  who: 'Whoever builds the handover version',
+  how: 'One constant near the top of the file. The build script prints a warning on every build while it ' +
+       'is true.',
+  why: 'It exposes tools that wipe records. Harmless in testing, unacceptable in an office.',
+  hard: false },
+];
+function initHandoverScreen() {
+const wrap = document.getElementById('handoverList');
+if (!wrap) return;
+wrap.innerHTML = '';
+HANDOVER.forEach(item => {
+const box = document.createElement('div');
+box.className = 'card' + (item.hard ? ' not-yours' : '');
+box.style.marginTop = '10px';
+box.innerHTML = '<h2 style="font-size:16px;">' + esc(item.t) +
+(item.hard ? ' <span class="season-tag">Create new \u2014 do not transfer</span>' : '') + '</h2>' +
+'<p class="empty-note" style="margin:0 0 6px;"><b>Who does it</b> \u00b7 ' + esc(item.who) + '</p>' +
+'<p class="empty-note" style="margin:0 0 6px;"><b>How</b> \u00b7 ' + esc(item.how) + '</p>' +
+'<p class="empty-note" style="margin:0;"><b>Why it matters</b> \u00b7 ' + esc(item.why) + '</p>';
+wrap.appendChild(box);
+});
+}
 function initRecordsNeededScreen() {
 const wrap = document.getElementById('recordsNeededList');
 wrap.innerHTML = '';
+const keepers = new Set(RECORDS_NEEDED.map(r => r.keeper)).size;
+const count = document.getElementById('recordsNeededCount');
+if (count) count.innerHTML = RECORDS_NEEDED.length + ' records, ' + keepers +
+' keepers. Any format works &mdash; a spreadsheet is enough. Grouped by keeper they might make ' +
+keepers + ' asks at a board meeting rather than ' + RECORDS_NEEDED.length + '.';
 RECORDS_NEEDED.forEach(r => {
 const row = document.createElement('div');
 row.className = 'tracker-row';
@@ -9884,7 +9995,7 @@ document.getElementById('volRoleCard').innerHTML =
 // Three zones, top to bottom: in season now, the file cabinet (identical
 // order all year), out of season. Business Profile is fixed above all of it.
 // The file cabinet: a vendor's own records, same order every day of the year.
-const DESK_STABLE_ORDER = ['hours', 'venmopay', 'fPoints', 'snaptokens', 'mydocs',
+const DESK_STABLE_ORDER = ['hours', 'account', 'venmopay', 'fPoints', 'snaptokens', 'mydocs',
 'mycommittees', 'directory', 'communicate', 'guide'];
 // Steamboat's day-to-day tools, on top while Steamboat is running.
 const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos', 'fShare'];
@@ -10792,6 +10903,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'traffic', k: 'ifm-giftcerts', t: 'Gift certificates \u2014 issued, redeemed, voided', v: () => [] },
 { g: 'config', k: 'ifm-pavrentals', t: 'Pavilion rented to a third party \u2014 vendors out by 4 PM', v: () => [] },
 { g: 'config', k: 'ifm-gcrolls', t: 'Gift certificate sticker rolls \u2014 which codes exist', v: () => [] },
+{ g: 'traffic', k: 'ifm-payments', t: 'Payments confirmed by Square \u2014 empty until credentials are loaded', v: () => [] },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
 { g: 'config', k: 'ifm-unreservable', t: 'Unreservable Booths', v: () => ({ nums: [], updated: '' }) },
 { g: 'config', k: 'ifm-amendments', t: 'Board Amendments', v: () => ({ items: [
@@ -11137,6 +11249,187 @@ const back = document.getElementById('pavNoticeBackdrop');
 if (back) { back.classList.remove('open'); back.style.display = 'none'; }
 try { localStorage.setItem(pavNoticeSeenKey(todayISO()), '1'); } catch (e) {}
 }
+// ===========================================================================
+// VENDOR ACCOUNTS
+//
+// What a vendor owes the market, in one place, for the vendor and for the
+// office. Three columns of fact, never added across:
+//
+//   CHARGED   obligations the app can compute from rules the Guide sets --
+//             fines, the membership share installments, the renewal
+//             surcharge, work hours unworked at season's end.
+//   RECEIVED  money the office actually recorded: day fees collected on
+//             site, and (once Square is connected) confirmed card payments.
+//   REPORTED  what a vendor says they paid, unconfirmed. Shown, never added.
+//
+// The fourth column is the honest one: WHAT THIS CANNOT SEE. Season and
+// booth fees are invoiced outside the app, share payments live with the
+// bookkeeper, and cash and checks handed across the office desk leave no
+// trace here. A balance that quietly omitted those would be worse than no
+// balance, because it would look complete.
+//
+// Square is the fix for most of it. The backend can read confirmed payments
+// and write them to ifm-payments; the moment that key has rows, the RECEIVED
+// column becomes real and the balance means what it says. Until credentials
+// are loaded the page says so at the top, in every role.
+// ===========================================================================
+let payCache = null;
+async function loadPayments() {
+const list = await storageGet('ifm-payments');
+if (list !== STORAGE_MISSING && list) payCache = list;
+else if (!payCache) payCache = [];
+return payCache;
+}
+function squareConnected() { return ((payCache || []).length > 0); }
+function accountData(vendorId, year) {
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+const inYear = d => String(d || '').slice(0, 4) === String(year);
+const charged = [], received = [], unseen = [];
+
+// Fines, live from allFines() so a corrected record corrects the balance.
+allFines().filter(f => f.vendorId === vendorId && inYear(f.date)).forEach(f => {
+if ((cache.ops.waived || {})['F:' + f.id]) return;
+charged.push({ date: f.date, what: f.reason || 'Fine',
+kind: f.auto ? 'Fine (assessed by rule)' : 'Fine', amount: Number(f.amount || 0) });
+});
+
+// The membership share: Full Members only, in annual installments.
+const isFull = /full/i.test(String(v && v.membership || ''));
+if (isFull) {
+const instal = ruleNum('certInstal') || 100;
+const total = ruleNum('certTotal') || 300;
+const joined = Number(v.joinYear) || year;
+const yearsIn = Math.max(0, Math.min(Math.ceil(total / instal), year - joined + 1));
+if (yearsIn > 0) {
+charged.push({ date: year + '-01-01', what: 'Membership share installment ' + yearsIn +
+' of ' + Math.ceil(total / instal), kind: 'Membership share (equity, not income)', amount: instal });
+}
+unseen.push('What has already been paid toward the $' + total + ' membership share. That history ' +
+'lives with the bookkeeper and is on the Records Needed list.');
+}
+
+// The renewal surcharge, if the office recorded a late postmark.
+const ren = ((cache.ops || {}).renewal || {})[year] || {};
+const mine = ren[vendorId];
+if (mine && mine.postmarked && mine.postmarked > (year + '-01-01')) {
+charged.push({ date: mine.postmarked, what: 'Late renewal surcharge',
+kind: 'Renewal', amount: ruleNum('renewSurcharge') || 100 });
+}
+
+// Work hours not worked. Only owed once the season has closed.
+const hl = buildHoursLedger(vendorId, year);
+const seasonOver = new Date().getMonth() === 11 && new Date().getDate() >= 31;
+if (hl && hl.owed > 0) {
+const amount = Math.round(hl.owed * (ruleNum('fineHour') || 25) * 100) / 100;
+if (seasonOver) charged.push({ date: year + '-12-31', what: Number(hl.owed).toFixed(1) +
+' work hours not worked', kind: 'Work hours', amount: amount });
+else unseen.push(Number(hl.owed).toFixed(1) + ' work hours are still owed this season. ' +
+'At $' + (ruleNum('fineHour') || 25) + ' an hour that would come to $' + fmtMoney(amount) +
+' if the season closed today \u2014 not a charge yet, and avoidable by working them.');
+}
+
+// Day fees the office recorded as collected on site.
+Object.keys((cache.ops || {}).dayfees || {}).forEach(d => {
+if (!inYear(d)) return;
+if (((cache.ops.dayfees[d] || []).indexOf(vendorId)) === -1) return;
+const md = allMarketDatesInSeason(year).find(m => m.date === d);
+received.push({ date: d, what: 'Day fee collected on site' + (md ? ' (' + md.day + ')' : ''),
+amount: dayFeeFor(md ? md.day : 'Saturday') });
+});
+
+// Confirmed card payments, once Square is connected.
+(payCache || []).filter(p => p.vendorId === vendorId && inYear(p.date)).forEach(p => {
+received.push({ date: p.date, what: (p.note || 'Card payment') + ' \u00b7 Square', amount: Number(p.amount || 0) });
+});
+
+const reported = ((vpCache && vpCache.items) || [])
+.filter(it => it.vendorId === vendorId && inYear(it.date));
+
+unseen.push('Season and booth fees invoiced outside the app, and any cash or check handed ' +
+'across the office desk. Nothing records those here.');
+if (!squareConnected()) unseen.push('Card payments through Square. The market\u2019s Square account ' +
+'is not connected yet, so no confirmed payment can appear in the received column.');
+
+const sum = l => Math.round(l.reduce((s, x) => s + Number(x.amount || 0), 0) * 100) / 100;
+charged.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+received.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+return { vendor: v, year: year, charged: charged, received: received,
+reported: reported, unseen: unseen,
+chargedTotal: sum(charged), receivedTotal: sum(received), reportedTotal: sum(reported),
+balance: Math.round((sum(charged) - sum(received)) * 100) / 100 };
+}
+function renderAccount() {
+const host = document.getElementById('acctBody');
+if (!host) return;
+const pick = document.getElementById('acctVendor');
+const vid = (currentRole === 'manager' && pick && pick.value) ? pick.value : currentVendorId;
+const state = document.getElementById('acctSquareState');
+if (state) {
+state.innerHTML = squareConnected()
+? '<b>Square is connected.</b> Card payments confirmed by Square appear in what the market has received. ' +
+'Paying by card costs Square\u2019s fee for that transaction on top of the amount owed \u2014 the market ' +
+'passes that on at cost and keeps none of it, and you will see the full total before you pay. ' +
+'Cash or a check costs the amount owed and nothing more.'
+: '<b>Not yet live.</b> This page is finished but the market\u2019s Square account is not connected, so no ' +
+'card payment can be confirmed here. Everything below is computed from the market\u2019s own records. ' +
+'Loading Square credentials into the backend turns the received column on \u2014 nothing else changes. ' +
+'When it does, paying by card will cost Square\u2019s own fee for that transaction on top: the market ' +
+'passes it on at cost and keeps none of it.';
+state.style.color = squareConnected() ? '' : '#8A3B2E';
+}
+if (!vid) { host.innerHTML = ''; return; }
+const d = accountData(vid, seasonYear());
+const money = n => '$' + fmtMoney(n);
+const rows = list => list.length
+? list.map(r => '<div class="tracker-row"><div class="t-title">' + esc(formatDisplayDate(r.date)) +
+' \u00b7 ' + esc(r.what) + '</div><div class="t-sub">' + money(r.amount) +
+(r.kind ? ' \u00b7 ' + esc(r.kind) : '') + '</div></div>').join('')
+: '<p class="empty-note" style="margin:0;">Nothing on record.</p>';
+
+let html = '<div class="card"><div class="stat-row">' +
+'<div class="stat"><div class="stat-num">' + money(d.chargedTotal) + '</div><div class="stat-label">Charged</div></div>' +
+'<div class="stat"><div class="stat-num">' + money(d.receivedTotal) + '</div><div class="stat-label">Received</div></div>' +
+'<div class="stat"><div class="stat-num">' + money(d.balance) + '</div><div class="stat-label">Balance shown</div></div>' +
+'</div><p class="empty-note" style="margin:8px 0 0;">' + esc(d.vendor ? d.vendor.businessName : '') +
+' \u00b7 season ' + d.year + '. <b>The balance is only as complete as the received column</b> \u2014 ' +
+'read what this page cannot see, below, before treating it as what is owed.</p></div>';
+
+html += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>' +
+'Charged</h2><p class="empty-note" style="margin-top:0;">Computed from the rules the Guide sets. ' +
+'Change the record behind one and it recomputes.</p>' + rows(d.charged) + '</div>';
+
+html += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>' +
+'Received by the market</h2><p class="empty-note" style="margin-top:0;">Only money the office actually ' +
+'recorded. Never what somebody says they sent.</p>' + rows(d.received) + '</div>';
+
+html += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-quill"></use></svg></span>' +
+'Reported by the vendor, not yet confirmed</h2>' +
+'<p class="empty-note" style="margin-top:0;">Kept apart on purpose and <b>never added into the balance</b>. ' +
+'A payment counts when the office records it.</p>' +
+(d.reported.length
+? rows(d.reported.map(r => ({ date: r.date, what: r.note || 'Payment reported', amount: r.amount })))
++ '<p class="empty-note"><b>' + money(d.reportedTotal) + '</b> reported and unconfirmed.</p>'
+: '<p class="empty-note" style="margin:0;">Nothing reported.</p>') + '</div>';
+
+html += '<div class="card not-yours"><h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>' +
+'What this page cannot see</h2>' +
+d.unseen.map(u => '<p class="empty-note" style="margin:0 0 6px;">\u2022 ' + esc(u) + '</p>').join('') +
+'</div>';
+host.innerHTML = html;
+}
+async function initAccountScreen() {
+await loadPayments();
+const pick = document.getElementById('acctPickCard');
+const sel = document.getElementById('acctVendor');
+if (currentRole === 'manager' && pick && sel) {
+pick.style.display = '';
+const keep = sel.value;
+sel.innerHTML = (cache.vendors || []).slice().sort(byBusinessName)
+.map(v => '<option value="' + v.vendorId + '">' + esc(v.businessName) + '</option>').join('');
+if (keep) sel.value = keep;
+} else if (pick) { pick.style.display = 'none'; }
+renderAccount();
+}
 function renderAll() {
 paintHeaderBadge();
 renderChairAlertBar();
@@ -11371,6 +11664,7 @@ if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') initGiftCertsScreen();
 if (name === 'pavrentals') initPavRentalsScreen();
+if (name === 'account') initAccountScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
@@ -11452,6 +11746,7 @@ renderImproveQueue();
 }
 if (name === 'improve') initImproveScreen();
 if (name === 'recordsneeded') initRecordsNeededScreen();
+if (name === 'handover') initHandoverScreen();
 if (name === 'aboutedit') renderAboutEditor();
 if (name === 'developer') { const t = document.getElementById('betaResetTile'); if (t) t.style.display = BETA_RESET_TOOLS ? '' : 'none'; updateTunerTile(); }
 if (name === 'volunteer') initVolunteerScreen();
@@ -11496,6 +11791,7 @@ winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 giftcerts:         { title: 'Gift Certificates' },
 pavrentals:        { title: 'Pavilion Rentals' },
+account:           { title: 'Vendor Account' },
 winterbooths:      { title: 'Winter Market Booths' },
 standing:          { title: 'Vendor Standing' },
 records:           { title: 'Vendor Records' },
@@ -11536,6 +11832,7 @@ unreservable:      { title: 'Unreservable Booths' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
+handover:          { title: 'Handover' },
 addvendor:         { title: 'Add New Vendor' },
 pointsmanager:     { title: 'Points Manager' },
 hoursreport:       { title: 'Work Hours Report' },
@@ -14452,7 +14749,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-20';
+const BUILD_ID = '15-24';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20515,6 +20812,7 @@ const RULE_DEFS = [
 { g: 'SNAP', id: 'snapTokenValue', l: 'What one SNAP token is worth', u: '$', d: 1, src: 'Set by the market \u2014 not in the Guide' },
 { g: 'Fines', id: 'fineCallOut', l: 'Late absence notice, and each further offense adds the same again', u: '$', d: 50, src: 'Guide, Vendor Rules and Fines' },
 { g: 'Fines', id: 'fineStall', l: 'Items left at close, first offense', u: '$', d: 10, src: 'Guide, Maintenance and Cleaning' },
+{ g: 'Fines', id: 'fineHour', l: 'Owed for each work hour not worked by season end', u: '$', d: 25, src: 'Guide, Vendor Rules and Fines' },
 { g: 'Fines', id: 'fineStallMult', l: 'What that fine is multiplied by each time it happens again', u: '\u00d7', d: 2, src: 'Guide, Maintenance and Cleaning' },
 { g: 'Attendance owed', id: 'attSat', l: 'Saturdays for a reserved booth', d: 15, src: 'Guide, Saturday Reserved Stalls' },
 { g: 'Attendance owed', id: 'attCorner', l: 'Saturdays for a corner Ag booth', d: 25, src: 'Guide, Saturday Reserved Stalls' },
@@ -21116,6 +21414,7 @@ tiles: [
 { soon: 'attendreq', s: 'attendreq', i: 'i-checkmark', t: 'Attendance Requirement', d: 'What holding a reserved booth obliges' },
 { soon: 'fines', s: 'fines', i: 'i-scale', t: 'Fines &amp; Penalties', d: 'What is owed, with the escalation' },
 { soon: 'disciplinary', ot: 'disciplinary', i: 'i-warning', t: 'Disciplinary Record', d: 'Which stage a vendor is at' },
+{ s: 'account', i: 'i-basket', t: 'Vendor Accounts', d: 'One vendor\u2019s whole balance \u2014 fees, fines, share, hours owed' },
 { s: 'yearend', i: 'i-document', t: 'Year-End Money Worksheet', d: 'Every figure the app holds for a year, and what it does not' },
 ] },
 { key: 'hours', title: 'Work Hours', icon: 'i-clock',
@@ -21618,6 +21917,20 @@ html += psSection('Fines & Penalties', true, fnLines, '');
 html += psSection('Disciplinary Record', false, [],
 'No stage, warning or hearing is stored in this app. If this vendor has been through ' +
 'anything, it is on paper in the office.');
+
+// --- Vendor Accounts
+const acct = accountData(vendorId, year);
+const acctLines = [];
+if (acct.chargedTotal || acct.receivedTotal || acct.reportedTotal) {
+acctLines.push('<b>' + money(acct.balance) + '</b> balance shown \u00b7 ' +
+money(acct.chargedTotal) + ' charged \u00b7 ' + money(acct.receivedTotal) + ' received');
+acct.charged.slice(-3).reverse().forEach(c => acctLines.push(esc(c.date) + ' \u00b7 ' +
+money(c.amount) + ' \u00b7 ' + esc(c.what)));
+if (acct.reportedTotal) acctLines.push('<i>' + money(acct.reportedTotal) +
+' reported by the vendor and not counted in the balance</i>');
+acctLines.push('<i>Incomplete until Square is connected \u2014 open Vendor Accounts for what it cannot see.</i>');
+}
+html += psSection('Vendor Accounts', true, acctLines, '');
 
 // --- Year-End Money Worksheet
 const ren = ((cache.ops || {}).renewal || {})[year] || {};
