@@ -6479,6 +6479,13 @@ let ifmUpdating = false;
 // either will do; if a server sends neither we fall back to the old way rather
 // than never noticing an update at all.
 let ifmFileStamp = null, ifmStampless = false;
+let ifmQueueSeen = -1, ifmQueueSince = 0;
+function ifmQueueStuck() {
+const n = ifmWriteQueue.size;
+if (n === 0) return false;
+if (n !== ifmQueueSeen) { ifmQueueSeen = n; ifmQueueSince = Date.now(); return false; }
+return (Date.now() - ifmQueueSince) > 90000;
+}
 async function ifmCheckForUpdate() {
 if (!/^https?:$/.test(location.protocol)) return;   // only when hosted at a real URL
 try {
@@ -6489,8 +6496,20 @@ const stamp = head.headers.get('etag') || head.headers.get('last-modified');
 if (!stamp) {
 ifmStampless = true;            // this server will not tell us; ask the long way
 } else if (ifmFileStamp === null) {
-ifmFileStamp = stamp;             // first look: nothing to compare against yet
-return;
+// FIRST LOOK OF THE SESSION: record the stamp and CARRY ON to read the
+// build number. Returning here was a real bug and a nasty one, because it
+// failed in exactly the case that matters. A phone that was closed when a
+// build went up opens on the old file out of Safari's cache, the first
+// check quietly stores the NEW stamp, and every later check compares new
+// against new and says "unchanged" -- for ever. The running app is a build
+// behind and nothing will ever say so. What that looks like from outside
+// is an update system that has stalled, and the only way through it is to
+// force-quit the app, which is precisely what was reported.
+//
+// A stamp says whether the file changed since we last looked. It cannot
+// say whether the file matches what is RUNNING. Only the build number can,
+// so the build number has to be read at least once per session.
+ifmFileStamp = stamp;
 } else if (stamp === ifmFileStamp) {
 return;                           // unchanged. Cost: some headers.
 } else {
@@ -6503,7 +6522,9 @@ const text = await r.text();
 const m = text.match(new RegExp('BUILD' + String.fromCharCode(95) + "ID = '([^']+)'"));
 if (!m || m[1] === BUILD_ID || ifmUpdating) return;
 const ae = document.activeElement;
-const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || ifmWriteQueue.size > 0;
+const typing = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+const saving = ifmWriteQueue.size > 0 && !ifmQueueStuck();
+const busy = typing || saving;
 let bar = document.getElementById('ifmUpdateBar');
 if (!bar) {
 bar = document.createElement('button');
@@ -6520,7 +6541,10 @@ bar.textContent = 'Updating to build ' + m[1] + '\u2026';
 setTimeout(() => location.replace(location.pathname + '?v=' + encodeURIComponent(m[1])), 1200);
 return;
 }
-bar.textContent = 'Build ' + m[1] + ' is ready \u2014 tap to update';
+bar.textContent = typing
+? 'Build ' + m[1] + ' ready \u2014 finish typing, then tap'
+: 'Build ' + m[1] + ' ready \u2014 ' + ifmWriteQueue.size + ' change' +
+(ifmWriteQueue.size === 1 ? '' : 's') + ' still saving \u00b7 tap to update anyway';
 } catch (e) { /* offline or mid-redeploy; try again later */ }
 }
 if (typeof window !== 'undefined') {
@@ -14738,7 +14762,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-25';
+const BUILD_ID = '15-26';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
