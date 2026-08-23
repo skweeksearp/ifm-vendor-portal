@@ -2286,16 +2286,8 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="account">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
 <span class="fold-title">My Account</span>
-<span class="fold-sub">Everything you owe the market, on one page</span>
+<span class="fold-sub" id="menuPaySub">What you owe the market, and how to pay it</span>
 <span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="venmopay">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'venmopay')">
-<span class="fold-title">Pay Fees</span>
-<span class="fold-sub" id="menuPaySub">Mock-up · Venmo, once the office opens its profile</span>
-<span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
 </div>
@@ -2520,6 +2512,34 @@ I sell food (prepared food or produce)
 </div>
 <div class="empty-note" id="acctSquareState" style="margin:0 0 12px;"></div>
 <div id="acctBody"></div>
+<div id="acctPayHalf">
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Pay Fees with Venmo<button type="button" class="help-dot" onclick="showPlanned('venmopay')" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;"><b>This is a mock-up.</b> No money moves. The market office has not opened a Venmo business profile; <b>@IthacaFarmersMarket</b> below is a placeholder. Until the Board blesses electronic payment, the Guide&rsquo;s postmark rules are the rules.</p>
+<div id="vpLines"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Payment Basket</h2>
+<p class="empty-note" style="margin-top:0;">Add fees from wherever you find them — work hours from the Work Hours drawer, day fees from Booth Request / Absence, renewal fees above — then pay once.</p>
+<div id="vpCartList"></div>
+<div class="empty-note" id="vpCartEmpty">Nothing in the basket yet.</div>
+<div id="vpCartTotalRow" style="display:none; font-weight:800; font-size:18px; margin:8px 0;">Total: $<span id="vpCartTotal">0</span></div>
+<button type="button" class="primary-btn" id="vpCartPayBtn" style="background:#3D95CE; display:none;" onclick="payFeeCart()">Pay with Venmo</button>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Year&rsquo;s Record of Fees<button type="button" class="help-dot" onclick="showHelp(HELP_FEE_STATEMENT)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Everything this app has recorded you paying the market in one year, on one printable page. Useful at tax time &mdash; but read the note on it: it is the app&rsquo;s record, not the office&rsquo;s receipt.</p>
+<label for="fsYear">Which year</label>
+<select id="fsYear" onchange="renderFeeStatement()"></select>
+<button type="button" class="primary-btn" style="margin-top:10px;" onclick="openFeeStatement()">View printable page</button>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Reported Payments</h2>
+<p class="empty-note" style="margin-top:0;">The app cannot see Venmo, so a payment here is a report, not a receipt &mdash; the office confirms it against the actual transfer, matched by the note. <b>Reported money is never counted in the balance above</b>; it counts when the office records it.</p>
+<div id="vpList"></div>
+<div class="empty-note" id="vpEmpty">Nothing reported yet.</div>
+</div>
+</div>
 </section>
 <section id="screen-pavrentals" class="screen">
 <div class="screen-head" id="head-pavrentals"></div>
@@ -3601,35 +3621,6 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="screen-head" id="head-appglossary"></div>
 <p class="empty-note" style="margin-top:0;">The market&rsquo;s words live in Plain Words. These are the app&rsquo;s own words &mdash; the vocabulary this project uses for its parts, so a conversation about the app can be exact.</p>
 <div id="agBody"></div>
-</section>
-<section id="screen-venmopay" class="screen">
-<div class="screen-head" id="head-venmopay"></div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Pay Fees with Venmo<button type="button" class="help-dot" onclick="showPlanned('venmopay')" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" style="margin-top:0;"><b>This is a mock-up.</b> No money moves. The market office has not opened a Venmo business profile; <b>@IthacaFarmersMarket</b> below is a placeholder. Until the Board blesses electronic payment, the Guide&rsquo;s postmark rules are the rules.</p>
-<div id="vpLines"></div>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Payment Basket</h2>
-<p class="empty-note" style="margin-top:0;">Add fees from wherever you find them — work hours from the Work Hours drawer, day fees from Booth Request / Absence, renewal fees above — then pay once.</p>
-<div id="vpCartList"></div>
-<div class="empty-note" id="vpCartEmpty">Nothing in the basket yet.</div>
-<div id="vpCartTotalRow" style="display:none; font-weight:800; font-size:18px; margin:8px 0;">Total: $<span id="vpCartTotal">0</span></div>
-<button type="button" class="primary-btn" id="vpCartPayBtn" style="background:#3D95CE; display:none;" onclick="payFeeCart()">Pay with Venmo</button>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Year&rsquo;s Record of Fees<button type="button" class="help-dot" onclick="showHelp(HELP_FEE_STATEMENT)" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" style="margin-top:0;">Everything this app has recorded you paying the market in one year, on one printable page. Useful at tax time &mdash; but read the note on it: it is the app&rsquo;s record, not the office&rsquo;s receipt.</p>
-<label for="fsYear">Which year</label>
-<select id="fsYear" onchange="renderFeeStatement()"></select>
-<button type="button" class="primary-btn" style="margin-top:10px;" onclick="openFeeStatement()">View printable page</button>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Reported Payments</h2>
-<p class="empty-note" style="margin-top:0;">The app cannot see Venmo, so a payment here is a report, not a receipt &mdash; the office confirms it against the actual transfer, matched by the note.</p>
-<div id="vpList"></div>
-<div class="empty-note" id="vpEmpty">Nothing reported yet.</div>
-</div>
 </section>
 <section id="screen-volunteer" class="screen">
 <div class="card">
@@ -9995,7 +9986,7 @@ document.getElementById('volRoleCard').innerHTML =
 // Three zones, top to bottom: in season now, the file cabinet (identical
 // order all year), out of season. Business Profile is fixed above all of it.
 // The file cabinet: a vendor's own records, same order every day of the year.
-const DESK_STABLE_ORDER = ['hours', 'account', 'venmopay', 'fPoints', 'snaptokens', 'mydocs',
+const DESK_STABLE_ORDER = ['hours', 'account', 'fPoints', 'snaptokens', 'mydocs',
 'mycommittees', 'directory', 'communicate', 'guide'];
 // Steamboat's day-to-day tools, on top while Steamboat is running.
 const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos', 'fShare'];
@@ -11402,15 +11393,6 @@ html += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#
 'Received by the market</h2><p class="empty-note" style="margin-top:0;">Only money the office actually ' +
 'recorded. Never what somebody says they sent.</p>' + rows(d.received) + '</div>';
 
-html += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-quill"></use></svg></span>' +
-'Reported by the vendor, not yet confirmed</h2>' +
-'<p class="empty-note" style="margin-top:0;">Kept apart on purpose and <b>never added into the balance</b>. ' +
-'A payment counts when the office records it.</p>' +
-(d.reported.length
-? rows(d.reported.map(r => ({ date: r.date, what: r.note || 'Payment reported', amount: r.amount })))
-+ '<p class="empty-note"><b>' + money(d.reportedTotal) + '</b> reported and unconfirmed.</p>'
-: '<p class="empty-note" style="margin:0;">Nothing reported.</p>') + '</div>';
-
 html += '<div class="card not-yours"><h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>' +
 'What this page cannot see</h2>' +
 d.unseen.map(u => '<p class="empty-note" style="margin:0 0 6px;">\u2022 ' + esc(u) + '</p>').join('') +
@@ -11419,6 +11401,13 @@ host.innerHTML = html;
 }
 async function initAccountScreen() {
 await loadPayments();
+// The paying half belongs to the vendor looking at their own account. A
+// manager reading somebody else's balance must not be shown a basket that
+// would pay from their own pocket, so it is hidden rather than disabled --
+// there is nothing there for them to act on at all.
+const payHalf = document.getElementById('acctPayHalf');
+if (payHalf) payHalf.style.display = (currentRole === 'vendor' && currentVendorId) ? '' : 'none';
+if (currentRole === 'vendor' && currentVendorId) await initVenmoPayScreen();
 const pick = document.getElementById('acctPickCard');
 const sel = document.getElementById('acctVendor');
 if (currentRole === 'manager' && pick && sel) {
@@ -11750,7 +11739,7 @@ if (name === 'handover') initHandoverScreen();
 if (name === 'aboutedit') renderAboutEditor();
 if (name === 'developer') { const t = document.getElementById('betaResetTile'); if (t) t.style.display = BETA_RESET_TOOLS ? '' : 'none'; updateTunerTile(); }
 if (name === 'volunteer') initVolunteerScreen();
-if (name === 'venmopay') initVenmoPayScreen();
+
 if (name === 'appglossary') initAppGlossaryScreen();
 if (name === 'principles') initPrinciplesScreen();
 if (name === 'unreservable') initUnreservableScreen();
@@ -11791,7 +11780,7 @@ winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 giftcerts:         { title: 'Gift Certificates' },
 pavrentals:        { title: 'Pavilion Rentals' },
-account:           { title: 'Vendor Account' },
+account:           { title: 'My Account' },
 winterbooths:      { title: 'Winter Market Booths' },
 standing:          { title: 'Vendor Standing' },
 records:           { title: 'Vendor Records' },
@@ -11810,7 +11799,7 @@ boothlayout:       { title: 'Booth Layouts' },
 improve:           { title: 'Booth Improvements' },
 developer:         { title: 'Developer' },
 volunteer:         { title: 'Volunteers / Partners' },
-venmopay:          { title: 'Pay Fees' },
+
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
 snaplog:           { title: 'SNAP Token Collection' },
@@ -14749,7 +14738,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-24';
+const BUILD_ID = '15-25';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20191,13 +20180,13 @@ t: what, m: r.reviewNote || 'Sent back \u00b7 speak to the office before logging
 });
 ((vpCache && vpCache.items) || []).filter(x => x.vendorId === me).forEach(x => {
 if (x.status === 'confirmed') {
-out.push({ key: 'pay:' + x.id + ':confirmed:' + (x.reviewedAt || ''), state: 'yes', label: 'Confirmed', go: 'venmopay',
+out.push({ key: 'pay:' + x.id + ':confirmed:' + (x.reviewedAt || ''), state: 'yes', label: 'Confirmed', go: 'account',
 t: '$' + fmtMoney(x.amount) + ' \u2014 ' + x.label, m: 'The office confirmed this payment' });
 } else if (x.status === 'queried') {
-out.push({ key: 'pay:' + x.id + ':queried:' + (x.reviewedAt || ''), state: 'no', label: 'Not found', go: 'venmopay',
+out.push({ key: 'pay:' + x.id + ':queried:' + (x.reviewedAt || ''), state: 'no', label: 'Not found', go: 'account',
 t: '$' + fmtMoney(x.amount) + ' \u2014 ' + x.label, m: 'The office could not find this payment \u00b7 check the note and report again' });
 } else {
-out.push({ key: 'pay:' + x.id + ':reported', state: 'waiting', go: 'venmopay',
+out.push({ key: 'pay:' + x.id + ':reported', state: 'waiting', go: 'account',
 t: '$' + fmtMoney(x.amount) + ' \u2014 ' + x.label, m: 'Reported ' + formatDisplayDate(x.date) + ' \u00b7 waiting on the office' });
 }
 });
@@ -20319,7 +20308,7 @@ if (paysWaiting) {
 alerts.push({ id: 'payments', topic: 'Fees', n: paysWaiting,
 t: paysWaiting + (paysWaiting === 1 ? ' reported payment awaiting confirmation' : ' reported payments awaiting confirmation'),
 d: 'A vendor says they have paid \u2014 confirm it against the market\u2019s account',
-cls: 'submitted', go: 'venmopay' });
+cls: 'submitted', go: 'account' });
 }
 const pending = pendingSubmissions();
 if (pending.length) {
