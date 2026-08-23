@@ -14202,7 +14202,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-13';
+const BUILD_ID = '15-14';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20803,8 +20803,10 @@ if (venueInSeason('winter')) live.push('the Winter Market');
 let lead;
 if (live.length === 1) lead = '<b>' + live[0] + '</b> is running.';
 else lead = '<b>' + live.slice(0, -1).join(', ') + '</b> and <b>' + live[live.length - 1] + '</b> are running.';
-host.innerHTML = '<p class="venue-note">' + lead +
-' Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot on this desk all year.</p>';
+const tail = hostId === 'mgrVenuePicker'
+? ' The market\u2019s records \u2014 vendors, points, money, the paper trail \u2014 keep the same spot on this desk all year: one pool of vendors, whichever market is trading.'
+: ' Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot on this desk all year.';
+host.innerHTML = '<p class="venue-note">' + lead + tail + '</p>';
 }
 // ===========================================================================
 // ONE VENDOR, WHOLE STANDING
