@@ -2005,6 +2005,27 @@ background: #fff; font: inherit; font-size: 11px; cursor: pointer; color: inheri
 #meLayerbar button.on { background: var(--ink); color: #FFFDF4; border-color: var(--ink); }
 #meMsg { font-size: 11.5px; margin-top: 8px; min-height: 14px; opacity: 0.75; }
 body.me-layer-kiosk #meCanvas .me-panelchip { display: none; }
+/* Gift certificate print sheet: on paper, only the certificates. */
+#gcPrintArea { display: none; }
+@media print {
+body.gc-printing > *:not(#gcPrintArea) { display: none !important; }
+body.gc-printing #gcPrintArea { display: block !important; }
+.gc-cert {
+border: 2.5px solid #4A452F; border-radius: 6px; padding: 18px 22px;
+margin: 0 0 24px 0; page-break-inside: avoid;
+font-family: Georgia, 'Times New Roman', serif; color: #2E2A1B;
+display: flex; justify-content: space-between; align-items: center; gap: 18px;
+}
+.gc-cert .gc-left { flex: 1; }
+.gc-cert h3 { margin: 0 0 2px 0; font-size: 21px; letter-spacing: .06em; }
+.gc-cert .gc-sub { font-size: 13px; letter-spacing: .18em; margin-bottom: 10px; }
+.gc-cert .gc-amt { font-size: 26px; font-weight: 700; border: 2px solid #4A452F;
+display: inline-block; padding: 4px 18px; margin: 6px 0 12px 0; }
+.gc-cert .gc-lines { font-size: 14px; line-height: 2.1; }
+.gc-cert .gc-right { text-align: center; }
+.gc-cert .gc-serial { font-family: monospace; font-size: 12px; margin-top: 4px; }
+.gc-cert canvas { image-rendering: pixelated; }
+}
 </style>
 </head>
 <body>
@@ -2485,6 +2506,37 @@ I sell food (prepared food or produce)
 </div>
 <p class="empty-note" id="menuTailorNote" style="margin: 14px 0 4px; text-align:center;"></p>
 <button type="button" class="ghost-btn" id="deskOrderReset" style="display:none;" onclick="resetDeskOrder(this)">Put the drawers back in their usual order</button>
+</section>
+<section id="screen-giftcerts" class="screen">
+<div class="screen-head" id="head-giftcerts"></div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>A Certificate Came Back<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does redeeming work?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Point the phone camera at the certificate&rsquo;s QR code &mdash; it opens
+this screen with the serial filled in. Or type the serial printed under the code.</p>
+<input type="text" id="gcSerial" placeholder="GC-2026-0000-XXX" autocomplete="off"
+oninput="gcLookup(this.value)" style="text-transform:uppercase;">
+<div id="gcLookupOut" class="desk-transient"></div>
+</div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Sell &amp; Print New Certificates<button type="button" class="help-dot" onclick="showHelp(73)" aria-label="How does issuing work?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Each certificate gets the next number in the year&rsquo;s sequence &mdash; the
+same habit as the handwritten book &mdash; plus a check code nobody can guess and a QR that carries both.</p>
+<div class="form-row"><label>Amount</label>
+<select id="gcAmount"><option value="5">$5</option><option value="10">$10</option>
+<option value="20" selected>$20</option><option value="25">$25</option><option value="50">$50</option></select></div>
+<div class="form-row"><label>How many</label>
+<select id="gcQty"><option>1</option><option>2</option><option>4</option><option selected>6</option><option>8</option><option>10</option><option>12</option></select></div>
+<div class="form-row"><label>Batch note</label>
+<input type="text" id="gcBatch" placeholder="e.g. sold at the office window" autocomplete="off"></div>
+<button type="button" class="primary-btn" onclick="gcIssueBatch()">Record the sale &amp; open the print sheet</button>
+<div id="gcIssueMsg" class="status-msg"></div>
+</div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>The Book</h2>
+<div id="gcBook"></div>
+<p class="empty-note">This page tracks the paper: what is out, what came back, what was voided. It does not
+do the money &mdash; certificate sales sit in the office&rsquo;s books, not here.</p>
+</div>
 </section>
 <section id="screen-wednesday" class="screen">
 <div class="screen-head" id="head-wednesday"></div>
@@ -10401,6 +10453,14 @@ const HELP_TEXTS = [
 {
 "title": "How It Counts",
 "body": "<p>Wednesday at East Hill is a satellite market, and satellite markets sit outside the work-hours arithmetic. A Saturday at Steamboat Landing earns one hour toward what you owe and a Sunday earns half an hour; Wednesday, Downtown and the Winter Market earn none (Guide p.31). Attending does not add to your obligation and does not reduce it either.</p><p>Who may sell: both Full Members and Easy Entry vendors (Guide p.26). Unlike a Saturday stall, Wednesday is not something a Full Membership gives you first claim on \u2014 everyone stands in the same arrival order.</p>"
+},
+{
+"title": "Sell & Print New Certificates",
+"body": "<p>The office has always numbered its gift certificates by hand \u2014 a year and a running count in pencil on every one. This keeps that habit: each certificate takes the next number in the year's sequence, so the book reads the way it always has.</p><p>What the pencil could not do: a three-letter check code that cannot be guessed from the sequence, and a QR code carrying this app's address with the serial attached. Anyone can read the number; nobody can invent a valid one.</p><p>Recording the sale and printing happen together so a certificate can never exist on paper without existing in the book. The dollar side of the sale still lives in the office's own books \u2014 this screen tracks paper, not money.</p>"
+},
+{
+"title": "A Certificate Came Back",
+"body": "<p>When a vendor turns in a certificate, point the phone camera at its QR code. The camera opens this screen with the serial already filled in; one tap marks it redeemed. No camera, no problem \u2014 the serial printed under the code types in just as well.</p><p>A certificate can come back once. If the book says it was already redeemed, the screen says so in red with the date, because the same paper appearing twice is exactly what this system exists to catch.</p><p>Voiding is for certificates that are lost, misprinted, or refunded before use \u2014 a voided serial can never be redeemed. Old handwritten certificates are not in this book and stay with the paper system until they age out.</p>"
 }
 ];
 function showHelp(i) {
@@ -10684,6 +10744,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'traffic', k: 'ifm-tracker-facilities', t: 'Facilities requests', v: () => [] },
 { g: 'traffic', k: 'ifm-tracker-proposal', t: 'Board proposals submitted', v: () => [] },
 { g: 'traffic', k: 'ifm-popups', t: 'PopUp events', v: () => [] },
+{ g: 'traffic', k: 'ifm-giftcerts', t: 'Gift certificates \u2014 issued, redeemed, voided', v: () => [] },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
 { g: 'config', k: 'ifm-unreservable', t: 'Unreservable Booths', v: () => ({ nums: [], updated: '' }) },
 { g: 'config', k: 'ifm-amendments', t: 'Board Amendments', v: () => ({ items: [
@@ -11146,6 +11207,7 @@ if (name === 'tuning') initTuningScreen();
 if (name === 'winterpaperwork') initWinterPaperwork();
 if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
+if (name === 'giftcerts') initGiftCertsScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
@@ -11269,6 +11331,7 @@ staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
 winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
+giftcerts:         { title: 'Gift Certificates' },
 winterbooths:      { title: 'Winter Market Booths' },
 standing:          { title: 'Vendor Standing' },
 records:           { title: 'Vendor Records' },
@@ -14202,7 +14265,11 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-14';
+try {
+const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
+if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
+} catch (e) {}
+const BUILD_ID = '15-15';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20701,6 +20768,7 @@ d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held f
 sub: 'The plan for the day itself',
 tiles: [
 { s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
+{ s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Sell, print and redeem \u2014 each one carries a QR the office can scan when it comes back' },
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Token Collection', d: 'Who turned in how many tokens' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
@@ -20786,9 +20854,333 @@ tiles: [
 { s: 'plainwords', i: 'i-quill', t: 'Plain Words', d: 'What this app calls things, and what the Guide calls them' },
 ] },
 ];
+// ---- Minimal QR encoder: byte mode, ECC level M, versions 1-6, mask 0 ----
+const GF_EXP = new Array(512), GF_LOG = new Array(256);
+(function () {
+  let x = 1;
+  for (let i = 0; i < 255; i++) {
+    GF_EXP[i] = x; GF_LOG[x] = i;
+    x <<= 1; if (x & 0x100) x ^= 0x11d;
+  }
+  for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255];
+})();
+function gfMul(a, b) { return (a && b) ? GF_EXP[GF_LOG[a] + GF_LOG[b]] : 0; }
+function rsGenPoly(n) {
+  let poly = [1];
+  for (let i = 0; i < n; i++) {
+    const next = new Array(poly.length + 1).fill(0);
+    for (let j = 0; j < poly.length; j++) {
+      next[j] ^= gfMul(poly[j], GF_EXP[i]);
+      next[j + 1] ^= poly[j];
+    }
+    poly = next;
+  }
+  return poly.reverse();
+}
+function rsEncode(data, ecLen) {
+  const gen = rsGenPoly(ecLen);
+  const res = data.concat(new Array(ecLen).fill(0));
+  for (let i = 0; i < data.length; i++) {
+    const coef = res[i];
+    if (coef === 0) continue;
+    for (let j = 1; j < gen.length; j++) res[i + j] ^= gfMul(gen[j], coef);
+  }
+  return res.slice(data.length);
+}
+// Level M block tables, versions 1-6: [ecPerBlock, [[blocks, dataCw]...]]
+const QR_M = {
+  1: [10, [[1, 16]]], 2: [16, [[1, 28]]], 3: [26, [[1, 44]]],
+  4: [18, [[2, 32]]], 5: [24, [[2, 43]]], 6: [16, [[4, 27]]]
+};
+const QR_ALIGN = { 1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34] };
+function qrDataCapacity(v) { return QR_M[v][1].reduce((s, g) => s + g[0] * g[1], 0); }
+function qrPickVersion(nBytes) {
+  for (let v = 1; v <= 6; v++) if (qrDataCapacity(v) >= nBytes + 2) return v;
+  return null;
+}
+function qrMakeMatrix(text) {
+  const bytes = []; // UTF-8
+  for (const ch of unescape(encodeURIComponent(text))) bytes.push(ch.charCodeAt(0));
+  const v = qrPickVersion(bytes.length);
+  if (!v) return null;
+  const size = 17 + 4 * v;
+  const dataCap = qrDataCapacity(v);
+  // Bit stream: mode 0100, 8-bit count, data, terminator, pad
+  const bits = [];
+  const push = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+  push(4, 4); push(bytes.length, 8);
+  bytes.forEach(b => push(b, 8));
+  for (let i = 0; i < 4 && bits.length < dataCap * 8; i++) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  const cw = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j];
+    cw.push(b);
+  }
+  const pads = [0xEC, 0x11];
+  for (let i = 0; cw.length < dataCap; i++) cw.push(pads[i % 2]);
+  // Split into blocks, compute EC, interleave
+  const [ecLen, groups] = QR_M[v];
+  const blocks = []; let at = 0;
+  groups.forEach(([n, dlen]) => {
+    for (let i = 0; i < n; i++) { blocks.push(cw.slice(at, at + dlen)); at += dlen; }
+  });
+  const ecBlocks = blocks.map(b => rsEncode(b, ecLen));
+  const out = [];
+  const maxD = Math.max(...blocks.map(b => b.length));
+  for (let i = 0; i < maxD; i++) blocks.forEach(b => { if (i < b.length) out.push(b[i]); });
+  for (let i = 0; i < ecLen; i++) ecBlocks.forEach(b => out.push(b[i]));
+  // Matrix with function patterns
+  const M = Array.from({ length: size }, () => new Array(size).fill(null));
+  const setF = (r, c, val) => { if (r >= 0 && r < size && c >= 0 && c < size) M[r][c] = val ? 2 : 0; };
+  const finder = (r, c) => {
+    for (let dr = -1; dr <= 7; dr++) for (let dc = -1; dc <= 7; dc++) {
+      const on = dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6 &&
+        (dr === 0 || dr === 6 || dc === 0 || dc === 6 || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
+      setF(r + dr, c + dc, on);
+    }
+  };
+  finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+  for (let i = 8; i < size - 8; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+  const al = QR_ALIGN[v];
+  al.forEach(r => al.forEach(c => {
+    if (M[r][c] !== null) return; // overlaps a finder
+    for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++)
+      setF(r + dr, c + dc, Math.max(Math.abs(dr), Math.abs(dc)) !== 1);
+  }));
+  setF(4 * v + 9, 8, 1); // dark module
+  // Reserve exactly the format cells (a sloppier loop here once stole two
+  // data modules and shifted every bit after them).
+  const fmtA = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+  const fmtB = [[size-1,8],[size-2,8],[size-3,8],[size-4,8],[size-5,8],[size-6,8],[size-7,8],
+    [8,size-8],[8,size-7],[8,size-6],[8,size-5],[8,size-4],[8,size-3],[8,size-2],[8,size-1]];
+  fmtA.concat(fmtB).forEach(([r, c]) => { if (M[r][c] === null) M[r][c] = 0; });
+  // Place data, mask 0: (r+c)%2===0 flips
+  let bi = 0;
+  const dataBits = [];
+  out.forEach(b => { for (let i = 7; i >= 0; i--) dataBits.push((b >> i) & 1); });
+  let col = size - 1, up = true;
+  while (col > 0) {
+    if (col === 6) col--;
+    for (let i = 0; i < size; i++) {
+      const r = up ? size - 1 - i : i;
+      for (const c of [col, col - 1]) {
+        if (M[r][c] !== null) continue;
+        let bit = bi < dataBits.length ? dataBits[bi++] : 0;
+        if ((r + c) % 2 === 0) bit ^= 1;
+        M[r][c] = bit;
+      }
+    }
+    up = !up; col -= 2;
+  }
+  // Format info: ECC M (00) + mask 0 (000) -> BCH then XOR 0x5412
+  let fmt = 0; // 00000
+  let rem = fmt << 10;
+  for (let i = 14; i >= 10; i--) if ((rem >> i) & 1) rem ^= 0x537 << (i - 10);
+  const fbits = ((fmt << 10) | rem) ^ 0x5412;
+  const fb = i => (fbits >> i) & 1;
+  for (let i = 0; i < 15; i++) {
+    M[fmtA[i][0]][fmtA[i][1]] = fb(14 - i) ? 2 : 0;
+    M[fmtB[i][0]][fmtB[i][1]] = fb(14 - i) ? 2 : 0;
+  }
+  return M.map(row => row.map(x => x === 2 || x === 1 ? 1 : 0));
+}
+function qrCanvas(text, scale) {
+  const m = qrMakeMatrix(text);
+  if (!m) return null;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = m.length * scale;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#000';
+  m.forEach((row, r) => row.forEach((v, c) => { if (v) ctx.fillRect(c * scale, r * scale, scale, scale); }));
+  return cv;
+}
+
+// ===========================================================================
+// GIFT CERTIFICATES
+//
+// The office sells paper gift certificates and authenticates them by hand: a
+// pencilled serial on every one, a note of the batch beside it. This screen
+// keeps the habit and drops the pencil. Every certificate gets the next
+// number in the year's sequence -- the office's own numbering, continued --
+// plus a three-letter check code that cannot be guessed from the sequence,
+// and a QR carrying the app's own address with the serial attached. Point
+// any phone camera at a returned certificate and this screen opens with the
+// serial already filled in.
+//
+// The QR encoder above is written into this file on purpose: the kiosk and
+// the office must not depend on a third-party script arriving over the
+// network. Every generated code is byte-mode, error level M, and the build
+// is tested by machine-decoding rendered codes, not by eye.
+//
+// This page tracks the PAPER, not the money. What was sold and what came
+// back are facts about certificates; dollars live in the office's books.
+// ===========================================================================
+let gcCache = null;
+async function loadGiftCerts() {
+const list = await storageGet('ifm-giftcerts');
+if (list !== STORAGE_MISSING) gcCache = list;
+else if (!gcCache) gcCache = [];
+return gcCache;
+}
+async function saveGiftCerts() { await storageSet('ifm-giftcerts', gcCache || []); }
+function gcAppUrl() {
+return location.origin && location.origin !== 'null'
+? location.origin + location.pathname
+: 'https://ithacamarket.example/index.html';
+}
+function gcNextSerial(year) {
+let hi = 0;
+(gcCache || []).forEach(c => {
+const m = /^GC-(\d{4})-(\d{4})-/.exec(c.id);
+if (m && m[1] === String(year)) hi = Math.max(hi, Number(m[2]));
+});
+const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+let check = '';
+for (let i = 0; i < 3; i++) check += chars[Math.floor(Math.random() * chars.length)];
+return 'GC-' + year + '-' + String(hi + 1).padStart(4, '0') + '-' + check;
+}
+async function gcIssueBatch() {
+if (!requireManager('gcIssueMsg')) return;
+await loadGiftCerts();
+const amount = Number(document.getElementById('gcAmount').value);
+const qty = Number(document.getElementById('gcQty').value);
+const batch = document.getElementById('gcBatch').value.trim();
+const year = seasonYear();
+const made = [];
+for (let i = 0; i < qty; i++) {
+const rec = { id: gcNextSerial(year), amount: amount, issued: todayISO(),
+status: 'issued', redeemed: null, batch: batch };
+gcCache.push(rec); made.push(rec);
+}
+await saveGiftCerts();
+showMsg('gcIssueMsg', 'ok', 'Recorded ' + made.length + ' certificate' + (made.length === 1 ? '' : 's') +
+' \u00b7 ' + made[0].id + (made.length > 1 ? ' through ' + made[made.length - 1].id : '') +
+'. The print sheet is opening.');
+renderGcBook();
+gcPrintSheet(made);
+}
+function gcPrintSheet(certs) {
+const area = document.getElementById('gcPrintArea');
+area.innerHTML = '';
+certs.forEach(c => {
+const box = document.createElement('div');
+box.className = 'gc-cert';
+box.innerHTML =
+'<div class="gc-left">' +
+'<h3>ITHACA FARMERS MARKET</h3>' +
+'<div class="gc-sub">A GIFT CERTIFICATE</div>' +
+'<div>In the amount of:</div>' +
+'<div class="gc-amt">$' + c.amount + '</div>' +
+'<div class="gc-lines">For: ______________________________<br>' +
+'From: ____________________________</div>' +
+'</div>' +
+'<div class="gc-right"><div class="gc-serial">' + esc(c.id) + '</div></div>';
+const cv = qrCanvas(gcAppUrl() + '?gc=' + c.id, 3);
+if (cv) {
+cv.style.padding = (4 * 3) + 'px';
+cv.style.background = '#fff';
+cv.style.display = 'block';
+box.querySelector('.gc-right').prepend(cv);
+}
+area.appendChild(box);
+});
+document.body.classList.add('gc-printing');
+setTimeout(() => {
+window.print();
+document.body.classList.remove('gc-printing');
+}, 60);
+}
+async function gcLookup(raw) {
+await loadGiftCerts();
+const out = document.getElementById('gcLookupOut');
+const q = String(raw || '').trim().toUpperCase();
+if (!out) return;
+if (q.length < 7) { out.innerHTML = ''; return; }
+const c = (gcCache || []).find(x => x.id.toUpperCase() === q);
+if (!c) {
+out.innerHTML = '<p class="empty-note"><b>Not in the book.</b> No certificate with that serial was ever ' +
+'issued from this screen. If it is one of the old handwritten ones, it stays with the paper system.</p>';
+return;
+}
+let body = '<div class="tracker-row"><div class="t-title"><b>' + esc(c.id) + '</b> \u00b7 $' + c.amount +
+' \u00b7 issued ' + esc(formatDisplayDate(c.issued)) +
+(c.batch ? ' \u00b7 ' + esc(c.batch) : '') + '</div></div>';
+if (c.status === 'redeemed') {
+body += '<p class="empty-note" style="color:#8A3B2E;"><b>Already redeemed on ' +
+esc(formatDisplayDate(c.redeemed)) + '.</b> A certificate can only come back once \u2014 if this ' +
+'paper is in your hand now, that is worth a close look.</p>';
+} else if (c.status === 'void') {
+body += '<p class="empty-note" style="color:#8A3B2E;"><b>Voided</b>' +
+(c.redeemed ? ' on ' + esc(formatDisplayDate(c.redeemed)) : '') + '. Do not accept it.</p>';
+} else {
+body += '<button type="button" class="primary-btn" onclick="gcRedeem(\'' + c.id + '\')">Mark it redeemed</button> ' +
+'<button type="button" class="ghost-btn" onclick="gcVoid(\'' + c.id + '\')">Void it instead</button>';
+}
+out.innerHTML = body;
+}
+async function gcRedeem(id) {
+if (!requireManager('gcIssueMsg')) return;
+await loadGiftCerts();
+const c = gcCache.find(x => x.id === id);
+if (!c || c.status !== 'issued') { gcLookup(id); return; }
+c.status = 'redeemed'; c.redeemed = todayISO();
+await saveGiftCerts();
+gcLookup(id);
+renderGcBook();
+}
+async function gcVoid(id) {
+if (!requireManager('gcIssueMsg')) return;
+if (!confirm('Void ' + id + '? A voided certificate can never be redeemed.')) return;
+await loadGiftCerts();
+const c = gcCache.find(x => x.id === id);
+if (!c || c.status !== 'issued') { gcLookup(id); return; }
+c.status = 'void'; c.redeemed = todayISO();
+await saveGiftCerts();
+gcLookup(id);
+renderGcBook();
+}
+function renderGcBook() {
+const host = document.getElementById('gcBook');
+if (!host) return;
+const all = gcCache || [];
+const sum = s => all.filter(c => c.status === s).reduce((t, c) => t + c.amount, 0);
+const n = s => all.filter(c => c.status === s).length;
+let html = '<div class="stat-row">' +
+'<div class="stat"><div class="stat-num">$' + sum('issued') + '</div><div class="stat-label">Out there \u00b7 ' + n('issued') + '</div></div>' +
+'<div class="stat"><div class="stat-num">$' + sum('redeemed') + '</div><div class="stat-label">Came back \u00b7 ' + n('redeemed') + '</div></div>' +
+'<div class="stat"><div class="stat-num">' + n('void') + '</div><div class="stat-label">Voided</div></div>' +
+'</div>';
+all.slice(-8).reverse().forEach(c => {
+html += '<div class="tracker-row"><div class="t-title">' + esc(c.id) + ' \u00b7 $' + c.amount +
+' \u00b7 ' + esc(c.status) + (c.redeemed ? ' ' + esc(formatDisplayDate(c.redeemed)) : '') + '</div></div>';
+});
+if (!all.length) html += '<p class="empty-note">Nothing issued from this screen yet.</p>';
+host.innerHTML = html;
+}
+async function initGiftCertsScreen() {
+await loadGiftCerts();
+renderGcBook();
+if (window.gcPendingScan) {
+const el = document.getElementById('gcSerial');
+if (el) { el.value = window.gcPendingScan; gcLookup(window.gcPendingScan); }
+window.gcPendingScan = null;
+}
+}
 function initManagerDash() {
 renderManagerAlerts();
 renderManagerFolders();
+if (window.gcPendingScan) {
+const host = document.getElementById('mgrVenuePicker');
+if (host && !document.getElementById('gcScanBanner')) {
+const p = document.createElement('p');
+p.className = 'venue-note'; p.id = 'gcScanBanner';
+p.innerHTML = 'A certificate was scanned: <b>' + esc(window.gcPendingScan) + '</b> ' +
+'<button type="button" class="ghost-btn" onclick="showScreen(\'giftcerts\')">Open Gift Certificates</button>';
+host.prepend(p);
+}
+}
 loadImprovements().then(renderManagerAlerts);
 }
 // One quiet line where the three-button picker used to be. It names the
@@ -22938,5 +23330,6 @@ init();</script>
   </div>
 </div>
 
+<div id="gcPrintArea"></div>
 </body>
 </html>
