@@ -753,7 +753,7 @@ border: 1px solid var(--paper-dim); background: var(--paper-dim);
    whole app on load. Defaults should fail closed. Anything already shown by
    setting style.display directly still works: an inline style outranks this. */
 .modal-backdrop {
-position: fixed; inset: 0; z-index: 500;
+position: fixed; inset: 0; z-index: 998;
 background: rgba(35, 42, 32, 0.5);
 display: none; align-items: flex-end; justify-content: center;
 }
@@ -2524,6 +2524,28 @@ I sell food (prepared food or produce)
 </div>
 <p class="empty-note" id="menuTailorNote" style="margin: 14px 0 4px; text-align:center;"></p>
 <button type="button" class="ghost-btn" id="deskOrderReset" style="display:none;" onclick="resetDeskOrder(this)">Put the drawers back in their usual order</button>
+</section>
+<section id="screen-pavrentals" class="screen">
+<div class="screen-head" id="head-pavrentals"></div>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>Add a Rental<button type="button" class="help-dot" onclick="showHelp(76)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Per the Vendor Guide (p.17), vendors must pack, clean and leave their
+booth space by <b>4 PM</b> on market days when an event is scheduled at the pavilion after market hours.
+Recording it here puts that notice in front of every vendor when they open the app that morning.</p>
+<label for="prDate">Date of the event</label>
+<input type="date" id="prDate">
+<div class="lotto-dates" id="prDateChips"></div>
+<label for="prWho" style="margin-top:10px;">Who has it</label>
+<input type="text" id="prWho" placeholder="e.g. Wedding reception &mdash; Alvarez party" autocomplete="off">
+<label for="prNote" style="margin-top:10px;">Anything vendors should know (optional)</label>
+<input type="text" id="prNote" placeholder="e.g. caterers arrive 3:30, keep the north aisle clear" autocomplete="off">
+<button type="button" class="primary-btn" onclick="addPavRental()"><svg class="ico"><use href="#i-checkmark"></use></svg> Add to the schedule</button>
+<div class="status-msg" id="prMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>The Schedule</h2>
+<div id="prList"></div>
+</div>
 </section>
 <section id="screen-giftcerts" class="screen">
 <div class="screen-head" id="head-giftcerts"></div>
@@ -10483,6 +10505,10 @@ const HELP_TEXTS = [
 {
 "title": "Post a Task to the Work Hours Board",
 "body": "<p>Chairs are appointed by the Board President and recorded in the Committees tool; that record is what lets this card appear on your desk and nobody else's.</p><p>A task you post goes to every vendor on the Work Hours board, in your committee's name. When a vendor claims it and reports it done, the confirmation comes back to you \u2014 you know whether the work is actually done in a way the office cannot \u2014 and the hours credit lands the moment you confirm. Send it back if it isn't finished, and the vendor keeps the claim with time to complete it.</p><p>The Market Manager's board shows your task alongside everything else, marked with where its confirmation goes. Nothing here happens out of anyone's sight; the routing changes, the record doesn't.</p>"
+},
+{
+"title": "Add a Rental",
+"body": "<p>The Vendor Guide is exact about rental days (p.17): vendors must pack, clean and leave their booth space by 4 PM on market days when an event is scheduled at the pavilion after market hours. Not stop selling by four \u2014 be out by four.</p><p>The Guide also says where a vendor is meant to find this out: the weekly newsletter or the global IFM calendar. Both are places somebody has to go and look, on a morning when they are loading a van. Recording the rental here means the app carries the notice to them instead \u2014 a box over the desk the first time they open it that day, naming who has the pavilion and anything else you add.</p><p>A rental on a day that is not a market day is recorded but sends no notice, because there is nobody to be out of the way of. The schedule keeps it either way, so the office has one place to look.</p>"
 }
 ];
 function showHelp(i) {
@@ -10767,6 +10793,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'traffic', k: 'ifm-tracker-proposal', t: 'Board proposals submitted', v: () => [] },
 { g: 'traffic', k: 'ifm-popups', t: 'PopUp events', v: () => [] },
 { g: 'traffic', k: 'ifm-giftcerts', t: 'Gift certificates \u2014 issued, redeemed, voided', v: () => [] },
+{ g: 'config', k: 'ifm-pavrentals', t: 'Pavilion rented to a third party \u2014 vendors out by 4 PM', v: () => [] },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
 { g: 'config', k: 'ifm-unreservable', t: 'Unreservable Booths', v: () => ({ nums: [], updated: '' }) },
 { g: 'config', k: 'ifm-amendments', t: 'Board Amendments', v: () => ({ items: [
@@ -10999,9 +11026,123 @@ const img = badge.querySelector('img');
 if (src && img) img.src = src.getAttribute('src') || src.src;
 }
 }
+// ===========================================================================
+// PAVILION RENTALS
+//
+// The pavilion is let to other people. When that happens after a market day
+// the Guide is exact (p.17): vendors must pack, clean and leave their booth
+// space by 4 PM -- not stop selling by 4, be OUT by 4. The Guide also says
+// how a vendor is meant to find out: the weekly newsletter or the global IFM
+// calendar. Both are places a vendor has to go and look, on a morning when
+// they are loading a van. So the office records the rental here and the app
+// carries the notice to them instead.
+//
+// Shown once per rental day, on first opening, dismissed on the device --
+// the notice is a reminder, not a decision, so there is nothing to sync and
+// nothing another manager needs to see. If a vendor closes and reopens the
+// app a week later, the day is past and the notice is gone on its own.
+// ===========================================================================
+let pavCache = null;
+async function loadPavRentals() {
+const list = await storageGet('ifm-pavrentals');
+if (list !== STORAGE_MISSING && list) pavCache = list;
+else if (!pavCache) pavCache = [];
+return pavCache;
+}
+async function savePavRentals() { await storageSet('ifm-pavrentals', pavCache || []); }
+function pavRentalOn(dateISO) {
+return (pavCache || []).find(r => r.date === dateISO) || null;
+}
+function pavIsMarketDate(dateISO) {
+return allMarketDatesInSeason(Number(dateISO.slice(0, 4)))
+.some(m => m.date === dateISO);
+}
+async function addPavRental() {
+if (!requireManager('prMsg')) return;
+const date = document.getElementById('prDate').value;
+const who = document.getElementById('prWho').value.trim();
+const note = document.getElementById('prNote').value.trim();
+if (!date) { showMsg('prMsg', 'err', 'Pick the date of the event.'); return; }
+if (!who) { showMsg('prMsg', 'err', 'Say who has the pavilion.'); return; }
+await loadPavRentals();
+if (pavRentalOn(date)) { showMsg('prMsg', 'err', 'There is already a rental recorded for that date.'); return; }
+pavCache.push({ id: 'pr' + Date.now(), date: date, who: who, note: note, addedAt: Date.now() });
+pavCache.sort((a, b) => a.date.localeCompare(b.date));
+await savePavRentals();
+showMsg('prMsg', 'ok', pavIsMarketDate(date)
+? 'Added. Every vendor will see the 4 PM notice when they open the app that morning.'
+: 'Added. That date is not a market day, so no vendor notice goes out \u2014 the schedule records it either way.');
+document.getElementById('prWho').value = '';
+document.getElementById('prNote').value = '';
+renderPavRentals();
+}
+async function removePavRental(id) {
+if (!requireManager('prMsg')) return;
+await loadPavRentals();
+pavCache = pavCache.filter(r => r.id !== id);
+await savePavRentals();
+renderPavRentals();
+}
+function renderPavRentals() {
+const host = document.getElementById('prList');
+if (!host) return;
+const today = todayISO();
+const list = (pavCache || []).filter(r => r.date >= today);
+const past = (pavCache || []).filter(r => r.date < today).length;
+host.innerHTML = '';
+if (!list.length) {
+host.innerHTML = '<p class="empty-note" style="margin:0;">Nothing on the schedule ahead.' +
+(past ? ' ' + past + ' past rental' + (past === 1 ? '' : 's') + ' recorded.' : '') + '</p>';
+return;
+}
+list.forEach(r => {
+const marketDay = pavIsMarketDate(r.date);
+const row = document.createElement('div');
+row.className = 'tracker-row';
+row.innerHTML = '<div class="t-title"></div><div class="t-sub"></div>';
+row.querySelector('.t-title').innerHTML = '<b>' + esc(formatDisplayDate(r.date)) + '</b> \u00b7 ' + esc(r.who) +
+(marketDay ? ' <span class="season-tag">Vendors out by 4 PM</span>'
+: ' <span class="empty-note" style="display:inline;">not a market day \u2014 no vendor notice</span>');
+row.querySelector('.t-sub').textContent = r.note || '';
+const b = document.createElement('button');
+b.type = 'button'; b.className = 'ghost-btn'; b.textContent = 'Remove';
+b.onclick = () => removePavRental(r.id);
+row.appendChild(b);
+host.appendChild(row);
+});
+}
+async function initPavRentalsScreen() {
+await loadPavRentals();
+refreshDateChips('prDate');
+renderPavRentals();
+}
+function pavNoticeSeenKey(dateISO) { return 'ifm-pav-seen-' + dateISO; }
+async function maybeShowPavNotice() {
+if (currentRole !== 'vendor') return;
+await loadPavRentals();
+const today = todayISO();
+const rental = pavRentalOn(today);
+if (!rental || !pavIsMarketDate(today)) return;
+try { if (localStorage.getItem(pavNoticeSeenKey(today)) === '1') return; } catch (e) {}
+const when = document.getElementById('pavNoticeWhen');
+const note = document.getElementById('pavNoticeNote');
+if (when) when.textContent = formatDisplayDate(today) + ' \u00b7 ' + rental.who;
+if (note) {
+note.textContent = rental.note || '';
+note.style.display = rental.note ? 'block' : 'none';
+}
+const back = document.getElementById('pavNoticeBackdrop');
+if (back) { back.style.display = ''; back.classList.add('open'); }
+}
+function dismissPavNotice() {
+const back = document.getElementById('pavNoticeBackdrop');
+if (back) { back.classList.remove('open'); back.style.display = 'none'; }
+try { localStorage.setItem(pavNoticeSeenKey(todayISO()), '1'); } catch (e) {}
+}
 function renderAll() {
 paintHeaderBadge();
 renderChairAlertBar();
+maybeShowPavNotice();
 const vendor = currentVendor();
 const year = new Date().getFullYear();
 positionHeader('dashboard');
@@ -11231,6 +11372,7 @@ if (name === 'winterpaperwork') initWinterPaperwork();
 if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') initGiftCertsScreen();
+if (name === 'pavrentals') initPavRentalsScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
@@ -11355,6 +11497,7 @@ directory:         { title: 'Rolodex' },
 winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 giftcerts:         { title: 'Gift Certificates' },
+pavrentals:        { title: 'Pavilion Rentals' },
 winterbooths:      { title: 'Winter Market Booths' },
 standing:          { title: 'Vendor Standing' },
 records:           { title: 'Vendor Records' },
@@ -14311,7 +14454,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-17';
+const BUILD_ID = '15-19';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14754,7 +14897,7 @@ const ABOUT_PHOTO_BUDGET = 44000;
 // times the width of a phone, and a window fixed at 162px would shrink to a
 // stamp on it. Percentages keep the same visual weight on any screen.
 // (Radius stays in pixels \u2014 a corner should not grow with the display.)
-const ABOUT_WIN_DEFAULT = { leftPct: 57.33, bottomPct: 11.94, wPct: 38.67, hPct: 27.17, r: 15 };
+const ABOUT_WIN_DEFAULT = { leftPct: 56.53, bottomPct: 5.38, wPct: 38.67, hPct: 27.17, r: 15 };
 // The carrot and the logo have chosen homes too, so a fresh install \u2014 or any
 // build that lands before someone has saved a layout \u2014 already looks right.
 const CHROME_DEFAULT = {
@@ -20989,6 +21132,7 @@ sub: 'The building itself \u2014 what is built, laid out, inspected and repaired
 tiles: [
 { s: 'boothlayout', i: 'i-ruler', t: 'Booth Layouts', d: 'What a vendor sees when they pick a booth' },
 { s: 'stallimprove', i: 'i-ruler', t: 'Booth Improvements', d: 'Vendor proposals, the B&G agenda, and the per-booth checklist' },
+{ s: 'pavrentals', i: 'i-calendar', t: 'Pavilion Rentals', d: 'When the pavilion is let to somebody else \u2014 vendors out by 4 PM on those market days' },
 { s: 'facilitiestracker', i: 'i-wrench', t: 'Facilities Requests', d: 'Track status of repair tickets' },
 { soon: 'compliance', ot: 'compliance', i: 'i-ruler', t: 'Booth Compliance Clocks', d: 'Inspections, 60-day and two-year clocks' },
 { soon: 'bgwalk', ot: 'bgwalk', i: 'i-wrench', t: 'B&amp;G Walkthrough', d: 'The monthly inspection round' },
@@ -23511,6 +23655,18 @@ init();</script>
   </div>
 </div>
 
+<div id="pavNoticeBackdrop" class="modal-backdrop" style="display:none;">
+<div class="card modal-sheet">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Out by 4 PM today</h2>
+<p id="pavNoticeWhen" style="margin:0 0 8px; font-weight:700;"></p>
+<p style="margin:0 0 8px;">The pavilion is rented after market today. Every vendor must have their booth
+space <b>packed, cleaned and clear by 4 PM</b> &mdash; not just the selling stopped, but out.</p>
+<p id="pavNoticeNote" class="empty-note" style="margin:0 0 8px; display:none;"></p>
+<p class="empty-note" style="margin:0 0 10px;">This is the Vendor Guide&rsquo;s rule for rental days (p.17).
+Plan your pack-up so the space is clear on time.</p>
+<button type="button" class="primary-btn" onclick="dismissPavNotice()">Got it</button>
+</div>
+</div>
 <div id="gcPrintArea"></div>
 </body>
 </html>
