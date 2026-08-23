@@ -4655,14 +4655,14 @@ after the Board has said yes, not before.</p>
 <p style="margin:0 0 8px;">Time served on a committee counts toward a vendor&rsquo;s work hour
 requirement. Hours are logged through <b>Log Hours You Worked</b> on the vendor&rsquo;s own desk and
 signed off by the Market Manager &mdash; the committee chair keeps the meeting tally and passes it on,
-as the Food Committee guidelines describe.</p>
-<p style="margin:0;"><b>A chair posting jobs directly is waiting on one record.</b> The Guide raises no
-objection: committee service earns hours, and the only condition it sets is that &ldquo;all other work
-hour assignments are subject to prior approval by the Market Managers.&rdquo; So a chair could post a job
-to everyone or hand one to a particular vendor, with the manager signing it off &mdash; exactly the round
-trip logged hours now make. What is missing is knowing <i>who chairs what</i>. Until the rosters arrive
-the app cannot tell a chair from any other vendor, so the tool has nobody to belong to. The manager can
-already assign a task to one vendor from Work Hours Tasks.</p>
+as the Food Committee guidelines describe. Tasks a chair posts to the board are the exception:
+those confirmations go to the chair.</p>
+<p style="margin:0;"><b>Chairs post jobs directly now.</b> With the rosters recorded here, the app can
+tell a chair from any other vendor, so each chair has a posting card on their own Committees drawer.
+A task they post goes to the whole board in the committee&rsquo;s name, and when a vendor reports it
+done the confirmation comes back to the chair who posted it &mdash; the person who can actually see
+whether the work is done &mdash; rather than to the office. The manager&rsquo;s board still shows every
+task and names where each confirmation goes.</p>
 </div>
 </section>
 <section id="screen-mycommittees" class="screen">
@@ -10461,6 +10461,10 @@ const HELP_TEXTS = [
 {
 "title": "A Certificate Came Back",
 "body": "<p>When a vendor turns in a certificate, point the phone camera at its QR code. The camera opens this screen with the serial already filled in; one tap marks it redeemed. No camera, no problem \u2014 the serial printed under the code types in just as well.</p><p>A certificate can come back once. If the book says it was already redeemed, the screen says so in red with the date, because the same paper appearing twice is exactly what this system exists to catch.</p><p>Voiding is for certificates that are lost, misprinted, or refunded before use \u2014 a voided serial can never be redeemed. Old handwritten certificates are not in this book and stay with the paper system until they age out.</p>"
+},
+{
+"title": "Post a Task to the Work Hours Board",
+"body": "<p>Chairs are appointed by the Board President and recorded in the Committees tool; that record is what lets this card appear on your desk and nobody else's.</p><p>A task you post goes to every vendor on the Work Hours board, in your committee's name. When a vendor claims it and reports it done, the confirmation comes back to you \u2014 you know whether the work is actually done in a way the office cannot \u2014 and the hours credit lands the moment you confirm. Send it back if it isn't finished, and the vendor keeps the claim with time to complete it.</p><p>The Market Manager's board shows your task alongside everything else, marked with where its confirmation goes. Nothing here happens out of anyone's sight; the routing changes, the record doesn't.</p>"
 }
 ];
 function showHelp(i) {
@@ -13814,6 +13818,21 @@ function toggleTaskSpotsInput() {
 const unlimited = document.getElementById('tkUnlimited').checked;
 document.getElementById('tkSpotsWrap').style.display = unlimited ? 'none' : 'block';
 }
+function chairOf(vendorId) {
+const state = committeeState();
+return COMMITTEES.filter(cm =>
+(state[cm.key].members || []).some(m => m.id === vendorId && m.chair));
+}
+// The reviewer of a claim is whoever posted the task: the chair for a
+// committee task, the Market Manager for everything else.
+function taskReviewer(task) {
+return task.postedById || null;
+}
+function canReviewTask(task) {
+if (currentRole === 'manager') return !taskReviewer(task);
+if (currentRole === 'vendor' && currentVendorId) return taskReviewer(task) === currentVendorId;
+return false;
+}
 async function loadTasks() {
 return cache.tasks;
 }
@@ -13919,13 +13938,14 @@ async function approveTaskClaim(taskId, vendorId) {
 const tasks = await loadTasks();
 const task = tasks.find(t => t.id === taskId);
 const claim = task && task.claims.find(c => c.vendorId === vendorId);
-if (!claim) return;
+if (!claim || !canReviewTask(task)) return;
 claim.status = 'approved';
 claim.approvedAt = Date.now();
 cache.tasks = tasks;
 await saveTasks();
 await syncTaskWorkHours(task, claim);
-renderTaskManager();
+if (document.getElementById('tkManagerList')) renderTaskManager();
+if (currentRole === 'vendor') initMyCommitteesScreen();
 }
 async function syncTaskWorkHours(task, claim) {
 const hours = Number(task.hours || 0);
@@ -13954,7 +13974,7 @@ async function rejectTaskClaim(taskId, vendorId) {
 const tasks = await loadTasks();
 const task = tasks.find(t => t.id === taskId);
 const claim = task && task.claims.find(c => c.vendorId === vendorId);
-if (!claim) return;
+if (!claim || !canReviewTask(task)) return;
 claim.status = 'claimed';
 claim.sentBackAt = Date.now();
 delete claim.reportedAt;
@@ -13962,7 +13982,8 @@ delete claim.approvedAt;
 cache.tasks = tasks;
 await saveTasks();
 await syncTaskWorkHours(task, claim);
-renderTaskManager();
+if (document.getElementById('tkManagerList')) renderTaskManager();
+if (currentRole === 'vendor') initMyCommitteesScreen();
 }
 async function dismissLapse(taskId, vendorId, lapsedAt) {
 const tasks = await loadTasks();
@@ -13998,8 +14019,10 @@ document.getElementById('tkManagerEmpty').style.display = 'none';
 tasks.slice().reverse().forEach(task => {
 const row = document.createElement('div');
 row.className = 'task-row';
+const waitingOn = taskReviewer(task) && !canReviewTask(task)
+? ' \u2014 confirmation goes to ' + esc(vendorNameFor(taskReviewer(task))) : '';
 const names = task.claims.map(c =>
-c.businessName + (c.status === 'approved' ? ' \u2713' : c.status === 'reported' ? ' (reported)' : '')
+c.businessName + (c.status === 'approved' ? ' \u2713' : c.status === 'reported' ? ' (reported' + waitingOn + ')' : '')
 ).join(', ') || 'No one yet';
 row.innerHTML =
 '<div class="tk-title"></div>' +
@@ -14025,7 +14048,7 @@ container.innerHTML = '';
 const reported = [];
 const lapsed = [];
 cache.tasks.forEach(task => {
-task.claims.filter(cl => cl.status === 'reported').forEach(cl => reported.push({ task, claim: cl }));
+if (canReviewTask(task)) task.claims.filter(cl => cl.status === 'reported').forEach(cl => reported.push({ task, claim: cl }));
 (task.lapsed || []).filter(l => !l.acknowledged).forEach(l => lapsed.push({ task, lapse: l }));
 });
 if (!reported.length && !lapsed.length) {
@@ -14269,7 +14292,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-15';
+const BUILD_ID = '15-16';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20738,11 +20761,116 @@ card.appendChild(row);
 });
 body.appendChild(card);
 });
+const chairs = chairOf(me.vendorId);
+if (chairs.length) {
+body.appendChild(buildChairReviewCard(chairs));
+body.appendChild(buildChairPostCard(chairs));
+}
 const note = document.createElement('p');
 note.className = 'empty-note';
 note.style.textAlign = 'center';
 note.textContent = 'Committee time counts toward your work hours \u2014 log it under Work Hours as usual.';
 body.appendChild(note);
+}
+// ===========================================================================
+// THE CHAIR'S SIDE OF THE WORK HOURS BOARD
+//
+// The Guide's only condition on work-hour assignments is prior approval by
+// the Market Managers; the Bylaws have the Board seat committees and the
+// President appoint chairs. With the rosters now recorded, the app can tell
+// a chair from any other vendor -- so a chair posts committee work to the
+// board directly, and when a vendor reports it done, the confirmation comes
+// back to the chair who posted it, who knows whether the signage rail is
+// actually re-hung. The manager's board still shows every task and names
+// who each confirmation goes to; nothing routes around anyone in the dark.
+// ===========================================================================
+function buildChairReviewCard(chairs) {
+const card = document.createElement('div');
+card.className = 'card';
+card.innerHTML = '<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>' +
+'Work Reported Done \u2014 Your Confirmation</h2>';
+const mineKeys = chairs.map(c => c.key);
+const waiting = [];
+(cache.tasks || []).forEach(task => {
+if (task.postedById !== currentVendorId) return;
+task.claims.filter(cl => cl.status === 'reported').forEach(cl => waiting.push({ task, claim: cl }));
+});
+if (!waiting.length) {
+card.innerHTML += '<p class="empty-note" style="margin-bottom:0;">Nothing is waiting on you. When a vendor ' +
+'reports one of your committee\u2019s tasks done, it lands here for your say-so \u2014 the hours only ' +
+'count once you confirm the work.</p>';
+return card;
+}
+waiting.forEach(({ task, claim }) => {
+const row = document.createElement('div');
+row.className = 'task-row mine';
+row.innerHTML = '<div class="tk-title"></div><div class="tk-meta"></div>' +
+'<div class="tk-bottom"><span class="tk-spots">Reported complete</span>' +
+'<button type="button" class="tk-btn mine">Confirm \u2014 credit ' + Number(task.hours || 0) + 'h</button>' +
+'<button type="button" class="tk-btn">Send Back</button></div>';
+row.querySelector('.tk-title').textContent = claim.businessName + ' \u2014 ' + task.title;
+row.querySelector('.tk-meta').textContent = task.category +
+' \u2022 reported ' + new Date(claim.reportedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const [okBtn, backBtn] = row.querySelectorAll('.tk-btn');
+okBtn.onclick = () => approveTaskClaim(task.id, claim.vendorId);
+backBtn.onclick = () => rejectTaskClaim(task.id, claim.vendorId);
+card.appendChild(row);
+});
+return card;
+}
+function buildChairPostCard(chairs) {
+const card = document.createElement('div');
+card.className = 'card desk-form';
+card.innerHTML = '<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>' +
+'Post a Task to the Work Hours Board<button type="button" class="help-dot" onclick="showHelp(75)" aria-label="How does this work?">?</button></h2>' +
+'<p class="empty-note" style="margin-top:0;">Posted in your committee\u2019s name to every vendor. When ' +
+'somebody reports it done, the confirmation comes back to <b>you</b>, not the office.</p>';
+const mk = (tag, attrs) => { const el = document.createElement(tag);
+Object.keys(attrs || {}).forEach(k => el.setAttribute(k, attrs[k])); return el; };
+if (chairs.length > 1) {
+const lab = mk('label'); lab.textContent = 'Which committee';
+const sel = mk('select', { id: 'chTaskCmte' });
+chairs.forEach(c => { const o = mk('option'); o.value = c.key; o.textContent = c.name; sel.appendChild(o); });
+card.appendChild(lab); card.appendChild(sel);
+}
+const t = mk('input', { type: 'text', id: 'chTaskTitle', placeholder: 'e.g. Re-hang the Booth 41 signage rail' });
+const lt = mk('label'); lt.textContent = 'What needs doing'; lt.style.marginTop = '8px';
+const lh = mk('label'); lh.textContent = 'Work hours credit'; lh.style.marginTop = '10px';
+const hrs = mk('input', { type: 'number', id: 'chTaskHours', min: '0', step: '0.25', value: '1' });
+const ls = mk('label'); ls.textContent = 'Number of people needed'; ls.style.marginTop = '10px';
+const spots = mk('input', { type: 'number', id: 'chTaskSpots', min: '1', step: '1', value: '1' });
+const btn = mk('button', { type: 'button', 'class': 'primary-btn' });
+btn.textContent = 'Post it';
+btn.onclick = () => chairPostTask(chairs);
+const msg = mk('div', { 'class': 'status-msg', id: 'chTaskMsg' });
+[lt, t, lh, hrs, ls, spots, btn, msg].forEach(el => card.appendChild(el));
+return card;
+}
+async function chairPostTask(chairs) {
+const me = currentVendor();
+if (!me || !chairOf(me.vendorId).length) return;
+const title = document.getElementById('chTaskTitle').value.trim();
+if (!title) { showMsg('chTaskMsg', 'err', 'Say what needs doing.'); return; }
+const sel = document.getElementById('chTaskCmte');
+const key = sel ? sel.value : chairs[0].key;
+const cm = COMMITTEES.find(c => c.key === key);
+const hours = Math.max(0, parseFloat(document.getElementById('chTaskHours').value) || 0);
+const spots = Math.max(1, parseInt(document.getElementById('chTaskSpots').value, 10) || 1);
+const tasks = await loadTasks();
+tasks.push({
+id: 'tk' + Date.now(),
+title: title, desc: '', date: '',
+category: key === 'bg' ? 'Building & Grounds' : 'Board / Committee',
+hours: hours, spotsNeeded: spots, assignedTo: '',
+postedBy: me.businessName + ' \u2014 ' + cm.name + ' chair',
+postedById: me.vendorId, committee: key,
+claims: [], createdAt: Date.now()
+});
+cache.tasks = tasks;
+await saveTasks();
+showMsg('chTaskMsg', 'ok', 'Posted to the board in the ' + cm.name + ' committee\u2019s name.');
+document.getElementById('chTaskTitle').value = '';
+initMyCommitteesScreen();
 }
 // Which manager folders belong to a place. Everything unlisted is about
 // vendors, money, the board or the record, and keeps its spot all year.
