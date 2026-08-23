@@ -1359,17 +1359,32 @@ body.kiosk-mode .booth-chip.kiosk-snap.kiosk-match {
 background: #F5AECB; color: #6E1F42; border-color: #1F4E80;
 box-shadow: 0 0 0 3px #2F6FB0;
 }
-.kiosk-snap-btn {
-position: absolute; z-index: 15; width: auto; white-space: nowrap;
-padding: 10px 14px; border-radius: 10px; cursor: pointer;
-border: 1px solid #B9B199; background: rgba(255,255,255,0.86);
-color: #3D4A33; font-family: inherit; font-weight: 800;
-line-height: 1.15; text-align: center;
-min-height: 44px;
+/* Same pill as the two search fields above it, but a switch, not a field.
+   The input.kiosk-search rule does not reach a <button>, so the pill dress
+   is restated here. */
+body.kiosk-mode button.kiosk-snap-row {
+display: flex; align-items: center; justify-content: space-between; gap: 8px;
+width: 100%; box-sizing: border-box; font-family: inherit; cursor: pointer;
+font-size: clamp(16px, 1.4vw, 22px); font-weight: 600; text-align: left;
+padding: clamp(6px, 0.7vw, 10px) clamp(10px, 1vw, 16px);
+border-radius: 999px; border: 1px solid #B9AF92;
+background: rgba(255,255,255,0.35); color: #3A382C; outline: none;
+-webkit-appearance: none; appearance: none;
+min-height: 44px; white-space: nowrap;
 }
-.kiosk-snap-btn.on {
-background: #2F6FB0; border-color: #1F4E80; color: #fff;
+body.kiosk-mode button.kiosk-snap-row.on { border-color: #1F4E80; background: rgba(255,255,255,0.6); }
+.ksw {
+flex: 0 0 auto; width: 46px; height: 26px; border-radius: 999px;
+background: #C9C2A8; border: 1px solid #B9AF92; position: relative;
+transition: background .15s ease;
 }
+.kiosk-snap-row.on .ksw { background: #2F6FB0; border-color: #1F4E80; }
+.ksw-knob {
+position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+transition: transform .15s ease;
+}
+.kiosk-snap-row.on .ksw-knob { transform: translateX(20px); }
 .ksnap-strip { color: #2F6FB0; font-weight: 700; }
 .ksnap-strip::before { content: '  \2022  '; color: inherit; }
 body.kiosk-mode .booth-chip.kiosk-match {
@@ -2813,7 +2828,6 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <button type="button" id="ktnTabAbout" onclick="tunerTarget('about')">Window</button>
 <button type="button" id="ktnTabCarrot" onclick="tunerTarget('carrot')">Carrot</button>
 <button type="button" id="ktnTabLogo" onclick="tunerTarget('logo')">Logo</button>
-<button type="button" id="ktnTabSnap" onclick="tunerTarget('snap')">SNAP</button>
 </div>
 <div id="ktnRowW"><label>Width <span id="ktnW"></span></label>
 <input type="range" id="ktnFW" min="56" max="900" oninput="tunerSet('w', this.value)"></div>
@@ -2833,8 +2847,6 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <div id="kioskLearn" class="kiosk-learn" style="display:none;" onclick="closeKioskLearn(event)"></div>
 <button type="button" id="kioskZoomReset" class="kiosk-zoomreset"
 style="display:none;" onclick="resetKioskZoom()">Fit map</button>
-<button type="button" id="kioskSnapBtn" class="kiosk-snap-btn"
-onclick="toggleKioskSnap()">Who accepts SNAP-Tokens?</button>
 <div class="kiosk-logo"><img class="ifm-logo" alt="Ithaca Farmers Market"></div>
 </div>
 <div class="kiosk-bar">
@@ -2846,6 +2858,11 @@ inputmode="search" enterkeyhint="search"
 placeholder="Find something"
 oninput="kioskTyped('product')" onkeydown="kioskProductKey(event)"
 onfocus="if (foolGuardFocus(this)) return; noteKioskActivity();">
+<button type="button" id="kioskSnapBtn" class="kiosk-search kiosk-snap-row" role="switch"
+aria-checked="false" onclick="toggleKioskSnap()">
+<span>Accepts SNAP-Tokens</span>
+<span class="ksw" aria-hidden="true"><span class="ksw-knob"></span></span>
+</button>
 </div>
 <div class="kiosk-newdeal" id="kioskNewDeal" style="display:none;"><span id="kioskNewDealText"></span></div>
 <div class="kiosk-clock" id="kioskClock"></div>
@@ -12065,7 +12082,7 @@ const inYear = d => String(d || '').slice(0, 4) === String(year);
 const reported = ((vpCache && vpCache.items) || [])
 .filter(it => it.vendorId === vendorId && inYear(it.date))
 .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
-const fines = (((cache.ops || {}).fines) || [])
+const fines = allFines()
 .filter(f => f.vendorId === vendorId && inYear(f.date))
 .map(f => Object.assign({}, f, { waived: !!(cache.ops.waived || {})['F:' + f.id] }))
 .sort((a, b) => String(a.date).localeCompare(String(b.date)));
@@ -12113,14 +12130,16 @@ html += '<p style="font-size:13px; margin:4px 0 0;">You told the app you had pai
 'confirmed against a transfer</b>. Any of these may be unmatched, duplicated, or already settled another way.</p>';
 }
 
-html += '<p class="pr-h2">Amounts the office recorded against you (' + d.fines.length + ')</p>';
+html += '<p class="pr-h2">Fines on the books against you (' + d.fines.length + ')</p>';
 if (!d.fines.length) {
 html += '<p style="font-size:13.5px;">None recorded in ' + year + '.</p>';
 } else {
 html += '<table class="pr-list"><thead><tr><th>Date</th><th>Reason</th><th>Amount</th></tr></thead><tbody>';
 d.fines.forEach(f => {
 html += '<tr><td>' + esc(formatDisplayDate(f.date)) + '</td><td>' + esc(f.reason || '') +
-(f.note ? ' \u2014 ' + esc(f.note) : '') + '</td><td>' + money(f.amount) + '</td></tr>';
+(f.note ? ' \u2014 ' + esc(f.note) : '') +
+(f.auto ? ' <span style="font-size:11px; color:#8A8268;">(assessed automatically from your notice time \u2014 Guide p.15)</span>' : '') +
+'</td><td>' + money(f.amount) + '</td></tr>';
 });
 html += '</tbody></table>';
 html += '<p style="font-size:15px; font-weight:800; margin:8px 0 0;">Recorded total: ' + money(d.finesTotal) + '</p>';
@@ -12303,7 +12322,7 @@ dayDates.push({ date: date, n: list.length, fee: fee });
 dayDates.sort((a, b) => a.date.localeCompare(b.date));
 
 // --- fines
-const fines = (((cache.ops || {}).fines) || []).filter(f => inYear(f.date));
+const fines = allFines().filter(f => inYear(f.date));
 const waivedOf = f => !!(cache.ops.waived || {})['F:' + f.id];
 const finesLive = fines.filter(f => !waivedOf(f));
 const finesWaived = fines.filter(waivedOf);
@@ -14175,7 +14194,7 @@ wrap.appendChild(c);
 card('Words this app changed', 'The old word still appears in quotation marks beside the new one, on every screen where it matters. Leave that bridge until nobody needs it.', PLAIN_WORDS_CHANGED, true);
 card('Words this app keeps', 'Fixed by the Guide or the Bylaws, so renaming them would only add a second name for the same thing. What they actually mean:', PLAIN_WORDS_KEPT, false);
 }
-const BUILD_ID = '15-10';
+const BUILD_ID = '15-12';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -14623,8 +14642,7 @@ const ABOUT_WIN_DEFAULT = { leftPct: 57.33, bottomPct: 11.94, wPct: 38.67, hPct:
 // build that lands before someone has saved a layout \u2014 already looks right.
 const CHROME_DEFAULT = {
 carrot: { rightPct: 82.93, bottomPct: 4.59, sizePct: 8.00 },
-logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 },
-snap:   { rightPct: 24.80, bottomPct: 4.33, sizePx: 11 }
+logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 }
 };
 function kioskStageSize() {
 const stage = document.getElementById('kioskStage');
@@ -14666,22 +14684,20 @@ const s = kioskStageSize();
 return {
 right: Math.round(c.rightPct / 100 * s.w),
 bottom: Math.round(c.bottomPct / 100 * s.h),
-size: c.sizePx != null ? Math.round(c.sizePx) : Math.round(c.sizePct / 100 * s.w)
+size: Math.round(c.sizePct / 100 * s.w)
 };
 }
 function setChromePx(which, px) {
 const s = kioskStageSize();
 cache.kioskChrome = cache.kioskChrome || {};
-const out = {
+cache.kioskChrome[which] = {
 rightPct: +(px.right / s.w * 100).toFixed(2),
-bottomPct: +(px.bottom / s.h * 100).toFixed(2)
+bottomPct: +(px.bottom / s.h * 100).toFixed(2),
+sizePct: +(px.size / s.w * 100).toFixed(2)
 };
-if (CHROME_DEFAULT[which] && CHROME_DEFAULT[which].sizePx != null) out.sizePx = Math.round(px.size);
-else out.sizePct = +(px.size / s.w * 100).toFixed(2);
-cache.kioskChrome[which] = out;
 }
 function applyChromeStyle() {
-const c = { carrot: chromePx('carrot'), logo: chromePx('logo'), snap: chromePx('snap') };
+const c = { carrot: chromePx('carrot'), logo: chromePx('logo') };
 const rose = document.querySelector('.north-rose');
 if (rose && c.carrot) {
 rose.style.right = c.carrot.right + 'px';
@@ -14689,28 +14705,6 @@ rose.style.bottom = c.carrot.bottom + 'px';
 rose.style.left = 'auto'; rose.style.top = 'auto';
 const glyph = rose.querySelector('.cr-carrot');
 if (glyph) glyph.style.fontSize = c.carrot.size + 'px';
-}
-const snap = document.getElementById('kioskSnapBtn');
-const cs = chromePx('snap');
-if (snap && cs) {
-const st = kioskStageSize();
-snap.style.fontSize = Math.max(11, Math.min(48, cs.size)) + 'px';
-snap.style.bottom = cs.bottom + 'px';
-snap.style.left = 'auto'; snap.style.top = 'auto';
-// The width is whatever the words need at that type size, so the offset has
-// to be clamped after the browser has laid it out or a wide label pushes the
-// button off the near edge.
-snap.style.right = cs.right + 'px';
-let wide = snap.getBoundingClientRect().width;
-for (let i = 0; i < 8 && wide > st.w; i++) {
-const now = Number(snap.style.fontSize.replace('px', ''));
-const next = Math.max(9, Math.min(now - 1, Math.floor(now * (st.w / wide))));
-if (next === now) break;
-snap.style.fontSize = next + 'px';
-wide = snap.getBoundingClientRect().width;
-}
-const capped = Math.max(0, Math.min(cs.right, Math.round(st.w - wide)));
-if (capped !== cs.right) snap.style.right = capped + 'px';
 }
 const logo = document.querySelector('.kiosk-logo');
 if (logo && c.logo) {
@@ -15017,7 +15011,7 @@ const show = tunerOn() && currentRole === 'kiosk';
 panel.style.display = show ? '' : 'none';
 if (!show) return;
 document.body.classList.add('tuning');
-['About','Carrot','Logo','Snap'].forEach(k =>
+['About','Carrot','Logo'].forEach(k =>
 document.getElementById('ktnTab' + k).className = (tunerWhich === k.toLowerCase() ? 'on' : ''));
 const isAbout = tunerWhich === 'about';
 document.getElementById('ktnRowW').style.display = isAbout ? '' : 'none';
@@ -15044,16 +15038,14 @@ document.getElementById('ktnOut').textContent =
 } else {
 const c = chromeState(tunerWhich) || { right: 0, bottom: 0, size: 34 };
 const fs = document.getElementById('ktnFS');
-fs.min = tunerWhich === 'carrot' ? 16 : (tunerWhich === 'snap' ? 11 : 30);
-fs.max = tunerWhich === 'carrot' ? 160 : (tunerWhich === 'snap' ? 48 : 400);
+fs.min = tunerWhich === 'carrot' ? 16 : 30;
+fs.max = tunerWhich === 'carrot' ? 160 : 400;
 fs.value = c.size;
 document.getElementById('ktnS').textContent = c.size + 'px';
 const cp = (cache.kioskChrome || {})[tunerWhich] || {};
-const NAMES = { carrot: 'carrot', logo: 'logo', snap: 'SNAP button type' };
 document.getElementById('ktnOut').textContent =
-(NAMES[tunerWhich] || tunerWhich) + ' size ' + c.size + ' px' +
+(tunerWhich === 'carrot' ? 'carrot' : 'logo') + ' size ' + c.size + ' px' +
 (cp.sizePct ? '  (saved as ' + cp.sizePct + '%)' : '') +
-(cp.sizePx ? '  (saved in points, not scaled)' : '') +
 '\nright ' + c.right + '  bottom ' + c.bottom +
 '\ndrag it on the map to move it';
 }
@@ -15063,7 +15055,6 @@ const w = aboutWinPct();
 const c = cache.kioskChrome || {};
 const car = Object.assign({}, CHROME_DEFAULT.carrot, c.carrot || {});
 const log = Object.assign({}, CHROME_DEFAULT.logo, c.logo || {});
-const snp = Object.assign({}, CHROME_DEFAULT.snap, c.snap || {});
 const n = v => Math.round(Number(v) * 100) / 100;
 const out = document.getElementById('ktnDefaults');
 out.style.display = '';
@@ -15071,8 +15062,7 @@ out.textContent =
 'ABOUT_WIN_DEFAULT = { leftPct: ' + n(w.leftPct) + ', bottomPct: ' + n(w.bottomPct) +
 ', wPct: ' + n(w.wPct) + ', hPct: ' + n(w.hPct) + ', r: ' + (aboutWin().r || 15) + ' }\n' +
 'carrot: { rightPct: ' + n(car.rightPct) + ', bottomPct: ' + n(car.bottomPct) + ', sizePct: ' + n(car.sizePct) + ' }\n' +
-'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }\n' +
-'snap:   { rightPct: ' + n(snp.rightPct) + ', bottomPct: ' + n(snp.bottomPct) + ', sizePx: ' + Math.round(snp.sizePx) + ' }';
+'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }';
 }
 function tunerSet(field, v) {
 if (tunerWhich === 'about') {
@@ -15099,8 +15089,7 @@ async function tunerSave() {
 await storageSetShared('ifm-about-win', aboutWinPct());
 await storageSetShared('ifm-kiosk-chrome', {
 carrot: (cache.kioskChrome || {}).carrot || CHROME_DEFAULT.carrot,
-logo: (cache.kioskChrome || {}).logo || CHROME_DEFAULT.logo,
-snap: (cache.kioskChrome || {}).snap || CHROME_DEFAULT.snap
+logo: (cache.kioskChrome || {}).logo || CHROME_DEFAULT.logo
 });
 const out = document.getElementById('ktnOut');
 if (out) out.textContent = 'Saved \u2014 every screen uses this placement.\n' + out.textContent;
@@ -15157,7 +15146,7 @@ const done = () => { if (d && d.moved) win.dataset.justDragged = '1'; d = null; 
 win.addEventListener('pointerup', done);
 win.addEventListener('pointercancel', done);
 }
-[['carrot', '.north-rose'], ['logo', '.kiosk-logo'], ['snap', '#kioskSnapBtn']].forEach(pair => {
+[['carrot', '.north-rose'], ['logo', '.kiosk-logo']].forEach(pair => {
 const which = pair[0], el = document.querySelector(pair[1]);
 if (!el || el.dataset.bound) return;
 el.dataset.bound = '1';
@@ -15180,7 +15169,6 @@ const c = chromeState(which);
 if (!c) return;
 c.right = Math.max(0, Math.min(Math.round(s.width - r.width), Math.round(d.right - (e.clientX - d.sx))));
 c.bottom = Math.max(0, Math.min(Math.round(s.height - r.height), Math.round(d.bottom - (e.clientY - d.sy))));
-if (Math.abs(e.clientX - d.sx) > 2 || Math.abs(e.clientY - d.sy) > 2) el.dataset.justDragged = '1';
 setChromePx(which, c);
 applyChromeStyle(); renderTuner();
 });
@@ -15290,12 +15278,29 @@ function kioskSnapStripText() {
 if (!kioskSnapOn) return '';
 const n = kioskSnapBooths.size;
 if (!n) return '<span class="ksnap-strip">no stall here today is listed as taking SNAP</span>';
+if (kioskSearchTextPresent()) {
+return '<span class="ksnap-strip">showing only stalls that accept SNAP-Tokens \u2014 worth asking to be sure</span>';
+}
 return '<span class="ksnap-strip">SNAP stalls in blue \u2014 worth asking to be sure</span>';
 }
+function kioskSearchTextPresent() {
+const v = document.getElementById('kioskVendorSearch');
+const p = document.getElementById('kioskProductSearch');
+return !!((v && v.value.trim()) || (p && p.value.trim()));
+}
+// Which marks a chip wears. With the switch off, a match is a match. With
+// the switch on and nothing typed, every SNAP stall shows in blue. With the
+// switch on over a search, the search narrows: only stalls that matched AND
+// take SNAP stay lit, wearing both marks, and the rest go quiet.
+function kioskChipMarks(num) {
+const matched = kioskMatchBooths.has(num);
+const snap = kioskSnapOn && kioskSnapBooths.has(num);
+if (kioskSnapOn && kioskSearchTextPresent()) {
+return (matched && snap) ? ' kiosk-match kiosk-snap' : '';
+}
+return (matched ? ' kiosk-match' : '') + (snap ? ' kiosk-snap' : '');
+}
 function toggleKioskSnap() {
-const btn = document.getElementById('kioskSnapBtn');
-if (btn && btn.dataset.justDragged) { delete btn.dataset.justDragged; return; }
-if (tunerOn()) return;
 noteKioskActivity();
 kioskSnapOn = !kioskSnapOn;
 applyKioskSnap();
@@ -15303,20 +15308,16 @@ applyKioskSnap();
 function applyKioskSnap() {
 const btn = document.getElementById('kioskSnapBtn');
 if (!btn) return;
-if (kioskSnapOn) {
-kioskSnapBooths = kioskSnapStalls().said;
-btn.classList.add('on');
-btn.textContent = kioskSnapBooths.size
-? kioskSnapBooths.size + ' accept SNAP-Tokens \u00b7 tap to hide'
-: 'None listed \u00b7 tap to hide';
-} else {
-kioskSnapBooths = new Set();
-btn.classList.remove('on');
-btn.textContent = 'Who accepts SNAP-Tokens?';
-}
+kioskSnapBooths = kioskSnapOn ? kioskSnapStalls().said : new Set();
+btn.classList.toggle('on', kioskSnapOn);
+btn.setAttribute('aria-checked', kioskSnapOn ? 'true' : 'false');
 const occ = kioskOccupancy();
 renderKioskMap(occ);
 renderKioskClock(occ, Object.keys(occ.byBooth).length);
+if (kioskSearchTextPresent()) {
+if (kioskActiveBar === 'product') runKioskProductSearch();
+else renderKioskSearch();
+}
 }
 function noteKioskActivity() {
 if (kioskIdleTimer) clearTimeout(kioskIdleTimer);
@@ -15404,7 +15405,7 @@ applyKioskTransform();
 }
 function kioskChromeCollides() {
 const guards = [];
-document.querySelectorAll('#screen-kiosk .north-rose, #screen-kiosk .kiosk-logo, #kioskSnapBtn').forEach(el => {
+document.querySelectorAll('#screen-kiosk .north-rose, #screen-kiosk .kiosk-logo').forEach(el => {
 const r = el.getBoundingClientRect();
 if (r.width && getComputedStyle(el).opacity !== '0') guards.push(r);
 });
@@ -16092,7 +16093,9 @@ kioskMatchBooths = new Set();
 kioskMatchStructures = new Set();
 const results = document.getElementById('kioskResults');
 if (results) results.innerHTML = '';
-renderKioskMap(kioskOccupancy());
+const occ = kioskOccupancy();
+renderKioskMap(occ);
+renderKioskClock(occ, Object.keys(occ.byBooth).length);
 }
 }
 function kioskProductKey(ev) {
@@ -16119,7 +16122,9 @@ renderKioskMap(occ);
 renderKioskDetail(occ);
 return;
 }
-const matches = cache.vendors.filter(v => kioskMatches(v, q, 'product')).sort(byBusinessName);
+const matches = cache.vendors.filter(v => kioskMatches(v, q, 'product'))
+.filter(v => !kioskSnapOn || snapAccepts(v.vendorId))
+.sort(byBusinessName);
 kioskMatchBooths = new Set();
 matches.forEach(v => {
 const b = occ.byVendor[v.vendorId];
@@ -16163,9 +16168,12 @@ kioskMatchBooths = new Set();
 kioskMatchStructures = new Set();
 renderKioskMap(occ);
 }
+renderKioskClock(occ, Object.keys(occ.byBooth).length);
 return;
 }
-const matches = cache.vendors.filter(v => kioskMatches(v, q, mode)).sort(byBusinessName);
+const matches = cache.vendors.filter(v => kioskMatches(v, q, mode))
+.filter(v => !kioskSnapOn || snapAccepts(v.vendorId))
+.sort(byBusinessName);
 kioskMatchBooths = new Set();
 matches.forEach(v => {
 const b = occ.byVendor[v.vendorId];
@@ -16320,8 +16328,7 @@ const wedge = boothIsArcWedge(booth);
 const chipSpin = wedge ? spin : 0;
 const org = (occ.byOrg || {})[booth.num];
 const cls = 'booth-chip ' + (vid || org ? 'kiosk-here' : 'available') +
-(kioskMatchBooths.has(booth.num) ? ' kiosk-match' : '') +
-(kioskSnapBooths.has(booth.num) ? ' kiosk-snap' : '') +
+kioskChipMarks(booth.num) +
 (kioskSelectedBooth === booth.num ? ' kiosk-hit' : '') +
 (spin ? (wedge ? ' arc-wedge' : ' arc-link link-' + booth.num) : '');
 let chip = existing[booth.num];
@@ -20947,7 +20954,7 @@ html += psSection('Attendance Requirement', false, [],
 'whether this vendor has met it.');
 
 // --- Fines & Penalties
-const fines = (((cache.ops || {}).fines) || []).filter(f => f.vendorId === vendorId);
+const fines = allFines().filter(f => f.vendorId === vendorId);
 const waivedOf = f => !!((cache.ops || {}).waived || {})['F:' + f.id];
 const live = fines.filter(f => !waivedOf(f));
 const fnLines = [];
