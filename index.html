@@ -2183,6 +2183,14 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 
 
 
+<div class="dash-fold" data-fold="homescreen">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'homescreen')">
+<span class="fold-title">Put It On Your Phone</span>
+<span class="fold-sub">Add the market to your home screen &mdash; takes about twenty seconds</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="guide">
 <a class="fold-bar" style="text-decoration:none; display:flex; margin-bottom:10px;" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><span class="fold-title">Vendor Guide</span><span class="fold-sub">Opens on the market’s site ↗</span></a>
 </div>
@@ -2503,6 +2511,41 @@ I sell food (prepared food or produce)
 </div>
 <p class="empty-note" id="menuTailorNote" style="margin: 14px 0 4px; text-align:center;"></p>
 <button type="button" class="ghost-btn" id="deskOrderReset" style="display:none;" onclick="resetDeskOrder(this)">Put the drawers back in their usual order</button>
+</section>
+<section id="screen-homescreen" class="screen">
+<div class="screen-head" id="head-homescreen"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-sun-rays"></use></svg></span>Why bother</h2>
+<p class="empty-note" style="margin-top:0;">Right now this is a page in your browser, and browser tabs get
+lost. On your home screen it becomes an icon like any other app: one tap, no address to remember, no
+searching through tabs on a market morning. It opens full screen and stays signed in.</p>
+<p class="empty-note">Nothing is installed and nothing is downloaded from a store. It is the same page,
+with a door of its own.</p>
+</div>
+<div class="card" id="hsIos">
+<h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>iPhone and iPad</h2>
+<p class="empty-note" style="margin-top:0;"><b>Use Safari.</b> This does not work from Chrome or Firefox on
+an iPhone &mdash; if you are reading this in another browser, copy the address into Safari first.</p>
+<div class="tracker-row"><div class="t-title">1. Tap the Share button</div><div class="t-sub">The square with an arrow coming out of the top. At the bottom of the screen, or top right on an iPad.</div></div>
+<div class="tracker-row"><div class="t-title">2. Scroll down the list and tap <b>Add to Home Screen</b></div><div class="t-sub">It sits below the row of apps, among Add Bookmark and Find on Page.</div></div>
+<div class="tracker-row"><div class="t-title">3. Tap <b>Add</b>, top right</div><div class="t-sub">You can shorten the name first if you like &mdash; &ldquo;IFM&rdquo; fits better under the icon.</div></div>
+<p class="empty-note">The icon lands on your home screen. Open it from there from now on.</p>
+</div>
+<div class="card" id="hsAndroid">
+<h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Android</h2>
+<p class="empty-note" style="margin-top:0;"><b>Use Chrome</b>, or whichever browser you normally use &mdash;
+most Android browsers can do this, and the wording varies a little between them.</p>
+<div class="tracker-row"><div class="t-title">1. Tap the three dots, top right</div><div class="t-sub">Some phones show a small &ldquo;Install&rdquo; banner instead. If you see one, tap that and you are done.</div></div>
+<div class="tracker-row"><div class="t-title">2. Tap <b>Add to Home screen</b></div><div class="t-sub">It may read <b>Install app</b> or <b>Install</b>. Same thing.</div></div>
+<div class="tracker-row"><div class="t-title">3. Tap <b>Add</b> or <b>Install</b> to confirm</div><div class="t-sub">Some phones then offer to place it for you, or let you drag it where you want it.</div></div>
+<p class="empty-note">The icon lands on your home screen. Open it from there from now on.</p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>If it looks stuck on an old version</h2>
+<p class="empty-note" style="margin-top:0;">The app updates itself when the market puts up a new version,
+and tells you when it does. If it ever seems to be behind, close it completely and open it again &mdash; on
+an iPhone, swipe up from the bottom and flick the app away first. That is the only maintenance it needs.</p>
+</div>
 </section>
 <section id="screen-account" class="screen">
 <div class="screen-head" id="head-account"></div>
@@ -10131,7 +10174,7 @@ document.getElementById('volRoleCard').innerHTML =
 // order all year), out of season. Business Profile is fixed above all of it.
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = ['hours', 'account', 'fPoints', 'snaptokens', 'mydocs',
-'mycommittees', 'directory', 'communicate', 'guide'];
+'mycommittees', 'directory', 'communicate', 'homescreen', 'guide'];
 // Steamboat's day-to-day tools, on top while Steamboat is running.
 const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos', 'fShare'];
 // The other three markets, always adjacent and always in this order, so a
@@ -11547,6 +11590,30 @@ d.unseen.map(u => '<p class="empty-note" style="margin:0 0 6px;">\u2022 ' + esc(
 '</div>';
 host.innerHTML = html;
 }
+// Both sets of steps are always on the page -- a market couple shares one
+// phone and a vendor helps a neighbour, so hiding the other half helps
+// nobody. The one that matches the phone in your hand simply comes first.
+function initHomeScreenScreen() {
+const ua = navigator.userAgent || '';
+const isIos = /iPad|iPhone|iPod/.test(ua) ||
+(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const ios = document.getElementById('hsIos');
+const android = document.getElementById('hsAndroid');
+if (!ios || !android || !ios.parentElement) return;
+const parent = ios.parentElement;
+if (!isIos && ios.nextElementSibling === android) parent.insertBefore(android, ios);
+if (isIos && android.nextElementSibling === ios) parent.insertBefore(ios, android);
+// Already added: the phone opens it without browser furniture, so there is
+// nothing left to explain.
+const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+window.navigator.standalone === true;
+const head = document.querySelector('#screen-homescreen .card .empty-note');
+if (standalone && head) {
+head.innerHTML = '<b>You have already done this.</b> This copy is running from your home screen, ' +
+'not from a browser tab. Nothing more to do \u2014 the steps below are here if you want to add it ' +
+'to another phone.';
+}
+}
 async function initAccountScreen() {
 await loadPayments();
 // The paying half belongs to the vendor looking at their own account. A
@@ -11802,6 +11869,7 @@ if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') initGiftCertsScreen();
 if (name === 'pavrentals') initPavRentalsScreen();
 if (name === 'account') initAccountScreen();
+if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
@@ -11929,6 +11997,7 @@ wednesday:         { title: 'Wednesday at East Hill' },
 giftcerts:         { title: 'Gift Certificates' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
+homescreen:        { title: 'Put It On Your Phone' },
 winterbooths:      { title: 'Winter Market Booths' },
 standing:          { title: 'Vendor Standing' },
 records:           { title: 'Vendor Records' },
@@ -14886,7 +14955,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-27';
+const BUILD_ID = '15-28';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
