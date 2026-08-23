@@ -2743,7 +2743,7 @@ announces any change.</p>
 </div>
 <div class="dash-fold" data-fold="st-snap">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaplog')">
-<span class="fold-title">SNAP Token Collection</span>
+<span class="fold-title">SNAP Tokens In &amp; Out</span>
 <span class="fold-sub">Who turned in how many tokens, on which market day</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
@@ -3407,7 +3407,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
 <div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in The Old-Fashioned Way puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
 <div class="comm-item"><div class="comm-title">A screen that needs a record the app may not hold yet</div><div class="comm-desc">Draw first, fetch second. A screen that opens with <code>await loadSomething()</code> before it writes anything to the page will show <em>nothing at all</em> while that one fetch is outstanding &mdash; not a spinner, not a heading, nothing &mdash; and a person tapping it will say the tool is frozen. It is not frozen; it is being polite to a fetch that most of the screen does not depend on. This bites hardest on a <em>new</em> storage key, because until somebody writes to it the sheet has no row and every phone fetches it separately and gets a cold Apps Script. Draw everything already in hand, then call the loader and redraw when it lands. A <em>write</em> still waits, because writing into a half-known list would drop whatever had not arrived. Others that still open this way, should they ever feel slow: <code>initUnreservableScreen</code>, <code>initVenmoPayScreen</code>, <code>renderTaskManager</code>, <code>renderAvailableTasks</code>, <code>renderOrgStalls</code>.</div></div>
-<div class="comm-item"><div class="comm-title">A new tool on the Market Manager&rsquo;s desk</div><div class="comm-desc">Two desks are built two different ways, and a tool added to one does <em>not</em> appear on the other. The <strong>staff</strong> desk is hand-written drawers in the markup. The <strong>Market Manager</strong> desk is generated from the tool registry &mdash; the list of groups and tiles &mdash; so a manager tool has to be added <em>there</em>, whatever the markup says. SNAP Token Collection was written into the markup alone and turned up on the staff desk only, where nobody was looking for it. When testing, look <em>inside</em> the drawer the tool is meant to be in: a document-wide search for the title finds it on the wrong desk and reports success.</div></div>
+<div class="comm-item"><div class="comm-title">A new tool on the Market Manager&rsquo;s desk</div><div class="comm-desc">Two desks are built two different ways, and a tool added to one does <em>not</em> appear on the other. The <strong>staff</strong> desk is hand-written drawers in the markup. The <strong>Market Manager</strong> desk is generated from the tool registry &mdash; the list of groups and tiles &mdash; so a manager tool has to be added <em>there</em>, whatever the markup says. SNAP Tokens In &amp; Out was written into the markup alone and turned up on the staff desk only, where nobody was looking for it. When testing, look <em>inside</em> the drawer the tool is meant to be in: a document-wide search for the title finds it on the wrong desk and reports success.</div></div>
 <div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code>, let <code>freeFloatingSheets()</code> move it to the body at boot, and show it by adding the class <code>open</code> &mdash; never by copying another sheet&rsquo;s markup and hoping. <code>.modal-backdrop</code> is <code>display:none</code> until opened, which it was not always: it used to be <code>display:flex</code>, so a new backdrop was on screen from boot unless whoever added it also wrote a rule to hide it. That shipped once, and because a backdrop covers everything at <code>z-index:500</code> it did not look like a stuck sheet, it looked like the whole app had stopped working. Defaults should fail closed. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
 <div class="comm-item"><div class="comm-title">A new live map, or a new layer on an old one</div><div class="comm-desc">Add it to <code>AUDIT_MAPS</code>. The map knows a great deal &mdash; the buildings, the promenade panels, the section labels, the badge on every booth, the placed furniture and outlets &mdash; and a screen that leaves half of it out <em>still looks like a map</em>, which is why the sixth fault counts layers instead of trusting the eye. Where a map is meant to carry less, say so in its <code>without</code> list along with the reason, so a real gap cannot hide behind &ldquo;that one is different&rdquo;.</div></div>
 <div class="comm-item"><div class="comm-title">A booth on any map</div><div class="comm-desc">Every booth on every live map opens the booth sheet, and every booth means <em>every</em> booth &mdash; including ones already spoken for. A booth that is taken is exactly the booth a vendor rings up to ask about, and a chip that does nothing is the office being told to go and look it up somewhere else. The sheet takes a context saying which desk it was opened from, and offers that desk&rsquo;s action inside it; where there is no action, it still says everything known about the booth. A map that offers less than another map is a fault, not a simplification.</div></div>
@@ -3443,9 +3443,25 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <section id="screen-snaplog" class="screen">
 <div class="screen-head" id="head-snaplog"></div>
 <div class="card desk-form">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Take In Tokens<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_MGR)" aria-label="What are the rules here?">?</button></h2>
 <label for="snapDate">Market day</label>
 <select id="snapDate" onchange="renderSnapDay()"></select>
+</div>
+<div class="card" id="snapBalanceCard"></div>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Tokens Handed Out<button type="button" class="help-dot" onclick="showHelp(78)" aria-label="How does this work?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">After each swipe on the EBT terminal, record how many tokens went
+out. The app never touches the card &mdash; the terminal does that, and this is only the paper trail on
+this side of it.</p>
+<label for="snapOutCount">How many tokens</label>
+<input type="number" id="snapOutCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 20">
+<label for="snapOutNote" style="margin-top:10px;">Note (optional)</label>
+<input type="text" id="snapOutNote" placeholder="e.g. terminal receipt 4471, or &lsquo;incentive match&rsquo;" autocomplete="off">
+<div class="status-msg" id="snapOutMsg"></div>
+<button type="button" class="primary-btn" onclick="recordSnapIssue()"><svg class="ico"><use href="#i-checkmark"></use></svg> Record tokens out</button>
+<div id="snapOutList"></div>
+</div>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Tokens Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_MGR)" aria-label="What are the rules here?">?</button></h2>
 <label for="snapVendor">Vendor</label>
 <select id="snapVendor"></select>
 <label for="snapCount">How many tokens</label>
@@ -3455,7 +3471,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <p class="empty-note" id="snapValueNote" style="margin-top:8px;"></p>
 </div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Taken In On This Day</h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Turned In On This Day</h2>
 <div id="snapDayList" class="drawer-list"></div>
 </div>
 <div class="card">
@@ -9670,6 +9686,10 @@ renderSnapDay(); renderSnapSeason();
 showMsg('snapMsg', 'ok', 'Line removed. The vendor\u2019s desk will show the correction.');
 }
 function renderSnapDay() {
+const dsel = document.getElementById('snapDate');
+const day = dsel ? dsel.value : todayISO();
+renderSnapIssued(day);
+renderSnapBalance(day);
 const wrap = document.getElementById('snapDayList');
 if (!wrap) return;
 const date = document.getElementById('snapDate').value;
@@ -9703,6 +9723,103 @@ fmtMoney(snapMoney(total)) + '</b> across ' + rows.length + ' vendor' + (rows.le
 wrap.appendChild(foot);
 setTimeout(() => { fitListToRows(wrap, '.attn-item', 5.4); markListEnds(wrap); }, 0);
 }
+// ---- the issuing half ----
+//
+// The scrip loop has two ends. A shopper swipes an EBT card at the office
+// terminal and walks away with tokens; a vendor takes those tokens and hands
+// them back to the office for reimbursement. The app recorded only the
+// second end, so it could total what came back with nothing to compare it
+// against.
+//
+// The app never touches the card. EBT runs on federally certified equipment
+// and a PIN can only be entered on a certified pad, so the swipe belongs
+// entirely to the terminal. What the app can hold is the paper trail either
+// side of it, and the difference between the two ends -- which is the number
+// the office actually wants at close of day.
+//
+// That difference is NOT an error. Tokens have no expiry: a shopper may
+// spend them next week or next season. Out-minus-in is money in shoppers'
+// pockets, and the screen says so, because a figure labelled as a gap
+// invites somebody to go hunting for a mistake that is not there.
+function snapIssues(dateISO) {
+const all = (snapCache && snapCache.issued) || [];
+return dateISO ? all.filter(e => e.date === dateISO) : all;
+}
+function snapIssuedTotal(list) {
+return list.reduce((s, e) => s + Number(e.tokens || 0), 0);
+}
+async function recordSnapIssue() {
+if (!requireMarketRole('snapOutMsg')) return;
+await loadSnap();
+const date = document.getElementById('snapDate').value;
+const n = parseInt(document.getElementById('snapOutCount').value, 10);
+const note = document.getElementById('snapOutNote').value.trim();
+if (!date) { showMsg('snapOutMsg', 'err', 'Pick the market day first.'); return; }
+if (!n || n < 1) { showMsg('snapOutMsg', 'err', 'How many tokens went out?'); return; }
+snapCache.issued = snapCache.issued || [];
+snapCache.issued.push({ id: 'si' + Date.now(), date: date, tokens: n,
+note: note, by: currentRole, at: Date.now() });
+await saveSnap();
+showMsg('snapOutMsg', 'ok', n + ' token' + (n === 1 ? '' : 's') + ' \u00b7 ' +
+'$' + fmtMoney(snapMoney(n)) + ' recorded as handed out.');
+document.getElementById('snapOutCount').value = '';
+document.getElementById('snapOutNote').value = '';
+renderSnapDay();
+}
+async function removeSnapIssue(id) {
+if (!requireMarketRole('snapOutMsg')) return;
+await loadSnap();
+snapCache.issued = (snapCache.issued || []).filter(e => e.id !== id);
+await saveSnap();
+renderSnapDay();
+}
+function renderSnapIssued(dateISO) {
+const host = document.getElementById('snapOutList');
+if (!host) return;
+const rows = snapIssues(dateISO);
+host.innerHTML = '';
+if (!rows.length) {
+host.innerHTML = '<p class="empty-note" style="margin-bottom:0;">Nothing recorded out on this day yet.</p>';
+return;
+}
+rows.slice().reverse().forEach(e => {
+const row = document.createElement('div');
+row.className = 'tracker-row';
+row.innerHTML = '<div class="t-title">' + e.tokens + ' token' + (e.tokens === 1 ? '' : 's') +
+' \u00b7 $' + fmtMoney(snapMoney(e.tokens)) + '</div>' +
+'<div class="t-sub">' + esc(e.note || '') + '</div>';
+const b = document.createElement('button');
+b.type = 'button'; b.className = 'ghost-btn'; b.textContent = 'Remove';
+b.onclick = () => removeSnapIssue(e.id);
+row.appendChild(b);
+host.appendChild(row);
+});
+}
+function renderSnapBalance(dateISO) {
+const card = document.getElementById('snapBalanceCard');
+if (!card) return;
+const year = seasonYear();
+const outDay = snapIssuedTotal(snapIssues(dateISO));
+const inDay = snapTotal((snapCache ? snapCache.entries : []).filter(e => e.date === dateISO));
+const outYear = snapIssuedTotal(snapIssues().filter(e => String(e.date).slice(0, 4) === String(year)));
+const inYear = snapTotal((snapCache ? snapCache.entries : [])
+.filter(e => String(e.date).slice(0, 4) === String(year)));
+const outstanding = outYear - inYear;
+card.innerHTML =
+'<h2 style="font-size:16px;">This market day</h2>' +
+'<div class="stat-row">' +
+'<div class="stat"><div class="stat-num">' + outDay + '</div><div class="stat-label">Handed out \u00b7 ' + '$' + fmtMoney(snapMoney(outDay)) + '</div></div>' +
+'<div class="stat"><div class="stat-num">' + inDay + '</div><div class="stat-label">Turned in \u00b7 ' + '$' + fmtMoney(snapMoney(inDay)) + '</div></div>' +
+'<div class="stat"><div class="stat-num">' + (outDay - inDay) + '</div><div class="stat-label">Difference</div></div>' +
+'</div>' +
+'<p class="empty-note" style="margin:8px 0 0;"><b>' + outstanding + ' token' +
+(outstanding === 1 ? '' : 's') + ' \u00b7 ' + '$' + fmtMoney(snapMoney(outstanding)) +
+'</b> handed out this season and not yet turned in. <b>This is not a discrepancy.</b> ' +
+'Tokens do not expire, so a shopper may hold them for weeks. It is the market\u2019s outstanding ' +
+'obligation to its vendors, and it should drift up on a market day and down afterwards.' +
+(outstanding < 0 ? ' <b>A negative figure is worth a look</b> \u2014 more has come back than ever ' +
+'went out, which usually means a swipe was never recorded here.' : '') + '</p>';
+}
 function renderSnapSeason() {
 const el = document.getElementById('snapSeason');
 if (!el) return;
@@ -9715,7 +9832,10 @@ const names = Object.keys(byVendor)
 .map(id => ({ id: id, n: byVendor[id],
 name: (cache.vendors.find(v => v.vendorId === id) || {}).businessName || id }))
 .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
-let html = '<div class="tracker-row"><div class="t-title">Tokens taken in, ' + year +
+const issuedYear = snapIssuedTotal(snapIssues().filter(e => String(e.date).slice(0, 4) === String(year)));
+let html = '<div class="tracker-row"><div class="t-title">Tokens handed out, ' + year +
+'</div><div class="t-sub">' + issuedYear + ' \u00b7 $' + fmtMoney(snapMoney(issuedYear)) + '</div></div>';
+html += '<div class="tracker-row"><div class="t-title">Tokens turned in, ' + year +
 '</div><div class="t-note"><b>' + total + '</b> \u2014 $' + fmtMoney(snapMoney(total)) +
 ' owed to vendors across ' + names.length + ' business' + (names.length === 1 ? '' : 'es') + '</div></div>';
 names.slice(0, 12).forEach(x => {
@@ -10586,7 +10706,7 @@ const HELP_TEXTS = [
 "body": "<p>Every money figure this app holds for one year, on one page for whoever does the market's books.</p><p><b>It is a worksheet, not a set of accounts.</b> The app has never seen a bank statement, a cash drawer, or a single expense. It holds what the office typed in while running markets.</p><p>Four kinds of fact are kept apart and never added together. <em>Recorded as received</em> is the nearest thing to income it has. <em>Membership share installments</em> are <b>equity, not income</b> — a member buys a share and can be repaid it on leaving, and booking that as revenue would overstate what the market earned and understate what it owes its members. <em>Vendor-reported</em> payments are unconfirmed by anybody. And the last section lists what the app cannot see, which for a tax return matters more than what it can.</p><p>Two figures are inferred rather than stored, and the page says so on itself: renewals hold a postmark but not an amount, and day fees hold who paid but not how much.</p>"
 },
 {
-"title": "SNAP Token Collection",
+"title": "Tokens Turned In",
 "body": "<p>A shopper spends their SNAP benefit at the office and gets wooden tokens. They buy food with the tokens. The vendor brings the tokens back and the market pays them out. This is the log of that last step.</p><p>Record the market day, the vendor and the number of tokens. The vendor is told on their own desk the moment you submit — they do not have to ask whether it was counted.</p><p><b>Every vendor is listed, not only the ones who take SNAP.</b> A craft vendor might have taken a token by mistake, and it still has to be redeemed; they are simply marked in the list.</p><p>The log stores the <em>number of tokens</em>, because that is the fact. The money is worked out from the token value in Market Rules at the moment you read it — so changing that rate re-values every past line.</p>"
 },
 {
@@ -10632,6 +10752,10 @@ const HELP_TEXTS = [
 {
 "title": "Load a Roll of Stickers",
 "body": "<p>Order serialised (sometimes called variable-data) QR labels on a roll, and ask the printer to encode this app\u2019s address with the code attached, so a phone camera opens the app when it reads one. Ask for a random check group in every code rather than a plain 0001, 0002 run \u2014 otherwise seeing one certificate tells somebody what the next fifty say.</p><p>The printer supplies the list of codes they made. Paste it here, one code or one URL per line, and name the roll so the office can tell rolls apart later. Codes already known are skipped rather than duplicated, so re-pasting a list is harmless.</p><p>Tell the printer every time that a reorder must continue the numbering, never repeat it. Two stickers with the same code would be two certificates the book cannot tell apart.</p>"
+},
+{
+"title": "Tokens Handed Out",
+"body": "<p>This is the other end of the token loop. A shopper swipes their EBT card on the market\u2019s terminal and walks away with tokens; a vendor takes those tokens in trade and hands them back to the office to be reimbursed. The app has always recorded the second half. Without the first it could total what came back with nothing to check it against.</p><p><b>The app never touches the card.</b> SNAP runs on federally certified equipment and a PIN can only be entered on a certified pad, so the swipe belongs entirely to the terminal and always will. What this records is the paper trail on this side of it: after each swipe, how many tokens went out. The note field is the place for the terminal\u2019s receipt number, which is what makes the two records match later.</p><p>The difference between out and in is <b>not an error</b>. Tokens do not expire, so a shopper may spend them next week or next season. That number is the market\u2019s outstanding obligation to its vendors \u2014 it should rise on a market day and fall afterwards. A <i>negative</i> difference is worth a look: more has come back than ever went out, which usually means a swipe was never recorded here.</p>"
 }
 ];
 function showHelp(i) {
@@ -11826,7 +11950,7 @@ volunteer:         { title: 'Volunteers / Partners' },
 
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
-snaplog:           { title: 'SNAP Token Collection' },
+snaplog:           { title: 'SNAP Tokens In & Out' },
 snaptokens:        { title: 'SNAP Tokens' },
 yearend:           { title: 'Year-End Money Worksheet' },
 winterpaperwork:   { title: 'Triphammer Paperwork' },
@@ -14762,7 +14886,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-26';
+const BUILD_ID = '15-27';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21402,7 +21526,7 @@ sub: 'The plan for the day itself',
 tiles: [
 { s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
 { s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a sticker to sell, scan it again when it comes back' },
-{ s: 'snaplog', i: 'i-gem', t: 'SNAP Token Collection', d: 'Who turned in how many tokens' },
+{ s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
 ] },
