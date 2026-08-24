@@ -64,6 +64,20 @@ box-shadow: 0 2px 6px rgba(35,42,32,0.08); cursor: pointer;
 }
 .switch-row { display: flex; justify-content: center; margin-bottom: 10px; }
 .dash-fold { margin-bottom: 10px; }
+/* Manager desk, grid style (review build 15-49): drawers as launcher tiles. */
+.mgr-tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.mgr-tile { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+min-height: 84px; padding: 12px 12px 10px; border: 1.5px solid var(--paper-dim); border-radius: 12px;
+background: #fff; text-align: left; font-family: inherit; cursor: pointer; }
+.mgr-tile:active { transform: scale(0.98); }
+.mgr-tile .mt-title { font-weight: 700; font-size: 15px; line-height: 1.25; }
+.mgr-tile .mt-sub { font-size: 12px; opacity: 0.6; margin-top: 6px; }
+.mgr-tile.off-season { opacity: 0.5; }
+.mgr-tile .season-tag { font-size: 10px; }
+.mgr-drawer-head { margin: 2px 0 10px; }
+.mgr-drawer-head h2 { margin: 0 0 2px; font-size: 19px; }
+.mgr-drawer-head .mt-sub { font-size: 13px; opacity: 0.7; }
+.mgr-back { width: auto; padding: 7px 14px; margin-bottom: 10px; }
 .fold-bar { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 .dash-fold.dragging { opacity: 0.88; transform: scale(1.015); box-shadow: 0 8px 22px rgba(35,42,32,0.25); position: relative; z-index: 6; }
 body.desk-dragging { cursor: grabbing; }
@@ -15438,7 +15452,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-48';
+const BUILD_ID = '15-49';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22246,6 +22260,12 @@ initMyCommitteesScreen();
 const MGR_VENUE_OF = { selection: 'steamboat', marketday: 'steamboat', booths: 'steamboat',
 winter: 'winter', wednesday: 'wednesday', popups: null };
 const MGR_OTHER_MARKETS = ['winter', 'wednesday', 'popups'];
+// Review build: the manager desk drawn as a launcher grid of tiles -- one
+// tile per drawer, one screen, no scrolling -- with each drawer's tools as
+// the familiar rows behind a tap. Set to 'drawers' to restore the accordion
+// exactly as it was; nothing below is removed by the grid.
+const MGR_DESK_STYLE = 'grid';
+let mgrOpenFolder = null;
 const MGR_FOLDERS = [
 { s: 'callinout', i: 'i-phone', t: 'The Old-Fashioned Way', d: 'Take anything a vendor sends by phone, email, mail, or across the desk \u2014 absences, requests, shares, documents, proposals' },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
@@ -22587,6 +22607,7 @@ window.gcPendingScan = null;
 }
 }
 function initManagerDash() {
+mgrOpenFolder = null;
 renderManagerAlerts();
 renderManagerFolders();
 if (window.gcPendingScan) {
@@ -22884,9 +22905,65 @@ const k = inSeason.findIndex(f => f.key === 'marketday');
 if (k > 0) inSeason.unshift(inSeason.splice(k, 1)[0]);
 }
 off.sort((a, b) => MGR_OTHER_MARKETS.indexOf(a.key) - MGR_OTHER_MARKETS.indexOf(b.key));
+const ordered = inSeason.concat(stable, off);
+if (MGR_DESK_STYLE !== 'grid') {
 inSeason.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
 stable.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
 off.forEach(f => grid.appendChild(buildMgrFolder(f, true)));
+return;
+}
+const openF = mgrOpenFolder
+? ordered.find(f => (f.key || f.s) === mgrOpenFolder)
+: null;
+if (openF) {
+const back = document.createElement('button');
+back.type = 'button';
+back.className = 'ghost-btn mgr-back';
+back.innerHTML = '\u2039 All drawers';
+back.onclick = () => { mgrOpenFolder = null; renderManagerFolders(); };
+grid.appendChild(back);
+const head = document.createElement('div');
+head.className = 'mgr-drawer-head';
+const pv = openF.key ? MGR_VENUE_OF[openF.key] : null;
+const pTag = pv && !venueInSeason(pv) ? '<span class="season-tag">Out of season</span> \u00b7 '
+: pv && venueRunsToday(pv) ? '<span class="season-tag">Today</span> \u00b7 ' : '';
+head.innerHTML = '<h2>' + esc(openF.title || openF.t) + '</h2>' +
+'<div class="mt-sub">' + pTag + esc(openF.sub || openF.d || '') + '</div>';
+grid.appendChild(head);
+if (openF.s) {
+grid.appendChild(buildToolFold(openF));
+} else {
+if (openF.head) grid.appendChild(openF.head());
+openF.tiles.forEach(t => grid.appendChild(buildToolFold(t)));
+}
+return;
+}
+const tiles = document.createElement('div');
+tiles.className = 'mgr-tile-grid';
+ordered.forEach(f => tiles.appendChild(buildMgrTile(f)));
+grid.appendChild(tiles);
+}
+// What a tile says under its name: the season state where one applies,
+// otherwise how many tools wait inside. Off-season tiles grey, never hide.
+function mgrTileSub(f) {
+const venue = f.key ? MGR_VENUE_OF[f.key] : null;
+const inSeason = !venue || venueInSeason(venue);
+if (!inSeason) return '<span class="season-tag">Out of season</span>';
+const today = venue && venueRunsToday(venue);
+const n = f.tiles ? f.tiles.length : 1;
+const count = n + (n === 1 ? ' tool' : ' tools');
+return (today ? '<span class="season-tag">Today</span> \u00b7 ' : '') + count;
+}
+function buildMgrTile(f) {
+const venue = f.key ? MGR_VENUE_OF[f.key] : null;
+const inSeason = !venue || venueInSeason(venue);
+const tile = document.createElement('button');
+tile.type = 'button';
+tile.className = 'mgr-tile' + (inSeason ? '' : ' off-season');
+tile.innerHTML = '<span class="mt-title">' + esc(f.title || f.t) + '</span>' +
+'<span class="mt-sub">' + mgrTileSub(f) + '</span>';
+tile.onclick = () => { mgrOpenFolder = f.key || f.s; renderManagerFolders(); };
+return tile;
 }
 function buildMgrFolder(f, grouped) {
 if (f.s) return buildToolFold(f);
