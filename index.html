@@ -15438,7 +15438,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-45';
+const BUILD_ID = '15-46';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -18921,7 +18921,8 @@ if (st === 'overdue' && req.due) sub += ' \u00b7 was due ' + formatDisplayDate(r
 name.innerHTML = '<div>' + esc(v.businessName) + '</div>' +
 '<div class="req-vendor-sub"><span class="req-state ' +
 (st === 'overdue' || st === 'returned' ? 'expired' : st === 'pending' ? 'submitted' : st) +
-'">' + esc(reqStateLabel(st)) + '</span> ' + esc(sub) + '</div>';
+'">' + esc(reqStateLabel(st)) + '</span> ' + esc(sub) +
+(rec.fileId ? ' \u00b7 ' + reqFileLinkHTML(rec) : '') + '</div>';
 row.appendChild(name);
 const sel = document.createElement('select');
 REQUIREMENT_STATES.forEach(s => {
@@ -20512,6 +20513,11 @@ del.onclick = () => deleteOpRecord(rec.id);
 row.appendChild(del);
 wrap.appendChild(row);
 });
+}
+function reqFileLinkHTML(rec) {
+if (!rec || !rec.fileId) return '';
+return '<a href="https://drive.google.com/file/d/' + encodeURIComponent(rec.fileId) +
+'/view" target="_blank" rel="noopener">Open the document</a> <span style="opacity:.7;">(market\u2019s Drive)</span>';
 }
 function vaultReady() {
 return typeof IFM_VAULT_URL === 'string' && IFM_VAULT_URL.length > 0;
@@ -22974,6 +22980,21 @@ let cioHtml = '';
 cio.slice(0, 8).forEach(r => { cioHtml += line(r.marketDate, esc(cioLabel(r.status))); });
 if (cio.length > 8) cioHtml += none((cio.length - 8) + ' older entries.');
 html += section('Requests & Absences', cioHtml || none('Nothing on file.'));
+const vreqs = vendorRequirements(vendorId);
+let reqHtml = '';
+vreqs.forEach(req => {
+const rec = reqStatusFor(req.id, vendorId);
+const rst = reqDisplayState(req, vendorId);
+let val = reqStateLabel(rst);
+if (rec.state === 'onfile' && rec.receivedOn) val += ', received ' + formatDisplayDate(rec.receivedOn);
+if (rec.state === 'onfile' && rec.expiry) val += ', expires ' + formatDisplayDate(rec.expiry);
+if (rec.state === 'pending') val += rec.via === 'upload'
+? ' \u2014 uploaded' + (rec.uploadedOn ? ' ' + formatDisplayDate(rec.uploadedOn) : '')
+: ' \u2014 reported posted' + (rec.sentOn ? ' ' + formatDisplayDate(rec.sentOn) : '');
+const link = reqFileLinkHTML(rec);
+reqHtml += line(esc(req.name), esc(val) + (link ? ' \u00b7 ' + link : ''));
+});
+html += section('Permits & Documents', reqHtml || none('No requirements apply to this vendor.'));
 html += section('Business & Contact',
 (vField(v, 'products') ? line('Sells', esc(vField(v, 'products'))) : none('No description on file.')) +
 (vField(v, 'primaryContact') ? line('Contact', esc(vField(v, 'primaryContact'))) : '') +
