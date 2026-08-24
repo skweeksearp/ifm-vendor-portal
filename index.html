@@ -2659,6 +2659,35 @@ or redeemed, which is what makes a forged one useless.</p>
 do the money &mdash; certificate sales sit in the office&rsquo;s books, not here.</p>
 </div>
 </section>
+<section id="screen-wedlist" class="screen">
+<div class="screen-head" id="head-wedlist"></div>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>Which Wednesday<button type="button" class="help-dot" onclick="showHelp(80)" aria-label="How does this work?">?</button></h2>
+<select id="wlDate" onchange="renderWedList()"></select>
+<p class="empty-note" id="wlDeadline" style="margin-bottom:0;"></p>
+</div>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Who Turned Up</h2>
+<p class="empty-note" style="margin-top:0;">Nobody signs up ahead, so this is a tick list made on the day. Start
+from last week if most of the same people came.</p>
+<button type="button" class="ghost-btn" onclick="wlCopyLastWeek()">Start from last week</button>
+<input type="text" id="wlSearch" class="find-field" placeholder="Find a vendor by name" autocomplete="off" oninput="renderWedPicker()">
+<div id="wlPicker"></div>
+<div class="status-msg" id="wlMsg"></div>
+</div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-tent"></use></svg></span>Today&rsquo;s List</h2>
+<div id="wlHere"></div>
+</div>
+<div class="card manager-only">
+<h2><span class="emoji"><svg class="ico"><use href="#i-quill"></use></svg></span>Publish to the Website<button type="button" class="help-dot" onclick="showHelp(81)" aria-label="How does publishing work?">?</button></h2>
+<div class="empty-note" id="wlPublishState" style="margin-top:0;"></div>
+<button type="button" class="ghost-btn" onclick="wlCopyForSite()">Copy the list for the website</button>
+<button type="button" class="primary-btn" id="wlPublishBtn" onclick="wlPublish()">Publish it</button>
+<div class="status-msg" id="wlPubMsg"></div>
+<pre id="wlPreview" style="white-space:pre-wrap; font-size:12px; background:#FBFAF5; border:1px solid #C9C2A8; border-radius:8px; padding:10px; margin-top:10px; overflow-x:auto;"></pre>
+</div>
+</section>
 <section id="screen-wednesday" class="screen">
 <div class="screen-head" id="head-wednesday"></div>
 <div class="card">
@@ -10824,6 +10853,14 @@ const HELP_TEXTS = [
 {
 "title": "How You Can Pay",
 "body": "<p>Three ways, and they are not equivalent. <b>Cash</b> at the office window \u2014 ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market\u2019s Square account. The card total includes Square\u2019s fee for that transaction \u2014 the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> Telling the app you paid is a report, and a useful one \u2014 it tells the office what to look for \u2014 but it is not a receipt and it never counts toward the balance on its own.</p>"
+},
+{
+"title": "Which Wednesday",
+"body": "<p>Wednesday takes no sign-ups. The Vendor Guide says there is no lottery and no assigned spaces \u2014 vendors turn up, set up next to whoever came before them, and sell. So the list of who is at East Hill only exists once somebody has walked the field and looked.</p><p>That is what this is: a tick list made on the day. <b>Start from last week</b> copies the most recent Wednesday that has a list, which is usually most of the way there \u2014 then untick whoever did not come. Notes go beside a name on the published page, and one vendor can be marked as carrying the EBT terminal, which prints as \u201cGet your EBT here today\u201d exactly as the website does it now. Only one at a time: two of those lines would send somebody to the wrong tent.</p><p>Nothing here is a fee record. The $20 day fee is collected on site and logged in the Day-Fee Collection Log.</p>"
+},
+{
+"title": "Publish to the Website",
+"body": "<p>The market\u2019s Wednesday page tells shoppers the vendor list is updated by 4:15 PM each Wednesday. Today that means somebody retyping names into WordPress while standing in a field. This screen builds the list in the same shape the page already uses \u2014 dated heading, names in two columns, the EBT note \u2014 so what gets published is what shoppers are used to reading.</p><p><b>Publishing is built but not connected, and that is deliberate.</b> Writing to the website needs a WordPress application password. This app is a single public file: anyone can read its source, so a password in it would be a password given away. It belongs in the backend, exactly like the Square token \u2014 the app asks the backend to publish and is told yes or no, and never sees the credential.</p><p>Until that is set up, <b>Copy the list</b> puts it on the clipboard for pasting into the page. That is the same job the office does now, minus the retyping. When the backend endpoint exists, the button lights up and nothing else about this screen changes.</p>"
 }
 ];
 function showHelp(i) {
@@ -11120,6 +11157,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'config', k: 'ifm-gcrolls', t: 'Gift certificate sticker rolls \u2014 which codes exist', v: () => [] },
 { g: 'traffic', k: 'ifm-payments', t: 'Payments confirmed by Square \u2014 empty until credentials are loaded', v: () => [] },
 { g: 'config', k: 'ifm-reset-log', t: 'When the beta reset was pressed, and from which phone', v: () => [] },
+{ g: 'traffic', k: 'ifm-wedlist', t: 'Who was at the Wednesday market, week by week', v: () => ({}) },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
 { g: 'config', k: 'ifm-unreservable', t: 'Unreservable Booths', v: () => ({ nums: [], updated: '' }) },
 { g: 'config', k: 'ifm-amendments', t: 'Board Amendments', v: () => ({ items: [
@@ -11999,6 +12037,292 @@ el.value = '';
 el.dispatchEvent(new Event('input', { bubbles: true }));
 });
 }
+// ===========================================================================
+// WHO IS AT EAST HILL TODAY
+//
+// The Wednesday market takes no sign-ups: vendors turn up or they do not, so
+// the list only exists once somebody has looked. The market's own website
+// says as much and promises the list will be up by 4:15 each Wednesday --
+// which today means somebody retyping names into WordPress while standing in
+// a field. This tool is the tick list, and the thing that will one day post
+// it for them.
+//
+// PUBLISHING IS BUILT BUT NOT CONNECTED, on purpose and in the same shape as
+// Square: the app never holds the website's credentials. A WordPress
+// application password in the app would be readable by anyone viewing source
+// on a public GitHub Pages file. The backend holds it; the app asks the
+// backend to publish and is told yes or no. Until that endpoint exists this
+// screen copies the list to the clipboard instead, which is exactly what the
+// office does now, minus the retyping.
+//
+// The output matches the page as it stands: a dated heading, the vendors in
+// two columns, and a per-vendor note for the one carrying the EBT terminal.
+// Matching the existing page matters -- a tool that publishes something
+// subtly different makes more work than it saves.
+// ===========================================================================
+const WED_SITE_URL = 'https://ithacamarket.com/markets/wednesday-at-east-hill-plaza/';
+let wlCache = null;
+async function loadWedList() {
+const v = await storageGet('ifm-wedlist');
+if (v !== STORAGE_MISSING && v) wlCache = v;
+if (!wlCache) wlCache = {};
+return wlCache;
+}
+async function saveWedList() { await storageSet('ifm-wedlist', wlCache || {}); }
+function wedDatesThisSeason() {
+const year = seasonYear();
+const out = [];
+const d = new Date(year + '-01-01T12:00:00');
+while (d.getFullYear() === year) {
+if (d.getDay() === 3 && venueInSeason('wednesday', d)) out.push(isoOf(d));
+d.setDate(d.getDate() + 1);
+}
+return out;
+}
+function isoOf(d) {
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+'-' + String(d.getDate()).padStart(2, '0');
+}
+function wlPickedDate() {
+const sel = document.getElementById('wlDate');
+return sel && sel.value ? sel.value : null;
+}
+function wlEntries(date) {
+return ((wlCache || {})[date] || {}).vendors || [];
+}
+async function wlSet(date, list) {
+wlCache[date] = Object.assign({}, wlCache[date] || {}, { vendors: list });
+await saveWedList();
+renderWedList();
+}
+async function wlToggle(vendorId) {
+const date = wlPickedDate();
+if (!date || !requireManager('wlMsg')) return;
+await loadWedList();
+const list = wlEntries(date).slice();
+const at = list.findIndex(e => e.vendorId === vendorId);
+if (at >= 0) list.splice(at, 1);
+else list.push({ vendorId: vendorId, note: '', ebt: false });
+await wlSet(date, list);
+}
+async function wlSetNote(vendorId, note) {
+const date = wlPickedDate();
+if (!date) return;
+await loadWedList();
+const list = wlEntries(date).map(e =>
+e.vendorId === vendorId ? Object.assign({}, e, { note: note }) : e);
+await wlSet(date, list);
+}
+// Only one stall carries the EBT terminal, so ticking a new one unticks the
+// last. Two "get your EBT here" lines on a published page sends somebody to
+// the wrong tent.
+async function wlSetEbt(vendorId) {
+const date = wlPickedDate();
+if (!date) return;
+await loadWedList();
+const list = wlEntries(date).map(e =>
+Object.assign({}, e, { ebt: e.vendorId === vendorId ? !e.ebt : false }));
+await wlSet(date, list);
+}
+async function wlCopyLastWeek() {
+const date = wlPickedDate();
+if (!date || !requireManager('wlMsg')) return;
+await loadWedList();
+const prior = wedDatesThisSeason().filter(d => d < date).reverse()
+.find(d => wlEntries(d).length);
+if (!prior) { showMsg('wlMsg', 'err', 'No earlier Wednesday has a list to copy.'); return; }
+await wlSet(date, wlEntries(prior).map(e => Object.assign({}, e)));
+showMsg('wlMsg', 'ok', 'Copied ' + wlEntries(prior).length + ' from ' +
+formatDisplayDate(prior) + '. Untick anyone who did not come.');
+}
+function wlSiteHeading(date) {
+const d = new Date(date + 'T12:00:00');
+return 'VENDORS @ MARKET, ' + (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
+}
+function wlSiteLines(date) {
+return wlEntries(date).map(e => {
+const v = (cache.vendors || []).find(x => x.vendorId === e.vendorId);
+let name = v ? v.businessName : e.vendorId;
+if (e.ebt) name += ' \u2013 Get your EBT here today';
+else if (e.note) name += ' \u2013 ' + e.note;
+return name;
+});
+}
+// The page lays the names out in two tables side by side. Splitting here
+// rather than at the far end means the office sees what will appear.
+function wlSiteHtml(date) {
+const lines = wlSiteLines(date);
+const half = Math.ceil(lines.length / 2);
+const col = rows => '<table><tbody>' +
+rows.map(n => '<tr><td>' + esc(n) + '</td></tr>').join('') + '</tbody></table>';
+return '<h2>' + esc(wlSiteHeading(date)) + '</h2>\n' +
+col(lines.slice(0, half)) + '\n' + col(lines.slice(half));
+}
+function wlSitePlain(date) {
+return wlSiteHeading(date) + '\n' + wlSiteLines(date).map(n => '\u2022 ' + n).join('\n');
+}
+// ---- the bridge, dormant until the backend can speak to WordPress ----
+function wlPublishReady() {
+return typeof IFM_SITE_BRIDGE_URL === 'string' && IFM_SITE_BRIDGE_URL.length > 0;
+}
+async function wlPublish() {
+const date = wlPickedDate();
+if (!date || !requireManager('wlPubMsg')) return;
+if (!wlEntries(date).length) {
+showMsg('wlPubMsg', 'err', 'Nobody is ticked, so there is nothing to publish.');
+return;
+}
+if (!wlPublishReady()) {
+showMsg('wlPubMsg', 'err', 'Not connected to the website yet. Use \u201cCopy the list\u201d and ' +
+'paste it into the page for now \u2014 everything else here is ready for the day it is connected.');
+return;
+}
+try {
+const res = await ifmFetch(IFM_SITE_BRIDGE_URL, {
+method: 'POST', headers: { 'Content-Type': 'text/plain' },
+body: JSON.stringify({ action: 'wednesday-list', date: date,
+heading: wlSiteHeading(date), html: wlSiteHtml(date) })
+}, 20000);
+const out = await res.json();
+if (!out.ok) throw new Error(out.error || 'refused');
+wlCache[date] = Object.assign({}, wlCache[date] || {},
+{ publishedAt: Date.now(), publishedBy: currentRole });
+await saveWedList();
+renderWedList();
+showMsg('wlPubMsg', 'ok', 'Published to the website.');
+} catch (e) {
+showMsg('wlPubMsg', 'err', 'The website did not take it: ' + String(e.message || e) +
+'. The list is safe here \u2014 copy and paste it instead.');
+}
+}
+function wlCopyForSite() {
+const date = wlPickedDate();
+if (!date) return;
+const text = wlSitePlain(date);
+try {
+navigator.clipboard.writeText(text);
+showMsg('wlPubMsg', 'ok', 'Copied. Paste it into the Wednesday page on the website.');
+} catch (e) {
+showMsg('wlPubMsg', 'err', 'Could not reach the clipboard \u2014 the list is below, copy it by hand.');
+}
+}
+function renderWedPicker() {
+const host = document.getElementById('wlPicker');
+const date = wlPickedDate();
+if (!host || !date) return;
+const q = (document.getElementById('wlSearch') || {}).value || '';
+const here = wlEntries(date).map(e => e.vendorId);
+const list = (cache.vendors || [])
+.filter(v => !q.trim() || String(v.businessName || '').toLowerCase().includes(q.trim().toLowerCase()))
+.sort(byBusinessName)
+.slice(0, q.trim() ? 12 : 0);
+host.innerHTML = '';
+if (!q.trim()) {
+host.innerHTML = '<p class="empty-note" style="margin-bottom:0;">Type a name to find a vendor and tick them on.</p>';
+return;
+}
+if (!list.length) {
+host.innerHTML = '<p class="empty-note" style="margin-bottom:0;">No vendor by that name.</p>';
+return;
+}
+list.forEach(v => {
+const on = here.includes(v.vendorId);
+const b = document.createElement('button');
+b.type = 'button';
+b.className = on ? 'primary-btn' : 'ghost-btn';
+b.style.cssText = 'display:block; width:100%; text-align:left; margin-top:6px;';
+b.textContent = (on ? '\u2713 ' : '+ ') + v.businessName;
+b.onclick = () => wlToggle(v.vendorId);
+host.appendChild(b);
+});
+}
+function renderWedList() {
+const date = wlPickedDate();
+const host = document.getElementById('wlHere');
+const pre = document.getElementById('wlPreview');
+const state = document.getElementById('wlPublishState');
+if (!host || !date) return;
+const list = wlEntries(date);
+const rec = (wlCache || {})[date] || {};
+
+const dl = document.getElementById('wlDeadline');
+if (dl) {
+dl.innerHTML = 'The market runs 3 to 6 PM. The website tells shoppers this list is ' +
+'<b>updated by 4:15 PM each Wednesday</b>' +
+(rec.publishedAt ? ' \u00b7 published ' + new Date(rec.publishedAt)
+.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' })
+: ' \u00b7 not published yet');
+}
+
+host.innerHTML = '';
+if (!list.length) {
+host.innerHTML = '<p class="empty-note" style="margin:0;">Nobody ticked yet for ' +
+esc(formatDisplayDate(date)) + '.</p>';
+} else {
+host.innerHTML = '<p class="empty-note" style="margin:0 0 8px;"><b>' + list.length +
+' vendor' + (list.length === 1 ? '' : 's') + '</b> at East Hill on ' +
+esc(formatDisplayDate(date)) + '.</p>';
+list.forEach(e => {
+const v = (cache.vendors || []).find(x => x.vendorId === e.vendorId);
+const row = document.createElement('div');
+row.className = 'tracker-row';
+row.innerHTML = '<div class="t-title">' + esc(v ? v.businessName : e.vendorId) + '</div>';
+const note = document.createElement('input');
+note.type = 'text';
+note.placeholder = 'Note beside their name (optional)';
+note.value = e.note || '';
+note.disabled = !!e.ebt;
+note.onchange = () => wlSetNote(e.vendorId, note.value.trim());
+row.appendChild(note);
+const ebt = document.createElement('button');
+ebt.type = 'button';
+ebt.className = e.ebt ? 'primary-btn' : 'ghost-btn';
+ebt.style.marginTop = '6px';
+ebt.textContent = e.ebt ? '\u2713 EBT terminal here today' : 'EBT terminal here today';
+ebt.onclick = () => wlSetEbt(e.vendorId);
+row.appendChild(ebt);
+const off = document.createElement('button');
+off.type = 'button';
+off.className = 'ghost-btn';
+off.style.marginTop = '6px';
+off.textContent = 'Not here';
+off.onclick = () => wlToggle(e.vendorId);
+row.appendChild(off);
+host.appendChild(row);
+});
+}
+
+if (state) {
+state.innerHTML = wlPublishReady()
+? '<b>Connected.</b> Publishing writes this list straight to the Wednesday page.'
+: '<b>Not connected yet.</b> The website\u2019s credentials belong in the backend, never in this ' +
+'app \u2014 anyone can read this file. Until that is set up, copy the list and paste it into the ' +
+'page. Everything else here is ready for the day it is connected.';
+state.style.color = wlPublishReady() ? '' : '#8A3B2E';
+}
+const btn = document.getElementById('wlPublishBtn');
+if (btn) {
+btn.disabled = !wlPublishReady();
+btn.style.opacity = wlPublishReady() ? '' : '0.45';
+btn.textContent = wlPublishReady() ? 'Publish it' : 'Publish it \u2014 not connected';
+}
+if (pre) pre.textContent = list.length ? wlSitePlain(date) : '';
+renderWedPicker();
+}
+async function initWedListScreen() {
+await loadWedList();
+const sel = document.getElementById('wlDate');
+if (sel) {
+const keep = sel.value;
+const dates = wedDatesThisSeason();
+const today = todayISO();
+sel.innerHTML = dates.map(d =>
+'<option value="' + d + '">' + esc(formatDisplayDate(d)) + '</option>').join('');
+const nearest = dates.filter(d => d <= today).pop() || dates[0];
+sel.value = keep && dates.includes(keep) ? keep : nearest;
+}
+renderWedList();
+}
 function runScreenInit(name) {
 clearFindFields(name);
 if (name === 'bootreport') initBootReportScreen();
@@ -12011,6 +12335,7 @@ if (name === 'giftcerts') initGiftCertsScreen();
 if (name === 'pavrentals') initPavRentalsScreen();
 if (name === 'account') initAccountScreen();
 if (name === 'homescreen') initHomeScreenScreen();
+if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
@@ -12134,6 +12459,7 @@ staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
 winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
+wedlist:           { title: 'Who Is Here Today' },
 giftcerts:         { title: 'Gift Certificates' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
@@ -15094,7 +15420,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-40';
+const BUILD_ID = '15-41';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21772,6 +22098,7 @@ tiles: [
 sub: 'East Hill Plaza \u2014 Wednesdays, May to October, 3 to 6 PM',
 tiles: [
 { s: 'wednesday', i: 'i-tent', t: 'How Wednesday Runs', d: 'No lottery, no assigned spaces, arrival order &middot; the $20 fee collected on site' },
+{ s: 'wedlist', i: 'i-list', t: 'Who Is Here Today', d: 'Tick off who turned up, then publish the list to the website' },
 { s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
 ] },
 { key: 'popups', title: 'PopUp Markets', icon: 'i-tent',
