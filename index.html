@@ -10802,7 +10802,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Permits & Documents",
-"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself two ways: post it to the office by the date shown and tell the app it is in the mail, or \u2014 where the button is offered \u2014 send a photo of it straight from your phone.</p><p>A photo goes directly into the market\u2019s own files, over an encrypted connection, and is filed under your name and the document\u2019s. It is not published anywhere, it does not appear in the app, and no other vendor can see it \u2014 only the office, opening the market\u2019s files, can. Keep the app open until it says it arrived.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
+"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself two ways: post it to the office by the date shown and tell the app it is in the mail, or \u2014 where the button is offered \u2014 send a photo of it straight from your phone. If it runs to several pages, photograph each page and pick them all at once \u2014 they arrive at the office bound into one document.</p><p>A photo goes directly into the market\u2019s own files, over an encrypted connection, and is filed under your name and the document\u2019s. It is not published anywhere, it does not appear in the app, and no other vendor can see it \u2014 only the office, opening the market\u2019s files, can. Keep the app open until it says it arrived.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
 },
 {
 "title": "Reviewing What Vendors Have Sent",
@@ -15438,7 +15438,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-47';
+const BUILD_ID = '15-48';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20514,6 +20514,76 @@ row.appendChild(del);
 wrap.appendChild(row);
 });
 }
+// ---- Several photos, one document --------------------------------------
+// A PDF holding only JPEG pages needs no library: each page is a Page
+// object, an Image XObject whose stream IS the raw JPEG (DCTDecode), and a
+// three-operator content stream painting it full-bleed. Everything else is
+// bookkeeping -- byte offsets for the xref table. Proven in a standalone
+// sandbox against pypdf before it came anywhere near this file.
+function jpegDims(bytes) {
+let i = 2;
+while (i < bytes.length - 9) {
+if (bytes[i] !== 0xFF) { i++; continue; }
+const m = bytes[i + 1];
+if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) {
+return { h: (bytes[i + 5] << 8) | bytes[i + 6], w: (bytes[i + 7] << 8) | bytes[i + 8] };
+}
+i += 2 + ((bytes[i + 2] << 8) | bytes[i + 3]);
+}
+throw new Error('not a JPEG');
+}
+function jpegPagesToPdf(jpegs) {
+const enc = s => { const u = new Uint8Array(s.length);
+for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 0xFF; return u; };
+const parts = [];
+let pos = 0;
+const offsets = [0];
+const push = u => { parts.push(u); pos += u.length; };
+const obj = (n, body) => { offsets[n] = pos; push(enc(n + ' 0 obj\n' + body + '\nendobj\n')); };
+const streamObj = (n, dict, bytes) => {
+offsets[n] = pos;
+push(enc(n + ' 0 obj\n<< ' + dict + ' /Length ' + bytes.length + ' >>\nstream\n'));
+push(bytes);
+push(enc('\nendstream\nendobj\n'));
+};
+push(enc('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
+const nPages = jpegs.length;
+const kids = [];
+for (let i = 0; i < nPages; i++) kids.push((3 + i * 3) + ' 0 R');
+obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+obj(2, '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + nPages + ' >>');
+jpegs.forEach((jp, i) => {
+const dim = jpegDims(jp);
+const pn = 3 + i * 3, im = pn + 1, cs = pn + 2;
+obj(pn, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + dim.w + ' ' + dim.h + '] ' +
+'/Resources << /XObject << /Im' + i + ' ' + im + ' 0 R >> >> /Contents ' + cs + ' 0 R >>');
+streamObj(im, '/Type /XObject /Subtype /Image /Width ' + dim.w + ' /Height ' + dim.h +
+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode', jp);
+streamObj(cs, '', enc('q ' + dim.w + ' 0 0 ' + dim.h + ' 0 0 cm /Im' + i + ' Do Q'));
+});
+const nObj = 2 + nPages * 3;
+const xrefPos = pos;
+let xref = 'xref\n0 ' + (nObj + 1) + '\n0000000000 65535 f \n';
+for (let n = 1; n <= nObj; n++) xref += String(offsets[n]).padStart(10, '0') + ' 00000 n \n';
+push(enc(xref + 'trailer\n<< /Size ' + (nObj + 1) + ' /Root 1 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF\n'));
+const out = new Uint8Array(pos);
+let o = 0;
+parts.forEach(u => { out.set(u, o); o += u.length; });
+return out;
+}
+function dataUrlToBytes(dataUrl) {
+const bin = atob(dataUrl.slice(dataUrl.indexOf(',') + 1));
+const u = new Uint8Array(bin.length);
+for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+return u;
+}
+function bytesToB64(u) {
+let s = '';
+for (let i = 0; i < u.length; i += 0x8000) {
+s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+}
+return btoa(s);
+}
 function reqFileLinkHTML(rec) {
 if (!rec || !rec.fileId) return '';
 return '<a class="ghost-btn" style="display:inline-block; width:auto; padding:7px 14px; ' +
@@ -20536,41 +20606,69 @@ return typeof IFM_VAULT_URL === 'string' && IFM_VAULT_URL.length > 0;
 //     requirement. The document lives in Drive; the app never reads it
 //     back, and the vault endpoint could not serve it anyway.
 async function uploadRequirementDoc(reqId, input, btn) {
-const file = input && input.files && input.files[0];
+const files = input && input.files ? Array.from(input.files) : [];
 input.value = '';
-if (!file) return;
+if (!files.length) return;
 const vendor = currentVendor();
 if (!vendor) return;
 const req = cache.requirements.reqs.find(r => r.id === reqId);
-const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
-if (!isPdf && !/^image\//.test(file.type)) {
-showMsg('mdMsg', 'err', 'That doesn\u2019t look like a photo or a PDF. A clear photo of the document is all the office needs.');
+const isPdf = f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
+const pdfs = files.filter(isPdf);
+const images = files.filter(f => !isPdf(f) && /^image\//.test(f.type));
+if (pdfs.length + images.length !== files.length) {
+showMsg('mdMsg', 'err', 'Something in that pick isn\u2019t a photo or a PDF. Clear photos of the pages are all the office needs.');
 return;
 }
-if (isPdf && file.size > 6 * 1024 * 1024) {
+if (pdfs.length && files.length > 1) {
+showMsg('mdMsg', 'err', 'Send either one PDF or a set of photos \u2014 not a mixture, and not more than one PDF at a time.');
+return;
+}
+if (pdfs.length === 1 && pdfs[0].size > 6 * 1024 * 1024) {
 showMsg('mdMsg', 'err', 'That PDF is too big to send from here. Photograph the pages instead \u2014 photos are shrunk to fit automatically.');
 return;
 }
+if (images.length > 8) {
+showMsg('mdMsg', 'err', 'Eight pages at most in one go. If the document is longer, send it in two batches and the office will have both.');
+return;
+}
 const oldLabel = btn ? btn.textContent : '';
-if (btn) { btn.disabled = true; btn.textContent = 'Sending \u2014 keep the app open\u2026'; }
+if (btn) {
+btn.disabled = true;
+btn.textContent = files.length > 1
+? 'Sending ' + files.length + ' pages \u2014 keep the app open\u2026'
+: 'Sending \u2014 keep the app open\u2026';
+}
 try {
-let dataUrl;
-if (isPdf) {
-dataUrl = await new Promise((resolve, reject) => {
+let mime, data;
+if (pdfs.length === 1) {
+mime = 'application/pdf';
+data = await new Promise((resolve, reject) => {
 const reader = new FileReader();
 reader.onerror = () => reject(new Error('read failed'));
 reader.onload = () => resolve(reader.result);
-reader.readAsDataURL(file);
+reader.readAsDataURL(pdfs[0]);
 });
+} else if (images.length === 1) {
+mime = 'image/jpeg';
+data = await shrinkWideImage(images[0], 1600, 1800000);
 } else {
-dataUrl = await shrinkWideImage(file, 1600, 1800000);
+// Several photos: shrink each within a per-page share of the budget,
+// then bind them into one PDF on the phone. One upload, one reference,
+// one document in Drive.
+mime = 'application/pdf';
+const per = Math.max(700000, Math.floor(6000000 / images.length));
+const pages = [];
+for (const f of images) {
+pages.push(dataUrlToBytes(await shrinkWideImage(f, 1600, per)));
+}
+data = bytesToB64(jpegPagesToPdf(pages));
 }
 const res = await ifmFetch(IFM_VAULT_URL, { method: 'POST',
 headers: { 'Content-Type': 'text/plain' },
 body: JSON.stringify({ action: 'upload',
 vendorId: vendor.vendorId, vendorName: vendor.businessName,
 reqId: reqId, reqName: req ? req.name : '',
-mime: isPdf ? 'application/pdf' : 'image/jpeg', data: dataUrl }) }, 90000);
+mime: mime, data: data }) }, 90000);
 const out = await res.json();
 if (!out.ok) throw new Error(out.error || 'the vault refused it');
 const key = reqStatusKey(reqId, vendor.vendorId);
@@ -20587,7 +20685,9 @@ renderMyDocs();
 await storageSet('ifm-requirements', cache.requirements);
 await saveSubmissions();
 showMsg('mdMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
-'It reached the market\u2019s files. The office will review it, and you will see the answer here.');
+(files.length > 1
+? 'All ' + files.length + ' pages reached the market\u2019s files as one document. The office will review it, and you will see the answer here.'
+: 'It reached the market\u2019s files. The office will review it, and you will see the answer here.'));
 } catch (err) {
 if (btn) { btn.disabled = false; btn.textContent = oldLabel; }
 showMsg('mdMsg', 'err', 'It did not go through \u2014 nothing was recorded. ' +
@@ -20676,11 +20776,13 @@ if (vaultReady()) {
 const or = document.createElement('p');
 or.className = 'req-example-note';
 or.style.marginBottom = '4px';
-or.textContent = 'Or skip the envelope \u2014 a clear photo of the whole document will do:';
+or.textContent = 'Or skip the envelope \u2014 clear photos of every page will do. ' +
+'Pick them all at once and they arrive at the office bound as one document:';
 card.appendChild(or);
 const pick = document.createElement('input');
 pick.type = 'file';
 pick.accept = 'image/*,.pdf,application/pdf';
+pick.multiple = true;
 pick.style.display = 'none';
 pick.onchange = () => uploadRequirementDoc(req.id, pick, up);
 card.appendChild(pick);
