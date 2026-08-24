@@ -9184,7 +9184,19 @@ what: 'Last inspection per booth, notices given, reservation transfer dates.',
 unblocks: 'Booth Compliance Clocks \u2014 nothing to count sixty days from without them.' },
 { t: 'Committee rosters', keeper: 'Board minutes',
 what: 'Who serves on each of the six standing committees, and who chairs. A small record.',
-unblocks: 'Committees tool for managers, and the vendor Committees view.' },
+unblocks: 'Committees tool, the vendor Committees view, and the chair\u2019s posting card \u2014 which appears for whoever the roster says chairs, so seeded names mean the wrong vendor gets it.' },
+{ t: 'Gift certificate sticker codes', keeper: 'The sticker printer, once a roll is ordered',
+what: 'The list of codes printed on the roll, as a file. The printer generates them; they are pasted into Load a Roll of Stickers.',
+unblocks: 'Selling gift certificates at all. A sticker the app has never seen cannot be sold or redeemed, which is what makes a forged one useless \u2014 so an unloaded roll is an unusable roll.' },
+{ t: 'Season and booth fee schedule', keeper: 'The market office and the bookkeeper',
+what: 'What each vendor is invoiced outside the app \u2014 season fees, reserved booth fees, and what has been paid against them.',
+unblocks: 'A true balance on My Account. Today the page computes fines, share installments and hours owed, and says plainly that it cannot see the invoiced side. Until this arrives the balance is a partial one and is labelled as such.' },
+{ t: 'SNAP tokens already in circulation', keeper: 'The market office',
+what: 'Roughly how many tokens are out in shoppers\u2019 hands on the day the app starts counting. One number.',
+unblocks: 'The out-versus-in figure on SNAP Tokens In & Out. Starting from zero makes it read negative for weeks as old tokens come back, which looks like an error and is not.' },
+{ t: 'Square account and credentials', keeper: 'The Ithaca Farmers Market \u2014 see Handover',
+what: 'Not a record but a key, and it is on the Handover list rather than this one. Noted here because it is what the account page waits for.',
+unblocks: 'The received column on My Account, and paying fees by card. The market creates its own token on its own Square account \u2014 never a developer\u2019s.' },
 { t: 'Reservation roster & unreservable list', keeper: 'The Operations Manager',
 what: 'Which booths carry reservations this season, and the unreservable list as set before the March Booth Selection.',
 unblocks: 'Honest booth availability in every Selection tool, and the Unreservable Booths tool on the Booth Selection desk.' },
@@ -10378,13 +10390,41 @@ function reopenFoldAncestors(fold) {
 let p = fold.parentElement && fold.parentElement.closest('.dash-fold');
 while (p) { p.classList.add('open'); p = p.parentElement.closest('.dash-fold'); }
 }
+// ---- keeping the bar you tapped where you tapped it ----
+//
+// Opening a drawer closes whichever one was open. If that one sat ABOVE, the
+// page above the bar you just tapped gets shorter by its whole height, the
+// scroll position does not move, and so the drawer you opened slides up and
+// off the top of the screen. What you see is the page apparently jumping to
+// the bottom, and you have to scroll back up to find the thing you opened.
+//
+// The fix is to hold the tapped bar still: note where it sits on screen,
+// let the folds open and close, then move the scroll by exactly as much as
+// the bar moved. Nothing appears to move except the drawer opening, which is
+// what a drawer opening should look like.
+function withFoldAnchored(bar, mutate) {
+const before = bar.getBoundingClientRect().top;
+mutate();
+const after = bar.getBoundingClientRect().top;
+const delta = after - before;
+if (delta) window.scrollBy(0, delta);
+// If it was already off the top -- tapped from a search result, say, or the
+// header grew -- bring it back to just under the header rather than leaving
+// it stranded above the fold.
+const head = document.querySelector('.app-header, #appHeader, .screen-head');
+const floor = head ? head.getBoundingClientRect().height + 8 : 8;
+const now = bar.getBoundingClientRect().top;
+if (now < floor) window.scrollBy(0, now - floor);
+}
 function toggleFold(btn) {
 armBackGesture();
 const fold = btn.parentElement;
 const wasOpen = fold.classList.contains('open');
+withFoldAnchored(btn, () => {
 closeAllFolds();
 reopenFoldAncestors(fold);
 if (!wasOpen) fold.classList.add('open');
+});
 }
 // A drawer or card that does not apply to this vendor right now is DIMMED,
 // not removed. The vendor can still open it and is told, in plain words, why
@@ -10432,6 +10472,7 @@ function toggleToolFold(btn, name) {
 armBackGesture();
 const fold = btn.parentElement;
 const wasOpen = fold.classList.contains('open');
+withFoldAnchored(btn, () => {
 closeAllFolds();
 reopenFoldAncestors(fold);
 if (wasOpen) return;
@@ -10445,6 +10486,7 @@ body.appendChild(sec);
 sec.classList.add('inline-screen', 'active');
 fold.classList.add('open');
 runScreenInit(name);
+});
 }
 async function enterAsVolunteer() {
 document.body.classList.remove('kiosk-mode');
@@ -14955,7 +14997,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-28';
+const BUILD_ID = '15-30';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
