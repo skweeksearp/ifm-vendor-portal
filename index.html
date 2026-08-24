@@ -2127,7 +2127,7 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
 <p class="sub">Search or select vendor</p>
 <div id="vendorCount" class="empty-note" style="text-align:center; margin-bottom:8px;"></div>
 <div class="picker-search">
-<input type="text" id="vendorSearch" placeholder="Search by business or last name" oninput="renderVendorList(this.value)">
+<input type="text" id="vendorSearch" class="find-field" placeholder="Search by business or last name" oninput="renderVendorList(this.value)">
 </div>
 <div id="vendorList"></div>
 </div>
@@ -2620,7 +2620,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>A Certificate Came Back<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does redeeming work?">?</button></h2>
 <p class="empty-note" style="margin-top:0;">Scan the sticker on the certificate, or point a phone camera at it &mdash;
 the camera opens this screen with the code filled in. Typing the code under the sticker works too.</p>
-<input type="text" id="gcSerial" placeholder="GC-2026-0000-XXX" autocomplete="off"
+<input type="text" id="gcSerial" class="find-field" placeholder="GC-2026-0000-XXX" autocomplete="off"
 oninput="gcLookup(this.value)" style="text-transform:uppercase;">
 <div id="gcLookupOut" class="desk-transient"></div>
 </div>
@@ -2633,7 +2633,7 @@ Keep scanning to sell more at the same amount.</p>
 <select id="gcAmount"><option value="5">$5</option><option value="10">$10</option>
 <option value="20" selected>$20</option><option value="25">$25</option><option value="50">$50</option></select></div>
 <label for="gcScan">Scan the sticker</label>
-<input type="text" id="gcScan" placeholder="Scan, or type the code under it" autocomplete="off"
+<input type="text" id="gcScan" class="find-field" placeholder="Scan, or type the code under it" autocomplete="off"
 style="text-transform:uppercase;" onkeydown="if (event.key === 'Enter') { event.preventDefault(); gcSellScan(); }">
 <div class="form-row"><label>Batch note</label>
 <input type="text" id="gcBatch" placeholder="e.g. sold at the office window" autocomplete="off"></div>
@@ -2736,7 +2736,7 @@ announces any change.</p>
 <section id="screen-directory" class="screen">
 <div class="screen-head" id="head-directory"></div>
 <div class="card">
-<input type="text" id="dirSearch" placeholder="Search by business or last name" oninput="renderDirectory(this.value)">
+<input type="text" id="dirSearch" class="find-field" placeholder="Search by business or last name" oninput="renderDirectory(this.value)">
 <div id="dirCount" class="empty-note" style="margin-top:8px;"></div>
 </div>
 <div id="dirList" class="drawer-list"></div>
@@ -2898,7 +2898,7 @@ Nothing is drawn at random: vendors are ranked by category and points, and each 
 </div>
 <div class="card manager-only">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Sign In a Vendor<button type="button" class="help-dot" onclick="showHelp(15)" aria-label="What are the rules here?">?</button></h2>
-<input type="text" id="lottoAddSearch" placeholder="Search by business name" oninput="renderLottoAddResults(this.value)">
+<input type="text" id="lottoAddSearch" class="find-field" placeholder="Search by business name" oninput="renderLottoAddResults(this.value)">
 <div id="lottoAddResults"></div>
 </div>
 <div id="lottoSections"></div>
@@ -2986,7 +2986,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <option value="unapproved">Absent without approval</option>
 </select>
 <label for="loaSearch">Vendor</label>
-<input type="text" id="loaSearch" placeholder="Search by business name" oninput="renderLeaveSearch(this.value)">
+<input type="text" id="loaSearch" class="find-field" placeholder="Search by business name" oninput="renderLeaveSearch(this.value)">
 <div id="loaSearchResults"></div>
 <div class="status-msg" id="loaStatusMsg"></div>
 </div>
@@ -3031,10 +3031,10 @@ style="display:none;" onclick="resetKioskZoom()">Fit map</button>
 <div class="kiosk-logo"><img class="ifm-logo" alt="Ithaca Farmers Market"></div>
 </div>
 <div class="kiosk-bar">
-<input type="text" id="kioskVendorSearch" class="kiosk-search" autocomplete="off"
+<input type="text" id="kioskVendorSearch" class="kiosk-search find-field" autocomplete="off"
 placeholder="Find a vendor by name"
 oninput="kioskTyped('vendor')" onfocus="if (foolGuardFocus(this)) return; reopenKioskResults('vendor');">
-<input type="text" id="kioskProductSearch" class="kiosk-search" autocomplete="off"
+<input type="text" id="kioskProductSearch" class="kiosk-search find-field" autocomplete="off"
 inputmode="search" enterkeyhint="search"
 placeholder="Find something"
 oninput="kioskTyped('product')" onkeydown="kioskProductKey(event)"
@@ -3253,7 +3253,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="screen-head" id="head-records"></div>
 <div class="card">
 <label for="vrSearch">Find a Vendor</label>
-<input type="text" id="vrSearch" placeholder="Business name, contact, or what they sell" oninput="renderRecordsList()">
+<input type="text" id="vrSearch" class="find-field" placeholder="Business name, contact, or what they sell" oninput="renderRecordsList()">
 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
 <button type="button" class="ghost-btn" style="margin:0; width:auto; padding:7px 12px; font-size:14px;" onclick="setRecordsFilter('all')" id="vrFilterAll">Everyone</button>
 <button type="button" class="ghost-btn" style="margin:0; width:auto; padding:7px 12px; font-size:14px;" onclick="setRecordsFilter('owing')" id="vrFilterOwing">Owes Hours</button>
@@ -3281,7 +3281,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Place a Vendor on Hold</h2>
-<input type="text" id="stSearch" placeholder="Search by business name" oninput="renderStandingSearch(this.value)">
+<input type="text" id="stSearch" class="find-field" placeholder="Search by business name" oninput="renderStandingSearch(this.value)">
 <div id="stSearchResults"></div>
 </div>
 <div class="card">
@@ -4221,7 +4221,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <section id="screen-pointsmanager" class="screen">
 <div class="screen-head" id="head-pointsmanager"></div>
 <div class="card">
-<input type="text" id="pmSearch" placeholder="Search by business name" oninput="renderPointsManagerSearch(this.value)">
+<input type="text" id="pmSearch" class="find-field" placeholder="Search by business name" oninput="renderPointsManagerSearch(this.value)">
 <div id="pmSearchResults"></div>
 </div>
 <div class="card desk-form" id="pmSelectedCard" style="display:none;">
@@ -4315,7 +4315,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <option value="onfile">On file</option>
 </select>
 <label for="reqRosterSearch" style="margin-top:10px;">Find a vendor</label>
-<input type="text" id="reqRosterSearch" placeholder="Business or last name" oninput="renderRequirementRoster()">
+<input type="text" id="reqRosterSearch" class="find-field" placeholder="Business or last name" oninput="renderRequirementRoster()">
 <div id="reqAddVendorWrap" style="display:none;">
 <label for="reqAddVendorSel" style="margin-top:10px;">Add a vendor this applies to</label>
 <select id="reqAddVendorSel"></select>
@@ -4558,7 +4558,7 @@ comes from.</p>
 <label for="dfDate">Market day</label>
 <select id="dfDate" onchange="renderDayFees()"></select>
 <label for="dfSearch" style="margin-top:10px;">Find a vendor</label>
-<input type="text" id="dfSearch" placeholder="Start typing a business or last name" autocomplete="off" oninput="renderDayFeeSuggest(this.value)">
+<input type="text" id="dfSearch" class="find-field" placeholder="Start typing a business or last name" autocomplete="off" oninput="renderDayFeeSuggest(this.value)">
 <div id="dfResults"></div>
 <label for="dfFilter" style="margin-top:10px;">Show</label>
 <select id="dfFilter" onchange="renderDayFees()">
@@ -4585,7 +4585,7 @@ comes from.</p>
 <option value="done">Renewed</option>
 </select>
 <label for="rnSearch" style="margin-top:10px;">Find a vendor</label>
-<input type="text" id="rnSearch" placeholder="Business or last name" oninput="renderRenewal()">
+<input type="text" id="rnSearch" class="find-field" placeholder="Business or last name" oninput="renderRenewal()">
 <div id="rnList" style="margin-top:10px;"></div>
 <div class="empty-note" id="rnEmpty" style="display:none;">Nothing matches that filter.</div>
 </div>
@@ -4722,7 +4722,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Per-Booth Checklist</h2>
 <p class="empty-note" style="margin-top:0;">The walkthrough record for a booth &mdash; independent of any one proposal.</p>
-<input type="text" id="stallSearch" placeholder="Booth number, e.g. 23B" oninput="renderStallImproveSearch(this.value)">
+<input type="text" id="stallSearch" class="find-field" placeholder="Booth number, e.g. 23B" oninput="renderStallImproveSearch(this.value)">
 <div id="stallSearchResults"></div>
 </div>
 <div class="card" id="stallChecklistCard" style="display:none;">
@@ -4758,7 +4758,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Members</h2>
 <div id="cmteMembers"></div>
 <label for="cmteSearch" style="margin-top:12px;">Add a vendor</label>
-<input type="text" id="cmteSearch" placeholder="Start typing a business or last name" autocomplete="off" oninput="renderCommitteeSuggest(this.value)">
+<input type="text" id="cmteSearch" class="find-field" placeholder="Start typing a business or last name" autocomplete="off" oninput="renderCommitteeSuggest(this.value)">
 <div id="cmteResults"></div>
 <div class="status-msg" id="cmteStatusMsg"></div>
 </div>
@@ -11923,7 +11923,34 @@ owed: Math.max(accrued - worked, 0),
 banked: Math.max(worked - accrued, 0)
 };
 }
+// ---- coming back to a search ----
+//
+// A search field kept the words you typed but lost the results, because the
+// results are marked as transient and the field was not. Half a search is
+// worse than either whole: the field claims a search is showing and the page
+// says otherwise, and there is no way to get the results back except to
+// retype the last letter.
+//
+// Emptying the field is the cheaper of the two fixes and the one that agrees
+// with the rest of the app: a search is a thing you are part-way through, and
+// nothing part-way through survives a screen being put away. Re-running the
+// search instead would mean every tool re-deriving results from records that
+// may have changed while the drawer was shut.
+//
+// The field's own oninput does the redrawing. Clearing the value and firing
+// the event it already listens for means no tool needs to know this exists --
+// including tools written later. Mark an input `find-field` and it is swept.
+function clearFindFields(name) {
+const sec = document.getElementById('screen-' + name);
+if (!sec) return;
+sec.querySelectorAll('input.find-field').forEach(el => {
+if (!String(el.value).length) return;
+el.value = '';
+el.dispatchEvent(new Event('input', { bubbles: true }));
+});
+}
 function runScreenInit(name) {
+clearFindFields(name);
 if (name === 'bootreport') initBootReportScreen();
 if (name === 'pretend') initPretendScreen();
 if (name === 'tuning') initTuningScreen();
@@ -15019,7 +15046,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-33';
+const BUILD_ID = '15-34';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22067,6 +22094,7 @@ card.innerHTML =
 const input = document.createElement('input');
 input.type = 'text';
 input.id = 'psLookup';
+input.className = 'find-field';
 input.placeholder = 'Search by business or last name';
 input.autocomplete = 'off';
 input.oninput = () => renderStandingLookupResults(input.value);
