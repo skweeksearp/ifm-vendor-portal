@@ -3834,6 +3834,9 @@ this side of it.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Beta Reset</h2>
 <p class="empty-note" style="margin-top:0;">Testing leaves a trail on <b>every phone</b> on this backend &mdash; butler-named work hours, trial promotions, practice approvals. These buttons sweep it up. Each asks for a second tap.</p>
 <p class="empty-note"><b>No tool, screen or feature can be lost here.</b> Those live in the app file itself, not in the sheet. These buttons only rewrite records.</p>
+<p class="empty-note" style="color:#8A2E2E;"><b>This rewrites records for every phone, not just this one.</b>
+Anyone using the app right now loses what they were doing.</p>
+<div id="brLog"></div>
 <button type="button" id="brTraffic" class="ghost-btn" style="color:#8A2E2E; border-color:#C99;" onclick="betaResetTap('traffic', this)">Clear test traffic</button>
 <p class="empty-note" style="margin-top:6px;">The everyday one. It clears what a test session produces and leaves every configured list standing.</p>
 <button type="button" id="brAll" class="ghost-btn" style="color:#fff; background:#8A2E2E; border-color:#8A2E2E;" onclick="betaResetTap('all', this)">Clear test traffic <i>and</i> reset the configured lists</button>
@@ -11140,6 +11143,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'config', k: 'ifm-pavrentals', t: 'Pavilion rented to a third party \u2014 vendors out by 4 PM', v: () => [] },
 { g: 'config', k: 'ifm-gcrolls', t: 'Gift certificate sticker rolls \u2014 which codes exist', v: () => [] },
 { g: 'traffic', k: 'ifm-payments', t: 'Payments confirmed by Square \u2014 empty until credentials are loaded', v: () => [] },
+{ g: 'config', k: 'ifm-reset-log', t: 'When the beta reset was pressed, and from which phone', v: () => [] },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
 { g: 'config', k: 'ifm-unreservable', t: 'Unreservable Booths', v: () => ({ nums: [], updated: '' }) },
 { g: 'config', k: 'ifm-amendments', t: 'Board Amendments', v: () => ({ items: [
@@ -11158,6 +11162,7 @@ await storageSet('ifm-requirements', { reqs: REQUIREMENT_SEED.map(r => ({ ...r }
 // Nothing here is a record at all \u2014 it is work somebody made. No button on
 // this desk touches any of it.
 const BETA_UNTOUCHED = [
+'The record of when this reset was pressed \u2014 a log a reset could erase would answer nothing',
 'The kiosk\u2019s information subjects, their photographs and credits',
 'The kiosk\u2019s window, carrot and logo arrangement',
 'Furniture and outlets placed with the Map Editor',
@@ -11170,12 +11175,45 @@ async function betaApply(group) {
 const seed = seedData();
 for (const e of BETA_RESET_KEYS) {
 if (e.g !== group) continue;
+if (e.k === 'ifm-reset-log') continue;
 if (e.run) { await e.run(seed); continue; }
 if (e.shared) await storageSetShared(e.k, e.v(seed));
 else await storageSet(e.k, e.v(seed));
 }
 }
+async function renderResetLog() {
+const host = document.getElementById('brLog');
+if (!host) return;
+let log = await storageGet('ifm-reset-log');
+if (log === STORAGE_MISSING || !Array.isArray(log)) log = [];
+if (!log.length) {
+host.innerHTML = '<p class="empty-note" style="margin:0 0 10px;">Nobody has pressed this yet \u2014 ' +
+'or nobody has since ' + BUILD_ID + ', when the app started keeping count.</p>';
+return;
+}
+const devices = {};
+log.forEach(r => { devices[r.device] = (devices[r.device] || 0) + 1; });
+const names = Object.keys(devices).sort((a, b) => devices[b] - devices[a]);
+const when = t => new Date(t).toLocaleString('en-US',
+{ weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+let html = '<p class="empty-note" style="margin:0 0 6px;"><b>' + log.length + ' reset' +
+(log.length === 1 ? '' : 's') + '</b> from <b>' + names.length + ' phone' +
+(names.length === 1 ? '' : 's') + '</b> since the app started counting. ' +
+'Phones carry a made-up tag, not a name \u2014 enough to tell one from another and nothing more.</p>';
+names.forEach(n => {
+html += '<div class="tracker-row"><div class="t-title">' + esc(n) + '</div>' +
+'<div class="t-sub">' + devices[n] + ' time' + (devices[n] === 1 ? '' : 's') + '</div></div>';
+});
+html += '<p class="empty-note" style="margin:8px 0 0;">Most recent:</p>';
+log.slice(-6).reverse().forEach(r => {
+html += '<div class="tracker-row"><div class="t-title">' + esc(when(r.at)) + '</div>' +
+'<div class="t-sub">' + esc(r.device) + ' \u00b7 as ' + esc(r.role) +
+' \u00b7 ' + (r.kind === 'all' ? 'traffic and configured lists' : 'traffic only') + '</div></div>';
+});
+host.innerHTML = html;
+}
 function initBetaResetScreen() {
+renderResetLog();
 const fill = (id, list) => {
 const el = document.getElementById(id);
 if (!el) return;
@@ -11185,15 +11223,51 @@ fill('brClears', BETA_RESET_KEYS.filter(e => e.g === 'traffic').map(e => e.t));
 fill('brKeeps', BETA_RESET_KEYS.filter(e => e.g === 'config').map(e => e.t));
 fill('brNever', BETA_UNTOUCHED);
 }
+// A NAME FOR A PHONE, NOT FOR A PERSON.
+//
+// There are no accounts here, so there is nobody to name -- and naming
+// somebody for pressing a button they were invited to press would be a poor
+// way to repay them for testing. What the log needs is only enough to tell
+// one phone from another: whether the eleven resets were eleven people once
+// or one person eleven times are different facts with different answers.
+//
+// So each device gets a random two-word tag, kept device-local like the
+// kiosk flag, never synced and never tied to a login.
+const DEVICE_WORDS = ['amber', 'birch', 'cedar', 'dune', 'ember', 'fern', 'gale',
+'heron', 'ivy', 'juniper', 'kestrel', 'larch', 'moss', 'nettle', 'oak', 'pike',
+'quill', 'rowan', 'sorrel', 'thistle', 'umber', 'vetch', 'willow', 'yarrow'];
+function deviceTag() {
+try {
+let t = localStorage.getItem('ifm-device-tag');
+if (!t) {
+const w = () => DEVICE_WORDS[Math.floor(Math.random() * DEVICE_WORDS.length)];
+t = w() + '-' + w();
+localStorage.setItem('ifm-device-tag', t);
+}
+return t;
+} catch (e) { return 'unknown'; }
+}
+async function noteReset(kind) {
+let log = await storageGet('ifm-reset-log');
+if (log === STORAGE_MISSING || !Array.isArray(log)) log = [];
+log.push({ at: Date.now(), kind: kind, device: deviceTag(),
+role: currentRole || 'developer',
+vendor: currentRole === 'vendor' && currentVendorId ? currentVendorId : '' });
+if (log.length > 200) log = log.slice(-200);
+await storageSet('ifm-reset-log', log);
+return log;
+}
 async function betaResetRun(kind) {
 const ids = ['brTraffic', 'brAll'];
 ids.forEach(i => { const b = document.getElementById(i); if (b) b.disabled = true; });
 showMsg('brMsg', 'ok', 'Resetting\u2026');
+await noteReset(kind);
 await betaApply('traffic');
 if (kind === 'all') await betaApply('config');
 amendmentsCache = null; unreservableCache = null; vpCache = null; feeCart = null; improveCache = null; alertSeenCache = null;
 await loadAllData();
 ids.forEach(i => { const b = document.getElementById(i); if (b) b.disabled = false; });
+renderResetLog();
 showMsg('brMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Done. ' +
 (kind === 'all'
 ? 'Every record is back to the original fictional data \u2014 configured lists included.'
@@ -15046,7 +15120,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-34';
+const BUILD_ID = '15-36';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
