@@ -15438,7 +15438,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-46';
+const BUILD_ID = '15-47';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -18921,8 +18921,8 @@ if (st === 'overdue' && req.due) sub += ' \u00b7 was due ' + formatDisplayDate(r
 name.innerHTML = '<div>' + esc(v.businessName) + '</div>' +
 '<div class="req-vendor-sub"><span class="req-state ' +
 (st === 'overdue' || st === 'returned' ? 'expired' : st === 'pending' ? 'submitted' : st) +
-'">' + esc(reqStateLabel(st)) + '</span> ' + esc(sub) +
-(rec.fileId ? ' \u00b7 ' + reqFileLinkHTML(rec) : '') + '</div>';
+'">' + esc(reqStateLabel(st)) + '</span> ' + esc(sub) + '</div>' +
+(rec.fileId ? reqFileLinkHTML(rec) : '');
 row.appendChild(name);
 const sel = document.createElement('select');
 REQUIREMENT_STATES.forEach(s => {
@@ -20516,8 +20516,10 @@ wrap.appendChild(row);
 }
 function reqFileLinkHTML(rec) {
 if (!rec || !rec.fileId) return '';
-return '<a href="https://drive.google.com/file/d/' + encodeURIComponent(rec.fileId) +
-'/view" target="_blank" rel="noopener">Open the document</a> <span style="opacity:.7;">(market\u2019s Drive)</span>';
+return '<a class="ghost-btn" style="display:inline-block; width:auto; padding:7px 14px; ' +
+'font-size:14px; text-decoration:none; margin-top:6px; opacity:1;" ' +
+'href="https://drive.google.com/file/d/' + encodeURIComponent(rec.fileId) +
+'/view" target="_blank" rel="noopener">Open the document \u2014 market\u2019s Drive</a>';
 }
 function vaultReady() {
 return typeof IFM_VAULT_URL === 'string' && IFM_VAULT_URL.length > 0;
@@ -20749,18 +20751,7 @@ main.innerHTML =
 : ' \u00b7 reported posted ' + esc(posted) +
 (days !== null && days > 14
 ? ' \u00b7 <b>' + days + ' days ago \u2014 worth chasing</b>' : '')) + '</div>';
-if (viaUpload) {
-const open = document.createElement('a');
-open.href = 'https://drive.google.com/file/d/' + encodeURIComponent(item.rec.fileId) + '/view';
-open.target = '_blank';
-open.rel = 'noopener';
-open.className = 'ghost-btn';
-open.style.display = 'inline-block';
-open.style.textDecoration = 'none';
-open.style.marginTop = '6px';
-open.textContent = 'Open the document (market\u2019s Drive)';
-main.appendChild(open);
-}
+if (viaUpload) main.insertAdjacentHTML('beforeend', reqFileLinkHTML(item.rec));
 const lab = document.createElement('label');
 lab.setAttribute('for', 'rv_' + safe);
 lab.style.marginTop = '8px';
@@ -22992,7 +22983,7 @@ if (rec.state === 'pending') val += rec.via === 'upload'
 ? ' \u2014 uploaded' + (rec.uploadedOn ? ' ' + formatDisplayDate(rec.uploadedOn) : '')
 : ' \u2014 reported posted' + (rec.sentOn ? ' ' + formatDisplayDate(rec.sentOn) : '');
 const link = reqFileLinkHTML(rec);
-reqHtml += line(esc(req.name), esc(val) + (link ? ' \u00b7 ' + link : ''));
+reqHtml += line(esc(req.name), esc(val)) + (link ? '<div>' + link + '</div>' : '');
 });
 html += section('Permits & Documents', reqHtml || none('No requirements apply to this vendor.'));
 html += section('Business & Contact',
