@@ -4574,38 +4574,6 @@ comes from.</p>
 <div class="empty-note" id="dfEmpty" style="display:none;">Nobody is expected at market that day.</div>
 </div>
 </section>
-<section id="screen-renewal" class="screen">
-<div class="screen-head" id="head-renewal"></div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-arrows-cycle"></use></svg></span>Renewal Tracker<button type="button" class="help-dot" onclick="showPlanned('renewal')" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" id="rnSummary" style="margin-top:0;"></p>
-<label for="rnFilter">Show</label>
-<select id="rnFilter" onchange="renderRenewal()">
-<option value="outstanding">Not yet renewed</option>
-<option value="all">Everyone</option>
-<option value="surcharge">In the surcharge window</option>
-<option value="lapsed">Past January 15</option>
-<option value="done">Renewed</option>
-</select>
-<label for="rnSearch" style="margin-top:10px;">Find a vendor</label>
-<input type="text" id="rnSearch" class="find-field" placeholder="Business or last name" oninput="renderRenewal()">
-<div id="rnList" style="margin-top:10px;"></div>
-<div class="empty-note" id="rnEmpty" style="display:none;">Nothing matches that filter.</div>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Membership Share Installments<button type="button" class="help-dot" onclick="showPlanned('certificate')" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" id="rnCertSummary" style="margin-top:0;"></p>
-<label for="rnCertFilter">Show</label>
-<select id="rnCertFilter" onchange="renderRenewalShares()">
-<option value="open">Still paying</option>
-<option value="all">Every Full Member</option>
-<option value="done">Paid in full</option>
-</select>
-<div id="rnCertList" style="margin-top:10px;"></div>
-<div class="empty-note" id="rnCertEmpty" style="display:none;">Nothing matches that filter.</div>
-<div class="status-msg" id="rnCertMsg"></div>
-</div>
-</section>
 <section id="screen-pointsroll" class="screen">
 <div class="screen-head" id="head-pointsroll"></div>
 <div class="card">
@@ -9180,7 +9148,7 @@ what: 'Each vendor\u2019s approved product list, as juried, with approval dates.
 unblocks: 'Food Committee Look-Back; an honest product data model for the kiosk search.' },
 { t: 'Renewal history', keeper: 'The market office',
 what: 'Who returned forms and fees, postmarked when, year by year.',
-unblocks: 'Renewal Tracker; real evidence for the quit-watch list.' },
+unblocks: 'The late-renewal surcharge on My Account, which today depends on somebody typing a postmark in by hand; and real evidence for the quit-watch list instead of inference from attendance.' },
 { t: 'Share payment history', keeper: 'The bookkeeper',
 what: 'Who has paid what toward the $300 membership share, and when.',
 unblocks: 'Membership Share Installments \u2014 every Full Member starts at $0 without it.' },
@@ -9468,7 +9436,7 @@ wrap.appendChild(c);
 const APP_GLOSSARY = [
 { t: 'Screen', d: 'One full page of the app. Every tool is a screen; so are the dashboards.' },
 { t: 'Desk', d: 'A grouping on a dashboard \u2014 a place you sit down to do one kind of work: Booth Selection, The Pavilion, Points & Standing. In the code they are folders.' },
-{ t: 'Tool', d: 'A screen that lives on a desk and does a job: Points Manager, Renewal Tracker, Booth Layouts. Tools, not sub-topics \u2014 you pick them up and use them.' },
+{ t: 'Tool', d: 'A screen that lives on a desk and does a job: Points Manager, Vendor Accounts, Booth Layouts. Tools, not sub-topics \u2014 you pick them up and use them.' },
 { t: 'Tile', d: 'A door: the tappable card in a dashboard or desk grid that takes you to a tool. A tile shows no data \u2014 if it did, it would be a folder.' },
 { t: 'Card', d: 'A work surface: a rounded block that shows live information and takes input. Cards live inside tool screens; on the vendor dashboard they live inside folders.' },
 { t: 'Folder', d: 'A full-width banner on the vendor dashboard that expands in place. Collapsed, it shows its name and a one-line live summary; open, it reveals its cards. Only folders span the full width \u2014 a full-width thing always opens downward, never sideways.' },
@@ -10894,7 +10862,11 @@ boardcycle: { built: true, live: true, t: 'Board Meeting Cycle', when: 'Monthly'
 body: '<p>Attach proposals and requests to the meeting that will actually hear them.</p>' +
 '<p>The Board meets the second Wednesday of each month. Exception Requests &mdash; the Guide&rsquo;s &ldquo;Special Needs Requests&rdquo; &mdash; must reach management by the first Wednesday of December to be heard at the December meeting, which is the last one before the renewal deadline.</p>' +
 '<p>The Board Proposals tracker holds proposals but has no notion of which meeting they are headed to.</p>' },
-renewal: { built: true, t: 'Renewal Tracker', when: 'Annual &mdash; December into January',
+// OFF THE DESK. Taken off the manager's desk at Sean's instruction. Nothing
+// links here now. The note is kept because the renewal rules below are the
+// market's most consequential annual process and the reasoning for the tool
+// -- including what blocks it -- should not have to be rediscovered.
+renewal: { built: false, t: 'Renewal Tracker', when: 'Removed \u2014 off the manager\u2019s desk',
 body: '<p>Track every vendor through the renewal window and show, at a glance, who has not returned forms and fees.</p>' +
 '<p>Renewals are due postmarked by 31 December. Postmarked 1&ndash;15 January they carry a $100 surcharge. After 15 January the vendor&rsquo;s place at the market ends. The Guide words this &ldquo;considered to have left the market,&rdquo; but nobody has left &mdash; the market is closing the door, and it is worth saying so plainly when the letter goes out. No vendor may attend a 2026 market until all outstanding fees and fines are paid.</p>' +
 '<p>This is the most consequential process the market runs each year and the app has no notion of renewal status at all. It would also give the quit-watch list real evidence instead of inference from attendance.</p>' +
@@ -12072,7 +12044,6 @@ if (name === 'composition') renderComposition();
 if (name === 'dataexport') renderBoardReviewExport();
 if (name === 'optool') initOpToolScreen();
 if (name === 'dayfees') initDayFeesScreen();
-if (name === 'renewal') initRenewalScreen();
 if (name === 'pointsroll') initPointsRollScreen();
 if (name === 'auction') initAuctionScreen();
 if (name === 'boardcycle') renderBoardCycle();
@@ -12230,7 +12201,6 @@ fines:             { title: 'Fines & Penalties' },
 composition:       { title: 'Membership Composition' },
 optool:            { title: () => (OPTOOLS[otOpenKey] || {}).title || 'Record Log' },
 dayfees:           { title: 'Day-Fee Collection Log' },
-renewal:           { title: 'Renewal Tracker' },
 pointsroll:        { title: 'Annual Points Rollover' },
 auction:           { title: () => selectionSeason() + ' Season-Long Booth Reservations' },
 boardcycle:        { title: 'Board Meeting Cycle' },
@@ -15124,7 +15094,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-38';
+const BUILD_ID = '15-40';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -18882,35 +18852,101 @@ return wed.getTime();
 d.setHours(8, 0, 0, 0);
 return d.getTime();
 }
-function lateCallOutFines() {
+// ---- failure to notify: one ladder, two ways onto it ----
+//
+// The Guide puts these together and so must the app (p.15): a vendor who
+// calls out after the deadline "must still pay the fine", and one who never
+// calls at all is listed as a no show -- and "there are progressive fines for
+// failure to notify" covers both. Until now only the ones who CALLED were
+// charged, so the vendor who said nothing paid nothing, which inverts the
+// rule it was meant to enforce.
+//
+// The escalation is per vendor per season across both kinds, not a separate
+// ladder each. A late notice in June and a no-show in July is a first and a
+// second offense, not two firsts.
+function notifyFines() {
 const year = seasonYear();
 const season = allMarketDatesInSeason(year);
+const holds = (vid, day) => cache.booths.some(b =>
+(day === 'Saturday' ? b.reservedBy : (b.sundaySeasonalBy || b.reservedBy)) === vid);
 const byVendor = {};
+const add = (vid, date, day, kind) => {
+const list = (byVendor[vid] = byVendor[vid] || []);
+if (list.some(o => o.date === date)) return;
+list.push({ date: date, day: day, kind: kind });
+};
+
 cache.callinout.forEach(r => {
 if (r.status === 'In') return;
 const md = season.find(m => m.date === r.marketDate);
-if (!md) return;
-const holds = cache.booths.some(b =>
-(md.day === 'Saturday' ? b.reservedBy : (b.sundaySeasonalBy || b.reservedBy)) === r.vendorId);
-if (!holds) return;
+if (!md || !holds(r.vendorId, md.day)) return;
 if (!r.submittedAt || r.submittedAt <= callOutDeadline(r.marketDate, md.day)) return;
-(byVendor[r.vendorId] = byVendor[r.vendorId] || []).push({ date: r.marketDate, day: md.day });
+add(r.vendorId, r.marketDate, md.day, 'late');
 });
+
+Object.keys((cache.ops || {}).noshow || {}).forEach(date => {
+const md = season.find(m => m.date === date);
+if (!md) return;
+(cache.ops.noshow[date] || []).forEach(vid => {
+if (!holds(vid, md.day)) return;
+add(vid, date, md.day, 'noshow');
+});
+});
+
 const out = [];
 Object.keys(byVendor).forEach(id => {
 byVendor[id].sort((a, b) => a.date.localeCompare(b.date)).forEach((occ, i) => {
 out.push({
 id: 'auto:' + id + ':' + occ.date,
 vendorId: id, date: occ.date, auto: true,
-reason: 'Late ' + occ.day + ' absence notice (occurrence ' + (i + 1) + ')',
+reason: (occ.kind === 'noshow'
+? 'No show, no notice given \u2014 ' + occ.day
+: 'Late ' + occ.day + ' absence notice') + ' (occurrence ' + (i + 1) + ')',
 amount: ruleNum('fineCallOut') * (i + 1),
 });
 });
 });
 return out;
 }
+// ---- fines the Guide assesses by rule, not by hand ----
+//
+// Derived live from the record behind them, never stored. Same reasoning as
+// the late call-out fines above: correct the record and the fine corrects
+// itself, delete the record and the fine goes with it, and no reset or double
+// tap can ever leave a vendor charged twice for one thing.
+//
+// The booth check records a BOOTH. A fine is owed by a PERSON, so the fine is
+// only assessed where the app can say who was standing there -- boothOccupant
+// knows who held it that day, including a lottery winner or a called-out
+// holder's replacement. Where it cannot say, no fine is raised: charging the
+// wrong vendor is worse than charging nobody, and the manager can still enter
+// it by hand in Fines & Penalties.
+function stallCheckFines() {
+const out = [];
+const recs = opRecords('stallcheck')
+.filter(r => r.values && r.values.date && r.subject)
+.sort((a, b) => String(a.values.date).localeCompare(String(b.values.date)));
+const seen = {};
+recs.forEach(r => {
+const booth = cache.booths.find(b => String(b.num) === String(r.subject));
+if (!booth) return;
+const vid = boothOccupant(booth, r.values.date);
+if (!vid) return;
+const n = (seen[vid] = (seen[vid] || 0) + 1);
+out.push({
+id: 'stall:' + r.id,
+vendorId: vid, date: r.values.date, auto: true,
+reason: 'Booth ' + r.subject + ' left at close \u2014 ' +
+(r.values.what || 'items left') + ' (occurrence ' + n + ')',
+amount: ruleNum('fineStall') * Math.pow(ruleNum('fineStallMult'), Math.max(0, n - 1)),
+});
+});
+return out;
+}
 function allFines() {
-return lateCallOutFines().concat(cache.ops.fines || []);
+return notifyFines()
+.concat(stallCheckFines())
+.concat(cache.ops.fines || []);
 }
 function initFinesScreen() {
 const sel = document.getElementById('fnVendor');
@@ -19524,151 +19560,6 @@ row.appendChild(btn);
 wrap.appendChild(row);
 });
 }
-function renewalStatus(vendorId, year) {
-const rec = (cache.ops.renewal[year] || {})[vendorId] || {};
-const due = (year - 1) + '-' + rule('renewDue');
-const cutoff = year + '-' + rule('renewCutoff');
-if (!rec.postmarked) {
-if (todayISO() > cutoff) return { state: 'lapsed', label: 'Past January 15', cls: 'expired', surcharge: 0 };
-if (todayISO() > due) return { state: 'surcharge', label: 'In the surcharge window', cls: 'expiring', surcharge: ruleNum('renewSurcharge') };
-return { state: 'outstanding', label: 'Not yet renewed', cls: 'missing', surcharge: 0 };
-}
-if (rec.postmarked > cutoff) return { state: 'lapsed', label: 'Postmarked after January 15', cls: 'expired', surcharge: 0 };
-if (rec.postmarked > due) return { state: 'surcharge', label: 'Surcharge due', cls: 'expiring', surcharge: ruleNum('renewSurcharge') };
-return { state: 'done', label: 'Renewed', cls: 'onfile', surcharge: 0 };
-}
-async function setRenewal(vendorId, field, value) {
-const year = seasonYear();
-cache.ops.renewal[year] = cache.ops.renewal[year] || {};
-const rec = cache.ops.renewal[year][vendorId] || {};
-rec[field] = value;
-cache.ops.renewal[year][vendorId] = rec;
-renderRenewal();
-await saveOps();
-}
-function initRenewalScreen() {
-document.getElementById('rnFilter').value = 'outstanding';
-document.getElementById('rnSearch').value = '';
-document.getElementById('rnCertFilter').value = 'open';
-renderRenewal();
-renderRenewalShares();
-}
-function certPaid(vendorId) {
-return opRecords('certificate').filter(r => r.subject === vendorId)
-.reduce((s, r) => s + Number(r.values.amount || 0), 0);
-}
-async function logCertPayment(vendorId, amount) {
-cache.ops.logs.certificate = opRecords('certificate').concat([{
-id: 'L' + Date.now(),
-subject: vendorId,
-values: { date: todayISO(), amount: String(amount) },
-created: todayISO(),
-}]);
-renderRenewal();
-renderRenewalShares();
-await saveOps();
-showMsg('rnCertMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded.');
-}
-function renderRenewalShares() {
-const wrap = document.getElementById('rnCertList');
-const empty = document.getElementById('rnCertEmpty');
-if (!wrap) return;
-wrap.innerHTML = '';
-const total = ruleNum('certTotal');
-const step = ruleNum('certInstal');
-const filter = document.getElementById('rnCertFilter').value;
-const rows = cache.vendors.filter(v => v.category.endsWith('Full'))
-.map(v => ({ v: v, paid: certPaid(v.vendorId) })).sort(byBusinessName);
-const done = rows.filter(r => r.paid >= total).length;
-const owed = rows.reduce((s, r) => s + Math.max(0, total - r.paid), 0);
-document.getElementById('rnCertSummary').textContent =
-rows.length + ' Full Members \u00b7 ' + done + ' paid in full \u00b7 $' + owed +
-' still to come. $' + step + ' a year is due with renewal, by December 31.';
-let shown = rows;
-if (filter === 'open') shown = rows.filter(r => r.paid < total);
-if (filter === 'done') shown = rows.filter(r => r.paid >= total);
-shown = shown.slice().sort((a, b) => a.v.businessName.localeCompare(b.v.businessName));
-empty.style.display = shown.length ? 'none' : 'block';
-shown.forEach(r => {
-const row = document.createElement('div');
-row.className = 'req-vendor-row';
-const name = document.createElement('div');
-name.className = 'req-vendor-name';
-const full = r.paid >= total;
-name.innerHTML = '<div>' + esc(r.v.businessName) + '</div>' +
-'<div class="req-vendor-sub"><span class="req-state ' + (full ? 'onfile' : 'submitted') + '">$' +
-r.paid + ' of $' + total + '</span></div>';
-row.appendChild(name);
-if (!full) {
-const b1 = document.createElement('button');
-b1.type = 'button'; b1.className = 'ghost-btn'; b1.style.margin = '0';
-b1.innerHTML = '+ $' + Math.min(step, total - r.paid);
-b1.onclick = () => logCertPayment(r.v.vendorId, Math.min(step, total - r.paid));
-row.appendChild(b1);
-if (total - r.paid > step) {
-const b2 = document.createElement('button');
-b2.type = 'button'; b2.className = 'ghost-btn'; b2.style.margin = '0';
-b2.textContent = 'Paid in full';
-b2.onclick = () => logCertPayment(r.v.vendorId, total - r.paid);
-row.appendChild(b2);
-}
-}
-wrap.appendChild(row);
-});
-}
-function renderRenewal() {
-const year = seasonYear();
-const wrap = document.getElementById('rnList');
-const empty = document.getElementById('rnEmpty');
-wrap.innerHTML = '';
-const filter = document.getElementById('rnFilter').value;
-const term = document.getElementById('rnSearch').value.trim().toLowerCase();
-const rows = cache.vendors.map(v => ({ v: v, st: renewalStatus(v.vendorId, year) })).sort(byBusinessName);
-const counts = {};
-rows.forEach(r => { counts[r.st.state] = (counts[r.st.state] || 0) + 1; });
-document.getElementById('rnSummary').textContent =
-(counts.done || 0) + ' renewed for ' + year + ' \u00b7 ' + (counts.outstanding || 0) +
-' outstanding \u00b7 ' + (counts.surcharge || 0) + ' owing the $100 surcharge \u00b7 ' +
-(counts.lapsed || 0) + ' past January 15. Nobody may attend a market until ' +
-'outstanding fees and fines are cleared.';
-let shown = rows;
-if (filter !== 'all') shown = rows.filter(r => r.st.state === filter);
-if (term) {
-shown = shown.filter(r => r.v.businessName.toLowerCase().includes(term) ||
-(r.v.lastName || '').toLowerCase().includes(term));
-}
-shown = shown.slice().sort((a, b) => a.v.businessName.localeCompare(b.v.businessName));
-empty.style.display = shown.length ? 'none' : 'block';
-shown.forEach(r => {
-const rec = (cache.ops.renewal[year] || {})[r.v.vendorId] || {};
-const row = document.createElement('div');
-row.className = 'req-vendor-row';
-const name = document.createElement('div');
-name.className = 'req-vendor-name';
-name.innerHTML = '<div>' + esc(r.v.businessName) + '</div>' +
-'<div class="req-vendor-sub"><span class="req-state ' + r.st.cls + '">' + r.st.label +
-'</span>' + (r.st.surcharge ? ' $' + r.st.surcharge + ' surcharge' : '') +
-(rec.fees === 'paid' ? ' \u00b7 fees paid' : '') +
-(r.v.category.endsWith('Full') && certPaid(r.v.vendorId) < ruleNum('certTotal')
-? ' \u00b7 share $' + certPaid(r.v.vendorId) + ' of $' + ruleNum('certTotal') : '') + '</div>';
-row.appendChild(name);
-const d = document.createElement('input');
-d.type = 'date';
-d.value = rec.postmarked || '';
-d.onchange = () => setRenewal(r.v.vendorId, 'postmarked', d.value);
-row.appendChild(d);
-const sel = document.createElement('select');
-[['', 'Fees?'], ['paid', 'Fees paid'], ['owed', 'Fees owed']].forEach(([val, label]) => {
-const o = document.createElement('option');
-o.value = val; o.textContent = label;
-sel.appendChild(o);
-});
-sel.value = rec.fees || '';
-sel.onchange = () => setRenewal(r.v.vendorId, 'fees', sel.value);
-row.appendChild(sel);
-wrap.appendChild(row);
-});
-}
 function rolloverPlan(year) {
 const prior = year - 1;
 return cache.vendors.map(v => {
@@ -19998,17 +19889,24 @@ options: ['Chains up', 'Tables or sawhorses', 'Signage', 'Waste or debris', 'Equ
 { id: 'note', label: 'Note (optional)', type: 'text' },
 ],
 flag: (rec, all) => {
-const prior = all.filter(r => r.subject === rec.subject && r.values.date <= rec.values.date).length;
-return { text: '$' + (ruleNum('fineStall') *
-Math.pow(ruleNum('fineStallMult'), Math.max(0, prior - 1))), cls: 'missing' };
+const mine = stallCheckFines().find(f => f.id === 'stall:' + rec.id);
+if (!mine) return { text: 'No vendor matched', cls: 'missing' };
+const v = cache.vendors.find(x => x.vendorId === mine.vendorId);
+return { text: '$' + mine.amount + ' \u00b7 ' + (v ? v.businessName : mine.vendorId), cls: 'missing' };
 },
 summary: (all) => {
 const total = all.reduce((s, r, i, arr) => {
 const prior = arr.filter(x => x.subject === r.subject && x.values.date <= r.values.date).length;
 return s + ruleNum('fineStall') * Math.pow(ruleNum('fineStallMult'), Math.max(0, prior - 1));
 }, 0);
-return all.length + ' recorded this season \u00b7 $' + total + ' in fines at the doubling rate. ' +
-'Nothing is posted to Fines & Penalties automatically.';
+const orphans = all.filter(r => {
+const b = cache.booths.find(x => String(x.num) === String(r.subject));
+return !b || !boothOccupant(b, r.values.date);
+}).length;
+return all.length + ' recorded this season \u00b7 $' + total + ' in fines at the doubling rate, ' +
+'posted to each vendor\u2019s account as they are entered.' +
+(orphans ? ' ' + orphans + ' could not be matched to a vendor and were not charged \u2014 ' +
+'enter those by hand if they are owed.' : '');
 },
 },
 bgwalk: {
@@ -21152,7 +21050,7 @@ const FLAG_SCREENS = {
 'Booths': ['auction', 'booths'],
 'Winter Market': ['winterbooths'],
 'Discipline': ['optool:disciplinary', 'standing'],
-'Deadlines': ['renewal', 'boardcycle'],
+'Deadlines': ['boardcycle'],
 'Selling': ['dayfees'],
 'Agriculture': ['records'],
 'Safety': ['evacuation'],
@@ -21823,7 +21721,6 @@ tiles: [
 { s: 'records', i: 'i-list', t: 'Vendor Records', d: 'Everything on file, vendor by vendor' },
 { s: 'addvendor', i: 'i-clipboard', t: 'Add New Vendor', d: 'Onboard and draft a welcome letter' },
 { s: 'requirements', i: 'i-key', t: 'Vendor Requirements', d: 'Licenses, permits, insurance and expiry' },
-{ soon: 'renewal', s: 'renewal', i: 'i-arrows-cycle', t: 'Renewal Tracker', d: 'Dec 31, the January window, and share installments' },
 { s: 'composition', i: 'i-columns', t: 'Membership Composition', d: 'The 105 cap, the 60/40 rule, and recording a change of class' },
 ] },
 { key: 'standing', title: 'Points & Standing', icon: 'i-star',
