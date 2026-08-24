@@ -2561,21 +2561,21 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div class="tracker-row"><div class="t-title">Cash</div><div class="t-sub">At the office window. Ask for a receipt &mdash; that receipt is your proof, not anything on this page.</div></div>
 <div class="tracker-row"><div class="t-title">Check</div><div class="t-sub">Made out to Ithaca Farmers Market. <b>What counts is the postmark, not the day it arrives</b> &mdash; that is what the Guide&rsquo;s deadlines turn on.</div></div>
 <div class="tracker-row"><div class="t-title">Credit or debit card</div><div class="t-sub" id="acctCardLine"></div></div>
-<div class="tracker-row"><div class="t-title">Venmo</div><div class="t-sub">Not open yet &mdash; a mock-up sits below, and no money moves through it.</div></div>
 <p class="empty-note">However you pay, <b>the office recording it is what settles the balance above.</b> Anything you tell the app is a report until then.</p>
 </div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Pay Fees with Venmo<button type="button" class="help-dot" onclick="showPlanned('venmopay')" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" style="margin-top:0;"><b>This is a mock-up.</b> No money moves. The market office has not opened a Venmo business profile; <b>@IthacaFarmersMarket</b> below is a placeholder. Until the Board blesses electronic payment, the Guide&rsquo;s postmark rules are the rules.</p>
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Fees On Your Record</h2>
+<p class="empty-note" style="margin-top:0;">Everything the app can work out that you owe. Add any of them to the
+basket below, then tell the office in one go once you have paid &mdash; cash, check or card, whichever you used.</p>
 <div id="vpLines"></div>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Payment Basket</h2>
-<p class="empty-note" style="margin-top:0;">Add fees from wherever you find them — work hours from the Work Hours drawer, day fees from Booth Request / Absence, renewal fees above — then pay once.</p>
+<p class="empty-note" style="margin-top:0;">Add fees from wherever you find them — work hours from the Work Hours drawer, day fees from Booth Request / Absence, renewal fees above — then report them together once you have paid.</p>
 <div id="vpCartList"></div>
 <div class="empty-note" id="vpCartEmpty">Nothing in the basket yet.</div>
 <div id="vpCartTotalRow" style="display:none; font-weight:800; font-size:18px; margin:8px 0;">Total: $<span id="vpCartTotal">0</span></div>
-<button type="button" class="primary-btn" id="vpCartPayBtn" style="background:#3D95CE; display:none;" onclick="payFeeCart()">Pay with Venmo</button>
+<button type="button" class="primary-btn" id="vpCartPayBtn" style="display:none;" onclick="payFeeCart()">Tell the office I have paid these</button>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Year&rsquo;s Record of Fees<button type="button" class="help-dot" onclick="showHelp(HELP_FEE_STATEMENT)" aria-label="What are the rules here?">?</button></h2>
@@ -2586,7 +2586,7 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Reported Payments</h2>
-<p class="empty-note" style="margin-top:0;">Whatever way you paid &mdash; cash, check, card or Venmo &mdash; the app cannot see it happen, so anything here is a report, not a receipt. The office confirms it against the money itself. <b>Reported money is never counted in the balance above</b>; it counts when the office records it.</p>
+<p class="empty-note" style="margin-top:0;">Whatever way you paid &mdash; cash, check or card &mdash; the app cannot see it happen, so anything here is a report, not a receipt. The office confirms it against the money itself. <b>Reported money is never counted in the balance above</b>; it counts when the office records it.</p>
 <div id="vpList"></div>
 <div class="empty-note" id="vpEmpty">Nothing reported yet.</div>
 </div>
@@ -3457,7 +3457,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
 <div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in The Old-Fashioned Way puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
-<div class="comm-item"><div class="comm-title">A screen that needs a record the app may not hold yet</div><div class="comm-desc">Draw first, fetch second. A screen that opens with <code>await loadSomething()</code> before it writes anything to the page will show <em>nothing at all</em> while that one fetch is outstanding &mdash; not a spinner, not a heading, nothing &mdash; and a person tapping it will say the tool is frozen. It is not frozen; it is being polite to a fetch that most of the screen does not depend on. This bites hardest on a <em>new</em> storage key, because until somebody writes to it the sheet has no row and every phone fetches it separately and gets a cold Apps Script. Draw everything already in hand, then call the loader and redraw when it lands. A <em>write</em> still waits, because writing into a half-known list would drop whatever had not arrived. Others that still open this way, should they ever feel slow: <code>initUnreservableScreen</code>, <code>initVenmoPayScreen</code>, <code>renderTaskManager</code>, <code>renderAvailableTasks</code>, <code>renderOrgStalls</code>.</div></div>
+<div class="comm-item"><div class="comm-title">A screen that needs a record the app may not hold yet</div><div class="comm-desc">Draw first, fetch second. A screen that opens with <code>await loadSomething()</code> before it writes anything to the page will show <em>nothing at all</em> while that one fetch is outstanding &mdash; not a spinner, not a heading, nothing &mdash; and a person tapping it will say the tool is frozen. It is not frozen; it is being polite to a fetch that most of the screen does not depend on. This bites hardest on a <em>new</em> storage key, because until somebody writes to it the sheet has no row and every phone fetches it separately and gets a cold Apps Script. Draw everything already in hand, then call the loader and redraw when it lands. A <em>write</em> still waits, because writing into a half-known list would drop whatever had not arrived. Others that still open this way, should they ever feel slow: <code>initUnreservableScreen</code>, <code>initFeePayScreen</code>, <code>renderTaskManager</code>, <code>renderAvailableTasks</code>, <code>renderOrgStalls</code>.</div></div>
 <div class="comm-item"><div class="comm-title">A new tool on the Market Manager&rsquo;s desk</div><div class="comm-desc">Two desks are built two different ways, and a tool added to one does <em>not</em> appear on the other. The <strong>staff</strong> desk is hand-written drawers in the markup. The <strong>Market Manager</strong> desk is generated from the tool registry &mdash; the list of groups and tiles &mdash; so a manager tool has to be added <em>there</em>, whatever the markup says. SNAP Tokens In &amp; Out was written into the markup alone and turned up on the staff desk only, where nobody was looking for it. When testing, look <em>inside</em> the drawer the tool is meant to be in: a document-wide search for the title finds it on the wrong desk and reports success.</div></div>
 <div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code>, let <code>freeFloatingSheets()</code> move it to the body at boot, and show it by adding the class <code>open</code> &mdash; never by copying another sheet&rsquo;s markup and hoping. <code>.modal-backdrop</code> is <code>display:none</code> until opened, which it was not always: it used to be <code>display:flex</code>, so a new backdrop was on screen from boot unless whoever added it also wrote a rule to hide it. That shipped once, and because a backdrop covers everything at <code>z-index:500</code> it did not look like a stuck sheet, it looked like the whole app had stopped working. Defaults should fail closed. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
 <div class="comm-item"><div class="comm-title">A new live map, or a new layer on an old one</div><div class="comm-desc">Add it to <code>AUDIT_MAPS</code>. The map knows a great deal &mdash; the buildings, the promenade panels, the section labels, the badge on every booth, the placed furniture and outlets &mdash; and a screen that leaves half of it out <em>still looks like a map</em>, which is why the sixth fault counts layers instead of trusting the eye. Where a map is meant to carry less, say so in its <code>without</code> list along with the reason, so a real gap cannot hide behind &ldquo;that one is different&rdquo;.</div></div>
@@ -9939,7 +9939,7 @@ amount: Math.round(led.owed * workHourRate(new Date().getFullYear()) * 100) / 10
 note: fmtHrs(led.owed) + ' hrs \u00d7 $' + workHourRate(new Date().getFullYear()) + '/hr \u00b7 by Feb 28' });
 return lines;
 }
-async function initVenmoPayScreen() {
+async function initFeePayScreen() {
 await loadVp();
 const vendor = currentVendor();
 const wrap = document.getElementById('vpLines');
@@ -10120,7 +10120,7 @@ mine.forEach(it => {
 const row = document.createElement('div');
 row.className = 'tracker-row';
 row.innerHTML = '<div class="t-title">$' + fmtMoney(it.amount) + ' \u2014 ' + esc(it.label) + '</div>' +
-'<div class="t-note">Would open Venmo to <b>@IthacaFarmersMarket</b> with the note \u201C' + esc(it.note) + '\u201D</div>' +
+'<div class="t-note">Reference for the office: \u201C' + esc(it.note) + '\u201D</div>' +
 '<div class="t-note">' + formatDisplayDate(it.date) + ' \u00b7 ' + esc(paymentStateLine(it)) + '</div>';
 wrap.appendChild(row);
 });
@@ -10347,7 +10347,7 @@ const el = document.getElementById('menuPaySub');
 if (!el || !feeCart) return;
 el.textContent = feeCart.items.length
 ? feeCart.items.length + ' in the basket \u00b7 $' + fmtMoney(cartTotal())
-: 'Mock-up \u00b7 Venmo, once the office opens its profile';
+: 'What you owe the market, and how to pay it';
 }
 function renderFeeCart() {
 const wrap = document.getElementById('vpCartList');
@@ -10795,7 +10795,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Year's Record of Fees",
-"body": "<p>Every fee this app has recorded for you in one year, on a page you can print or save as a PDF.</p><p><b>It is not a receipt.</b> The page keeps two lists apart on purpose. <em>Payments you reported</em> are ones you told the app about &mdash; the app cannot see Venmo, a cheque, or cash across the desk, so nothing there has been matched to an actual transfer. <em>Amounts the office recorded</em> are ones the market put on its books; whether they have been paid is a different question this page cannot answer.</p><p>Adding those two together would produce a confident number that nobody has checked, which at tax time is worse than no number at all. So they are never added.</p><p>Ask the office for a statement from their books before you rely on any figure here.</p>"
+"body": "<p>Every fee this app has recorded for you in one year, on a page you can print or save as a PDF.</p><p><b>It is not a receipt.</b> The page keeps two lists apart on purpose. <em>Payments you reported</em> are ones you told the app about &mdash; the app cannot see a check, a card reader, or cash across the desk, so nothing there has been matched to an actual transfer. <em>Amounts the office recorded</em> are ones the market put on its books; whether they have been paid is a different question this page cannot answer.</p><p>Adding those two together would produce a confident number that nobody has checked, which at tax time is worse than no number at all. So they are never added.</p><p>Ask the office for a statement from their books before you rely on any figure here.</p>"
 },
 {
 "title": "Year-End Money Worksheet",
@@ -10855,7 +10855,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "How You Can Pay",
-"body": "<p>Four ways, and they are not equivalent. <b>Cash</b> at the office window \u2014 ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market\u2019s Square account. The card total includes Square\u2019s fee for that transaction \u2014 the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit. <b>Venmo</b> is not open: the screen below it is a mock-up and no money moves through it.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> Telling the app you paid is a report, and a useful one \u2014 it tells the office what to look for \u2014 but it is not a receipt and it never counts toward the balance on its own.</p>"
+"body": "<p>Three ways, and they are not equivalent. <b>Cash</b> at the office window \u2014 ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market\u2019s Square account. The card total includes Square\u2019s fee for that transaction \u2014 the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> Telling the app you paid is a report, and a useful one \u2014 it tells the office what to look for \u2014 but it is not a receipt and it never counts toward the balance on its own.</p>"
 }
 ];
 function showHelp(i) {
@@ -10904,8 +10904,12 @@ insurance: { built: true, t: 'Insurance &amp; Permit Expiry', when: 'Annual, and
 body: '<p>Hold the expiry date of every document a vendor needs, and surface what lapses in the next thirty days.</p>' +
 '<p>Every vendor must carry $1,000,000 business liability insurance naming IFM as additionally insured, filed annually. Food vendors additionally hold Article 20-C, health department or home processing permits; some hold farm winery licenses or fire permits. A vendor whose certificate is not on file may not sell, and one whose policy omits IFM counts as uninsured.</p>' +
 '<p>Built, on the manager side, as <b>Vendor Requirements</b> \u2014 expiry dates are held there against every license, permit and certificate the market requires, and anything inside thirty days is called out. What is still missing is this vendor-facing view of it.</p>' },
-venmopay: { built: true, t: 'Pay Fees with Venmo', when: 'Mock-up \u2014 awaiting the office and the Board',
-body: '<p>The idea: fees join a payment basket from wherever a vendor meets them \u2014 the Work Hours drawer, day fees beside a booth request, renewal on this screen \u2014 then one Venmo payment settles the basket, like any shopping cart. The office opens a Venmo business profile, and every fee in the app grows a Pay with Venmo button that opens the app with the amount and a bookkeeping note prefilled \u2014 so each payment arrives already labelled for reconciliation. Venmo\u2019s business rate is 1.9% + $0.10 per payment, cheaper than typical card processing.</p>' +
+// REMOVED FROM THE APP. The Venmo mock-up was taken out at Sean's
+// instruction; nothing links here any more. The note is kept because the
+// reasoning below is the reasoning any future electronic-payment proposal
+// will have to answer, and rediscovering it would cost a session.
+venmopay: { built: false, t: 'Pay Fees with Venmo', when: 'Removed \u2014 the mock-up is gone from the app',
+body: '<p>Removed from the app in the 15-series: a mock-up that moved no money was a payment method on the page as far as anyone reading it could tell. The payment basket survives it and now reports payments made by cash, check or card.</p><p>The idea was: fees join a payment basket from wherever a vendor meets them \u2014 the Work Hours drawer, day fees beside a booth request, renewal on this screen \u2014 then one Venmo payment settles the basket, like any shopping cart. The office opens a Venmo business profile, and every fee in the app grows a Pay with Venmo button that opens the app with the amount and a bookkeeping note prefilled \u2014 so each payment arrives already labelled for reconciliation. Venmo\u2019s business rate is 1.9% + $0.10 per payment, cheaper than typical card processing.</p>' +
 '<p>What blocks it: the office has no Venmo business profile yet, and the Guide\u2019s deadlines are postmark rules \u2014 the Board would need to bless an electronic timestamp as meeting a deadline, decide who absorbs the 1.9%, and keep checks co-equal. The bookkeeper should weigh in on 1099-K handling.</p>' +
 '<p>What it will never do: the app cannot see inside Venmo, so a tap here is a report, not a receipt \u2014 the office confirms against the real transfer. And nothing about this screen touches vendor pricing; it is only the market\u2019s own fees.</p>' },
 // OFF THE DESK. The Market Days drawer was taken off the vendor desk at
@@ -11760,7 +11764,7 @@ cardLine.innerHTML = squareConnected()
 'not switched on yet. When it is, the card total will include Square\u2019s fee for that transaction, ' +
 'passed on at cost \u2014 cash and checks cost the amount owed and nothing more.';
 }
-if (currentRole === 'vendor' && currentVendorId) await initVenmoPayScreen();
+if (currentRole === 'vendor' && currentVendorId) await initFeePayScreen();
 const pick = document.getElementById('acctPickCard');
 const sel = document.getElementById('acctVendor');
 if (currentRole === 'manager' && pick && sel) {
@@ -12960,7 +12964,7 @@ document.getElementById('lottoPrintSheet').scrollTop = 0;
 // be added together into one confident number:
 //
 //   REPORTED  -- the vendor pressed a button here to say they had paid. The
-//                app cannot see Venmo, or a cheque, or cash across the desk.
+//                app cannot see a check, a card reader, or cash across the desk.
 //                Nothing has confirmed these.
 //   RECORDED  -- the office entered it: a fine, a day fee. These the market
 //                itself put on the books.
@@ -13029,7 +13033,7 @@ html += '</tbody></table>';
 html += '<p style="font-size:15px; font-weight:800; margin:8px 0 0;">Reported total: ' +
 money(d.reportedTotal) + '</p>';
 html += '<p style="font-size:13px; margin:4px 0 0;">You told the app you had paid these. ' +
-'The app cannot see Venmo, a cheque, or cash handed across the desk, so <b>nothing here has been ' +
+'The app cannot see a check, a card reader, or cash handed across the desk, so <b>nothing here has been ' +
 'confirmed against a transfer</b>. Any of these may be unmatched, duplicated, or already settled another way.</p>';
 }
 
@@ -13320,7 +13324,7 @@ H += '<p style="font-size:13.5px; line-height:1.55; margin:0 0 6px;"><b>This is 
 
 H += '<p class="pr-h2">3 &nbsp;Vendor-reported, unconfirmed &nbsp;&mdash;&nbsp; ' + m(d.reportedTotal) + '</p>';
 H += '<p style="font-size:13.5px; line-height:1.55; margin:0;">' + d.reported.length + ' payment' +
-(d.reported.length === 1 ? '' : 's') + ' that vendors told the app they had made. The app cannot see Venmo, ' +
+(d.reported.length === 1 ? '' : 's') + ' that vendors told the app they had made. The app cannot see a check, ' +
 'a cheque, or cash across the desk, so <b>none of these has been matched to a transfer</b>. They may overlap ' +
 'with section 1, or be duplicates, or be settled another way. They are listed for chasing, not for counting.</p>';
 
@@ -15120,7 +15124,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-37';
+const BUILD_ID = '15-38';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
