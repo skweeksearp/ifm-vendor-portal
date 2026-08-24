@@ -6078,6 +6078,14 @@ return new Date(d - tz).toISOString().slice(0, 10);
 //   - if IFM_BACKEND_URL is set, keys live in the Google Sheet via Apps Script
 //   - if it is blank, keys live in this browser's localStorage (solo testing)
 const IFM_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzqoNF62WqybRV8pSrtqY8l0Jk60QiC7h56KCrWLfEcbmX28y-UqQOPZ-Sz6TN7eZqq/exec'; // Sean's Apps Script backend, baked in
+// Document Vault: a separate write-only Apps Script (document-vault.gs) that
+// files licenses, permits and insurance into a Drive folder the market
+// controls. Dormant until its /exec URL is pasted here -- the upload buttons
+// on Permits & Documents appear only once it is set, exactly like the
+// Wednesday-list site bridge. The endpoint cannot serve a file back; reading
+// happens in Drive, signed into the market's account, under Drive's own
+// access control. This file never holds a document or a credential.
+const IFM_VAULT_URL = '';
 // Warm-boot state. `var` and up here on purpose: these are read during boot,
 // and a `let` further down the file threw "is not defined" because the read
 // happened from a different block than the declaration.
@@ -9248,6 +9256,16 @@ const HANDOVER = [
   why: 'Development is done against Square\u2019s sandbox, which is harmless while it lives and untidy ' +
        'if it outlives the handover. Nothing of the builder\u2019s should remain reachable afterwards.',
   hard: false },
+{ t: 'The Document Vault redeployed on the market\u2019s account',
+  who: 'The market',
+  how: 'document-vault.gs pasted into a new Apps Script project on the market\u2019s account, ' +
+       'setupVault() run once to make the Drive folder, deployed as a web app, and the new /exec URL ' +
+       'written into IFM_VAULT_URL in index.html. Anything real that arrived in the testing folder is ' +
+       'moved by hand in Drive \u2014 though during testing nothing real should have arrived at all.',
+  why: 'Vendors\u2019 insurance certificates and licenses are private records, and they land in the ' +
+       'Drive of whoever owns the vault deployment. That must be the market, for the same reason the ' +
+       'Square token must be: the folder holding them cannot hang off one person\u2019s personal login.',
+  hard: false },
 { t: 'A Google account owned by the market, not a person',
   who: 'The market',
   how: 'A market-owned Google account holds the Sheet, the Apps Script projects, and the GitHub Pages ' +
@@ -10780,11 +10798,11 @@ const HELP_TEXTS = [
 },
 {
 "title": "Vendor Requirements",
-"body": "<p>A place to define any license, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents come to the office by post. A vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>; marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
+"body": "<p>A place to define any license, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents arrive two ways. By post: a vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>. Or by upload, where the Document Vault is connected: the vendor sends a photo from their phone, it is filed straight into a Drive folder the market controls, and the review card carries a link that opens it \u2014 in Drive, signed into the market\u2019s account, because the app itself never holds or serves the document. Either way, marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
 },
 {
 "title": "Permits & Documents",
-"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself to the office by post, by the date shown, then tell the app you have sent it.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
+"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself two ways: post it to the office by the date shown and tell the app it is in the mail, or \u2014 where the button is offered \u2014 send a photo of it straight from your phone.</p><p>A photo goes directly into the market\u2019s own files, over an encrypted connection, and is filed under your name and the document\u2019s. It is not published anywhere, it does not appear in the app, and no other vendor can see it \u2014 only the office, opening the market\u2019s files, can. Keep the app open until it says it arrived.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
 },
 {
 "title": "Reviewing What Vendors Have Sent",
@@ -15420,7 +15438,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-41';
+const BUILD_ID = '15-44';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20495,6 +20513,79 @@ row.appendChild(del);
 wrap.appendChild(row);
 });
 }
+function vaultReady() {
+return typeof IFM_VAULT_URL === 'string' && IFM_VAULT_URL.length > 0;
+}
+// Sending the document itself, phone to Drive. Three rules hold here:
+//   * The POST is awaited directly, never queued. iOS kills a backgrounded
+//     web app at once, and a queued write that never left the phone would
+//     let this screen claim a certificate was filed when it was not. The
+//     button says to keep the app open, and means it.
+//   * Images are shrunk on the phone first (about 1600px wide) -- legible
+//     for a certificate, small enough for market wifi. PDFs cannot be
+//     shrunk, so past 6 MB the vendor is asked to photograph the pages.
+//   * Success stores only a reference (file ID, name, date) against the
+//     requirement. The document lives in Drive; the app never reads it
+//     back, and the vault endpoint could not serve it anyway.
+async function uploadRequirementDoc(reqId, input, btn) {
+const file = input && input.files && input.files[0];
+input.value = '';
+if (!file) return;
+const vendor = currentVendor();
+if (!vendor) return;
+const req = cache.requirements.reqs.find(r => r.id === reqId);
+const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+if (!isPdf && !/^image\//.test(file.type)) {
+showMsg('mdMsg', 'err', 'That doesn\u2019t look like a photo or a PDF. A clear photo of the document is all the office needs.');
+return;
+}
+if (isPdf && file.size > 6 * 1024 * 1024) {
+showMsg('mdMsg', 'err', 'That PDF is too big to send from here. Photograph the pages instead \u2014 photos are shrunk to fit automatically.');
+return;
+}
+const oldLabel = btn ? btn.textContent : '';
+if (btn) { btn.disabled = true; btn.textContent = 'Sending \u2014 keep the app open\u2026'; }
+try {
+let dataUrl;
+if (isPdf) {
+dataUrl = await new Promise((resolve, reject) => {
+const reader = new FileReader();
+reader.onerror = () => reject(new Error('read failed'));
+reader.onload = () => resolve(reader.result);
+reader.readAsDataURL(file);
+});
+} else {
+dataUrl = await shrinkWideImage(file, 1600, 1800000);
+}
+const res = await ifmFetch(IFM_VAULT_URL, { method: 'POST',
+headers: { 'Content-Type': 'text/plain' },
+body: JSON.stringify({ action: 'upload',
+vendorId: vendor.vendorId, vendorName: vendor.businessName,
+reqId: reqId, reqName: req ? req.name : '',
+mime: isPdf ? 'application/pdf' : 'image/jpeg', data: dataUrl }) }, 90000);
+const out = await res.json();
+if (!out.ok) throw new Error(out.error || 'the vault refused it');
+const key = reqStatusKey(reqId, vendor.vendorId);
+const rec = cache.requirements.status[key] || { state: 'missing', expiry: '', ref: '' };
+rec.state = 'pending';
+rec.via = 'upload';
+rec.fileId = out.fileId || '';
+rec.fileName = out.fileName || '';
+rec.uploadedOn = todayISO();
+rec.reportedAt = todayISO();
+rec.reviewNote = '';
+cache.requirements.status[key] = rec;
+renderMyDocs();
+await storageSet('ifm-requirements', cache.requirements);
+await saveSubmissions();
+showMsg('mdMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+'It reached the market\u2019s files. The office will review it, and you will see the answer here.');
+} catch (err) {
+if (btn) { btn.disabled = false; btn.textContent = oldLabel; }
+showMsg('mdMsg', 'err', 'It did not go through \u2014 nothing was recorded. ' +
+'Check your signal and try again, or post it the old way. (' + esc(String(err && err.message || err)) + ')');
+}
+}
 async function reportDocumentSent(reqId, vendorId, sentOn) {
 const key = reqStatusKey(reqId, vendorId);
 const rec = cache.requirements.status[key] || { state: 'missing', expiry: '', ref: '' };
@@ -20544,7 +20635,8 @@ const bits = [];
 if (req.issuer) bits.push(esc(req.issuer));
 if (req.due) bits.push((st === 'overdue' ? 'was due ' : 'due ') + esc(formatDisplayDate(req.due)));
 if (rec.state === 'onfile' && rec.expiry) bits.push('expires ' + esc(formatDisplayDate(rec.expiry)));
-if (rec.state === 'pending' && rec.sentOn) bits.push('you posted it ' + esc(formatDisplayDate(rec.sentOn)));
+if (rec.state === 'pending' && rec.via === 'upload' && rec.uploadedOn) bits.push('you sent a photo of it ' + esc(formatDisplayDate(rec.uploadedOn)));
+else if (rec.state === 'pending' && rec.sentOn) bits.push('you posted it ' + esc(formatDisplayDate(rec.sentOn)));
 if (rec.state === 'onfile' && rec.receivedOn) bits.push('received ' + esc(formatDisplayDate(rec.receivedOn)));
 main.innerHTML =
 '<div class="req-name">' + esc(req.name) + '</div>' +
@@ -20572,6 +20664,26 @@ btn.textContent = rec.state === 'onfile' ? 'Tell them I have sent a new one'
 : 'Tell the office I have posted it';
 btn.onclick = () => reportDocumentSent(req.id, vendor.vendorId, when.value);
 card.appendChild(btn);
+if (vaultReady()) {
+const or = document.createElement('p');
+or.className = 'req-example-note';
+or.style.marginBottom = '4px';
+or.textContent = 'Or skip the envelope \u2014 a clear photo of the whole document will do:';
+card.appendChild(or);
+const pick = document.createElement('input');
+pick.type = 'file';
+pick.accept = 'image/*,.pdf,application/pdf';
+pick.style.display = 'none';
+pick.onchange = () => uploadRequirementDoc(req.id, pick, up);
+card.appendChild(pick);
+const up = document.createElement('button');
+up.type = 'button';
+up.className = 'ghost-btn';
+up.textContent = rec.via === 'upload' && rec.state === 'pending'
+? 'Send a better photo' : 'Send a photo of it now';
+up.onclick = () => pick.click();
+card.appendChild(up);
+}
 }
 wrap.appendChild(card);
 });
@@ -20617,6 +20729,7 @@ const row = document.createElement('div');
 row.className = 'req-row';
 const main = document.createElement('div');
 main.className = 'req-row-main';
+const viaUpload = item.rec.via === 'upload' && item.rec.fileId;
 const posted = item.rec.sentOn ? formatDisplayDate(item.rec.sentOn) : 'date not given';
 const days = item.rec.sentOn
 ? Math.round((new Date(todayISO() + 'T12:00:00') -
@@ -20624,9 +20737,24 @@ new Date(item.rec.sentOn + 'T12:00:00')) / 86400000)
 : null;
 main.innerHTML =
 '<div class="req-name">' + esc(item.v.businessName) + '</div>' +
-'<div class="req-meta">' + esc(item.req.name) + ' \u00b7 reported posted ' + esc(posted) +
+'<div class="req-meta">' + esc(item.req.name) +
+(viaUpload
+? ' \u00b7 uploaded ' + esc(item.rec.uploadedOn ? formatDisplayDate(item.rec.uploadedOn) : 'date not recorded')
+: ' \u00b7 reported posted ' + esc(posted) +
 (days !== null && days > 14
-? ' \u00b7 <b>' + days + ' days ago \u2014 worth chasing</b>' : '') + '</div>';
+? ' \u00b7 <b>' + days + ' days ago \u2014 worth chasing</b>' : '')) + '</div>';
+if (viaUpload) {
+const open = document.createElement('a');
+open.href = 'https://drive.google.com/file/d/' + encodeURIComponent(item.rec.fileId) + '/view';
+open.target = '_blank';
+open.rel = 'noopener';
+open.className = 'ghost-btn';
+open.style.display = 'inline-block';
+open.style.textDecoration = 'none';
+open.style.marginTop = '6px';
+open.textContent = 'Open the document (market\u2019s Drive)';
+main.appendChild(open);
+}
 const lab = document.createElement('label');
 lab.setAttribute('for', 'rv_' + safe);
 lab.style.marginTop = '8px';
