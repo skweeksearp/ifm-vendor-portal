@@ -2557,6 +2557,14 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div id="acctBody"></div>
 <div id="acctPayHalf">
 <div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>How You Can Pay<button type="button" class="help-dot" onclick="showHelp(79)" aria-label="What are the ways to pay?">?</button></h2>
+<div class="tracker-row"><div class="t-title">Cash</div><div class="t-sub">At the office window. Ask for a receipt &mdash; that receipt is your proof, not anything on this page.</div></div>
+<div class="tracker-row"><div class="t-title">Check</div><div class="t-sub">Made out to Ithaca Farmers Market. <b>What counts is the postmark, not the day it arrives</b> &mdash; that is what the Guide&rsquo;s deadlines turn on.</div></div>
+<div class="tracker-row"><div class="t-title">Credit or debit card</div><div class="t-sub" id="acctCardLine"></div></div>
+<div class="tracker-row"><div class="t-title">Venmo</div><div class="t-sub">Not open yet &mdash; a mock-up sits below, and no money moves through it.</div></div>
+<p class="empty-note">However you pay, <b>the office recording it is what settles the balance above.</b> Anything you tell the app is a report until then.</p>
+</div>
+<div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Pay Fees with Venmo<button type="button" class="help-dot" onclick="showPlanned('venmopay')" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" style="margin-top:0;"><b>This is a mock-up.</b> No money moves. The market office has not opened a Venmo business profile; <b>@IthacaFarmersMarket</b> below is a placeholder. Until the Board blesses electronic payment, the Guide&rsquo;s postmark rules are the rules.</p>
 <div id="vpLines"></div>
@@ -2578,7 +2586,7 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Reported Payments</h2>
-<p class="empty-note" style="margin-top:0;">The app cannot see Venmo, so a payment here is a report, not a receipt &mdash; the office confirms it against the actual transfer, matched by the note. <b>Reported money is never counted in the balance above</b>; it counts when the office records it.</p>
+<p class="empty-note" style="margin-top:0;">Whatever way you paid &mdash; cash, check, card or Venmo &mdash; the app cannot see it happen, so anything here is a report, not a receipt. The office confirms it against the money itself. <b>Reported money is never counted in the balance above</b>; it counts when the office records it.</p>
 <div id="vpList"></div>
 <div class="empty-note" id="vpEmpty">Nothing reported yet.</div>
 </div>
@@ -10841,6 +10849,10 @@ const HELP_TEXTS = [
 {
 "title": "Tokens Handed Out",
 "body": "<p>This is the other end of the token loop. A shopper swipes their EBT card on the market\u2019s terminal and walks away with tokens; a vendor takes those tokens in trade and hands them back to the office to be reimbursed. The app has always recorded the second half. Without the first it could total what came back with nothing to check it against.</p><p><b>The app never touches the card.</b> SNAP runs on federally certified equipment and a PIN can only be entered on a certified pad, so the swipe belongs entirely to the terminal and always will. What this records is the paper trail on this side of it: after each swipe, how many tokens went out. The note field is the place for the terminal\u2019s receipt number, which is what makes the two records match later.</p><p>The difference between out and in is <b>not an error</b>. Tokens do not expire, so a shopper may spend them next week or next season. That number is the market\u2019s outstanding obligation to its vendors \u2014 it should rise on a market day and fall afterwards. A <i>negative</i> difference is worth a look: more has come back than ever went out, which usually means a swipe was never recorded here.</p>"
+},
+{
+"title": "How You Can Pay",
+"body": "<p>Four ways, and they are not equivalent. <b>Cash</b> at the office window \u2014 ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market\u2019s Square account. The card total includes Square\u2019s fee for that transaction \u2014 the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit. <b>Venmo</b> is not open: the screen below it is a mock-up and no money moves through it.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> Telling the app you paid is a report, and a useful one \u2014 it tells the office what to look for \u2014 but it is not a receipt and it never counts toward the balance on its own.</p>"
 }
 ];
 function showHelp(i) {
@@ -11664,6 +11676,16 @@ await loadPayments();
 // there is nothing there for them to act on at all.
 const payHalf = document.getElementById('acctPayHalf');
 if (payHalf) payHalf.style.display = (currentRole === 'vendor' && currentVendorId) ? '' : 'none';
+const cardLine = document.getElementById('acctCardLine');
+if (cardLine) {
+cardLine.innerHTML = squareConnected()
+? 'Through the market\u2019s Square account. The card total includes Square\u2019s fee for that ' +
+'transaction, which the market passes on at cost and keeps none of \u2014 you will see the full ' +
+'total before you pay. Cash or a check costs the amount owed and nothing more.'
+: 'At the office window on the market\u2019s card reader. Paying by card from this app is built but ' +
+'not switched on yet. When it is, the card total will include Square\u2019s fee for that transaction, ' +
+'passed on at cost \u2014 cash and checks cost the amount owed and nothing more.';
+}
 if (currentRole === 'vendor' && currentVendorId) await initVenmoPayScreen();
 const pick = document.getElementById('acctPickCard');
 const sel = document.getElementById('acctVendor');
@@ -14997,7 +15019,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-30';
+const BUILD_ID = '15-33';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -15257,6 +15279,7 @@ kioskMatchBooths = new Set();
 kioskMatchStructures = new Set();
 kioskSnapOn = false;
 kioskSnapBooths = new Set();
+kioskPromoSig = null;
 kioskTaps = [];
 kioskPointers = new Map();
 kioskPinch = null; kioskDrag = null; kioskGestureMoved = false;
@@ -15350,7 +15373,24 @@ if (el) el.style.display = 'none';
 if (kioskDealTimer) { clearTimeout(kioskDealTimer); kioskDealTimer = null; }
 kioskDealShownId = null;
 }
+let kioskPromoSig = null;
+function kioskPromoSignature() {
+const list = (cache.promos || []);
+return list.length + ':' + list.map(p => p && p.id).join(',');
+}
+// Any change to the sale list repaints the map, so the star lands with the
+// banner instead of waiting for the next unrelated redraw.
+function repaintKioskDealMarks() {
+const sig = kioskPromoSignature();
+if (sig === kioskPromoSig) return;
+kioskPromoSig = sig;
+if (currentRole !== 'kiosk') return;
+const canvas = document.getElementById('kioskBoothCanvas');
+if (!canvas) return;
+renderKioskMap(kioskOccupancy());
+}
 function refreshKioskDeal() {
+repaintKioskDealMarks();
 const el = document.getElementById('kioskNewDeal');
 if (!el) return;
 if (currentRole !== 'kiosk') { hideKioskDeal(); return; }
@@ -17868,16 +17908,26 @@ function renderPromoDateChips() {
 const note = document.getElementById('promoKioskDay');
 const btn = document.getElementById('promoPostBtn');
 const live = promoLiveDay();
+const elsewhere = !live && (venueRunsToday('wednesday') || venueRunsToday('winter'));
 if (note) {
-note.innerHTML = live
-? 'This goes up for <strong>' + esc(shortLabel(live.date)) + '</strong>, today\u2019s market, ' +
-'and shows on the kiosk within a few seconds.'
-: '<strong>Today is not a market day.</strong> A sale runs for the market it is posted on, so there ' +
+if (live) {
+note.innerHTML = 'This goes up for <strong>' + esc(shortLabel(live.date)) + '</strong>, today\u2019s market, ' +
+'and shows on the kiosk within a few seconds.';
+} else if (elsewhere) {
+const where = venueRunsToday('wednesday') ? 'East Hill Plaza' : 'Triphammer';
+note.innerHTML = '<strong>Today\u2019s market is at ' + where + ', and there is no kiosk screen there.</strong> ' +
+'The kiosk stands in the Steamboat Landing pavilion, so a sale posted today would have nowhere to ' +
+'appear. Tell shoppers at your stall instead.';
+} else {
+note.innerHTML = '<strong>Today is not a market day.</strong> A sale runs for the market it is posted on, so there ' +
 'is nothing for this one to run on yet. Post it when you are set up and it goes straight to the kiosk.';
+}
 }
 if (btn) {
 btn.disabled = !live;
-btn.textContent = live ? 'Post It' : 'Post It \u2014 on a market day';
+btn.textContent = live ? 'Post It'
+: elsewhere ? 'Post It \u2014 no kiosk at today\u2019s market'
+: 'Post It \u2014 on a market day';
 btn.style.opacity = live ? '' : '0.45';
 }
 }
