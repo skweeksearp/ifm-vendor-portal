@@ -15120,7 +15120,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-36';
+const BUILD_ID = '15-37';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -17066,9 +17066,14 @@ renderKioskMap(occ);
 renderKioskDetail(occ);
 return;
 }
-const matches = cache.vendors.filter(v => kioskMatches(v, q, 'product'))
+const found = cache.vendors.filter(v => kioskMatches(v, q, 'product'));
+const matches = found
 .filter(v => !kioskSnapOn || snapAccepts(v.vendorId))
 .sort(byBusinessName);
+// Only the ones actually here today count as "hidden by the switch" -- a
+// baker who is not at market is not something the switch took away.
+const hereButFiltered = found.filter(v => occ.byVendor[v.vendorId] &&
+!matches.some(m => m.vendorId === v.vendorId)).length;
 kioskMatchBooths = new Set();
 matches.forEach(v => {
 const b = occ.byVendor[v.vendorId];
@@ -17091,7 +17096,14 @@ if (!kioskMatchBooths.size && !kioskMatchStructures.size) {
 positionKioskResults();
 const head = document.createElement('div');
 head.className = 'kiosk-count';
+if (kioskSnapOn && hereButFiltered) {
+head.innerHTML = '<b>' + hereButFiltered + ' stall' + (hereButFiltered === 1 ? '' : 's') +
+' here today ha' + (hereButFiltered === 1 ? 's' : 've') + ' \u201C' + esc(q) + '\u201D</b> \u2014 ' +
+'but none is listed as taking SNAP-Tokens. Turn the switch off to see them, ' +
+'or ask at the stall: a vendor who has never told the market still might.';
+} else {
 head.textContent = 'Nobody with \u201C' + q + '\u201D is at the market today';
+}
 results.appendChild(head);
 }
 }
@@ -17115,9 +17127,12 @@ renderKioskMap(occ);
 renderKioskClock(occ, Object.keys(occ.byBooth).length);
 return;
 }
-const matches = cache.vendors.filter(v => kioskMatches(v, q, mode))
+const found = cache.vendors.filter(v => kioskMatches(v, q, mode));
+const matches = found
 .filter(v => !kioskSnapOn || snapAccepts(v.vendorId))
 .sort(byBusinessName);
+const hereButFiltered = found.filter(v => occ.byVendor[v.vendorId] &&
+!matches.some(m => m.vendorId === v.vendorId)).length;
 kioskMatchBooths = new Set();
 matches.forEach(v => {
 const b = occ.byVendor[v.vendorId];
@@ -17143,7 +17158,11 @@ return a.businessName.localeCompare(b.businessName);
 });
 if (!matches.length) {
 if (!structHits.length) {
-results.innerHTML = '<p class="kiosk-empty">Nothing matched \u201C' + esc(q) +
+results.innerHTML = kioskSnapOn && hereButFiltered
+? '<p class="kiosk-empty"><b>' + hereButFiltered + ' here today match \u201C' + esc(q) +
+'\u201D</b> \u2014 but none is listed as taking SNAP-Tokens. Turn the switch off to see them, ' +
+'or ask at the stall.</p>'
+: '<p class="kiosk-empty">Nothing matched \u201C' + esc(q) +
 '\u201D. Try a shorter word, or ask at the information table.</p>';
 }
 return;
@@ -17154,8 +17173,10 @@ head.className = 'kiosk-count';
 head.textContent = hereCount
 ? hereCount + ' booth' + (hereCount === 1 ? '' : 's') +
 (mode === 'vendor' ? ' matching \u201C' : ' with \u201C') + q + '\u201D today'
+: (kioskSnapOn && hereButFiltered
+? hereButFiltered + ' here today, none taking SNAP-Tokens'
 : (mode === 'vendor' ? 'No vendor matching \u201C' : 'Nobody with \u201C') + q +
-'\u201D is at the market today';
+'\u201D is at the market today');
 results.appendChild(head);
 matches.slice(0, 25).forEach(v => {
 const booth = occ.byVendor[v.vendorId];
