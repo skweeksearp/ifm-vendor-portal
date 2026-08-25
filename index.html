@@ -959,8 +959,10 @@ body.pretending { padding-top: 42px; }
 /* The search bars are absolutely positioned over the map, so a banner left in
    the normal flow lands BEHIND them at the top of the stage rather than under
    them. It has to be positioned against the same corner and pushed below the
-   taller of the two -- the bars are 6px from the top and about 75px tall in
-   kiosk mode, so 88px clears them with room to breathe. */
+   bar. The top is set from the bar's measured height at show time (see
+   positionKioskDeal) rather than hard-coded -- the SNAP switch was added to
+   that bar later and a fixed 88px put the banner straight on top of it. This
+   value is only the fallback before the first measurement. */
 .kiosk-newdeal {
   position: absolute;
   left: 0; right: 0;
@@ -982,13 +984,17 @@ body.pretending { padding-top: 42px; }
   color: #FF3D9A;
   -webkit-text-stroke: 1.6px #FF7A18;
   paint-order: stroke fill;
-  /* A dark band behind it. Without this the map reads straight through the
-     letters -- pink on a pale sand path is barely there, and the whole point
-     of the banner is that it is seen from across the aisle. */
-  background: rgba(28, 32, 24, 0.78);
-  border-top: 2px solid rgba(255,122,24,0.55);
-  border-bottom: 2px solid rgba(255,122,24,0.55);
-  text-shadow: 0 2px 12px rgba(0,0,0,0.55), 0 0 14px rgba(255,122,24,0.35);
+  /* No band: the words float over the map. That costs the contrast the band
+     used to provide, so legibility now rests entirely on the stroke and a
+     tight dark halo -- several small shadows rather than one soft one, so the
+     letters keep a hard edge over pale sand instead of going muddy. */
+  background: none;
+  border: 0;
+  -webkit-text-stroke-width: 2.2px;
+  text-shadow:
+    0 0 3px rgba(20,22,16,0.95), 0 0 3px rgba(20,22,16,0.95),
+    0 1px 2px rgba(20,22,16,0.9), 0 2px 10px rgba(20,22,16,0.7),
+    0 0 18px rgba(255,122,24,0.45);
   animation: kioskDealPulse 1.6s ease-in-out infinite;
 }
 @keyframes kioskDealPulse {
@@ -15880,7 +15886,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-7';
+const BUILD_ID = '16-8';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -16152,7 +16158,7 @@ renderKiosk();
 fitKioskMap();
 noteKioskActivity();
 if (!kioskResizeBound) {
-window.addEventListener('resize', () => { fitKioskMap(); applyAboutWinStyle(); applyChromeStyle(); renderAboutWindow(); renderTuner(); });
+window.addEventListener('resize', () => { fitKioskMap(); applyAboutWinStyle(); applyChromeStyle(); renderAboutWindow(); renderTuner(); positionKioskDeal(); });
 window.addEventListener('orientationchange', () => {
 fitKioskMap();
 setTimeout(fitKioskMap, 300);
@@ -16250,6 +16256,19 @@ const canvas = document.getElementById('kioskBoothCanvas');
 if (!canvas) return;
 renderKioskMap(kioskOccupancy());
 }
+// Sits the banner under whatever .kiosk-bar currently is, measured. Anything
+// added to that bar later pushes the banner down instead of colliding with it.
+function positionKioskDeal() {
+const el = document.getElementById('kioskNewDeal');
+const bar = document.querySelector('.kiosk-bar');
+if (!el || !bar) return;
+const parent = el.offsetParent || bar.offsetParent;
+if (!parent) return;
+const pr = parent.getBoundingClientRect();
+const br = bar.getBoundingClientRect();
+if (!br.height) return;
+el.style.top = Math.round(br.bottom - pr.top + 12) + 'px';
+}
 function refreshKioskDeal() {
 repaintKioskDealMarks();
 const el = document.getElementById('kioskNewDeal');
@@ -16267,6 +16286,7 @@ if (p.id === kioskDealShownId) return;         // already up; leave it be
 kioskDealShownId = p.id;
 document.getElementById('kioskNewDealText').textContent = kioskDealWords(p);
 el.style.display = 'block';
+positionKioskDeal();
 if (kioskDealTimer) clearTimeout(kioskDealTimer);
 kioskDealTimer = setTimeout(hideKioskDeal, Math.max(1000, tune('kioskDealMs') - age));
 }
