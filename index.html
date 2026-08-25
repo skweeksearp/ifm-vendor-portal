@@ -4067,8 +4067,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" id="cioStillCallIn" style="margin-bottom:0;"></p>
 </div>
 <div class="card manager-only desk-form">
-<h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Record One for a Vendor</h2>
-<p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. An absence, a booth request, a booth share and a proposal to a committee each become the same record the vendor&rsquo;s own screen would have made. A document is different: this notes that one is on its way, and you mark it received on Vendor Requirements when it arrives. Every record is judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
+<p class="empty-note" style="margin-top:0;">A document is the one that behaves differently: this only notes that one is on its way, and you mark it received on Vendor Requirements when it actually arrives. The rest become the record itself.</p>
 <label for="obVendor">Vendor</label>
 <select id="obVendor" onchange="fillObRequirements()"></select>
 <label>What they told you</label>
@@ -15556,6 +15555,7 @@ const PLAIN_WORDS_KEPT = [
 { a: 'Unreservable booths', d: 'Named for what cannot be done with them. In practice they are the booths the Operations Manager hands out day by day as part of the Thursday round. The list is set before the March Booth Selection each year.' },
 { a: 'Non-working fee', d: '$25 for each work hour owed and not worked, due 28 February. It is the price of not working the hours, not a fee for something called non-working.' },
 { a: 'Leave of Absence', d: 'A year away with your place held \u2014 and you still pay the annual fee, and the Reserved Booth Fee if you hold a booth. Board approval required. Leaving without it costs points, banked hours and the booth.' },
+{ a: 'Director, and who may be one', d: 'A seat on the Board of Directors. You do not have to be a vendor to hold one. The Bylaws make Members, Affiliated Vendors \u2014 that is, Easy Entry vendors \u2014 and \u201Cother persons\u201D all eligible to serve, and give every director an equal vote on Board matters whatever their membership class. So an Easy Entry vendor who cannot vote at a members\u2019 meeting votes as a full equal once elected to the Board, and somebody who sells nothing at the market at all may serve. What is restricted is the electing, not the standing: only Full Members vote in the November election, nine seats, three filled each year for three-year terms. The Vendor Guide does not mention any of this. (Bylaws Article IV \u00a73; Article III \u00a71.)' },
 { a: 'Jury, jurying', d: 'The committees jury products \u2014 craft and food work judged against a rubric. They do not jury vendors into Full Membership: there they nominate against a vacancy. A vendor can score well and wait years, because the gate is the open seat, not the score.' },
 ];
 function renderPlainWords() {
@@ -15582,7 +15582,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-61';
+const BUILD_ID = '15-63';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21521,6 +21521,9 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF40', kind: 'discrepancy', cat: 'Board', src: 'Bylaws Article IV \u00a73 against Vendor Guide p.34',
+t: 'The Guide never says who may stand for the Board, which reads as vendors-only',
+d: 'The Bylaws are explicit: Members, Affiliated Vendors and \u201Cother persons\u201D are all eligible to serve as directors, with equal voting rights on the Board irrespective of membership class. So an Easy Entry vendor may serve and vote as an equal despite holding no vote at a members\u2019 meeting, and a non-vendor may serve outright. The Vendor Guide\u2019s Board section says only that nine members are elected by Full Members and is silent on who may stand. A vendor reading the Guide alone would conclude the Board is vendors-only, and an Easy Entry vendor would conclude they are ineligible. Nothing in the app was wrong; the Guide is incomplete. Worth a sentence at the next revision.' },
 { id: 'BF01', kind: 'discrepancy', cat: 'Booth Selection', src: 'Vendor Guide, Daily Booth Assignment',
 t: 'Saturday Easy Entry Ag tier: "more than 4 years" or "4 or more"',
 d: 'The Guide reads "more than 4 years", which excludes a vendor at exactly four. The working rules document reads "4+". The app follows the Guide, so a vendor in their fourth year drops a tier. One word decides who gets called first on a Thursday morning.' },
