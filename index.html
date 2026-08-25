@@ -4047,7 +4047,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Record One for a Vendor</h2>
-<p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. An absence, a booth request, a booth share and an improvement proposal each become the same record the vendor&rsquo;s own screen would have made. A document is different: this notes that one is on its way, and you mark it received on Vendor Requirements when it arrives. Every record is judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
+<p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. An absence, a booth request, a booth share and a proposal to a committee each become the same record the vendor&rsquo;s own screen would have made. A document is different: this notes that one is on its way, and you mark it received on Vendor Requirements when it arrives. Every record is judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
 <label for="obVendor">Vendor</label>
 <select id="obVendor" onchange="fillObRequirements()"></select>
 <label>What they told you</label>
@@ -4057,7 +4057,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <button type="button" class="ob-kind" data-k="In"><b>A booth request</b><span>They want a booth</span></button>
 <button type="button" class="ob-kind" data-k="share"><b>A booth share</b><span>Two businesses, one booth</span></button>
 <button type="button" class="ob-kind" data-k="doc"><b>A document</b><span>Insurance, permit, license</span></button>
-<button type="button" class="ob-kind" data-k="improve"><b>An improvement proposal</b><span>Work on their booth, for B&amp;G</span></button>
+<button type="button" class="ob-kind" data-k="improve"><b>A proposal to a committee</b><span>Their idea, put to the committee that handles it</span></button>
 </div>
 <div id="obShareWrap" style="display:none;">
 <label for="obGuest">Who is joining them in the booth</label>
@@ -4070,12 +4070,17 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <select id="obReq"></select>
 </div>
 <div id="obImpWrap" style="display:none;">
-<label for="obImpTitle">Title</label>
+<label for="obImpCmte">Which committee</label>
+<select id="obImpCmte" onchange="toggleObImpCmte()"></select>
+<label for="obImpTitle" style="margin-top:10px;">Title</label>
 <input type="text" id="obImpTitle" placeholder="e.g. New tilting counter with shelf below">
-<label for="obImpDesc">Describe the work</label>
+<label for="obImpDesc" style="margin-top:10px;" id="obImpDescLabel">Describe the work</label>
 <input type="text" id="obImpDesc" placeholder="Materials, dimensions, and what changes">
-<label for="obImpBooth">Booth</label>
+<div id="obImpBoothWrap">
+<label for="obImpBooth" style="margin-top:10px;">Booth</label>
 <input type="text" id="obImpBooth" placeholder="e.g. 34">
+</div>
+<p class="empty-note" style="margin:6px 0 0;" id="obImpRoute"></p>
 </div>
 <label for="obDate">Market day it concerns</label>
 <input type="date" id="obDate">
@@ -10043,10 +10048,41 @@ const show = (id, on) => { const el = document.getElementById(id); if (el) el.st
 show('obShareWrap', k === 'share');
 show('obDocWrap', k === 'doc');
 show('obImpWrap', k === 'improve');
+if (k === 'improve') { fillObCommittees(); toggleObImpCmte(); }
 const dateLbl = document.querySelector('label[for="obDate"]');
 if (dateLbl) dateLbl.textContent = k === 'doc' ? 'Date they sent it'
 : k === 'improve' ? 'Date it arrived' : 'Market day it concerns';
 if (k === 'doc') fillObRequirements();
+}
+function fillObCommittees() {
+const sel = document.getElementById('obImpCmte');
+if (!sel || sel.children.length) return;
+COMMITTEES.forEach(cm => {
+const o = document.createElement('option');
+o.value = cm.key;
+o.textContent = cm.name;
+sel.appendChild(o);
+});
+sel.value = 'bg';
+}
+function toggleObImpCmte() {
+const sel = document.getElementById('obImpCmte');
+if (!sel) return;
+const isBG = sel.value === 'bg';
+const boothWrap = document.getElementById('obImpBoothWrap');
+if (boothWrap) boothWrap.style.display = isBG ? '' : 'none';
+const lbl = document.getElementById('obImpDescLabel');
+if (lbl) lbl.textContent = isBG ? 'Describe the work' : 'Describe the proposal';
+const note = document.getElementById('obImpRoute');
+if (!note) return;
+const cm = COMMITTEES.find(x => x.key === sel.value);
+const st = committeeState()[sel.value];
+const chair = (st.members || []).find(m => m.chair);
+note.textContent = isBG
+? 'Joins the booth improvements queue, where Building & Grounds already works from a proposal list and an agenda.'
+: 'Goes on ' + cm.name + '\u2019s list' +
+(chair ? ', where ' + vendorNameFor(chair.id) + ' chairs it and will see it on their desk.'
+: ' \u2014 that committee has no chair on record, so nobody is alerted.');
 }
 function fillObRequirements() {
 if ((document.getElementById('obKind') || {}).value !== 'doc') return;
@@ -10106,16 +10142,32 @@ showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> N
 } else if (status === 'improve') {
 const title = document.getElementById('obImpTitle').value.trim();
 if (!title) { showMsg('obMsg', 'err', 'Give the proposal a title.'); return; }
+const cmteKey = (document.getElementById('obImpCmte') || {}).value || 'bg';
+const desc = document.getElementById('obImpDesc').value.trim();
+if (cmteKey === 'bg') {
 await loadImprovements();
 improveCache.push({ id: 'I' + Date.now(), vendorId: vendorId,
 booth: document.getElementById('obImpBooth').value.trim(),
 category: 'structure',
-title: title, desc: document.getElementById('obImpDesc').value.trim(),
+title: title, desc: desc,
 drawings: 'ready', created: marketDate, status: 'Submitted', meeting: '', note: note,
 channel: channel, recordedBy: 'office' });
 await storageSet('ifm-improvements', improveCache);
 showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Proposal recorded for ' + name + via +
-' It joins the B&amp;G queue like any other.');
+' It joins the Building &amp; Grounds queue like any other.');
+} else {
+const cm = COMMITTEES.find(x => x.key === cmteKey);
+const st = committeeState()[cmteKey];
+st.items.push({ id: 'ci' + Date.now(), kind: 'agenda',
+text: title + (desc ? ' \u2014 ' + desc : '') + ' (from ' + (boothVendorName(vendorId) || vendorId) + ')',
+date: null, fromOffice: true });
+await saveOps();
+const chair = (st.members || []).find(m => m.chair);
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Proposal recorded for ' + name + via +
+' Put to ' + esc(cm.name) +
+(chair ? ' \u2014 ' + esc(vendorNameFor(chair.id)) + ' chairs it and will see it on their desk.'
+: ' \u2014 that committee has no chair on record, so nobody is alerted.'));
+}
 } else {
 const already = cache.callinout.find(r => r.vendorId === vendorId && r.marketDate === marketDate);
 cache.callinout.push({ vendorId: vendorId, marketDate: marketDate, status: status,
@@ -15507,7 +15559,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-56';
+const BUILD_ID = '15-57';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
