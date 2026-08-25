@@ -2348,8 +2348,8 @@ I sell food (prepared food or produce)
 </div>
 <div class="dash-fold" data-fold="mycommittees" id="menuMyCommittees">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mycommittees')">
-<span class="fold-title">Committees</span>
-<span class="fold-sub">Agendas and tasks in front of your committees</span>
+<span class="fold-title" id="menuMyCommitteesTitle">Committees</span>
+<span class="fold-sub" id="menuMyCommitteesSub">Agendas and tasks in front of your committees</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
@@ -3515,10 +3515,15 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 <section id="screen-merchmansion" class="screen">
 <div class="screen-head" id="head-merchmansion"></div>
-<p class="empty-note" style="margin:-4px 0 14px;">The market&rsquo;s own stand on the Waterfront Trail line, selling the market&rsquo;s own goods. It is not a vendor and not a committee: nobody rents it, nothing is juried, and it earns for the market rather than for a business. What it needs is somebody responsible for it and somebody standing it each market day.</p>
+<p class="empty-note" style="margin:-4px 0 14px;">The things the market runs itself. None of them is a vendor and none is a committee: nobody rents them, nothing is juried, and each needs somebody responsible for it and people to do the work. The work earns work hours.</p>
 <div class="card manager-only desk-form">
-<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Who Runs It</h2>
-<p class="empty-note" style="margin-top:0;">The vendor who looks after stock, float and the rota. Shifts they post come back to them to sign off, the same way a committee chair&rsquo;s do.</p>
+<label for="mmProgram">Which one</label>
+<select id="mmProgram" onchange="switchProgram()"></select>
+<p class="empty-note" id="mmProgNote" style="margin:10px 0 0;"></p>
+</div>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Who Runs <span id="mmProgHead">It</span></h2>
+<p class="empty-note" style="margin-top:0;">The vendor at the head of it. Shifts they post come back to them to sign off, the same way a committee chair&rsquo;s do. Naming them stays with the office — nobody appoints themselves.</p>
 <label for="mmLead">Responsible for the Merch Mansion</label>
 <select id="mmLead" onchange="saveMerchLead()"></select>
 <div class="status-msg" id="mmLeadMsg"></div>
@@ -3540,13 +3545,19 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="status-msg" id="mmShiftMsg"></div>
 </div>
 <div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-envelope"></use></svg></span>On Their List</h2>
+<p class="empty-note" style="margin-top:0;">What the office has put to whoever heads this. Sent from Board &amp; Committees &rarr; Send to a Committee or Program.</p>
+<div id="mmItemList"></div>
+<div class="empty-note" id="mmItemEmpty" style="display:none;">Nothing has been sent to them.</div>
+</div>
+<div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Shifts Posted</h2>
 <div id="mmShiftList"></div>
 <div class="empty-note" id="mmShiftEmpty" style="display:none;">No shifts posted yet.</div>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This Does Not Do Yet</h2>
-<p class="empty-note" style="margin-top:0;">There is no stock list, no takings record and no float reconciliation here. Sales go through the market&rsquo;s own till and are not counted by this app. If the Board wants the Merch Mansion&rsquo;s money tracked, that is a piece of work in its own right and should be asked for plainly rather than bolted onto the day-fee log.</p>
+<p class="empty-note" style="margin-top:0;">This posts shifts and books the hours. It does not track stock, takings or equipment. The Merch Mansion&rsquo;s sales go through the market&rsquo;s own till and are not counted here; the garbage and dish programmes have running costs nobody logs; the fire extinguishers have inspection dates this app does not watch. Each of those is a piece of work in its own right and should be asked for plainly rather than bolted on.</p>
 </div>
 </section>
 <section id="screen-voicemail" class="screen">
@@ -4280,6 +4291,9 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <option>Building &amp; Grounds</option>
 <option>Board / Committee</option>
 <option>Merch Mansion</option>
+<option>Garbage</option>
+<option>Dish Recycling</option>
+<option>Morning Tasks</option>
 </select>
 <label for="hrsNote">Note (optional)</label>
 <input type="text" id="hrsNote" placeholder="e.g. helped set up tables">
@@ -4803,7 +4817,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-wrench"></use></svg></span>Send Something to a Committee<button type="button" class="help-dot" onclick="showHelp(47)" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" style="margin-top:0;">Puts an item on that committee&rsquo;s list, where its chair and members see it on their own desk. Repairs and anything about the building go to Building &amp; Grounds.</p>
-<label for="ftCmte">Which committee</label>
+<label for="ftCmte">Who it goes to</label>
 <select id="ftCmte"></select>
 <label for="ftKind" style="margin-top:10px;">What kind</label>
 <select id="ftKind">
@@ -4948,6 +4962,9 @@ task and names where each confirmation goes.</p>
 <option>Building &amp; Grounds</option>
 <option>Board / Committee</option>
 <option>Merch Mansion</option>
+<option>Garbage</option>
+<option>Dish Recycling</option>
+<option>Morning Tasks</option>
 </select>
 <label for="tkWho" style="margin-top:10px;">Who it is for</label>
 <select id="tkWho" onchange="toggleTaskWho()">
@@ -10927,8 +10944,8 @@ const HELP_TEXTS = [
 "body": "<p>Downloads a CSV built from what's on this device right now.</p>"
 },
 {
-"title": "Send to Committee",
-"body": "<p>Puts an item on a committee's own list — the same list its chair and members read on their desk. A repair, a question for Building &amp; Grounds, anything the office wants a committee to pick up.</p><p>The note is required, and that is deliberate. The committee is not standing where you are when you write it: what is obvious to you at the spigot on Saturday morning is the whole of what they will know on Tuesday night. Say where it is, how bad, who saw it, and anything they need before they start.</p><p>A vendor's own facilities request still arrives on the Google Form under Communicate → Facilities. Send it on from here once it comes in.</p>"
+"title": "Send to a Committee or Program",
+"body": "<p>Puts an item on a committee's own list, or on the list of one of the things the market runs — the Merch Mansion, garbage, dish recycling, the morning jobs. Either way it lands on the desk of whoever heads it: the chair, or the lead. A repair, a proposal, a question, anything the office wants them to pick up.</p><p>The note is required, and that is deliberate. The committee is not standing where you are when you write it: what is obvious to you at the spigot on Saturday morning is the whole of what they will know on Tuesday night. Say where it is, how bad, who saw it, and anything they need before they start.</p><p>A vendor's own facilities request still arrives on the Google Form under Communicate → Facilities. Send it on from here once it comes in.</p>"
 },
 {
 "title": "Board Proposals",
@@ -11098,7 +11115,7 @@ body: '<p>Turn what is already recorded into what is actually owed, and carry th
 '<p><b>Blocked on a record we do not have.</b> The office&rsquo;s fines ledger \u2014 outstanding balances, and how many occurrences each vendor already has this year \u2014 is what the escalation multiplies from. Going forward the app can count for itself, but it cannot proceed on past debts without that record.</p>' },
 bgwalk: { built: true, t: 'B&amp;G Walkthrough', when: 'Monthly',
 body: '<p>A standing inspection round for the Buildings &amp; Grounds committee: grease buildup needing a pressure wash, damaged gutters and downspouts, structures out of compliance.</p>' +
-'<p>Send to Committee carries problems to Building &amp; Grounds once somebody reports one. This is the other direction &mdash; the walk that finds them.</p>' },
+'<p>Send to a Committee or Program carries problems to Building &amp; Grounds once somebody reports one. This is the other direction &mdash; the walk that finds them.</p>' },
 boardcycle: { built: true, live: true, t: 'Board Meeting Cycle', when: 'Monthly',
 body: '<p>Attach proposals and requests to the meeting that will actually hear them.</p>' +
 '<p>The Board meets the second Wednesday of each month. Exception Requests &mdash; the Guide&rsquo;s &ldquo;Special Needs Requests&rdquo; &mdash; must reach management by the first Wednesday of December to be heard at the December meeting, which is the last one before the renewal deadline.</p>' +
@@ -12738,7 +12755,7 @@ betareset:         { title: 'Beta Reset' },
 principles:        { title: 'Principles' },
 unreservable:      { title: () => 'Booths Available for the ' + seasonYear() + ' Season' },
 voicemail:         { title: 'Messages from the Answering Machine' },
-merchmansion:      { title: 'Merch Mansion' },
+merchmansion:      { title: 'What the Market Runs' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -12751,7 +12768,7 @@ calloutpatterns:   { title: 'Absence Patterns' },
 dataexport:        { title: 'Data Export' },
 popups:            { title: 'PopUp Events' },
 wintermarketadmin: { title: 'Winter Market Dates' },
-facilitiestracker: { title: 'Send to Committee' },
+facilitiestracker: { title: 'Send to a Committee or Program' },
 proposaltracker:   { title: 'Board Proposals' },
 stallimprove:      { title: 'Booth Improvements' },
 requirements:      { title: 'Vendor Requirements' },
@@ -12769,7 +12786,14 @@ auction:           { title: () => selectionSeason() + ' Season-Long Booth Reserv
 boardcycle:        { title: 'Board Meeting Cycle' },
 committees:        { title: 'Committees' },
 ideapath:          { title: 'How an Idea Reaches the Board' },
-mycommittees:      { title: 'Committees' }
+mycommittees:      { title: () => {
+const me = currentVendor();
+if (!me) return 'Committees';
+const onAny = committeesFor(me.vendorId).length > 0;
+const run = programsLedBy(me.vendorId).map(p => p.name);
+if (run.length && !onAny) return run.join(' & ');
+return run.length ? 'Committees & What You Run' : 'Committees';
+} }
 };
 function isShoulderSeason(d) {
 const now = d || new Date();
@@ -12891,9 +12915,21 @@ setDeskRelevance('commAgOnly', isAg,
 'The Value-Added Farm Products application is for Ag vendors. It is what an Ag vendor files to sell a product ' +
 'made from what they grow. Your membership is recorded as ' + vendor.category + '. If that is wrong, or if your ' +
 'business has changed, the office can record a class change.');
-const onCmte = committeesFor(vendor.vendorId).length > 0;
+const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
 renderSnapDeskSub();
 applyVenueToDesk();
+const cmTitle = document.getElementById('menuMyCommitteesTitle');
+const cmSub = document.getElementById('menuMyCommitteesSub');
+if (cmTitle && cmSub) {
+const onAny = committeesFor(vendor.vendorId).length > 0;
+const runsMerch = isMerchLead(vendor.vendorId);
+const runNames = programsLedBy(vendor.vendorId).map(p => p.name);
+cmTitle.textContent = runsMerch && !onAny ? runNames.join(' & ')
+: runsMerch ? 'Committees & What You Run' : 'Committees';
+cmSub.textContent = runsMerch && !onAny ? 'Post shifts and sign off the hours of whoever does them'
+: runsMerch ? 'Your committees, and the market programmes you head'
+: 'Agendas and tasks in front of your committees';
+}
 setDeskRelevance('menuMyCommittees', onCmte,
 'You are not on a committee at the moment, so there are no agendas or tasks in front of you here. ' +
 'Committees are open to any vendor \u2014 tell the office or a board member you would like to serve on one, ' +
@@ -14793,12 +14829,24 @@ downloadCSV('ifm-booth-assignments.csv', ['Booth', 'Section', 'Reserved By', 'Ve
 function initSendToCommittee() {
 const sel = document.getElementById('ftCmte');
 if (sel && !sel.children.length) {
+const gc = document.createElement('optgroup');
+gc.label = 'Committees';
 COMMITTEES.forEach(cm => {
 const o = document.createElement('option');
 o.value = cm.key;
 o.textContent = cm.name;
-sel.appendChild(o);
+gc.appendChild(o);
 });
+sel.appendChild(gc);
+const gp = document.createElement('optgroup');
+gp.label = 'What the market runs';
+MARKET_PROGRAMS.forEach(p => {
+const o = document.createElement('option');
+o.value = 'prog:' + p.key;
+o.textContent = p.name;
+gp.appendChild(o);
+});
+sel.appendChild(gp);
 sel.value = 'bg';
 }
 renderTrackerList('facilities');
@@ -14815,23 +14863,29 @@ const kind = document.getElementById('ftKind').value;
 const date = document.getElementById('ftDate').value || null;
 if (!title) { showMsg('ftMsg', 'err', 'Say what it is.'); return; }
 if (!note) { showMsg('ftMsg', 'err', 'Add a note \u2014 the committee only knows what you tell them here.'); return; }
-const cm = COMMITTEES.find(x => x.key === key);
-const st = committeeState()[key];
-st.items.push({ id: 'ci' + Date.now(), kind: kind, text: title + ' \u2014 ' + note,
-date: date, fromOffice: true });
+const prog = key.indexOf('prog:') === 0 ? programOf(key.slice(5)) : null;
+const cm = prog ? null : COMMITTEES.find(x => x.key === key);
+if (!prog && !cm) { showMsg('ftMsg', 'err', 'Pick who it goes to.'); return; }
+const item = { id: 'ci' + Date.now(), kind: kind, text: title + ' \u2014 ' + note,
+date: date, fromOffice: true };
+if (prog) programItems(prog.key).push(item);
+else committeeState()[key].items.push(item);
 await saveOps();
 const listKey = 'ifm-tracker-facilities';
 const existing = await storageGet(listKey);
 const items = existing === STORAGE_MISSING ? [] : existing;
 items.push({ id: 't' + Date.now(), title: title, note: note, cmte: key,
-cmteName: cm.name, kind: kind, due: date, status: 'Open', createdAt: Date.now() });
+cmteName: prog ? prog.name : cm.name, kind: kind, due: date, status: 'Open', createdAt: Date.now() });
 await storageSet(listKey, items);
 document.getElementById('ftTitle').value = '';
 document.getElementById('ftNote').value = '';
 document.getElementById('ftDate').value = '';
-const chair = (st.members || []).find(m => m.chair);
-showMsg('ftMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Sent to ' + esc(cm.name) +
-(chair ? ' \u2014 ' + esc(vendorNameFor(chair.id)) + ' chairs it and will see it on their desk.'
+const who = prog ? programLead(prog.key)
+: ((committeeState()[key].members || []).find(m => m.chair) || {}).id;
+showMsg('ftMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Sent to ' +
+esc(prog ? prog.name : cm.name) +
+(who ? ' \u2014 ' + esc(vendorNameFor(who)) + (prog ? ' heads it' : ' chairs it') + ' and will see it on their desk.'
+: prog ? ' \u2014 note nobody heads it at the moment, so nobody is alerted.'
 : ' \u2014 note that committee has no chair on record, so nobody is alerted.'));
 renderTrackerList('facilities');
 }
@@ -15711,7 +15765,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-77';
+const BUILD_ID = '15-80';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21402,8 +21456,75 @@ if (r) r(value);
 }
 // The Merch Mansion's lead lives in ops beside the committees -- same shape of
 // record, different kind of thing.
-function merchLead() { return (cache.ops && cache.ops.merchLead) || ''; }
+const MARKET_PROGRAMS = [
+{ key: 'merch', name: 'Merch Mansion', icon: 'i-gem',
+sub: 'The market\u2019s own stand on the Waterfront Trail line',
+note: 'Selling the market\u2019s own goods. It is not a vendor and not a committee: nobody rents it, nothing is juried, and it earns for the market rather than for a business.' },
+{ key: 'garbage', name: 'Garbage', icon: 'i-trash',
+sub: 'Bins round the pavilion, and the haul at close',
+note: 'Emptying and re-lining through the day, and getting the whole lot out at the end of market.' },
+{ key: 'dish', name: 'Dish Recycling', icon: 'i-arrows-cycle',
+sub: 'Collecting, washing and returning the reusable dishes',
+note: 'The reusable dish scheme only works if somebody runs the collection and the wash. Prepared-food vendors depend on it.' },
+{ key: 'morning', name: 'Morning Tasks', icon: 'i-sun-rays',
+sub: 'Opening jobs \u2014 fire extinguishers out, leaf blowing, setting up',
+note: 'The jobs that have to happen before the market opens. These are taken by whoever is standing there on the day rather than claimed in advance, so they are posted as walk-up shifts.',
+walkUp: true },
+];
+// Read like committeeState(): backfill per key so a newly added program is
+// never undefined on a device holding an older saved record.
+function programLeads() {
+if (!cache.ops.programLeads) cache.ops.programLeads = {};
+const st = cache.ops.programLeads;
+MARKET_PROGRAMS.forEach(p => { if (typeof st[p.key] !== 'string') st[p.key] = ''; });
+// The Merch Mansion's lead was stored on its own before the others existed.
+if (cache.ops.merchLead && !st.merch) st.merch = cache.ops.merchLead;
+return st;
+}
+function programLead(key) { return programLeads()[key] || ''; }
+function programItems(key) {
+if (!cache.ops.programItems) cache.ops.programItems = {};
+const st = cache.ops.programItems;
+MARKET_PROGRAMS.forEach(p => { if (!Array.isArray(st[p.key])) st[p.key] = []; });
+return key ? st[key] : st;
+}
+function programsLedBy(vendorId) {
+if (!vendorId) return [];
+const st = programLeads();
+return MARKET_PROGRAMS.filter(p => st[p.key] === vendorId);
+}
+function programOf(key) { return MARKET_PROGRAMS.find(p => p.key === key) || null; }
+function merchLead() { return programLead('merch'); }
+function isMerchLead(vendorId) { return programsLedBy(vendorId).length > 0; }
+// Two ways in, same as a committee: the manager from the Pavilion drawer, the
+// lead from their own desk. Posting and signing off belong to whoever runs it.
+function canRunMerch() {
+return currentRole === 'manager' ||
+(currentRole === 'vendor' && isMerchLead(currentVendorId));
+}
+// Which programs the person in front of us may post shifts for.
+function programsIRun() {
+if (currentRole === 'manager') return MARKET_PROGRAMS.slice();
+return currentRole === 'vendor' ? programsLedBy(currentVendorId) : [];
+}
+function requireMerch(msgId) {
+if (canRunMerch()) return true;
+if (msgId) showMsg(msgId, 'err', 'Only the Market Manager or whoever runs the Merch Mansion can change this.');
+return false;
+}
+let mmProgram = 'merch';
 function initMerchMansion() {
+const pick = document.getElementById('mmProgram');
+if (pick) {
+pick.innerHTML = '';
+MARKET_PROGRAMS.forEach(p => {
+const o = document.createElement('option');
+o.value = p.key; o.textContent = p.name;
+pick.appendChild(o);
+});
+if (!programOf(mmProgram)) mmProgram = MARKET_PROGRAMS[0].key;
+pick.value = mmProgram;
+}
 const sel = document.getElementById('mmLead');
 if (sel && !sel.children.length) {
 const none = document.createElement('option');
@@ -21415,33 +21536,87 @@ o.value = v.vendorId; o.textContent = v.businessName;
 sel.appendChild(o);
 });
 }
-if (sel) sel.value = merchLead();
+if (sel) sel.value = programLead(mmProgram);
+renderProgramNote();
+renderProgramItems();
 renderMerchShifts();
+}
+function renderProgramItems() {
+const wrap = document.getElementById('mmItemList');
+const empty = document.getElementById('mmItemEmpty');
+if (!wrap) return;
+wrap.innerHTML = '';
+const items = programItems(mmProgram) || [];
+if (empty) empty.style.display = items.length ? 'none' : 'block';
+items.forEach(it => {
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' + esc(it.text) + '</div>' +
+'<div class="req-meta">' + (it.kind === 'agenda' ? 'to take up' : 'something to do') +
+(it.date ? ' \u00b7 by ' + esc(formatDisplayDate(it.date)) : '') +
+(it.fromOffice ? ' \u00b7 from the office' : '') + '</div></div>';
+wrap.appendChild(row);
+});
+}
+function switchProgram() {
+mmProgram = document.getElementById('mmProgram').value;
+const sel = document.getElementById('mmLead');
+if (sel) sel.value = programLead(mmProgram);
+showMsg('mmLeadMsg', '', '');
+showMsg('mmShiftMsg', '', '');
+renderProgramNote();
+renderProgramItems();
+renderMerchShifts();
+}
+function renderProgramNote() {
+const p = programOf(mmProgram);
+const el = document.getElementById('mmProgNote');
+if (!el || !p) return;
+el.innerHTML = esc(p.note) +
+(p.walkUp ? ' <b>Taken on the day by whoever is there</b>, so a shift posted here says how many are wanted rather than holding a name in advance.' : '');
+const h = document.getElementById('mmProgHead');
+if (h) h.textContent = p.name;
 }
 async function saveMerchLead() {
 if (!requireManager('mmLeadMsg')) return;
-cache.ops.merchLead = document.getElementById('mmLead').value;
+const p = programOf(mmProgram);
+const prev = programLead(mmProgram);
+const next = document.getElementById('mmLead').value;
+programLeads()[mmProgram] = next;
+if (mmProgram === 'merch') cache.ops.merchLead = next;
 await saveOps();
-const who = merchLead();
-showMsg('mmLeadMsg', 'ok', who
-? '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(vendorNameFor(who)) +
-' runs the Merch Mansion. Shifts posted here come back to them to sign off.'
-: 'Nobody is responsible for it. Shifts posted now come back to the office instead.');
+// A handover strands nothing silently: shifts the old lead posted still come
+// back to them, and the office is told so plainly rather than finding out
+// when a vendor's hours sit unconfirmed.
+const stranded = prev && prev !== next
+? (cache.tasks || []).filter(t => t.postedById === prev && t.program === mmProgram &&
+(t.claims || []).some(c => c.status === 'reported')).length
+: 0;
+showMsg('mmLeadMsg', 'ok', (next
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(vendorNameFor(next)) +
+' runs ' + esc(p ? p.name : 'it') + '. Shifts posted here come back to them to sign off.'
+: 'Nobody is responsible for ' + esc(p ? p.name : 'it') + '. Shifts posted now come back to the office instead.') +
+(stranded ? ' <b>' + stranded + ' report' + (stranded === 1 ? ' is' : 's are') +
+' still waiting on ' + esc(vendorNameFor(prev)) + '</b> \u2014 those were posted before the change and still go back to them.' : ''));
 renderMerchShifts();
 }
-async function postMerchShift() {
-if (!requireManager('mmShiftMsg')) return;
+async function postMerchShift(key) {
+if (!requireMerch('mmShiftMsg')) return;
+const pk = key || mmProgram;
+const p = programOf(pk);
 const title = document.getElementById('mmShiftTitle').value.trim();
 if (!title) { showMsg('mmShiftMsg', 'err', 'Say what the shift is.'); return; }
 const hours = Math.max(0, parseFloat(document.getElementById('mmShiftHours').value) || 0);
 const spots = Math.max(1, parseInt(document.getElementById('mmShiftSpots').value, 10) || 1);
-const lead = merchLead();
+const lead = programLead(pk);
 const tasks = await loadTasks();
 tasks.push({ id: 'tk' + Date.now(), title: title,
 desc: document.getElementById('mmShiftDesc').value.trim(),
 date: document.getElementById('mmShiftDate').value || '',
-category: 'Merch Mansion', hours: hours, spotsNeeded: spots, assignedTo: '',
-postedBy: lead ? vendorNameFor(lead) + ' \u2014 Merch Mansion' : 'the Market Manager',
+category: p ? p.name : 'Merch Mansion', program: pk,
+hours: hours, spotsNeeded: spots, assignedTo: '',
+walkUp: !!(p && p.walkUp),
+postedBy: lead ? vendorNameFor(lead) + ' \u2014 ' + (p ? p.name : '') : 'the Market Manager',
 postedById: lead || null, merch: true, claims: [], createdAt: Date.now() });
 cache.tasks = tasks;
 await saveTasks();
@@ -21449,23 +21624,31 @@ document.getElementById('mmShiftTitle').value = '';
 document.getElementById('mmShiftDesc').value = '';
 renderMerchShifts();
 showMsg('mmShiftMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Posted \u2014 every vendor can see it, and ' +
-hours + ' work hour' + (hours === 1 ? '' : 's') + ' post to whoever stands it once it is signed off.');
+hours + ' work hour' + (hours === 1 ? '' : 's') + ' post to whoever ' +
+(p && p.walkUp ? 'does it on the day' : 'stands it') + ' once it is signed off.');
 }
 function renderMerchShifts() {
 const wrap = document.getElementById('mmShiftList');
 const empty = document.getElementById('mmShiftEmpty');
 if (!wrap) return;
 wrap.innerHTML = '';
-const shifts = (cache.tasks || []).filter(t => t.category === 'Merch Mansion').slice().reverse();
+const keys = (currentRole === 'manager' && document.getElementById('mmProgram'))
+? [mmProgram] : programsIRun().map(p => p.key);
+const shifts = (cache.tasks || []).filter(t =>
+t.program ? keys.indexOf(t.program) !== -1
+: (t.category === 'Merch Mansion' && keys.indexOf('merch') !== -1)).slice().reverse();
 if (empty) empty.style.display = shifts.length ? 'none' : 'block';
 shifts.forEach(t => {
 const taken = (t.claims || []).length;
 const row = document.createElement('div');
 row.className = 'req-row';
+const multi = keys.length > 1;
 row.innerHTML = '<div class="req-row-main">' +
 '<div class="req-name">' + esc(t.title) + '</div>' +
-'<div class="req-meta">' + (t.date ? esc(formatDisplayDate(t.date)) + ' \u00b7 ' : '') +
-fmtHrs(t.hours) + ' hrs \u00b7 ' + taken + ' of ' + (t.spotsNeeded || 1) + ' taken' +
+'<div class="req-meta">' + (multi ? esc(t.category) + ' \u00b7 ' : '') +
+(t.date ? esc(formatDisplayDate(t.date)) + ' \u00b7 ' : '') +
+fmtHrs(t.hours) + ' hrs \u00b7 ' + taken + ' of ' + (t.spotsNeeded || 1) +
+(t.walkUp ? ' filled on the day' : ' taken') +
 (t.desc ? ' \u00b7 ' + esc(t.desc) : '') + '</div></div>';
 wrap.appendChild(row);
 });
@@ -22883,7 +23066,9 @@ const mine = me ? committeesFor(me.vendorId) : [];
 // The chair's review queue leads this screen: it is the one thing here that
 // somebody else is waiting on, and the bar on the desk points straight at it.
 const chairsOf = me ? chairOf(me.vendorId) : [];
-if (chairsOf.length) body.appendChild(buildChairReviewCard(chairsOf));
+if (chairsOf.length || isMerchLead(me && me.vendorId)) body.appendChild(buildChairReviewCard(chairsOf));
+if (isMerchLead(me && me.vendorId)) body.appendChild(buildMerchLeadCard());
+if (!mine.length && isMerchLead(me && me.vendorId)) return;
 if (!mine.length) {
 const card = document.createElement('div');
 card.className = 'card';
@@ -22963,7 +23148,7 @@ body.appendChild(note);
 function chairPendingReviews() {
 const out = [];
 if (currentRole !== 'vendor' || !currentVendorId) return out;
-if (!chairOf(currentVendorId).length) return out;
+if (!chairOf(currentVendorId).length && !isMerchLead(currentVendorId)) return out;
 (cache.tasks || []).forEach(task => {
 if (task.postedById !== currentVendorId) return;
 (task.claims || []).filter(c => c.status === 'reported').forEach(c => out.push({ task, claim: c }));
@@ -22978,7 +23163,8 @@ if (!pending.length) { bar.style.display = 'none'; return; }
 const names = [];
 pending.forEach(p => {
 const cm = COMMITTEES.find(c => c.key === p.task.committee);
-const n = cm ? cm.name : 'your committee';
+const n = p.task.program ? (programOf(p.task.program) || {}).name || p.task.category
+: p.task.merch ? 'the Merch Mansion' : cm ? cm.name : 'your committee';
 if (!names.includes(n)) names.push(n);
 });
 const n = pending.length;
@@ -23054,6 +23240,75 @@ btn.textContent = 'Post it';
 btn.onclick = () => chairPostTask(chairs);
 const msg = mk('div', { 'class': 'status-msg', id: 'chTaskMsg' });
 [lt, t, ld, desc, ldt, date, lh, hrs, ls, spots, btn, msg].forEach(el => card.appendChild(el));
+return card;
+}
+// The lead's own copy of the posting form, on the vendor side of the app.
+function buildMerchLeadCard() {
+const mk = (tag, attrs) => { const el = document.createElement(tag);
+Object.keys(attrs || {}).forEach(k => el.setAttribute(k, attrs[k])); return el; };
+const card = mk('div', { 'class': 'card' });
+const head = mk('h2');
+head.innerHTML = '<span class="emoji"><svg class="ico"><use href="#i-toolbox"></use></svg></span>' +
+programsLedBy(currentVendorId).map(p => esc(p.name)).join(' &amp; ');
+card.appendChild(head);
+const mine = programsLedBy(currentVendorId);
+const note = mk('p', { 'class': 'empty-note' });
+note.style.margin = '0 0 10px';
+note.textContent = 'You run ' + mine.map(p => p.name).join(' and ') + ' for the market. '
++ 'Post the shifts you need covered and they go on the work hours board like any other task '
++ '\u2014 whoever does one reports it back to you to sign off.';
+card.appendChild(note);
+if (mine.length > 1) {
+const lp = mk('label'); lp.textContent = 'Which one this shift is for';
+const sp = mk('select', { id: 'mmProgramV' });
+mine.forEach(p => { const o = mk('option'); o.value = p.key; o.textContent = p.name; sp.appendChild(o); });
+card.appendChild(lp); card.appendChild(sp);
+}
+const lt = mk('label'); lt.textContent = 'What the shift is';
+lt.style.marginTop = mine.length > 1 ? '10px' : '';
+const t = mk('input', { type: 'text', id: 'mmShiftTitle', placeholder: 'e.g. Saturday morning, 9 to 1' });
+const ld = mk('label'); ld.textContent = 'Anything they need to know'; ld.style.marginTop = '10px';
+const desc = mk('input', { type: 'text', id: 'mmShiftDesc', placeholder: 'Float is in the office safe' });
+const ldt = mk('label'); ldt.textContent = 'Which day'; ldt.style.marginTop = '10px';
+const date = mk('input', { type: 'date', id: 'mmShiftDate' });
+const lh = mk('label'); lh.textContent = 'Work hours credit'; lh.style.marginTop = '10px';
+const hrs = mk('input', { type: 'number', id: 'mmShiftHours', min: '0', step: '0.25', value: '4' });
+const ls = mk('label'); ls.textContent = 'People needed'; ls.style.marginTop = '10px';
+const spots = mk('input', { type: 'number', id: 'mmShiftSpots', min: '1', step: '1', value: '1' });
+const btn = mk('button', { type: 'button', 'class': 'primary-btn' });
+btn.innerHTML = '<svg class="ico"><use href="#i-checkmark"></use></svg> Post the shift';
+btn.onclick = () => {
+const sp = document.getElementById('mmProgramV');
+postMerchShift(sp ? sp.value : (programsLedBy(currentVendorId)[0] || {}).key);
+};
+const msg = mk('div', { 'class': 'status-msg', id: 'mmShiftMsg' });
+[lt, t, ld, desc, ldt, date, lh, hrs, ls, spots, btn, msg].forEach(el => card.appendChild(el));
+const items = [];
+mine.forEach(p => programItems(p.key).forEach(it => items.push({ p: p, it: it })));
+if (items.length) {
+const ih = mk('h2');
+ih.style.marginTop = '18px';
+ih.innerHTML = '<span class="emoji"><svg class="ico"><use href="#i-envelope"></use></svg></span>Sent to You';
+card.appendChild(ih);
+const inote = mk('p', { 'class': 'empty-note' });
+inote.style.margin = '0 0 8px';
+inote.textContent = 'Put to you by the office. Nothing here is decided \u2014 these are for you to take up.';
+card.appendChild(inote);
+items.forEach(({ p, it }) => {
+const row = mk('div', { 'class': 'req-row' });
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' + esc(it.text) + '</div>' +
+'<div class="req-meta">' + (mine.length > 1 ? esc(p.name) + ' \u00b7 ' : '') +
+(it.kind === 'agenda' ? 'to take up' : 'something to do') +
+(it.date ? ' \u00b7 by ' + esc(formatDisplayDate(it.date)) : '') +
+(it.fromOffice ? ' \u00b7 from the office' : '') + '</div></div>';
+card.appendChild(row);
+});
+}
+const list = mk('div', { id: 'mmShiftList' });
+list.style.marginTop = '12px';
+card.appendChild(list);
+card.appendChild(mk('div', { 'class': 'empty-note', id: 'mmShiftEmpty' }));
+setTimeout(renderMerchShifts, 0);
 return card;
 }
 async function chairPostTask(chairs) {
@@ -23156,7 +23411,6 @@ tiles: [
 { s: 'boothlayout', i: 'i-ruler', t: 'Booth Layouts', d: 'What a vendor sees when they pick a booth' },
 { s: 'stallimprove', i: 'i-ruler', t: 'Booth Improvements', d: 'Vendor proposals, the B&G agenda, and the per-booth checklist' },
 { s: 'pavrentals', i: 'i-calendar', t: 'Pavilion Rentals', d: 'When the pavilion is let to somebody else \u2014 vendors out by 4 PM on those market days' },
-{ s: 'merchmansion', i: 'i-gem', t: 'Merch Mansion', d: 'The market\u2019s own stand \u2014 who runs it, and the shifts that earn work hours for standing it' },
 { soon: 'compliance', ot: 'compliance', i: 'i-ruler', t: 'Booth Compliance Clocks', d: 'Inspections, 60-day and two-year clocks' },
 { soon: 'bgwalk', ot: 'bgwalk', i: 'i-wrench', t: 'B&amp;G Walkthrough', d: 'The monthly inspection round' },
 ] },
@@ -23185,10 +23439,15 @@ sub: 'One-off markets away from Steamboat Landing',
 tiles: [
 { s: 'popups', i: 'i-tent', t: 'PopUp Events', d: 'Add or delete satellite market events' },
 ] },
+{ key: 'programs', title: 'What the Market Runs', icon: 'i-toolbox',
+sub: 'The market\u2019s own operations \u2014 who heads each one, and the shifts that earn work hours',
+tiles: [
+{ s: 'merchmansion', i: 'i-toolbox', t: 'Programs & Leads', d: 'Merch Mansion, garbage, dish recycling and the morning jobs \u2014 who runs each, and posting shifts' },
+] },
 { key: 'board', title: 'Board & Committees', icon: 'i-columns',
 sub: 'What is in front of the board, and who serves',
 tiles: [
-{ s: 'facilitiestracker', i: 'i-wrench', t: 'Send to Committee', d: 'Put a repair, or anything else, on a committee\u2019s list \u2014 straight to the chair who has to act on it' },
+{ s: 'facilitiestracker', i: 'i-wrench', t: 'Send to a Committee or Program', d: 'Put a repair, a proposal, or anything else on their list \u2014 straight to the chair or lead who has to act on it' },
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
 { s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
 { s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
