@@ -3843,7 +3843,7 @@ this side of it.</p>
 </div>
 <div class="dash-fold" data-fold="dev-plainwords">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'plainwords')">
-<span class="fold-title">Plain Words</span>
+<span class="fold-title">Vocabulary</span>
 <span class="fold-sub">Where the rules call one thing by two names, or a name misleads &mdash; the terminology ledger, shared with the manager&rsquo;s Record desk</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
@@ -4432,7 +4432,7 @@ comes from.</p>
 <div id="mrLog" style="margin-top:12px;"></div>
 <div class="empty-note" id="mrLogEmpty" style="display:none;">Nothing has been changed from the Guide.</div>
 <button class="ghost-btn" onclick="resetAllRules()">Put everything back to the Guide</button>
-<button class="ghost-btn" onclick="showScreen('boardflags')">What is flagged as unenforced</button>
+<button class="ghost-btn" onclick="showScreen('boardflags')">Enforce These or Not?</button>
 <div class="status-msg" id="mrMsg"></div>
 </div>
 <div class="card">
@@ -12552,7 +12552,7 @@ requirements:      { title: 'Vendor Requirements' },
 mydocs:            { title: 'Permits & Documents' },
 boardflags:        { title: 'Flagged for Attention by the Manager' },
 marketrules:       { title: 'On the Books' },
-plainwords:        { title: 'Plain Words' },
+plainwords:        { title: 'Vocabulary' },
 attendreq:         { title: 'Attendance Requirement' },
 noshow:            { title: 'No-Show Log' },
 fines:             { title: 'Fines & Penalties' },
@@ -15452,7 +15452,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-49';
+const BUILD_ID = '15-52';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21156,6 +21156,12 @@ function renderManagerAlerts() {
 const card = document.getElementById('mgrAlerts');
 const wrap = document.getElementById('mgrAlertList');
 if (!card || !wrap) return;
+// Needs Attention lives on the manager's front page alone. Inside a
+// drawer it steps aside -- the manager went there to do one thing.
+if (typeof mgrOpenFolder !== 'undefined' && mgrOpenFolder) {
+card.style.display = 'none';
+return;
+}
 wrap.innerHTML = '';
 const alerts = [];
 const impOpen = (improveCache || []).filter(r => r.status === 'Submitted').length;
@@ -22362,14 +22368,18 @@ tiles: [
 { soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
 { soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
 { s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Download CSVs for the board' },
+{ s: 'marketrules', i: 'i-scale', t: 'Market Wide Rate Adjustments',
+d: 'The written rule, enforced or not \u2014 fees, fines, deadlines, minimums' },
+{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Enforce These or Not?',
+d: 'Rules nobody is enforcing, and what you decided to do about it' },
 ] },
 { key: 'record', title: 'Records', icon: 'i-document',
-sub: 'The rule as written, and the gap between paper and practice',
+sub: 'The rule as written',
 tiles: [
-{ s: 'marketrules', i: 'i-scale', t: 'On the Books', d: 'The written rule, enforced or not &mdash; fees, fines, deadlines, minimums' },
-{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Flagged for Attention', d: 'Rules nobody is enforcing, and what you decided to do about it' },
-{ s: 'plainwords', i: 'i-quill', t: 'Plain Words', d: 'What this app calls things, and what the Guide calls them' },
 ] },
+// Vocabulary sits alone at the absolute foot of the desk.
+{ s: 'plainwords', i: 'i-quill', t: 'Vocabulary', foot: true,
+d: 'What this app calls things, and what the Guide calls them' },
 ];
 // ===========================================================================
 // GIFT CERTIFICATES
@@ -22889,6 +22899,7 @@ function renderManagerFolders() {
 buildSeasonNote('mgrVenuePicker');
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
+renderManagerAlerts();
 grid.innerHTML = '';
 const inSeason = [], stable = [], off = [];
 MGR_FOLDERS.forEach(f => {
@@ -22905,7 +22916,12 @@ const k = inSeason.findIndex(f => f.key === 'marketday');
 if (k > 0) inSeason.unshift(inSeason.splice(k, 1)[0]);
 }
 off.sort((a, b) => MGR_OTHER_MARKETS.indexOf(a.key) - MGR_OTHER_MARKETS.indexOf(b.key));
-const ordered = inSeason.concat(stable, off);
+// foot:true entries stay at the absolute end regardless of season ordering.
+const foot = [];
+[inSeason, stable, off].forEach(arr => {
+for (let k = arr.length - 1; k >= 0; k--) { if (arr[k].foot) { foot.unshift(arr.splice(k, 1)[0]); } }
+});
+const ordered = inSeason.concat(stable, off, foot);
 if (MGR_DESK_STYLE !== 'grid') {
 inSeason.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
 stable.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
@@ -22962,7 +22978,9 @@ tile.type = 'button';
 tile.className = 'mgr-tile' + (inSeason ? '' : ' off-season');
 tile.innerHTML = '<span class="mt-title">' + esc(f.title || f.t) + '</span>' +
 '<span class="mt-sub">' + mgrTileSub(f) + '</span>';
-tile.onclick = () => { mgrOpenFolder = f.key || f.s; renderManagerFolders(); };
+tile.onclick = (f.s && !f.tiles)
+? () => showScreen(f.s)
+: () => { mgrOpenFolder = f.key || f.s; renderManagerFolders(); };
 return tile;
 }
 function buildMgrFolder(f, grouped) {
