@@ -4158,9 +4158,9 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" id="cioStillCallIn" style="margin-bottom:0;"></p>
 </div>
 <div class="card manager-only desk-form">
-<p class="empty-note" style="margin-top:0;">A document is the one that behaves differently: this only notes that one is on its way, and you mark it received on Vendor Requirements when it actually arrives. The rest become the record itself.</p>
+<p class="empty-note" style="margin-top:0;">A document is the one that behaves differently: this only notes that one is on its way, and you mark it received on Vendor Requirements when it actually arrives. A sale goes straight to the kiosk under that vendor&rsquo;s booth. The rest become the record itself.</p>
 <label for="obVendor">Vendor</label>
-<select id="obVendor" onchange="fillObRequirements()"></select>
+<select id="obVendor" onchange="fillObRequirements(); renderObPromoNote();"></select>
 <label>What they told you</label>
 <input type="hidden" id="obKind" value="Out">
 <div class="ob-kinds" id="obKinds">
@@ -4169,12 +4169,18 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <button type="button" class="ob-kind" data-k="share"><b>A booth share</b><span>Two businesses, one booth</span></button>
 <button type="button" class="ob-kind" data-k="doc"><b>A document</b><span>Insurance, permit, license</span></button>
 <button type="button" class="ob-kind" data-k="improve"><b>A proposal to a committee</b><span>Their idea, put to the committee that handles it</span></button>
+<button type="button" class="ob-kind" data-k="promo"><b>A sale or promotion</b><span>An offer to show at the kiosk</span></button>
 </div>
 <div id="obShareWrap" style="display:none;">
 <label for="obGuest">Who is joining them in the booth</label>
 <select id="obGuest"></select>
 <label for="obFamily">Same family?</label>
 <select id="obFamily"><option value="no">Separate businesses</option><option value="yes">Same family</option></select>
+</div>
+<div id="obPromoWrap" style="display:none;">
+<label for="obPromoText">The offer, in their words</label>
+<input type="text" id="obPromoText" placeholder="e.g. 3 pints for $10, or half price after 1 PM">
+<p class="empty-note" style="margin:6px 0 0;" id="obPromoNote"></p>
 </div>
 <div id="obDocWrap" style="display:none;">
 <label for="obReq">Which document</label>
@@ -4194,7 +4200,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" style="margin:6px 0 0;" id="obImpRoute"></p>
 </div>
 <label for="obDate">Market day it concerns</label>
-<input type="date" id="obDate">
+<input type="date" id="obDate" onchange="renderObPromoNote()">
 <label for="obWhen">When they told the office</label>
 <input type="datetime-local" id="obWhen">
 <label for="obChannel">How it arrived</label>
@@ -6114,9 +6120,9 @@ sizeKioskParkLayer();
 const BOOTH_COORDS = {
 'P1': { x: 1530, y: 348 },
 'P2': { x: 1530, y: 394 },
-'WT1': { x: 470, y: 130 },
-'WT2': { x: 515, y: 130 },
-'WT3': { x: 560, y: 130 },
+'WT1': { x: 427, y: 130 },
+'WT2': { x: 471, y: 130 },
+'WT3': { x: 515, y: 130 },
 '24': { x: 40, y: 300 },
 '25': { x: 80, y: 300 },
 '26': { x: 120, y: 300 },
@@ -9280,7 +9286,7 @@ if (!deskHandoverQuiet) clearDeskState();
 document.body.classList.toggle('role-' + r, role === r));
 paintHeaderBadge();
 const evac = document.getElementById('evacBar');
-if (evac) evac.style.display = (role === 'vendor' || role === 'manager' || role === 'staff') ? 'flex' : 'none';
+if (evac) evac.style.display = ((role === 'vendor' || role === 'manager' || role === 'staff') && !venueInSeason('winter')) ? 'flex' : 'none';
 if (role === 'manager') {
 document.getElementById('bizName').textContent = 'Market Manager';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 full admin toolkit';
@@ -10174,11 +10180,33 @@ const show = (id, on) => { const el = document.getElementById(id); if (el) el.st
 show('obShareWrap', k === 'share');
 show('obDocWrap', k === 'doc');
 show('obImpWrap', k === 'improve');
+show('obPromoWrap', k === 'promo');
 if (k === 'improve') { fillObCommittees(); toggleObImpCmte(); }
+if (k === 'promo') renderObPromoNote();
 const dateLbl = document.querySelector('label[for="obDate"]');
 if (dateLbl) dateLbl.textContent = k === 'doc' ? 'Date they sent it'
-: k === 'improve' ? 'Date it arrived' : 'Market day it concerns';
+: k === 'improve' ? 'Date it arrived'
+: k === 'promo' ? 'Market day it runs on' : 'Market day it concerns';
 if (k === 'doc') fillObRequirements();
+}
+// An offer only ever appears when somebody taps that vendor's booth at the
+// kiosk, so a sale on a day they are not standing is invisible. Say so before
+// it is recorded, not after.
+function renderObPromoNote() {
+const el = document.getElementById('obPromoNote');
+if (!el) return;
+const vid = document.getElementById('obVendor').value;
+const d = document.getElementById('obDate').value;
+if (!vid || !d) { el.textContent = 'An offer shows at the kiosk only when somebody taps that vendor\u2019s booth, so it needs a day they are at the market.'; return; }
+const live = kioskMarketDate();
+const hasBooth = vendorBoothOn(vid, d);
+el.innerHTML = hasBooth
+? (live && live.date === d
+? 'They are at the market that day, and the kiosk is showing that day \u2014 this goes up straight away.'
+: 'They are at the market that day. The kiosk is showing ' + esc(live ? shortLabel(live.date) : 'another day') +
+', so it appears when that day comes round.')
+: '<b>' + esc(boothVendorName(vid) || 'That vendor') + ' has no booth on the books for ' +
+esc(shortLabel(d)) + '</b>, and an offer only shows when somebody taps their booth. Recording it will do nothing until they have one.';
 }
 function fillObCommittees() {
 const sel = document.getElementById('obImpCmte');
@@ -10248,7 +10276,25 @@ status: 'reported', reportedAt: told, channel: channel, recordedBy: 'office' });
 await storageSet('ifm-booth-shares', cache.boothShares);
 showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded: ' +
 esc(boothVendorName(guestId)) + ' sharing booth ' + esc(ownDay.num) + ' with ' + name +
-' on ' + esc(formatDisplayDate(marketDate)) + via + ' It still needs allowing for the day.');
+' on ' + esc(formatDisplayDate(marketDate)) + via + ' It shows on the kiosk now and still needs allowing for the records.');
+} else if (status === 'promo') {
+const text = document.getElementById('obPromoText').value.trim();
+if (!text) { showMsg('obMsg', 'err', 'Write the offer down as they said it.'); return; }
+cache.promos = cache.promos || [];
+cache.promos.push({ id: 'pr' + Date.now(), vendorId: vendorId, text: text,
+dates: [marketDate], createdAt: told, channel: channel, recordedBy: 'office',
+note: note || '' });
+await storageSet('ifm-promos', cache.promos);
+const live = kioskMarketDate();
+const hasBooth = vendorBoothOn(vendorId, marketDate);
+showMsg('obMsg', hasBooth ? 'ok' : 'err',
+'<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded for ' + name + ' on ' +
+esc(formatDisplayDate(marketDate)) + via + ' ' +
+(!hasBooth
+? '<b>They have no booth on the books that day</b>, so nothing will show at the kiosk until they do \u2014 an offer only appears when somebody taps their booth.'
+: (live && live.date === marketDate
+? 'It is showing at the kiosk now.'
+: 'The kiosk is showing ' + esc(shortLabel(live ? live.date : '')) + ', so it appears when that day comes round.')));
 } else if (status === 'doc') {
 const reqId = document.getElementById('obReq').value;
 if (!reqId) { showMsg('obMsg', 'err', 'No requirement applies to this vendor.'); return; }
@@ -12915,6 +12961,12 @@ setDeskRelevance('commAgOnly', isAg,
 'The Value-Added Farm Products application is for Ag vendors. It is what an Ag vendor files to sell a product ' +
 'made from what they grow. Your membership is recorded as ' + vendor.category + '. If that is wrong, or if your ' +
 'business has changed, the office can record a class change.');
+setDeskRelevance('menuSnapTokens', snapAccepts(vendor.vendorId),
+snapIsChosen(vendor.vendorId)
+? 'You told the app you do not accept SNAP tokens, so there is nothing to turn in here. '
++ 'If that has changed, the switch is inside \u2014 flip it and this drawer wakes up.'
+: 'You are down as not accepting SNAP tokens \u2014 that is the app\u2019s guess from your product '
++ 'category, not something you said. If it is wrong, the switch to correct it is inside.');
 const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
 renderSnapDeskSub();
 applyVenueToDesk();
@@ -15765,7 +15817,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-80';
+const BUILD_ID = '16-5';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -18556,7 +18608,7 @@ await storageSet('ifm-booth-shares', cache.boothShares);
 renderShareList();
 showMsg('shareMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Reported: ' +
 esc(boothVendorName(guestId) || 'that vendor') + ' sharing booth ' + esc(booth.num) + ' on ' +
-esc(shortLabel(date)) + '. The office still has to allow it for that day. You each pay half the daily fee.');
+esc(shortLabel(date)) + '. It is on the kiosk now; the office has been told and reviews it second. You each pay half the daily fee.');
 return;
 }
 const num = document.getElementById('shareBooth').value;
@@ -18595,7 +18647,7 @@ await storageSet('ifm-booth-shares', cache.boothShares);
 renderShareList();
 showMsg('shareMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Reported: booth ' +
 esc(num) + ' on ' + esc(shortLabel(date)) +
-'. The office still has to allow it for that day. You each pay half the daily fee, and the day counts in full toward your work hours.');
+'. It is on the kiosk now; the office has been told and reviews it second. You each pay half the daily fee, and once allowed the day counts in full toward your work hours.');
 }
 async function deleteBoothShare(id) {
 cache.boothShares = (cache.boothShares || []).filter(s => s.id !== id);
@@ -18606,7 +18658,7 @@ renderShareReview();
 function shareStatusLabel(s) {
 return s.status === 'allowed' ? 'allowed by the office'
 : s.status === 'denied' ? 'not allowed'
-: 'reported, awaiting the office';
+: 'on the kiosk, awaiting the office\u2019s review';
 }
 function renderShareList() {
 const wrap = document.getElementById('shareList');
@@ -22054,7 +22106,7 @@ cls: 'expired', go: 'taskmanager' });
 const sharesWaiting = (cache.boothShares || []).filter(s => s.status === 'reported').length;
 if (sharesWaiting) {
 alerts.push({ id: 'shares', topic: 'Shares', n: sharesWaiting,
-t: sharesWaiting + (sharesWaiting === 1 ? ' booth share reported, awaiting your decision' : ' booth shares reported, awaiting your decision'),
+t: sharesWaiting + (sharesWaiting === 1 ? ' booth share reported \u2014 already on the kiosk, yours to allow or deny' : ' booth shares reported \u2014 already on the kiosk, yours to allow or deny'),
 d: 'Reported by a booth holder \u2014 allow or deny on the Selection screen',
 cls: 'submitted', go: 'lottery' });
 }
@@ -22193,6 +22245,9 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF41', kind: 'gap', cat: 'Safety', src: 'Emergency Evacuation Procedure (Becca Rimmel) against the venue calendar',
+t: 'The only written evacuation plan is Steamboat\u2019s \u2014 Winter Market and East Hill have none',
+d: 'The Emergency Evacuation Procedure in the app is written for the pavilion: waterfront trail directions, pavilion exits by name, a script that says \u201Cmarket pavilion.\u201D The market also runs January\u2013March inside Triphammer Marketplace and Wednesdays at East Hill Plaza, and no written plan for either building exists in the app or among the market\u2019s documents given to it. Decided 25 Aug 2026: the plan is hidden during Winter Market season rather than shown for a closed building \u2014 Steamboat\u2019s trail directions standing at Triphammer would be worse than nothing. It returns when the pavilion season does. Whether plans for the other two buildings should be written \u2014 and by whom, since both are other people\u2019s buildings with their own fire procedures \u2014 remains the Board\u2019s to take up.' },
 { id: 'BF40', kind: 'discrepancy', cat: 'Board', src: 'Bylaws Article IV \u00a73 against Vendor Guide p.34',
 t: 'The Guide never says who may stand for the Board, which reads as vendors-only',
 d: 'The Bylaws are explicit: Members, Affiliated Vendors and \u201Cother persons\u201D are all eligible to serve as directors, with equal voting rights on the Board irrespective of membership class. So an Easy Entry vendor may serve and vote as an equal despite holding no vote at a members\u2019 meeting, and a non-vendor may serve outright. The Vendor Guide\u2019s Board section says only that nine members are elected by Full Members and is silent on who may stand. A vendor reading the Guide alone would conclude the Board is vendors-only, and an Easy Entry vendor would conclude they are ineligible. Nothing in the app was wrong; the Guide is incomplete. Worth a sentence at the next revision.' },
