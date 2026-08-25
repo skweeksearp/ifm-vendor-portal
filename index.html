@@ -3979,6 +3979,22 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div class="empty-note" id="impMyEmpty" style="display:none;">Nothing proposed yet.</div>
 </div>
 </section>
+<section id="screen-ideapath" class="screen">
+<div class="screen-head" id="head-ideapath"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Five routes, depending on what the idea is. Start with the one that fits and work down it &mdash; each step is there because the one before it did not settle the matter.</p>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>What kind of thing is it?</h2>
+<div id="ideaPathBody"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>What Happens at the Board</h2>
+<div id="ideaPathBoard"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Where This Came From</h2>
+<div id="ideaPathSource"></div>
+</div>
+</section>
 <section id="screen-communicate" class="screen">
 <div class="screen-head" id="head-communicate"></div>
 <div class="card">
@@ -4014,6 +4030,11 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Governance</h2>
+<div class="comm-item">
+<div class="comm-title">Not sure where it goes?</div>
+<div class="comm-desc">Five routes, depending on what the idea is &mdash; a problem with another vendor, something about the pavilion, a category question, an exception for you, or a change to how the market runs.</div>
+<button type="button" class="comm-btn" onclick="showScreen('ideapath')"><svg class="ico"><use href="#i-scale"></use></svg> How an Idea Reaches the Board</button>
+</div>
 <div class="comm-item">
 <div class="comm-title">Board Proposal Form</div>
 <div class="comm-desc">Bring an idea or issue to a Board of Directors meeting.</div>
@@ -12466,6 +12487,7 @@ if (name === 'pointsroll') initPointsRollScreen();
 if (name === 'auction') initAuctionScreen();
 if (name === 'boardcycle') renderBoardCycle();
 if (name === 'plainwords') renderPlainWords();
+if (name === 'ideapath') renderIdeaPath();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
 if (name === 'addvendor') {
@@ -12623,6 +12645,7 @@ pointsroll:        { title: 'Annual Points Rollover' },
 auction:           { title: () => selectionSeason() + ' Season-Long Booth Reservations' },
 boardcycle:        { title: 'Board Meeting Cycle' },
 committees:        { title: 'Committees' },
+ideapath:          { title: 'How an Idea Reaches the Board' },
 mycommittees:      { title: 'Committees' }
 };
 function isShoulderSeason(d) {
@@ -15559,7 +15582,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-57';
+const BUILD_ID = '15-61';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21403,6 +21426,16 @@ alerts.push({ topic: 'Documents', n: overdue.length, t: overdue.length + ' past 
 d: 'Assigned, nothing received, and the date has gone by',
 cls: 'expired', go: 'requirements' });
 }
+const chairless = COMMITTEES.filter(cm => {
+const st = committeeState()[cm.key];
+return !(st.members || []).some(m => m.chair);
+});
+if (chairless.length) {
+alerts.push({ topic: 'Committees', n: chairless.length,
+t: chairless.length + (chairless.length === 1 ? ' committee has no chair' : ' committees have no chair'),
+d: chairless.map(c => c.name).join(', ') + ' \u2014 without a chair nobody can post work-hour tasks in that committee\u2019s name, and anything reported done has nowhere to come back to',
+cls: 'expiring', go: 'committees' });
+}
 const forBoard = boardReviewList();
 if (forBoard.length) {
 alerts.push({ topic: 'Board', n: forBoard.length, t: forBoard.length + (forBoard.length === 1 ? ' topic waiting for the Board' : ' topics waiting for the Board'),
@@ -22067,6 +22100,109 @@ const state = committeeState();
 return COMMITTEES.filter(cm =>
 (state[cm.key].members || []).some(m => m.id === vendorId));
 }
+// How an idea travels from a vendor to the Board.
+//
+// The Vendor Guide has no decision tree. It has one escalation ladder, on
+// p.16, written for a single dispute -- a neighbour's line blocking your
+// booth -- and a direct route to the Board on p.34. The committee steps in
+// between are how the market works in practice and how this app routes
+// things; the Guide has no committees section at all to state them. Every
+// route below marks which of the two it is, because a vendor reading this
+// should be able to tell what is written policy and what is not.
+const IDEA_ROUTES = [
+{ key: 'vendor', t: 'A problem with another vendor',
+eg: 'Their line blocks your booth. Their setup crowds the aisle. Something between the two of you.',
+steps: [
+{ s: 'Ask them yourself first.', d: 'The Guide names this as the first step, not a courtesy.' },
+{ s: 'Ask a Market Manager to help.', d: 'If it carries on after you have asked.' },
+{ s: 'Speak to the committee chair for their category.', d: 'Food, Artisan or Agriculture \u2014 whichever the other vendor is. Ask them to intervene.' },
+{ s: 'Grievance Committee, or the Board.', d: 'The Guide calls this the final option, once the rest has failed.' },
+], src: 'guide', cite: 'Vendor Guide p.16' },
+{ key: 'building', t: 'Something about the pavilion',
+eg: 'A repair. A change to a booth. Anything about the building itself.',
+steps: [
+{ s: 'A repair goes on the Facilities Repair &amp; Landscaping Request Form.', d: 'Linked under Communicate with the Market.' },
+{ s: 'Work on your own booth is a Booth Improvement.', d: 'It joins the Building &amp; Grounds proposal queue and goes on their agenda.' },
+{ s: 'Building &amp; Grounds takes it up.', d: 'The committee decides what it can settle itself.' },
+{ s: 'If it needs money or a rule changed, B&amp;G carries it to the Board.', d: 'The Board decides.' },
+], src: 'practice', cite: 'How the market works \u2014 the Guide has no committees section' },
+{ key: 'category', t: 'Something about products or category rules',
+eg: 'What counts as value-added. A jurying question. Anything in the Ag, Artisan or Food guidelines.',
+steps: [
+{ s: 'Take it to the committee for your category.', d: 'Agriculture, Artisan or Food. Each has its own guidelines and its own rubric.' },
+{ s: 'The committee considers it against those guidelines.', d: 'This is the work they exist to do.' },
+{ s: 'If it changes policy, the committee recommends to the Board.', d: 'The Guide shows exactly this shape for ownership changes: the category committee finds the facts, Governance combines them, the Board decides.' },
+], src: 'practice', cite: 'Pattern from Vendor Guide p.33; committee guidelines are separate documents' },
+{ key: 'exception', t: 'You need an exception to a rule, for you',
+eg: 'A late fee. An attendance shortfall. A Leave of Absence. A disability accommodation.',
+steps: [
+{ s: 'This is an Exception Request.', d: 'The Guide calls it a Special Needs Request: a request to allow an action outside current policy.' },
+{ s: 'Submit at least one week before the December Board meeting.', d: 'Under Communicate with the Market.' },
+{ s: 'The Board decides.', d: 'It is a policy exception whatever the reason behind it.' },
+], src: 'guide', cite: 'Vendor Guide p.35, glossary' },
+{ key: 'policy', t: 'A change to how the market runs',
+eg: 'A new policy. A project. Anything that needs Board approval and is not one of the above.',
+steps: [
+{ s: 'Fill in the Board Proposal form.', d: 'Any vendor may propose on IFM policies, projects, or other topics.' },
+{ s: 'You must attend the meeting it is on the agenda for.', d: 'And present it yourself. Nobody presents it for you.' },
+{ s: 'The Board decides.', d: 'You get work hours for preparing it and for the time at the meeting \u2014 but only if you attend and present.' },
+], src: 'guide', cite: 'Vendor Guide p.34' },
+];
+function renderIdeaPath() {
+const body = document.getElementById('ideaPathBody');
+if (!body) return;
+body.innerHTML = '';
+IDEA_ROUTES.forEach(r => {
+const fold = document.createElement('div');
+fold.className = 'dash-fold';
+const bar = document.createElement('button');
+bar.type = 'button';
+bar.className = 'fold-bar';
+bar.innerHTML = '<span class="fold-title">' + r.t + '</span>' +
+'<span class="fold-sub">' + r.eg + '</span>' +
+'<span class="fold-chev">\u203a</span>';
+bar.onclick = () => toggleFold(bar);
+fold.appendChild(bar);
+const box = document.createElement('div');
+box.className = 'fold-body';
+r.steps.forEach((st, i) => {
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + (i + 1) + '. ' + st.s + '</div>' +
+'<div class="req-meta">' + st.d + '</div></div>';
+box.appendChild(row);
+});
+const cite = document.createElement('p');
+cite.className = 'empty-note';
+cite.style.margin = '8px 0 0';
+cite.innerHTML = (r.src === 'guide'
+? '<b>Written in the Guide.</b> '
+: '<b>Not written down.</b> ') + r.cite + '.';
+box.appendChild(cite);
+fold.appendChild(box);
+body.appendChild(fold);
+});
+const board = document.getElementById('ideaPathBoard');
+if (board) board.innerHTML =
+'<p class="empty-note" style="margin-top:0;">Regular Board meetings are open to every vendor. ' +
+'Second Wednesday of the month at 7 PM \u2014 6 PM from November through March. ' +
+'The location is sent out by official IFM communication one week beforehand.</p>' +
+'<p class="empty-note" style="margin-bottom:0;">Nine board members, elected by Full Members, three each year to three-year terms. ' +
+'Any vendor required at a meeting for something other than disciplinary action \u2014 presenting a committee update, ' +
+'or your own proposal \u2014 receives work hours for the time. <i>Vendor Guide p.34.</i></p>';
+const src = document.getElementById('ideaPathSource');
+if (src) src.innerHTML =
+'<p class="empty-note" style="margin-top:0;">The Vendor Guide has no decision tree, and no committees section. ' +
+'What it has is an escalation ladder on p.16 written for one particular dispute, a direct route to the Board on p.34, ' +
+'and a worked example on p.33 where committees find facts and the Board decides.</p>' +
+'<p class="empty-note">The routes above marked <b>Written in the Guide</b> follow it. ' +
+'The ones marked <b>Not written down</b> are how the market works in practice and how this app moves things \u2014 ' +
+'they are a fair reading, not policy. Putting them in front of the Board is what would make them policy, ' +
+'and that is itself a Board Proposal.</p>' +
+'<p class="empty-note" style="margin-bottom:0;">If any of this is wrong, it should be corrected here and in the Guide together, ' +
+'not in one and not the other.</p>';
+}
 function initCommitteesScreen() {
 const sel = document.getElementById('cmteSelect');
 if (sel && !sel.children.length) {
@@ -22095,6 +22231,16 @@ const p = document.createElement('p');
 p.className = 'empty-note';
 p.textContent = 'Nobody is on this committee yet.';
 box.appendChild(p);
+}
+if (!st.members.some(m => m.chair)) {
+const warn = document.createElement('p');
+warn.className = 'empty-note';
+warn.style.color = '#8A3B2E';
+warn.style.margin = '0 0 8px';
+warn.textContent = st.members.length
+? 'No chair on record. Until one is named, nobody can post work-hour tasks in this committee\u2019s name, and nothing reported done has anywhere to come back to. Make one of the members below chair.'
+: 'No chair on record, and no members. Until somebody is added and made chair, this committee cannot post work-hour tasks or receive anything the office sends it.';
+box.appendChild(warn);
 }
 st.members.forEach(m => {
 const row = document.createElement('div');
@@ -22397,6 +22543,11 @@ card.appendChild(lab); card.appendChild(sel);
 }
 const t = mk('input', { type: 'text', id: 'chTaskTitle', placeholder: 'e.g. Re-hang the Booth 41 signage rail' });
 const lt = mk('label'); lt.textContent = 'What needs doing'; lt.style.marginTop = '8px';
+const ld = mk('label'); ld.textContent = 'Anything they need to know (optional)'; ld.style.marginTop = '10px';
+const desc = mk('input', { type: 'text', id: 'chTaskDesc',
+placeholder: 'Where to meet, what to bring, how long it is likely to take' });
+const ldt = mk('label'); ldt.textContent = 'By when (optional)'; ldt.style.marginTop = '10px';
+const date = mk('input', { type: 'date', id: 'chTaskDate' });
 const lh = mk('label'); lh.textContent = 'Work hours credit'; lh.style.marginTop = '10px';
 const hrs = mk('input', { type: 'number', id: 'chTaskHours', min: '0', step: '0.25', value: '1' });
 const ls = mk('label'); ls.textContent = 'Number of people needed'; ls.style.marginTop = '10px';
@@ -22405,7 +22556,7 @@ const btn = mk('button', { type: 'button', 'class': 'primary-btn' });
 btn.textContent = 'Post it';
 btn.onclick = () => chairPostTask(chairs);
 const msg = mk('div', { 'class': 'status-msg', id: 'chTaskMsg' });
-[lt, t, lh, hrs, ls, spots, btn, msg].forEach(el => card.appendChild(el));
+[lt, t, ld, desc, ldt, date, lh, hrs, ls, spots, btn, msg].forEach(el => card.appendChild(el));
 return card;
 }
 async function chairPostTask(chairs) {
@@ -22421,7 +22572,9 @@ const spots = Math.max(1, parseInt(document.getElementById('chTaskSpots').value,
 const tasks = await loadTasks();
 tasks.push({
 id: 'tk' + Date.now(),
-title: title, desc: '', date: '',
+title: title,
+desc: (document.getElementById('chTaskDesc') || {}).value || '',
+date: (document.getElementById('chTaskDate') || {}).value || '',
 category: key === 'bg' ? 'Building & Grounds' : 'Board / Committee',
 hours: hours, spotsNeeded: spots, assignedTo: '',
 postedBy: me.businessName + ' \u2014 ' + cm.name + ' chair',
@@ -22430,9 +22583,10 @@ claims: [], createdAt: Date.now()
 });
 cache.tasks = tasks;
 await saveTasks();
-showMsg('chTaskMsg', 'ok', 'Posted to the board in the ' + cm.name + ' committee\u2019s name.');
-document.getElementById('chTaskTitle').value = '';
 initMyCommitteesScreen();
+showMsg('chTaskMsg', 'ok', 'Posted to the board in the ' + cm.name + ' committee\u2019s name \u2014 ' +
+'every vendor can see it, and ' + hours + ' work hour' + (hours === 1 ? '' : 's') +
+' post to whoever does it once you sign it off.');
 }
 // Which manager folders belong to a place. Everything unlisted is about
 // vendors, money, the board or the record, and keeps its spot all year.
@@ -22461,7 +22615,7 @@ d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held f
 { s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
 ] },
 { key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
-sub: 'The plan for the day itself',
+sub: 'Money taken and what happened, market day by market day',
 tiles: [
 { s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
 { s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a sticker to sell, scan it again when it comes back' },
@@ -22470,7 +22624,7 @@ tiles: [
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
 ] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
-sub: 'Who they are and how they\u2019re doing \u2014 records, points, absences, fines and discipline',
+sub: 'Who they are and how they are doing \u2014 records, points, absences, fines and discipline',
 head: buildStandingLookup,
 tiles: [
 { s: 'records', i: 'i-list', t: 'Vendor Records', d: 'Everything on file, vendor by vendor' },
@@ -22484,6 +22638,10 @@ tiles: [
 { s: 'calloutpatterns', i: 'i-phone', t: 'Absence Patterns', d: 'Who is missing the deadline \u2014 and whether a deadline is the problem' },
 { soon: 'fines', s: 'fines', i: 'i-scale', t: 'Fines &amp; Penalties', d: 'What is owed, with the escalation' },
 { soon: 'disciplinary', ot: 'disciplinary', i: 'i-warning', t: 'Disciplinary Record', d: 'Which stage a vendor is at' },
+] },
+{ key: 'money', title: 'Money', icon: 'i-basket',
+sub: 'What a vendor owes and has paid, and the year totalled up',
+tiles: [
 { s: 'account', i: 'i-basket', t: 'Vendor Accounts', d: 'One vendor\u2019s whole balance \u2014 fees, fines, share, hours owed' },
 { s: 'yearend', i: 'i-document', t: 'Year-End Money Worksheet', d: 'Every figure the app holds for a year, and what it does not' },
 ] },
@@ -22500,7 +22658,6 @@ tiles: [
 { s: 'boothlayout', i: 'i-ruler', t: 'Booth Layouts', d: 'What a vendor sees when they pick a booth' },
 { s: 'stallimprove', i: 'i-ruler', t: 'Booth Improvements', d: 'Vendor proposals, the B&G agenda, and the per-booth checklist' },
 { s: 'pavrentals', i: 'i-calendar', t: 'Pavilion Rentals', d: 'When the pavilion is let to somebody else \u2014 vendors out by 4 PM on those market days' },
-{ s: 'facilitiestracker', i: 'i-wrench', t: 'Send to Committee', d: 'Put a repair, or anything else, on a committee\u2019s list \u2014 straight to the chair who has to act on it' },
 { soon: 'compliance', ot: 'compliance', i: 'i-ruler', t: 'Booth Compliance Clocks', d: 'Inspections, 60-day and two-year clocks' },
 { soon: 'bgwalk', ot: 'bgwalk', i: 'i-wrench', t: 'B&amp;G Walkthrough', d: 'The monthly inspection round' },
 ] },
@@ -22532,6 +22689,8 @@ tiles: [
 { key: 'board', title: 'Board & Committees', icon: 'i-columns',
 sub: 'What is in front of the board, and who serves',
 tiles: [
+{ s: 'facilitiestracker', i: 'i-wrench', t: 'Send to Committee', d: 'Put a repair, or anything else, on a committee\u2019s list \u2014 straight to the chair who has to act on it' },
+{ s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
 { s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
 { s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
 { s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
@@ -22542,10 +22701,6 @@ tiles: [
 d: 'The written rule, enforced or not \u2014 fees, fines, deadlines, minimums' },
 { soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Enforce These or Not?',
 d: 'Rules nobody is enforcing, and what you decided to do about it' },
-] },
-{ key: 'record', title: 'Records', icon: 'i-document',
-sub: 'The rule as written',
-tiles: [
 ] },
 // Vocabulary sits alone at the absolute foot of the desk.
 { s: 'plainwords', i: 'i-quill', t: 'Vocabulary', foot: true,
@@ -24813,7 +24968,17 @@ if (!card) return;
 const vendor = currentRole === 'vendor' ? currentVendor() : null;
 const formCard = document.getElementById('cioFormCard');
 if (formCard) formCard.style.display = vendor ? '' : 'none';
-if (!vendor) { card.style.display = 'none'; initRecordForVendor(); return; }
+if (!vendor) {
+card.style.display = 'none';
+const mLede = document.getElementById('cioLede');
+if (mLede) mLede.innerHTML = 'Where the office writes down what a vendor said when they did not use the app \u2014 ' +
+'a phone call, an email, a letter, or a word at the desk. What you enter here becomes the same record their ' +
+'own screen would have made, so it reaches the same places and counts the same way. The one thing that ' +
+'matters most is <strong>when they told you</strong>: every deadline is judged against that, not against ' +
+'the moment you typed it in.';
+initRecordForVendor();
+return;
+}
 const satBooth = saturdayBoothOf(vendor.vendorId);
 const sunBooth = sundayBoothOf(vendor.vendorId);
 const sundayOnly = !satBooth && !!sunBooth;
