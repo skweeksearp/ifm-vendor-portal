@@ -2246,6 +2246,22 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <input type="text" id="profEmail" placeholder="e.g. you@email.com">
 <label for="profAddress">Address</label>
 <input type="text" id="profAddress" placeholder="e.g. Ithaca, NY 14850">
+<label for="profSecondContact" style="margin-top:14px;">Spouse or family member who also acts for the business</label>
+<input type="text" id="profSecondContact" placeholder="e.g. Sam Tarantelli">
+<p class="empty-note" style="margin:6px 0 0;">Somebody who may stand the booth, ring the office, or use this app on the business&rsquo;s behalf. The market takes what they say as coming from you, so only add somebody you would trust to speak for the business.</p>
+<label for="profSecondRelation" style="margin-top:10px;">How they are connected</label>
+<select id="profSecondRelation">
+<option value="">&mdash; choose &mdash;</option>
+<option>Spouse or partner</option>
+<option>Parent</option>
+<option>Adult child</option>
+<option>Sibling</option>
+<option>Other family</option>
+<option>Business partner</option>
+<option>Employee</option>
+</select>
+<label for="profSecondPhone" style="margin-top:10px;">Their phone</label>
+<input type="text" id="profSecondPhone" placeholder="e.g. 607-555-0142">
 <label for="profBooth">Weekend Pavilion Booth ID</label>
 <input type="text" id="profBooth" placeholder="e.g. 23B, or 3 (SAT ONLY)">
 <label for="profWebsite">Website</label>
@@ -3484,6 +3500,19 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="status-msg" id="urMsg"></div>
 </div>
 </section>
+<div id="reasonBackdrop" class="modal-backdrop" style="display:none;" onclick="handleBackdropClick(event)">
+<div class="card modal-sheet">
+<h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span><span id="reasonTitle"></span></h2>
+<p class="empty-note" style="margin-top:0;" id="reasonWhy"></p>
+<label for="reasonText">Reason</label>
+<input type="text" id="reasonText" placeholder="e.g. the rail is back up but the bracket is still loose" autocomplete="off">
+<p class="empty-note" style="margin:6px 0 0;">They see this word for word. Say what would put it right, so nobody has to ring the office to find out.</p>
+<div style="display:flex; gap:10px; margin-top:12px;">
+<button type="button" class="primary-btn" style="margin:0;" id="reasonGo">Send it back</button>
+<button type="button" class="ghost-btn" style="margin:0;" onclick="closeReason(null)">Cancel</button>
+</div>
+</div>
+</div>
 <section id="screen-voicemail" class="screen">
 <div class="screen-head" id="head-voicemail"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">Messages left on the market&rsquo;s answering machine, transcribed and waiting for you. Nothing here has been recorded against a vendor yet &mdash; you approve them one at a time, and what you approve becomes exactly the record Manual Input would have made.</p>
@@ -4222,6 +4251,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Recent Entries<button type="button" class="help-dot" onclick="showHelp(60)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" id="hrsWaiting" style="display:none; margin-top:0; padding:10px; background:#F4F7F0; border-radius:8px;"></p>
 <table class="log" id="hrsTable">
 <thead><tr><th>Date</th><th>Activity</th><th>Hrs</th><th>Balance</th></tr></thead>
 <tbody></tbody>
@@ -5240,8 +5270,9 @@ const BOOTH_SECTIONS = [
 const BOOTH_SEED = [
 { num: 'P1', section: 'Pavilion Floor', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood', note: 'Pavilion floor space \u2014 offered at the circle end only when booth demand exceeds availability, to the next vendor in line.' },
 { num: 'P2', section: 'Pavilion Floor', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood', note: 'Pavilion floor space \u2014 offered at the circle end only when booth demand exceeds availability, to the next vendor in line.' },
-{ num: 'WT1', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space, new for 2026. Position is approximate \u2014 not on the Oct 2025 map. Reserved in advance through the weekly Booth Selection.' },
-{ num: 'WT2', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space, new for 2026. Position is approximate \u2014 not on the Oct 2025 map. Reserved in advance through the weekly Booth Selection.' },
+{ num: 'WT1', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space. Reserved in advance through the weekly Booth Selection.' },
+{ num: 'WT2', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space. Reserved in advance through the weekly Booth Selection.' },
+{ num: 'WT3', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space, third of three on the July 19 2026 map. Reserved in advance through the weekly Booth Selection.' },
 { num: '1', section: 'Front Row', corner: true, propane: false, reservedBy: 'V033', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '2', section: 'Front Row', corner: false, propane: false, reservedBy: 'V044', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '3', section: 'Front Row', corner: false, propane: false, reservedBy: 'V078', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: true, w: false, floor: 'wood' },
@@ -5351,9 +5382,9 @@ blurb: 'More restrooms, in the trailer beside the mid-hall service block.' },
 { x: 474, y: 281, w: 39, h: 39, text: 'Restrooms', sub: 'ADA', fs: 7.5, key: 'restrooms',
 search: ['restroom', 'rest room', 'bathroom', 'toilet', 'wc', 'ada'],
 blurb: 'ADA accessible. Mid-hall, between booths 33 and 34.' },
-{ x: 541, y: 111, w: 38, h: 38, text: 'Merch Booth', key: 'merch', dark: true,
-search: ['merch', 'merchandise', 'merch booth', 'shirt', 't-shirt', 'tshirt', 'hat', 'tote', 'souvenir', 'gift', 'market merch', 'ifm merch'],
-blurb: 'Market merchandise \u2014 the market\u2019s own goods. On the Waterfront Trail line, just past WT2.' },
+{ x: 541, y: 111, w: 38, h: 38, text: 'Merch Mansion', key: 'merch', dark: true,
+search: ['merch mansion', 'mansion', 'merch', 'merchandise', 'shirt', 't-shirt', 'tshirt', 'hat', 'tote', 'souvenir', 'gift', 'market merch', 'ifm merch'],
+blurb: 'The Merch Mansion \u2014 the market\u2019s own goods: shirts, hats, totes. A permanent structure on the Waterfront Trail line, just past the three tent spaces.' },
 { x: 513, y: 281, w: 38, h: 39, text: 'Office', fs: 8, key: 'office',
 search: ['office', 'market office', 'manager', 'staff', 'help', 'information'],
 blurb: 'The market office \u2014 staff and questions. Mid-hall, next to the Restrooms.' },
@@ -6030,6 +6061,7 @@ const BOOTH_COORDS = {
 'P2': { x: 1530, y: 394 },
 'WT1': { x: 470, y: 130 },
 'WT2': { x: 515, y: 130 },
+'WT3': { x: 560, y: 130 },
 '24': { x: 40, y: 300 },
 '25': { x: 80, y: 300 },
 '26': { x: 120, y: 300 },
@@ -7956,6 +7988,7 @@ V073: { instagram: 'https://www.instagram.com/sheepy.hollow/',
 products: 'A cottage farm and microbakery in Ithaca, NY, with a small flock of Romney longwool sheep.' }
 };
 const PROFILE_FIELDS = ['primaryContact', 'phone', 'email', 'address',
+'secondContact', 'secondRelation', 'secondPhone',
 'boothDisplay', 'website', 'facebook', 'instagram', 'products'];
 function vendorSellsFood(vendor) {
 if (!vendor) return false;
@@ -11501,6 +11534,13 @@ if (clear) clear.style.display = photo ? '' : 'none';
 const inp = document.getElementById('profPhotoInput');
 if (inp) inp.style.display = photo ? 'none' : '';
 }
+// The second person's name with their relationship, when both are known.
+function secondPersonLabel(vendor) {
+const n = vField(vendor, 'secondContact');
+if (!n) return '';
+const r = vField(vendor, 'secondRelation');
+return r ? n + ' (' + r + ')' : n;
+}
 function renderProfile(vendor) {
 renderVendorPhotoControls();
 initShareCard();
@@ -11512,6 +11552,8 @@ const rows = [
 ['Phone', vField(vendor, 'phone')],
 ['Email', vField(vendor, 'email')],
 ['Address', vField(vendor, 'address')],
+['Also acts for this business', secondPersonLabel(vendor)],
+['Their phone', vField(vendor, 'secondPhone')],
 ['Weekend Pavilion Booth ID', vField(vendor, 'boothDisplay')],
 ['Website', vField(vendor, 'website')],
 ['Facebook', vField(vendor, 'facebook')],
@@ -11535,6 +11577,9 @@ if (show) {
 document.getElementById('profBiz').value = vendor.businessName || '';
 document.getElementById('profContact').value = vField(vendor, 'primaryContact') || vendor.lastName || '';
 document.getElementById('profPhone').value = vField(vendor, 'phone');
+document.getElementById('profSecondContact').value = vField(vendor, 'secondContact');
+document.getElementById('profSecondRelation').value = vField(vendor, 'secondRelation');
+document.getElementById('profSecondPhone').value = vField(vendor, 'secondPhone');
 document.getElementById('profEmail').value = vField(vendor, 'email');
 document.getElementById('profAddress').value = vField(vendor, 'address');
 document.getElementById('profBooth').value = vField(vendor, 'boothDisplay');
@@ -11558,6 +11603,9 @@ primaryContact: document.getElementById('profContact').value.trim(),
 phone: document.getElementById('profPhone').value.trim(),
 email: document.getElementById('profEmail').value.trim(),
 address: document.getElementById('profAddress').value.trim(),
+secondContact: document.getElementById('profSecondContact').value.trim(),
+secondRelation: document.getElementById('profSecondRelation').value,
+secondPhone: document.getElementById('profSecondPhone').value.trim(),
 boothDisplay: document.getElementById('profBooth').value.trim(),
 website: document.getElementById('profWebsite').value.trim(),
 facebook: document.getElementById('profFacebook').value.trim(),
@@ -11990,6 +12038,21 @@ const bgBar = document.getElementById('bgBar');
 bgBar.style.width = bgPct + '%';
 bgBar.className = 'bar-fill' + (bgPct < 100 ? ' warn' : '');
 document.getElementById('bgCaption').textContent = fmtHrs(bgHours) + ' of ' + bgRequired + ' required Building & Grounds hours';
+const waiting = pendingHours(vendor.vendorId);
+const wNote = document.getElementById('hrsWaiting');
+if (wNote) {
+if (waiting.length) {
+const wh = waiting.reduce((s, r) => s + Number(r.hours || 0), 0);
+wNote.style.display = '';
+wNote.innerHTML = '<b>' + fmtHrs(wh) + ' hrs waiting on the office.</b> ' +
+waiting.map(r => fmtHrs(r.hours) + ' hrs \u2014 ' + esc(r.category || 'General') +
+' on ' + esc(formatDisplayDate(r.date))).join('; ') +
+'. Logged and not lost, but they do not count toward your total until a manager signs them off.';
+} else {
+wNote.style.display = 'none';
+wNote.innerHTML = '';
+}
+}
 const hrsBody = document.querySelector('#hrsTable tbody');
 hrsBody.innerHTML = '';
 led.rows.forEach(row => {
@@ -13338,7 +13401,7 @@ const holder = Object.keys(rec.assignments).find(vid => rec.assignments[vid] ===
 const booth = cache.booths.find(x => x.num === b.num);
 return '<tr' + (holder ? ' class="taken"' : '') + '>' +
 '<td class="bnum">' + esc(b.num) + '</td>' +
-'<td>' + esc((booth && booth.section) || '') + '</td>' +
+'<td>' + esc(boothWhere(booth)) + '</td>' +
 '<td>' + (b.vacatedBy ? esc(b.vacatedBy) + ' is away' : 'Open every market') + '</td>' +
 '<td class="pick">' + (holder ? esc(boothVendorName(holder)) : '') + '</td></tr>';
 }).join('');
@@ -14014,7 +14077,7 @@ row.className = 'open-booth-row' + (isAssigned ? ' assigned' : '');
 row.innerHTML =
 '<span class="ob-num">' + esc(b.num) + '</span>' +
 '<span class="ob-body">' +
-'<span class="ob-section">' + esc((booth && booth.section) || 'Booth') + '</span>' +
+'<span class="ob-section">' + esc(boothWhere(booth) || 'Booth') + '</span>' +
 '<span class="vacated-by">' +
 (isAssigned ? 'Given to ' + esc(boothVendorName(holder))
 : (b.vacatedBy ? 'Free today \u2014 ' + esc(b.vacatedBy) + ' is away'
@@ -15285,7 +15348,11 @@ const tasks = await loadTasks();
 const task = tasks.find(t => t.id === taskId);
 const claim = task && task.claims.find(c => c.vendorId === vendorId);
 if (!claim || !canReviewTask(task)) return;
+const reason = await askReason('Send back: ' + task.title,
+'The spot stays theirs and they can report it again. Tell them what is still outstanding.');
+if (!reason) return;
 claim.status = 'claimed';
+claim.sentBackNote = reason;
 claim.sentBackAt = Date.now();
 delete claim.reportedAt;
 delete claim.approvedAt;
@@ -15577,6 +15644,7 @@ const PLAIN_WORDS_KEPT = [
 { a: 'Non-working fee', d: '$25 for each work hour owed and not worked, due 28 February. It is the price of not working the hours, not a fee for something called non-working.' },
 { a: 'Leave of Absence', d: 'A year away with your place held \u2014 and you still pay the annual fee, and the Reserved Booth Fee if you hold a booth. Board approval required. Leaving without it costs points, banked hours and the booth.' },
 { a: 'Director, and who may be one', d: 'A seat on the Board of Directors. You do not have to be a vendor to hold one. The Bylaws make Members, Affiliated Vendors \u2014 that is, Easy Entry vendors \u2014 and \u201Cother persons\u201D all eligible to serve, and give every director an equal vote on Board matters whatever their membership class. So an Easy Entry vendor who cannot vote at a members\u2019 meeting votes as a full equal once elected to the Board, and somebody who sells nothing at the market at all may serve. What is restricted is the electing, not the standing: only Full Members vote in the November election, nine seats, three filled each year for three-year terms. The Vendor Guide does not mention any of this. (Bylaws Article IV \u00a73; Article III \u00a71.)' },
+{ a: 'Merch Mansion', d: 'The market\u2019s own merchandise stand, on the Waterfront Trail line just past the three tent spaces. It has been called the merch booth and the merch tent; neither is used any more, and the second was never right \u2014 it is a permanent structure, not a tent. The name on the Pavilion and Booth Map is Merch Mansion, and that is the only name the app uses. It is not a vendor space and is never offered through Booth Selection.' },
 { a: 'Jury, jurying', d: 'The committees jury products \u2014 craft and food work judged against a rubric. They do not jury vendors into Full Membership: there they nominate against a vacancy. A vendor can score well and wait years, because the gate is the open seat, not the score.' },
 ];
 function renderPlainWords() {
@@ -15603,7 +15671,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-65';
+const BUILD_ID = '15-74';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20304,7 +20372,7 @@ main.className = 'req-row-main';
 main.innerHTML = '<div class="req-name">Booth ' + esc(e.b.num) + ' \u2014 ' +
 esc(v ? v.businessName : e.id) + '</div>' +
 '<div class="req-meta">' + (e.kind === 'sat' ? 'Reserved \u00b7 every market day' : 'Sunday-only seasonal') +
-' \u00b7 ' + esc(e.b.section || '') + '</div>';
+(boothWhere(e.b) ? ' \u00b7 ' + esc(boothWhere(e.b)) : '') + '</div>';
 row.appendChild(main);
 const btn = document.createElement('button');
 btn.type = 'button';
@@ -21128,7 +21196,9 @@ const guess = m.vendorId || (matches.length === 1 ? matches[0].vendorId : '');
 let html = '<div class="req-name" style="margin-bottom:2px;">' + esc(m.from) +
 (m.callerName ? ' \u00b7 ' + esc(m.callerName) : '') + '</div>' +
 '<div class="req-meta" style="margin-bottom:10px;">Left ' + esc(fullStamp(m.at)) +
-' \u00b7 ' + esc(m.seconds || 0) + ' seconds</div>';
+' \u00b7 ' + esc(m.seconds || 0) + ' seconds' +
+(matches.length === 1 && vmWhoRang(matches[0], m.from)
+? ' \u00b7 ' + esc(vmWhoRang(matches[0], m.from)) : '') + '</div>';
 if (m.audioUrl) html += '<audio controls preload="none" style="width:100%; margin-bottom:10px;" src="' + esc(m.audioUrl) + '"></audio>';
 html += '<div class="empty-note" style="margin:0 0 10px; padding:10px; background:#F4F7F0; border-radius:8px;">' +
 '<b>What the machine heard:</b> ' + esc(m.transcript || '(nothing)') + '</div>';
@@ -21173,11 +21243,28 @@ warn.style.margin = '6px 0 0';
 warn.textContent = 'They did not use the keypad, so this is a guess from the words. Check it against the recording.';
 card.appendChild(warn);
 }
-// Which day
+// Which day -- said aloud, so read from the recording and always checkable
+const dGuess = m.marketDate ? null : vmGuessDate(m.transcript, m.at);
 const ld = mk('label'); ld.textContent = 'Market day it concerns'; ld.style.marginTop = '10px';
 const sd = mk('input', { type: 'date', id: 'vmD' + m.id });
-sd.value = m.marketDate || '';
+sd.value = m.marketDate || (dGuess && dGuess.date) || '';
 card.appendChild(ld); card.appendChild(sd);
+const dnote = mk('p', { 'class': 'empty-note' });
+dnote.style.margin = '6px 0 0';
+if (m.marketDate) {
+dnote.textContent = 'Entered on the keypad.';
+} else if (dGuess && dGuess.date) {
+dnote.innerHTML = 'Heard as \u201C' + esc(dGuess.heard) + '\u201D and read as <b>' +
+esc(formatDisplayDate(dGuess.date)) + '</b>' +
+(dGuess.sure === 'high' ? '. Check it against the recording.'
+: '. That is a guess from the words \u2014 play the message before you approve it.');
+} else if (dGuess) {
+dnote.innerHTML = 'They said \u201C' + esc(dGuess.heard) + '\u201D, which does not name a day. ' +
+'Play the message and set the date yourself.';
+} else {
+dnote.textContent = 'No date was said that the machine could make out. Play the message and set it yourself.';
+}
+card.appendChild(dnote);
 // Note
 const ln = mk('label'); ln.textContent = 'Note'; ln.style.marginTop = '10px';
 const sn = mk('input', { type: 'text', id: 'vmN' + m.id });
@@ -21246,6 +21333,33 @@ renderVoicemail();
 await loadVoicemail();
 renderVoicemail();
 }
+let reasonResolve = null;
+function askReason(title, why) {
+return new Promise(resolve => {
+reasonResolve = resolve;
+document.getElementById('reasonTitle').textContent = title;
+document.getElementById('reasonWhy').textContent = why || '';
+const box = document.getElementById('reasonText');
+box.value = '';
+const back = document.getElementById('reasonBackdrop');
+back.style.display = '';
+back.classList.add('open');
+document.getElementById('reasonGo').onclick = () => {
+const v = box.value.trim();
+if (!v) { box.focus(); return; }
+closeReason(v);
+};
+setTimeout(() => box.focus(), 50);
+});
+}
+function closeReason(value) {
+const back = document.getElementById('reasonBackdrop');
+back.classList.remove('open');
+back.style.display = 'none';
+const r = reasonResolve;
+reasonResolve = null;
+if (r) r(value);
+}
 let vmCache = null;
 async function loadVoicemail() {
 const v = await storageGet('ifm-voicemail');
@@ -21260,7 +21374,57 @@ function vmDigits(s) { return String(s || '').replace(/\D/g, '').slice(-10); }
 function vmMatchCaller(from) {
 const d = vmDigits(from);
 if (d.length !== 10) return [];
-return cache.vendors.filter(v => vmDigits(vField(v, 'phone')) === d);
+return cache.vendors.filter(v =>
+vmDigits(vField(v, 'phone')) === d || vmDigits(vField(v, 'secondPhone')) === d);
+}
+// Which of the two people on the record this number belongs to, so the office
+// knows whether it was the owner or the second person who rang.
+function vmWhoRang(vendor, from) {
+const d = vmDigits(from);
+if (vmDigits(vField(vendor, 'phone')) === d) return vField(vendor, 'primaryContact') || '';
+if (vmDigits(vField(vendor, 'secondPhone')) === d) {
+const n = vField(vendor, 'secondContact');
+const r = vField(vendor, 'secondRelation');
+return n ? n + (r ? ' \u2014 ' + r.toLowerCase() : '') : '';
+}
+return '';
+}
+const VM_DAYWORDS = { sunday: 0, sun: 0, monday: 1, tuesday: 2, wednesday: 3, wed: 3,
+thursday: 4, friday: 5, saturday: 6, sat: 6 };
+const VM_MONTHS = { january: 0, jan: 0, february: 1, feb: 1, march: 2, mar: 2, april: 3, apr: 3,
+may: 4, june: 5, jun: 5, july: 6, jul: 6, august: 7, aug: 7, september: 8, sept: 8, sep: 8,
+october: 9, oct: 9, november: 10, nov: 10, december: 11, dec: 11 };
+// Reads a date out of what the caller said. Returns the date, the words it
+// came from, and how sure it is -- never a bare date, because the manager has
+// to be able to judge the guess against the recording.
+function vmGuessDate(transcript, callAt) {
+const t = String(transcript || '').toLowerCase();
+if (!t) return null;
+const base = new Date(callAt || Date.now());
+// "September 5th", "Sept 5"
+const md = t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/);
+if (md && VM_MONTHS[md[1]] !== undefined) {
+const d = new Date(base.getFullYear(), VM_MONTHS[md[1]], Number(md[2]));
+if (!isNaN(d)) return { date: isoOf(d), heard: md[0], sure: 'high' };
+}
+// "this Saturday", "next Sunday", "on Wednesday"
+const dw = t.match(/\b(this|next|on|coming)?\s*(sunday|sun|monday|tuesday|wednesday|wed|thursday|friday|saturday|sat)\b/);
+if (dw) {
+const want = VM_DAYWORDS[dw[2]];
+const d = new Date(base);
+let add = (want - d.getDay() + 7) % 7;
+if (add === 0) add = 7;
+if (/next/.test(dw[1] || '')) add += 7;
+d.setDate(d.getDate() + add);
+return { date: isoOf(d), heard: dw[0].trim(), sure: /next/.test(dw[1] || '') ? 'low' : 'medium' };
+}
+// "the weekend", "this weekend" -- ambiguous between the two days
+if (/\bweekend\b/.test(t)) return { date: '', heard: 'the weekend', sure: 'none' };
+return null;
+}
+function isoOf(d) {
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+'-' + String(d.getDate()).padStart(2, '0');
 }
 function vmPending() { return ((vmCache && vmCache.msgs) || []).filter(m => m.status === 'new'); }
 function vmKindLabel(k) {
@@ -21317,7 +21481,12 @@ t: (boothVendorName(r.vendorId) || r.vendorId) + ' \u2014 ' + r.hours + ' hour' 
 m: (r.category || 'General') + ' \u00b7 ' + formatDisplayDate(r.date) + (r.note ? ' \u00b7 ' + r.note : ''),
 acts: [
 { t: 'Approve', primary: true, fn: () => reviewLoggedHours(r.id, 'approve') },
-{ t: 'Send Back', fn: () => reviewLoggedHours(r.id, 'sendback') }
+{ t: 'Send Back', fn: async () => {
+const reason = await askReason('Send back logged hours',
+r.hours + ' hour' + (r.hours === 1 ? '' : 's') + ' \u2014 ' + (r.category || 'General') +
+'. Say why, so they know whether to log it differently or not at all.');
+if (reason) await reviewLoggedHours(r.id, 'sendback', reason);
+} }
 ]
 }));
 },
@@ -21395,7 +21564,7 @@ out.push({ key: 'task:' + task.id + ':approved:' + (c.approvedAt || ''), state: 
 t: task.title, m: 'Signed off ' + shortDate(c.approvedAt) + ' \u00b7 ' + (task.hours || 0) + ' hours posted' });
 } else if (c.status === 'claimed' && c.sentBackAt) {
 out.push({ key: 'task:' + task.id + ':sentback:' + c.sentBackAt, state: 'no', label: 'Sent back', go: 'hours',
-t: task.title, m: 'Sent back ' + shortDate(c.sentBackAt) + ' \u00b7 still yours to finish and report again' });
+t: task.title, m: 'Sent back ' + shortDate(c.sentBackAt) + ' \u00b7 ' + (c.sentBackNote || 'still yours to finish and report again') });
 }
 });
 });
@@ -21833,9 +22002,9 @@ d: 'Warning, then temporary removal pending Board review, then possible permanen
 { id: 'BF29', kind: 'dormant', cat: 'Deadlines', src: 'Vendor Guide, Fee Deadlines',
 t: 'The Exception Request deadline is earlier than people expect',
 d: 'Requests must reach management by the first Wednesday of December to be heard at the December Board meeting \u2014 the last one before the 31 December renewal deadline. A vendor who realises in late December that they cannot pay has already missed the only route to relief.' },
-{ id: 'BF31', kind: 'discrepancy', cat: 'Booths', src: 'Guide, Non-reservable Booths; and the market\u2019s own map',
-t: 'Waterfront Trail: records say three spaces, the map shows two',
-d: 'The third is the market\u2019s own merchandise booth, a permanent structure rather than a temporary vendor space, so only two are ever offered through the weekly Booth Selection. That is the reason the map carries two, and it is written nowhere else \u2014 which leaves anyone reading older paperwork with a count that does not match. The Guide gave the Operations Manager the job of selecting these spaces, so the number and their placement are hers to set; what is missing is a note on the record saying which of the three is not in play and why.' },
+{ id: 'BF31', kind: 'discrepancy', cat: 'Booths', src: 'Pavilion and Booth Map, 19 July 2026',
+t: 'Waterfront Trail: settled at three tent spaces, plus the Merch Mansion',
+d: 'This was open while the app worked from the October 2025 map, which did not show these spaces at all. The app carried two, on the reading that the third box on the trail line was the market\u2019s own merchandise structure rather than a vendor space. The 19 July 2026 map settles it: it draws <b>three</b> dashed boxes labelled \u201CWaterfront Trail Tents\u201D and, beside them, a separate solid structure labelled \u201CMerch Mansion\u201D. So there are three vendor spaces and the Merch Mansion is a fourth thing, not one of the three. The app now carries WT1, WT2 and WT3. What still is not written anywhere is whether all three go through the weekly Booth Selection, and what they cost \u2014 the Guide gave the Operations Manager the job of selecting these spaces but says nothing about the number, the fee or the route.' },
 { id: 'BF30', kind: 'dormant', cat: 'Membership', src: 'Vendor Guide, Certificate of Membership',
 t: 'The membership share carries equity, and leaving members may claim it',
 d: '$300 over up to three years, $100 of equity once complete, redeemable by written request on leaving \u2014 and repurchasable in full if they return. Installments in progress and equity owed to departed members are both financial positions nobody is tracking.' },
@@ -22282,6 +22451,8 @@ note: 'The pavilion itself. Every vendor owes this committee at least two work h
 note: 'Complaints between vendors, and vendor complaints about the market.' },
 { key: 'personnel', name: 'Personnel',
 note: 'Employee matters. Confidential by nature \u2014 keep agenda wording general.' },
+{ key: 'mansion', name: 'Merch Mansion',
+note: 'The market\u2019s own merchandise stand on the Waterfront Trail line \u2014 what is sold, how it is stocked and who staffs it.' },
 ];
 const COMMITTEE_SEED = {
 ag:        { members: [{ id: 'V003', chair: true }, { id: 'V018' }, { id: 'V028' }],
@@ -22294,6 +22465,7 @@ bg:        { members: [{ id: 'V147', chair: true }, { id: 'V153' }, { id: 'V156'
 items: [{ id: 'ci4', kind: 'task', text: 'Re-hang the Booth 41 signage rail before Saturday' }] },
 grievance: { members: [{ id: 'V049' }], items: [] },
 personnel: { members: [], items: [] },
+mansion:   { members: [{ id: 'V025', chair: true }], items: [] },
 };
 function committeeState() {
 if (!cache.ops.committees) {
@@ -24564,6 +24736,18 @@ inner.appendChild(cell);
 }
 box.appendChild(inner);
 (sides && sides.length ? sides : [rec.aisle]).forEach(s => appendAisleStrip(box, s));
+}
+// The only section names a vendor would recognise. Everything else returns
+// empty on purpose: Row A, Row B, Middle Row, Front Row and Bottom Row are on
+// no market document and on no printed map -- they were invented when the
+// booth data was digitised, and mean nothing to anyone standing in the
+// pavilion. The field itself stays because SECTION_AISLE reads it to decide
+// which side a run's aisle is on.
+function boothWhere(booth) {
+const s = (booth && booth.section) || '';
+if (/^Dock Wing/.test(s)) return 'Dock Wing';
+if (s === 'Circle End Curve') return 'Circle End';
+return '';
 }
 const SECTION_AISLE = {
 'Row A': 'bottom',
