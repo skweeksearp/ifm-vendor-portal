@@ -11187,11 +11187,11 @@ const HELP_TEXTS = [
 },
 {
 "title": "Vendor Requirements",
-"body": "<p>A place to define any license, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents arrive two ways. By post: a vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>. Or by upload, where the Document Vault is connected: the vendor sends a photo from their phone, it is filed straight into a Drive folder the market controls, and the review card carries a link that opens it \u2014 in Drive, signed into the market\u2019s account, because the app itself never holds or serves the document. Either way, marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
+"body": "<p>A place to define any license, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents arrive two ways. By post: a vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>. Or by upload, where the Document Vault is connected: the vendor scans it with their own device, it is filed straight into a Drive folder the market controls, and the review card carries a link that opens it \u2014 in Drive, signed into the market\u2019s account, because the app itself never holds or serves the document. Either way, marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
 },
 {
 "title": "Permits & Documents",
-"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself two ways: post it to the office by the date shown and tell the app it is in the mail, or \u2014 where the button is offered \u2014 send a photo of it straight from your phone. If it runs to several pages, photograph each page and pick them all at once \u2014 they arrive at the office bound into one document.</p><p>A photo goes directly into the market\u2019s own files, over an encrypted connection, and is filed under your name and the document\u2019s. It is not published anywhere, it does not appear in the app, and no other vendor can see it \u2014 only the office, opening the market\u2019s files, can. Keep the app open until it says it arrived.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
+"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself two ways: post it to the office by the date shown and tell the app it is in the mail, or \u2014 where the button is offered \u2014 scan it with your own device and send it straight from there. If it runs to several pages, scan them one at a time: each page is added to the batch, you can see and drop any of them before sending, and they arrive at the office bound into one document.</p><p>A scan goes directly into the market\u2019s own files, over an encrypted connection, and is filed under your name and the document\u2019s. It is not published anywhere, it does not appear in the app, and no other vendor can see it \u2014 only the office, opening the market\u2019s files, can. Keep the app open until it says it arrived.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
 },
 {
 "title": "Reviewing What Vendors Have Sent",
@@ -15963,7 +15963,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-10';
+const BUILD_ID = '16-12';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21147,6 +21147,68 @@ s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
 }
 return btoa(s);
 }
+const mdPages = {};
+function mdPageCount(reqId) { return (mdPages[reqId] || []).length; }
+function mdAddPage(reqId, input) {
+const f = input && input.files && input.files[0];
+input.value = '';
+if (!f) return;
+if (!mdPages[reqId]) mdPages[reqId] = [];
+if (mdPages[reqId].length >= 8) {
+showMsg('mdMsg', 'err', 'Eight pages at most in one document. Send these, then start another batch.');
+return;
+}
+mdPages[reqId].push(f);
+renderMyDocs();
+}
+function mdDropPage(reqId, i) {
+if (!mdPages[reqId]) return;
+mdPages[reqId].splice(i, 1);
+if (!mdPages[reqId].length) delete mdPages[reqId];
+renderMyDocs();
+}
+function mdClearPages(reqId) { delete mdPages[reqId]; renderMyDocs(); }
+// Thumbnails of what is about to be sent, numbered, each removable. A vendor
+// photographing a certificate needs to see that page two is readable before
+// it goes, not after the office asks for it again.
+function mdPageTray(reqId, sendBtn) {
+const pages = mdPages[reqId] || [];
+const tray = document.createElement('div');
+if (!pages.length) return tray;
+const head = document.createElement('p');
+head.className = 'req-example-note';
+head.style.margin = '10px 0 6px';
+head.innerHTML = '<b>' + pages.length + ' page' + (pages.length === 1 ? '' : 's') +
+' ready.</b> They will be sent as one document. Tap a page to drop it.';
+tray.appendChild(head);
+const strip = document.createElement('div');
+strip.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;';
+pages.forEach((f, i) => {
+const cell = document.createElement('button');
+cell.type = 'button';
+cell.className = 'ghost-btn';
+cell.style.cssText = 'position:relative; width:74px; height:96px; padding:0; overflow:hidden; ' +
+'border-radius:8px; opacity:1; flex:0 0 auto;';
+const img = document.createElement('img');
+img.alt = 'Page ' + (i + 1);
+img.style.cssText = 'width:100%; height:100%; object-fit:cover; display:block;';
+img.src = URL.createObjectURL(f);
+img.onload = () => URL.revokeObjectURL(img.src);
+const num = document.createElement('span');
+num.textContent = i + 1;
+num.style.cssText = 'position:absolute; left:4px; top:4px; background:rgba(28,32,24,0.82); ' +
+'color:#fff; font-size:12px; font-weight:700; border-radius:4px; padding:1px 6px;';
+const x = document.createElement('span');
+x.textContent = '\u00d7';
+x.style.cssText = 'position:absolute; right:4px; top:2px; color:#fff; font-size:17px; ' +
+'text-shadow:0 0 4px rgba(0,0,0,0.9);';
+cell.appendChild(img); cell.appendChild(num); cell.appendChild(x);
+cell.onclick = () => mdDropPage(reqId, i);
+strip.appendChild(cell);
+});
+tray.appendChild(strip);
+return tray;
+}
 function reqFileLinkHTML(rec) {
 if (!rec || !rec.fileId) return '';
 return '<a class="ghost-btn" style="display:inline-block; width:auto; padding:7px 14px; ' +
@@ -21168,9 +21230,10 @@ return typeof IFM_VAULT_URL === 'string' && IFM_VAULT_URL.length > 0;
 //   * Success stores only a reference (file ID, name, date) against the
 //     requirement. The document lives in Drive; the app never reads it
 //     back, and the vault endpoint could not serve it anyway.
-async function uploadRequirementDoc(reqId, input, btn) {
-const files = input && input.files ? Array.from(input.files) : [];
-input.value = '';
+async function uploadRequirementDoc(reqId, source, btn) {
+const files = Array.isArray(source) ? source.slice()
+: (source && source.files ? Array.from(source.files) : []);
+if (source && !Array.isArray(source) && 'value' in source) source.value = '';
 if (!files.length) return;
 const vendor = currentVendor();
 if (!vendor) return;
@@ -21179,15 +21242,15 @@ const isPdf = f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
 const pdfs = files.filter(isPdf);
 const images = files.filter(f => !isPdf(f) && /^image\//.test(f.type));
 if (pdfs.length + images.length !== files.length) {
-showMsg('mdMsg', 'err', 'Something in that pick isn\u2019t a photo or a PDF. Clear photos of the pages are all the office needs.');
+showMsg('mdMsg', 'err', 'Something in that pick isn\u2019t an image or a PDF. A clear scan of the pages is all the office needs.');
 return;
 }
 if (pdfs.length && files.length > 1) {
-showMsg('mdMsg', 'err', 'Send either one PDF or a set of photos \u2014 not a mixture, and not more than one PDF at a time.');
+showMsg('mdMsg', 'err', 'Send either one PDF or a set of scanned pages \u2014 not a mixture, and not more than one PDF at a time.');
 return;
 }
 if (pdfs.length === 1 && pdfs[0].size > 6 * 1024 * 1024) {
-showMsg('mdMsg', 'err', 'That PDF is too big to send from here. Photograph the pages instead \u2014 photos are shrunk to fit automatically.');
+showMsg('mdMsg', 'err', 'That PDF is too big to send from here. Scan the pages with this device instead \u2014 scans are shrunk to fit automatically.');
 return;
 }
 if (images.length > 8) {
@@ -21244,6 +21307,7 @@ rec.uploadedOn = todayISO();
 rec.reportedAt = todayISO();
 rec.reviewNote = '';
 cache.requirements.status[key] = rec;
+delete mdPages[reqId];
 renderMyDocs();
 await storageSet('ifm-requirements', cache.requirements);
 await saveSubmissions();
@@ -21306,7 +21370,7 @@ const bits = [];
 if (req.issuer) bits.push(esc(req.issuer));
 if (req.due) bits.push((st === 'overdue' ? 'was due ' : 'due ') + esc(formatDisplayDate(req.due)));
 if (rec.state === 'onfile' && rec.expiry) bits.push('expires ' + esc(formatDisplayDate(rec.expiry)));
-if (rec.state === 'pending' && rec.via === 'upload' && rec.uploadedOn) bits.push('you sent a photo of it ' + esc(formatDisplayDate(rec.uploadedOn)));
+if (rec.state === 'pending' && rec.via === 'upload' && rec.uploadedOn) bits.push('you sent a scan of it ' + esc(formatDisplayDate(rec.uploadedOn)));
 else if (rec.state === 'pending' && rec.sentOn) bits.push('you posted it ' + esc(formatDisplayDate(rec.sentOn)));
 if (rec.state === 'onfile' && rec.receivedOn) bits.push('received ' + esc(formatDisplayDate(rec.receivedOn)));
 main.innerHTML =
@@ -21339,23 +21403,57 @@ if (vaultReady()) {
 const or = document.createElement('p');
 or.className = 'req-example-note';
 or.style.marginBottom = '4px';
-or.textContent = 'Or skip the envelope \u2014 clear photos of every page will do. ' +
-'Pick them all at once and they arrive at the office bound as one document:';
+or.textContent = 'Or skip the envelope \u2014 scan it with this device, one page at a time. ' +
+'Every page arrives at the office bound together as one document:';
 card.appendChild(or);
+// One page per tap. The camera hands back a single photo and closes, so the
+// document is built here rather than in the picker.
+const shot = document.createElement('input');
+shot.type = 'file';
+shot.accept = 'image/*';
+shot.setAttribute('capture', 'environment');
+shot.style.display = 'none';
+shot.onchange = () => mdAddPage(req.id, shot);
+card.appendChild(shot);
+card.appendChild(mdPageTray(req.id));
+const n = mdPageCount(req.id);
+const shotBtn = document.createElement('button');
+shotBtn.type = 'button';
+shotBtn.className = n ? 'ghost-btn' : 'ghost-btn';
+shotBtn.textContent = n ? 'Scan another page' : (rec.via === 'upload' && rec.state === 'pending'
+? 'Scan it again with this device' : 'Scan it with this device');
+shotBtn.onclick = () => shot.click();
+card.appendChild(shotBtn);
+const up = document.createElement('button');
+up.type = 'button';
+up.className = 'primary-btn';
+up.style.display = n ? '' : 'none';
+up.textContent = n <= 1 ? 'Send this page' : 'Send all ' + n + ' pages as one document';
+up.onclick = () => uploadRequirementDoc(req.id, mdPages[req.id] || [], up);
+card.appendChild(up);
+if (n) {
+const clr = document.createElement('button');
+clr.type = 'button';
+clr.className = 'ghost-btn';
+clr.textContent = 'Start over';
+clr.onclick = () => mdClearPages(req.id);
+card.appendChild(clr);
+}
+// The library route stays: a vendor who already scanned or photographed the pages, or
+// who has a PDF from an insurer, should not have to re-shoot them.
 const pick = document.createElement('input');
 pick.type = 'file';
 pick.accept = 'image/*,.pdf,application/pdf';
 pick.multiple = true;
 pick.style.display = 'none';
-pick.onchange = () => uploadRequirementDoc(req.id, pick, up);
+pick.onchange = () => uploadRequirementDoc(req.id, pick, pickBtn);
 card.appendChild(pick);
-const up = document.createElement('button');
-up.type = 'button';
-up.className = 'ghost-btn';
-up.textContent = rec.via === 'upload' && rec.state === 'pending'
-? 'Send a better photo' : 'Send a photo of it now';
-up.onclick = () => pick.click();
-card.appendChild(up);
+const pickBtn = document.createElement('button');
+pickBtn.type = 'button';
+pickBtn.className = 'ghost-btn';
+pickBtn.textContent = 'Choose a PDF or images already on this device';
+pickBtn.onclick = () => pick.click();
+card.appendChild(pickBtn);
 }
 }
 wrap.appendChild(card);
