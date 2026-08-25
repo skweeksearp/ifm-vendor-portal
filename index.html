@@ -3508,7 +3508,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
-<div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in The Old-Fashioned Way puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
+<div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in Manual Input puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
 <div class="comm-item"><div class="comm-title">A screen that needs a record the app may not hold yet</div><div class="comm-desc">Draw first, fetch second. A screen that opens with <code>await loadSomething()</code> before it writes anything to the page will show <em>nothing at all</em> while that one fetch is outstanding &mdash; not a spinner, not a heading, nothing &mdash; and a person tapping it will say the tool is frozen. It is not frozen; it is being polite to a fetch that most of the screen does not depend on. This bites hardest on a <em>new</em> storage key, because until somebody writes to it the sheet has no row and every phone fetches it separately and gets a cold Apps Script. Draw everything already in hand, then call the loader and redraw when it lands. A <em>write</em> still waits, because writing into a half-known list would drop whatever had not arrived. Others that still open this way, should they ever feel slow: <code>initUnreservableScreen</code>, <code>initFeePayScreen</code>, <code>renderTaskManager</code>, <code>renderAvailableTasks</code>, <code>renderOrgStalls</code>.</div></div>
 <div class="comm-item"><div class="comm-title">A new tool on the Market Manager&rsquo;s desk</div><div class="comm-desc">Two desks are built two different ways, and a tool added to one does <em>not</em> appear on the other. The <strong>staff</strong> desk is hand-written drawers in the markup. The <strong>Market Manager</strong> desk is generated from the tool registry &mdash; the list of groups and tiles &mdash; so a manager tool has to be added <em>there</em>, whatever the markup says. SNAP Tokens In &amp; Out was written into the markup alone and turned up on the staff desk only, where nobody was looking for it. When testing, look <em>inside</em> the drawer the tool is meant to be in: a document-wide search for the title finds it on the wrong desk and reports success.</div></div>
 <div class="comm-item"><div class="comm-title">Anything that floats over the app</div><div class="comm-desc">A sheet, a backdrop, a pop-up: give it <code>modal-backdrop</code>, let <code>freeFloatingSheets()</code> move it to the body at boot, and show it by adding the class <code>open</code> &mdash; never by copying another sheet&rsquo;s markup and hoping. <code>.modal-backdrop</code> is <code>display:none</code> until opened, which it was not always: it used to be <code>display:flex</code>, so a new backdrop was on screen from boot unless whoever added it also wrote a rule to hide it. That shipped once, and because a backdrop covers everything at <code>z-index:500</code> it did not look like a stuck sheet, it looked like the whole app had stopped working. Defaults should fail closed. Written inside the screen that first needed it, it works from that screen and <em>nowhere else</em> &mdash; and it fails in silence, because <code>display:flex</code> on a box whose ancestor is <code>display:none</code> throws nothing and logs nothing. It presents as an unrelated part of the app being broken: this was reported as &ldquo;the map is not clickable booth by booth&rdquo;, and the map was never the problem. The seventh fault names any that escape.</div></div>
@@ -4047,7 +4047,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Record One for a Vendor</h2>
-<p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. Absences, booth requests, shares, documents, improvement proposals: entered here each is the same record the vendor&rsquo;s own screen would have made, judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
+<p class="empty-note" style="margin-top:0;">For everything that arrives the old ways &mdash; a phone call, an email, a letter, or a vendor at the desk. An absence, a booth request, a booth share and an improvement proposal each become the same record the vendor&rsquo;s own screen would have made. A document is different: this notes that one is on its way, and you mark it received on Vendor Requirements when it arrives. Every record is judged against any deadline by <b>when they told the office</b>, not when it was typed in.</p>
 <label for="obVendor">Vendor</label>
 <select id="obVendor" onchange="fillObRequirements()"></select>
 <label>What they told you</label>
@@ -4693,14 +4693,31 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 </section>
 <section id="screen-facilitiestracker" class="screen">
 <div class="screen-head" id="head-facilitiestracker"></div>
-<div class="card">
-<label for="ftTitle">Title<button type="button" class="help-dot" onclick="showHelp(47)" aria-label="What are the rules here?">?</button></label>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-wrench"></use></svg></span>Send Something to a Committee<button type="button" class="help-dot" onclick="showHelp(47)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">Puts an item on that committee&rsquo;s list, where its chair and members see it on their own desk. Repairs and anything about the building go to Building &amp; Grounds.</p>
+<label for="ftCmte">Which committee</label>
+<select id="ftCmte"></select>
+<label for="ftKind" style="margin-top:10px;">What kind</label>
+<select id="ftKind">
+<option value="task">Something to do</option>
+<option value="agenda">Something to discuss at a meeting</option>
+</select>
+<label for="ftTitle" style="margin-top:10px;">What it is</label>
 <input type="text" id="ftTitle" placeholder="e.g. Booth 12 water spigot leaking">
-<label for="ftNote" style="margin-top:10px;">Note (optional)</label>
-<input type="text" id="ftNote">
-<button class="primary-btn" onclick="addTrackerItem('facilities')"><svg class="ico"><use href="#i-checkmark"></use></svg> Add</button>
+<label for="ftNote" style="margin-top:10px;">Note</label>
+<input type="text" id="ftNote" placeholder="Where it is, how bad, who saw it, anything they need before they start">
+<p class="empty-note" style="margin:6px 0 0;">A note is required. The committee is not standing where you are &mdash; what is obvious to you now is the whole of what they will know.</p>
+<label for="ftDate" style="margin-top:10px;">By when (optional)</label>
+<input type="date" id="ftDate">
+<button class="primary-btn" onclick="sendToCommittee()"><svg class="ico"><use href="#i-checkmark"></use></svg> Send to the committee</button>
+<div class="status-msg" id="ftMsg"></div>
 </div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Sent by the Office</h2>
+<p class="empty-note" style="margin-top:0;">Everything the office has put in front of a committee, newest first. Ticking it off is the committee&rsquo;s to do, on their own screen.</p>
 <div id="facilitiesTrackerList"></div>
+</div>
 </section>
 <section id="screen-proposaltracker" class="screen">
 <div class="screen-head" id="head-proposaltracker"></div>
@@ -10642,7 +10659,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "(retired) Add a Vendor to This Saturday",
-"body": "<p>This tool is gone. It existed for the case its own text described — <em>someone called the office instead</em> — and that case is now handled properly in <strong>The Old-Fashioned Way</strong>, where a booth request is stamped with how it arrived and judged by <em>when the vendor told the office</em> rather than when it was typed. A request entered there puts the vendor in Saturday's pool by the same route as one submitted from a phone.</p><p>The entry is kept rather than deleted because every help dot in the app is numbered by position in this list, and removing one would silently move all the rest.</p>"
+"body": "<p>This tool is gone. It existed for the case its own text described — <em>someone called the office instead</em> — and that case is now handled properly in <strong>Manual Input</strong>, where a booth request is stamped with how it arrived and judged by <em>when the vendor told the office</em> rather than when it was typed. A request entered there puts the vendor in Saturday's pool by the same route as one submitted from a phone.</p><p>The entry is kept rather than deleted because every help dot in the app is numbered by position in this list, and removing one would silently move all the rest.</p>"
 },
 {
 "title": "Saturday Booth Selection Sheet",
@@ -10749,8 +10766,8 @@ const HELP_TEXTS = [
 "body": "<p>Downloads a CSV built from what's on this device right now.</p>"
 },
 {
-"title": "Facilities Requests",
-"body": "<p>The actual submission form is the Google Form under Communicate → Facilities. This just tracks status once a request comes in — add it here by hand.</p>"
+"title": "Send to Committee",
+"body": "<p>Puts an item on a committee's own list — the same list its chair and members read on their desk. A repair, a question for Building &amp; Grounds, anything the office wants a committee to pick up.</p><p>The note is required, and that is deliberate. The committee is not standing where you are when you write it: what is obvious to you at the spigot on Saturday morning is the whole of what they will know on Tuesday night. Say where it is, how bad, who saw it, and anything they need before they start.</p><p>A vendor's own facilities request still arrives on the Google Form under Communicate → Facilities. Send it on from here once it comes in.</p>"
 },
 {
 "title": "Board Proposals",
@@ -10920,7 +10937,7 @@ body: '<p>Turn what is already recorded into what is actually owed, and carry th
 '<p><b>Blocked on a record we do not have.</b> The office&rsquo;s fines ledger \u2014 outstanding balances, and how many occurrences each vendor already has this year \u2014 is what the escalation multiplies from. Going forward the app can count for itself, but it cannot proceed on past debts without that record.</p>' },
 bgwalk: { built: true, t: 'B&amp;G Walkthrough', when: 'Monthly',
 body: '<p>A standing inspection round for the Buildings &amp; Grounds committee: grease buildup needing a pressure wash, damaged gutters and downspouts, structures out of compliance.</p>' +
-'<p>The Facilities Requests tracker catches problems vendors report. This is the other direction &mdash; the walk that finds them.</p>' },
+'<p>Send to Committee carries problems to Building &amp; Grounds once somebody reports one. This is the other direction &mdash; the walk that finds them.</p>' },
 boardcycle: { built: true, live: true, t: 'Board Meeting Cycle', when: 'Monthly',
 body: '<p>Attach proposals and requests to the meeting that will actually hear them.</p>' +
 '<p>The Board meets the second Wednesday of each month. Exception Requests &mdash; the Guide&rsquo;s &ldquo;Special Needs Requests&rdquo; &mdash; must reach management by the first Wednesday of December to be heard at the December meeting, which is the last one before the renewal deadline.</p>' +
@@ -12429,7 +12446,7 @@ document.getElementById('ppStatusMsg').className = 'status-msg';
 renderPopups();
 }
 if (name === 'calloutpatterns') renderCalloutPatterns();
-if (name === 'facilitiestracker') renderTrackerList('facilities');
+if (name === 'facilitiestracker') initSendToCommittee();
 if (name === 'proposaltracker') renderTrackerList('proposal');
 if (name === 'stallimprove') {
 document.getElementById('stallSearch').value = '';
@@ -12495,7 +12512,7 @@ kiosk:             { title: 'Information Kiosk' },
 leaves:            { title: 'Leaves of Absence' },
 whrate:            { title: 'Work Hour Rate' },
 popupsvendor:      { title: 'PopUp Events' },
-callinout:         { title: () => currentRole !== 'vendor' ? 'The Old-Fashioned Way' : (cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth') },
+callinout:         { title: () => currentRole !== 'vendor' ? 'Manual Input' : (cioMode === 'absence' ? 'Report an Absence' : 'Request a Booth') },
 hours:             { title: 'Work Hours' },
 booths:            { title: () => currentAuction === 'weekly' ? 'Sunday Booth Selection' : 'Season-Long Booth Reservations' },
 communicate:       { title: 'Communicate with the Market' },
@@ -12537,7 +12554,7 @@ calloutpatterns:   { title: 'Absence Patterns' },
 dataexport:        { title: 'Data Export' },
 popups:            { title: 'PopUp Events' },
 wintermarketadmin: { title: 'Winter Market Dates' },
-facilitiestracker: { title: 'Facilities Requests' },
+facilitiestracker: { title: 'Send to Committee' },
 proposaltracker:   { title: 'Board Proposals' },
 stallimprove:      { title: 'Booth Improvements' },
 requirements:      { title: 'Vendor Requirements' },
@@ -14128,7 +14145,7 @@ function loadSatLotterySheet() { lottoLoad('saturday'); }
 function renderLottoAddResults(q) { lottoRenderAddResults('sunday', q); }
 // renderSatLottoAddResults is gone with the box it served. Saturday's pool is
 // built from booth requests on the books -- see satCalledIn() -- and a request
-// that arrived by phone is entered in The Old-Fashioned Way, where it is
+// that arrived by phone is entered in Manual Input, where it is
 // stamped with how it came and when the vendor actually told the office.
 // Sunday keeps its own version: that desk is a sign-in sheet at the 8:30
 // meeting, and nothing else feeds it.
@@ -14575,6 +14592,51 @@ b.num, b.section, b.reservedBy ? vendorNameFor(b.reservedBy) : '', b.reservedBy 
 ]);
 downloadCSV('ifm-booth-assignments.csv', ['Booth', 'Section', 'Reserved By', 'Vendor ID', 'Note'], rows);
 }
+function initSendToCommittee() {
+const sel = document.getElementById('ftCmte');
+if (sel && !sel.children.length) {
+COMMITTEES.forEach(cm => {
+const o = document.createElement('option');
+o.value = cm.key;
+o.textContent = cm.name;
+sel.appendChild(o);
+});
+sel.value = 'bg';
+}
+renderTrackerList('facilities');
+}
+// Sends the item to the committee's own list -- the same list its chair and
+// members read on their desk -- and keeps a copy in the office's record so the
+// manager can see what they have sent without opening every committee.
+async function sendToCommittee() {
+if (!requireManager('ftMsg')) return;
+const title = document.getElementById('ftTitle').value.trim();
+const note = document.getElementById('ftNote').value.trim();
+const key = document.getElementById('ftCmte').value;
+const kind = document.getElementById('ftKind').value;
+const date = document.getElementById('ftDate').value || null;
+if (!title) { showMsg('ftMsg', 'err', 'Say what it is.'); return; }
+if (!note) { showMsg('ftMsg', 'err', 'Add a note \u2014 the committee only knows what you tell them here.'); return; }
+const cm = COMMITTEES.find(x => x.key === key);
+const st = committeeState()[key];
+st.items.push({ id: 'ci' + Date.now(), kind: kind, text: title + ' \u2014 ' + note,
+date: date, fromOffice: true });
+await saveOps();
+const listKey = 'ifm-tracker-facilities';
+const existing = await storageGet(listKey);
+const items = existing === STORAGE_MISSING ? [] : existing;
+items.push({ id: 't' + Date.now(), title: title, note: note, cmte: key,
+cmteName: cm.name, kind: kind, due: date, status: 'Open', createdAt: Date.now() });
+await storageSet(listKey, items);
+document.getElementById('ftTitle').value = '';
+document.getElementById('ftNote').value = '';
+document.getElementById('ftDate').value = '';
+const chair = (st.members || []).find(m => m.chair);
+showMsg('ftMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Sent to ' + esc(cm.name) +
+(chair ? ' \u2014 ' + esc(vendorNameFor(chair.id)) + ' chairs it and will see it on their desk.'
+: ' \u2014 note that committee has no chair on record, so nobody is alerted.'));
+renderTrackerList('facilities');
+}
 async function addTrackerItem(kind) {
 const titleEl = document.getElementById(kind === 'facilities' ? 'ftTitle' : 'ptTitle');
 const noteEl = document.getElementById(kind === 'facilities' ? 'ftNote' : 'ptNote');
@@ -14609,7 +14671,9 @@ row.innerHTML =
 '<div class="t-actions"><button type="button" class="tracker-status ' + statusClass + '"></button>' +
 '<button type="button" class="tracker-remove">Remove</button></div>';
 row.querySelector('.t-title').textContent = item.title;
-if (item.note) row.querySelector('.t-note').textContent = item.note;
+if (item.note) row.querySelector('.t-note').textContent =
+(item.cmteName ? item.cmteName + ' \u00b7 ' : '') + item.note +
+(item.due ? ' \u00b7 by ' + formatDisplayDate(item.due) : '');
 const statusBtn = row.querySelector('.tracker-status');
 statusBtn.textContent = item.status;
 statusBtn.onclick = () => cycleTrackerStatus(kind, item.id);
@@ -15402,7 +15466,7 @@ return s;
 const PLAIN_WORDS_CHANGED = [
 { a: 'Booth Selection', g: 'lottery, auction', d: 'Nothing is drawn and nobody bids. Vendors are ranked by category tier, then by points, and each one chooses from what is still open. Points rank you; they are never spent. Used for the weekly rounds, which hand out a booth for one market day.' },
 { a: 'Season-Long Booth Reservations', g: 'the annual auction', d: 'The two annual rounds, late March and late April, where a booth becomes a vendor\u2019s for the whole season instead of for a day. Same mechanic as the weekly Booth Selections \u2014 ranked by points, each picks in turn \u2014 but what is won is a reservation, so it is named for that.' },
-{ a: 'Booth Request / Absence', g: 'calling in, calling out', d: 'One form doing two opposite jobs. A booth request asks for space at a market you do not hold. An absence tells the office you will not be at one you do. Nobody calls any more \u2014 it is a form.' },
+{ a: 'Booth Request / Absence', g: 'calling in, calling out', d: 'One form doing two opposite jobs. A booth request asks for space at a market you do not hold. An absence tells the office you will not be at one you do. Plenty of vendors still ring the office rather than use the form, and that is a perfectly good way to do it \u2014 the office enters the call in Manual Input, where it becomes the same record and is judged by when the vendor rang, not when it was typed in. The old words stay because the old way still works.' },
 { a: 'Exception Request', g: 'Special Needs Request', d: 'A request to the Board to allow something the rules otherwise do not: a late fee, an attendance shortfall, a Leave of Absence, a disability accommodation. The Guide defines it as an action outside current policy, so the name reads today as though it were only for accommodations.' },
 { a: 'Value-Added Farm Products', g: 'Enhanced Agricultural Products', d: 'A product an Ag vendor makes from what they grow \u2014 at least 75% farm-grown ingredient. Nothing is enhanced or fortified; value-added is the ordinary term in agriculture.' },
 { a: 'Membership share', g: 'Certificate of Membership', d: '$300, payable over three years, carrying $100 of equity that a departing member may claim in writing. It is a buy-in, not a document you are handed.' },
@@ -15443,7 +15507,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-53';
+const BUILD_ID = '15-56';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22332,7 +22396,7 @@ const MGR_OTHER_MARKETS = ['winter', 'wednesday', 'popups'];
 const MGR_DESK_STYLE = 'grid';
 let mgrOpenFolder = null;
 const MGR_FOLDERS = [
-{ s: 'callinout', i: 'i-phone', t: 'The Old-Fashioned Way', d: 'Take anything a vendor sends by phone, email, mail, or across the desk \u2014 absences, requests, shares, documents, proposals' },
+{ s: 'callinout', i: 'i-phone', t: 'Manual Input', d: 'Enter by hand what a vendor told the office by phone, email, mail or at the desk \u2014 dated by when they told you, not when you typed it' },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
 sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
 tiles: [
@@ -22384,7 +22448,7 @@ tiles: [
 { s: 'boothlayout', i: 'i-ruler', t: 'Booth Layouts', d: 'What a vendor sees when they pick a booth' },
 { s: 'stallimprove', i: 'i-ruler', t: 'Booth Improvements', d: 'Vendor proposals, the B&G agenda, and the per-booth checklist' },
 { s: 'pavrentals', i: 'i-calendar', t: 'Pavilion Rentals', d: 'When the pavilion is let to somebody else \u2014 vendors out by 4 PM on those market days' },
-{ s: 'facilitiestracker', i: 'i-wrench', t: 'Facilities Requests', d: 'Track status of repair tickets' },
+{ s: 'facilitiestracker', i: 'i-wrench', t: 'Send to Committee', d: 'Put a repair, or anything else, on a committee\u2019s list \u2014 straight to the chair who has to act on it' },
 { soon: 'compliance', ot: 'compliance', i: 'i-ruler', t: 'Booth Compliance Clocks', d: 'Inspections, 60-day and two-year clocks' },
 { soon: 'bgwalk', ot: 'bgwalk', i: 'i-wrench', t: 'B&amp;G Walkthrough', d: 'The monthly inspection round' },
 ] },
@@ -24451,7 +24515,7 @@ const hint = document.createElement('p');
 hint.className = 'empty-note';
 hint.style.margin = '0 0 8px';
 hint.textContent = 'If that is wrong \u2014 the vendor rang in and it was not recorded \u2014 ' +
-'put the absence on the books first, in The Old-Fashioned Way, and it will appear here.';
+'put the absence on the books first, in Manual Input, and it will appear here.';
 wrap.appendChild(hint);
 return;
 }
