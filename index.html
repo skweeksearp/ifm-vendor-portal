@@ -4160,6 +4160,10 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div class="card manager-only desk-form">
 <p class="empty-note" style="margin-top:0;">A document is the one that behaves differently: this only notes that one is on its way, and you mark it received on Vendor Requirements when it actually arrives. A sale goes straight to the kiosk under that vendor&rsquo;s booth. The rest become the record itself.</p>
 <label for="obVendor">Vendor</label>
+<input type="text" id="obVendorFind" class="find-field" autocomplete="off"
+placeholder="Type a few letters of the business or last name"
+oninput="filterVendorSelect('obVendor', this.value, 'obVendorFindNote')">
+<p class="empty-note" id="obVendorFindNote" style="margin:6px 0 0; display:none;"></p>
 <select id="obVendor" onchange="fillObRequirements(); renderObPromoNote();"></select>
 <label>What they told you</label>
 <input type="hidden" id="obKind" value="Out">
@@ -4173,6 +4177,10 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div id="obShareWrap" style="display:none;">
 <label for="obGuest">Who is joining them in the booth</label>
+<input type="text" id="obGuestFind" class="find-field" autocomplete="off"
+placeholder="Type a few letters of the business or last name"
+oninput="filterVendorSelect('obGuest', this.value, 'obGuestFindNote')">
+<p class="empty-note" id="obGuestFindNote" style="margin:6px 0 0; display:none;"></p>
 <select id="obGuest"></select>
 <label for="obFamily">Same family?</label>
 <select id="obFamily"><option value="no">Separate businesses</option><option value="yes">Same family</option></select>
@@ -10169,6 +10177,37 @@ const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
 when.value = d.toISOString().slice(0, 16);
 }
 }
+// Narrows a vendor <select> in place. The select stays the thing that holds
+// the answer -- typing only decides which options are on offer -- so nothing
+// downstream has to change. A selection that still matches is kept; one that
+// no longer matches is dropped rather than left silently pointing at a name
+// the office can no longer see.
+function filterVendorSelect(selId, text, noteId) {
+const sel = document.getElementById(selId);
+if (!sel) return;
+const q = (text || '').trim().toLowerCase();
+const was = sel.value;
+const matches = cache.vendors.filter(v =>
+!q || v.businessName.toLowerCase().includes(q) || (v.lastName || '').toLowerCase().includes(q)
+).sort(byBusinessName);
+sel.innerHTML = matches.map(v =>
+'<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+if (matches.some(v => v.vendorId === was)) sel.value = was;
+else if (matches.length) sel.value = matches[0].vendorId;
+const note = noteId ? document.getElementById(noteId) : null;
+if (note) {
+if (!q) { note.style.display = 'none'; }
+else {
+note.style.display = 'block';
+note.textContent = matches.length === 0
+? 'No vendor matches \u201C' + text.trim() + '\u201D. Clear the box to see everyone again.'
+: matches.length === 1
+? 'One match: ' + matches[0].businessName + '.'
+: matches.length + ' of ' + cache.vendors.length + ' shown.';
+}
+}
+if (selId === 'obVendor') { fillObRequirements(); renderObPromoNote(); }
+}
 function pickObKind(btn) {
 document.getElementById('obKind').value = btn.dataset.k;
 document.querySelectorAll('#obKinds .ob-kind').forEach(b => b.classList.toggle('selected', b === btn));
@@ -15817,7 +15856,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-5';
+const BUILD_ID = '16-6';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
