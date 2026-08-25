@@ -3484,6 +3484,21 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="status-msg" id="urMsg"></div>
 </div>
 </section>
+<section id="screen-voicemail" class="screen">
+<div class="screen-head" id="head-voicemail"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Messages left on the market&rsquo;s answering machine, transcribed and waiting for you. Nothing here has been recorded against a vendor yet &mdash; you approve them one at a time, and what you approve becomes exactly the record Manual Input would have made.</p>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>Waiting to Be Heard</h2>
+<p class="empty-note" style="margin-top:0;" id="vmSummary"></p>
+<div id="vmList"></div>
+<div class="empty-note" id="vmEmpty" style="display:none;">No messages waiting. Anything left on the machine appears here within a minute or two.</div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Already Handled</h2>
+<div id="vmDone"></div>
+<div class="empty-note" id="vmDoneEmpty" style="display:none;">Nothing handled yet this season.</div>
+</div>
+</section>
 <section id="screen-principles" class="screen">
 <div class="screen-head" id="head-principles"></div>
 <p class="empty-note" style="margin-top:0;">Design questions that were settled in conversation, recorded so they stay settled. When a change is proposed that touches one of these, the principle is the starting position &mdash; it can be overturned, but only knowingly.</p>
@@ -8115,6 +8130,7 @@ const AUDIT_OWNERSHIP_KEYS = [
 { k: 'ifm-feepays', path: 'items', t: 'Reported fee payments' },
 { k: 'ifm-workhours', t: 'Work hours logged' },
 { k: 'ifm-callinout', t: 'Requests and absences' },
+{ k: 'ifm-voicemail', t: 'Answering machine messages' },
 { k: 'ifm-booth-shares', t: 'Booth shares' },
 { k: 'ifm-promos', t: 'Deals posted' },
 { k: 'ifm-improvements', t: 'Improvement proposals' },
@@ -11228,6 +11244,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-workhours', t: 'Work hours submitted', v: s => s.workhours },
 { g: 'traffic', k: 'ifm-tasks', shared: true, t: 'Work hour tasks posted and claimed', v: () => [] },
 { g: 'traffic', k: 'ifm-callinout', t: 'Booth requests and absences', v: s => s.callinout },
+{ g: 'traffic', k: 'ifm-voicemail', t: 'Answering machine messages awaiting approval', v: () => ({ msgs: [] }) },
 { g: 'traffic', k: 'ifm-booth-shares', t: 'Booths being shared', v: () => [] },
 { g: 'traffic', k: 'ifm-promos', t: 'Deals vendors posted', v: () => [] },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
@@ -12489,6 +12506,7 @@ if (name === 'auction') initAuctionScreen();
 if (name === 'boardcycle') renderBoardCycle();
 if (name === 'plainwords') renderPlainWords();
 if (name === 'ideapath') renderIdeaPath();
+if (name === 'voicemail') initVoicemailScreen();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
 if (name === 'addvendor') {
@@ -12617,6 +12635,7 @@ aboutedit:         { title: 'Information Screen Subjects' },
 betareset:         { title: 'Beta Reset' },
 principles:        { title: 'Principles' },
 unreservable:      { title: () => 'Booths Available for the ' + seasonYear() + ' Season' },
+voicemail:         { title: 'Messages from the Answering Machine' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -15584,7 +15603,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-64';
+const BUILD_ID = '15-65';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21065,6 +21084,188 @@ wrap.appendChild(note);
 // Any alert category can declare an item provider here. Categories with a
 // provider expand in place with Approve/Deny-style buttons; categories
 // without one keep the old behavior of opening their tool screen.
+function renderVoicemail() {
+const wrap = document.getElementById('vmList');
+const empty = document.getElementById('vmEmpty');
+const sum = document.getElementById('vmSummary');
+if (!wrap) return;
+wrap.innerHTML = '';
+const msgs = vmPending();
+empty.style.display = msgs.length ? 'none' : 'block';
+if (sum) sum.textContent = msgs.length
+? msgs.length + (msgs.length === 1 ? ' message waiting.' : ' messages waiting.') +
+' Play it, correct anything the machine got wrong, then approve.'
+: '';
+msgs.forEach(m => wrap.appendChild(vmCard(m)));
+const done = document.getElementById('vmDone');
+const doneEmpty = document.getElementById('vmDoneEmpty');
+if (done) {
+done.innerHTML = '';
+const handled = ((vmCache && vmCache.msgs) || []).filter(x => x.status !== 'new').slice().reverse().slice(0, 20);
+doneEmpty.style.display = handled.length ? 'none' : 'block';
+handled.forEach(m => {
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + esc(m.callerName || m.from) + '</div>' +
+'<div class="req-meta">' + esc(vmKindLabel(m.kind)) + ' \u00b7 ' + esc(shortDate(m.at)) +
+' \u00b7 ' + (m.status === 'approved' ? 'recorded' : 'dismissed') + '</div>' +
+'<div class="req-tally"><span class="req-state ' +
+(m.status === 'approved' ? 'onfile' : 'expired') + '">' +
+(m.status === 'approved' ? 'Done' : 'Dismissed') + '</span></div></div>';
+done.appendChild(row);
+});
+}
+}
+// One message, as an editable draft. Every field the machine guessed can be
+// changed before it is approved, and the recording sits beside them.
+function vmCard(m) {
+const card = document.createElement('div');
+card.className = 'card desk-form';
+card.style.marginBottom = '12px';
+const matches = vmMatchCaller(m.from);
+const guess = m.vendorId || (matches.length === 1 ? matches[0].vendorId : '');
+let html = '<div class="req-name" style="margin-bottom:2px;">' + esc(m.from) +
+(m.callerName ? ' \u00b7 ' + esc(m.callerName) : '') + '</div>' +
+'<div class="req-meta" style="margin-bottom:10px;">Left ' + esc(fullStamp(m.at)) +
+' \u00b7 ' + esc(m.seconds || 0) + ' seconds</div>';
+if (m.audioUrl) html += '<audio controls preload="none" style="width:100%; margin-bottom:10px;" src="' + esc(m.audioUrl) + '"></audio>';
+html += '<div class="empty-note" style="margin:0 0 10px; padding:10px; background:#F4F7F0; border-radius:8px;">' +
+'<b>What the machine heard:</b> ' + esc(m.transcript || '(nothing)') + '</div>';
+card.innerHTML = html;
+const mk = (tag, attrs) => { const el = document.createElement(tag);
+Object.keys(attrs || {}).forEach(k => el.setAttribute(k, attrs[k])); return el; };
+// Who
+const lv = mk('label'); lv.textContent = 'Which vendor';
+const sv = mk('select', { id: 'vmV' + m.id });
+const none = mk('option'); none.value = ''; none.textContent = matches.length ? '\u2014 pick one \u2014' : '\u2014 no match on this number \u2014';
+sv.appendChild(none);
+cache.vendors.slice().sort(byBusinessName).forEach(v => {
+const o = mk('option'); o.value = v.vendorId;
+o.textContent = v.businessName + (vmDigits(vField(v, 'phone')) === vmDigits(m.from) ? '  \u2713 this number' : '');
+sv.appendChild(o);
+});
+sv.value = guess;
+card.appendChild(lv); card.appendChild(sv);
+if (matches.length > 1) {
+const warn = mk('p', { 'class': 'empty-note' });
+warn.style.margin = '6px 0 0';
+warn.textContent = 'Two vendors share this number \u2014 ' +
+matches.map(v => v.businessName).join(' and ') + '. Pick the one who rang.';
+card.appendChild(warn);
+} else if (!matches.length) {
+const warn = mk('p', { 'class': 'empty-note' });
+warn.style.margin = '6px 0 0';
+warn.textContent = 'This number is not on any vendor record. Choose the vendor yourself, and it is worth adding the number to their profile afterwards.';
+card.appendChild(warn);
+}
+// What
+const lk = mk('label'); lk.textContent = 'What they said'; lk.style.marginTop = '10px';
+const sk = mk('select', { id: 'vmK' + m.id });
+[['Out', 'An absence \u2014 they will be away'], ['In', 'A booth request \u2014 they want a booth']].forEach(p => {
+const o = mk('option'); o.value = p[0]; o.textContent = p[1]; sk.appendChild(o);
+});
+sk.value = m.kind === 'In' ? 'In' : 'Out';
+card.appendChild(lk); card.appendChild(sk);
+if (!m.kind) {
+const warn = mk('p', { 'class': 'empty-note' });
+warn.style.margin = '6px 0 0';
+warn.textContent = 'They did not use the keypad, so this is a guess from the words. Check it against the recording.';
+card.appendChild(warn);
+}
+// Which day
+const ld = mk('label'); ld.textContent = 'Market day it concerns'; ld.style.marginTop = '10px';
+const sd = mk('input', { type: 'date', id: 'vmD' + m.id });
+sd.value = m.marketDate || '';
+card.appendChild(ld); card.appendChild(sd);
+// Note
+const ln = mk('label'); ln.textContent = 'Note'; ln.style.marginTop = '10px';
+const sn = mk('input', { type: 'text', id: 'vmN' + m.id });
+sn.value = m.transcript || '';
+card.appendChild(ln); card.appendChild(sn);
+// When they told the office -- the whole point. Not editable.
+const stamp = mk('p', { 'class': 'empty-note' });
+stamp.style.margin = '10px 0 0';
+stamp.innerHTML = 'Counted as told to the office at <b>' + esc(fullStamp(m.at)) +
+'</b> \u2014 the moment they rang, taken from the call itself. Every deadline is judged against that.';
+card.appendChild(stamp);
+const row = mk('div');
+row.style.cssText = 'display:flex; gap:10px; margin-top:12px;';
+const ok = mk('button', { type: 'button', 'class': 'primary-btn' });
+ok.style.margin = '0';
+ok.textContent = 'Approve and record it';
+ok.onclick = () => vmApprove(m.id);
+const no = mk('button', { type: 'button', 'class': 'ghost-btn' });
+no.style.margin = '0';
+no.textContent = 'Not a record';
+no.onclick = () => vmDismiss(m.id);
+row.appendChild(ok); row.appendChild(no);
+card.appendChild(row);
+const msg = mk('div', { 'class': 'status-msg', id: 'vmM' + m.id });
+card.appendChild(msg);
+return card;
+}
+function fullStamp(ms) {
+const d = new Date(ms);
+return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) +
+' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+// Approving writes the same record Manual Input writes, by the same route,
+// with the call's own timestamp as submittedAt.
+async function vmApprove(id) {
+if (!requireManager('vmM' + id)) return;
+const m = (vmCache.msgs || []).find(x => x.id === id);
+if (!m) return;
+const vendorId = document.getElementById('vmV' + id).value;
+const kind = document.getElementById('vmK' + id).value;
+const date = document.getElementById('vmD' + id).value;
+const note = document.getElementById('vmN' + id).value.trim();
+if (!vendorId) { showMsg('vmM' + id, 'err', 'Pick the vendor before approving.'); return; }
+if (!date) { showMsg('vmM' + id, 'err', 'Say which market day it concerns.'); return; }
+cache.callinout.push({ vendorId: vendorId, marketDate: date, status: kind,
+submittedAt: m.at, channel: 'Phone', recordedBy: 'office',
+note: note, fromVoicemail: m.id });
+await storageSet('ifm-callinout', cache.callinout);
+m.status = 'approved';
+m.vendorId = vendorId;
+m.callerName = boothVendorName(vendorId) || m.callerName;
+await saveVoicemail();
+renderVoicemail();
+renderManagerAlerts();
+}
+async function vmDismiss(id) {
+const m = (vmCache.msgs || []).find(x => x.id === id);
+if (!m) return;
+m.status = 'dismissed';
+await saveVoicemail();
+renderVoicemail();
+renderManagerAlerts();
+}
+async function initVoicemailScreen() {
+renderVoicemail();
+await loadVoicemail();
+renderVoicemail();
+}
+let vmCache = null;
+async function loadVoicemail() {
+const v = await storageGet('ifm-voicemail');
+if (v !== STORAGE_MISSING) vmCache = v;
+else if (!vmCache) vmCache = { msgs: [] };
+return vmCache;
+}
+async function saveVoicemail() { await storageSet('ifm-voicemail', vmCache || { msgs: [] }); }
+function vmDigits(s) { return String(s || '').replace(/\D/g, '').slice(-10); }
+// Caller ID against the roster. A match is a suggestion, never a decision --
+// a vendor may ring from a partner's phone, and two vendors may share one.
+function vmMatchCaller(from) {
+const d = vmDigits(from);
+if (d.length !== 10) return [];
+return cache.vendors.filter(v => vmDigits(vField(v, 'phone')) === d);
+}
+function vmPending() { return ((vmCache && vmCache.msgs) || []).filter(m => m.status === 'new'); }
+function vmKindLabel(k) {
+return k === 'Out' ? 'An absence' : k === 'In' ? 'A booth request' : 'Not stated';
+}
 const ATTN_ITEMS = {
 tasksign() {
 const out = [];
@@ -21427,6 +21628,13 @@ if (overdue.length) {
 alerts.push({ topic: 'Documents', n: overdue.length, t: overdue.length + ' past their due date',
 d: 'Assigned, nothing received, and the date has gone by',
 cls: 'expired', go: 'requirements' });
+}
+const vmWaiting = vmPending().length;
+if (vmWaiting) {
+alerts.push({ topic: 'Answering Machine', n: vmWaiting,
+t: vmWaiting + (vmWaiting === 1 ? ' message on the answering machine' : ' messages on the answering machine'),
+d: 'Transcribed and waiting \u2014 each one counts as told to the office at the moment they rang',
+cls: 'submitted', go: 'voicemail' });
 }
 const chairless = COMMITTEES.filter(cm => {
 const st = committeeState()[cm.key];
@@ -22607,6 +22815,7 @@ const MGR_OTHER_MARKETS = ['winter', 'wednesday', 'popups'];
 const MGR_DESK_STYLE = 'grid';
 let mgrOpenFolder = null;
 const MGR_FOLDERS = [
+{ s: 'voicemail', i: 'i-phone', t: 'Answering Machine', d: 'Messages left on the market\u2019s number, transcribed and waiting for you to approve one by one' },
 { s: 'callinout', i: 'i-phone', t: 'Manual Input', d: 'Enter by hand what a vendor told the office by phone, email, mail or at the desk \u2014 dated by when they told you, not when you typed it' },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
 sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
