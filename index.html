@@ -1900,6 +1900,11 @@ color: var(--ink); opacity: 0.55; white-space: nowrap; pointer-events: none; z-i
 #mapEditor { position: fixed; inset: 0; z-index: 96; display: none; background: #FFFDF4; color: var(--ink); }
 body.map-editor-open #mapEditor { display: block; }
 #meStage { position: absolute; inset: 0; overflow: hidden; background: #FFFDF4; touch-action: none; }
+.say-line { border-left: 3px solid #7A8B5A; background: #F6F4E9; padding: 10px 12px;
+margin: 10px 0; border-radius: 4px; font-size: 16px; line-height: 1.5; color: #2C3327; }
+.say-do { font-style: italic; color: #8A8266; font-size: 14px; margin: 10px 0 4px; }
+.say-menu { margin: 8px 0 8px 10px; }
+.say-menu li { margin: 4px 0; }
 #meCanvas { position: absolute; transform-origin: 0 0; }
 #meCanvas .me-park { position: absolute; pointer-events: none; }
 #meCanvas .me-park svg { display: block; }
@@ -3513,6 +3518,23 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 </div>
 </div>
+<section id="screen-vmscript" class="screen">
+<div class="screen-head" id="head-vmscript"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Read this into the market&rsquo;s answering machine as the outgoing greeting. <b>Spoken lines are in the boxes</b> &mdash; read those aloud, word for word. Everything in italics is a direction to you, not something to say.</p>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Before You Record</h2>
+<ul class="plain-list" id="vmScriptBefore"></ul>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-phone"></use></svg></span>The Greeting</h2>
+<div id="vmScriptBody"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>The Short Version</h2>
+<p class="empty-note" style="margin-top:0;">If the full greeting runs long, this says the same thing in about twenty seconds. The recording notice stays either way.</p>
+<div id="vmScriptShort"></div>
+</div>
+</section>
 <section id="screen-merchmansion" class="screen">
 <div class="screen-head" id="head-merchmansion"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">The things the market runs itself. None of them is a vendor and none is a committee: nobody rents them, nothing is juried, and each needs somebody responsible for it and people to do the work. The work earns work hours.</p>
@@ -12710,6 +12732,7 @@ if (name === 'boardcycle') renderBoardCycle();
 if (name === 'plainwords') renderPlainWords();
 if (name === 'ideapath') renderIdeaPath();
 if (name === 'voicemail') initVoicemailScreen();
+if (name === 'vmscript') initVmScriptScreen();
 if (name === 'merchmansion') initMerchMansion();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
@@ -12841,6 +12864,7 @@ principles:        { title: 'Principles' },
 unreservable:      { title: () => 'Booths Available for the ' + seasonYear() + ' Season' },
 voicemail:         { title: 'Messages from the Answering Machine' },
 merchmansion:      { title: 'What the Market Runs' },
+vmscript:          { title: 'The Greeting to Record' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -15856,7 +15880,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-6';
+const BUILD_ID = '16-7';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21513,6 +21537,61 @@ await saveVoicemail();
 renderVoicemail();
 renderManagerAlerts();
 }
+// The greeting is generated, not stored as prose, so the deadlines it speaks
+// come from the same place the app's own rule text does. If a deadline ever
+// changes, this changes with it instead of quietly telling callers the old one.
+function say(t) { return '<div class="say-line">' + t + '</div>'; }
+function doThis(t) { return '<p class="say-do">' + t + '</p>'; }
+function initVmScriptScreen() {
+const before = document.getElementById('vmScriptBefore');
+if (before) {
+before.innerHTML = [
+'<b>The recording notice must stay in.</b> The line records what callers say, and the greeting has to tell them so. It is the first thing in the script and should not be cut for length.',
+'<b>Ask for the day in words, and ask plainly.</b> Callers say the date rather than keying it. <i>This Saturday</i> and <i>September the fifth</i> both come through cleanly; <i>the weekend</i> names no day at all and costs you a callback. The script asks twice on purpose.',
+'<b>Say the office number too</b> \u2014 some callers need a person, not a machine.',
+'<b>Test it before it goes live.</b> Ring in and press 1, 2, 3, and nothing at all. All four have to end somewhere sensible. Then leave yourself a message saying <i>this Saturday</i> and check the app reads the right date off it.'
+].map(x => '<li>' + x + '</li>').join('');
+}
+const body = document.getElementById('vmScriptBody');
+if (body) {
+body.innerHTML =
+say('You\u2019ve reached the Ithaca Farmers Market. <b>This line records your message.</b>') +
+doThis('Pause. Then the menu:') +
+say('Press <b>1</b> if you\u2019ll be away from a market. Press <b>2</b> if you want a booth this Saturday. ' +
+'Press <b>3</b> for anything else. Press <b>9</b> to hear this again.') +
+doThis('If they press 1 \u2014 an absence:') +
+say('After the tone, tell us three things: <b>your business name</b>, <b>which day you\u2019ll be away</b>, ' +
+'and <b>your own name</b>. Say the day plainly \u2014 <i>this Saturday</i>, or <i>September the fifth</i> ' +
+'\u2014 rather than just <i>the weekend</i>, so we mark the right one. Then hang up. There\u2019s nothing else to do.') +
+doThis('If they press 2 \u2014 a booth request. Note this is Saturday only:') +
+say('After the tone, tell us <b>your business name</b>, <b>which Saturday you want</b>, and <b>your own name</b>. ' +
+'Say the date plainly \u2014 <i>this Saturday</i>, or <i>September the fifth</i>. If you\u2019d take either of ' +
+'two Saturdays, say so; it helps.') +
+doThis('If they press 3 \u2014 anything else:') +
+say('After the tone, leave your message and your business name, and someone from the office will ring you back.') +
+doThis('If they press nothing at all, they should still reach a recording rather than a dead line:') +
+say('After the tone, leave your business name, what you need, and the day it concerns. ' +
+'The time of your call is what counts against the deadline.') +
+doThis('The deadlines, if you choose to state them. These are the ones the app enforces:') +
+'<ul class="say-menu">' +
+'<li>Saturday absences: by <b>11:59 PM Wednesday</b></li>' +
+'<li>Sunday absences: by <b>8:00 AM</b> that Sunday</li>' +
+'<li>Saturday booth requests: by <b>11:59 PM Wednesday</b>. The OpM works the ranked list by phone Thursday morning; anything still open goes at Booth Selection on Saturday, <b>7:30 AM</b> (8:30 AM in November and December).</li>' +
+'<li><b>Sunday takes no booth requests at all.</b> Sunday booths come from signing in between <b>8:00 and 8:30</b> Sunday morning, online or at the booth across from the office.</li>' +
+'</ul>';
+}
+const short = document.getElementById('vmScriptShort');
+if (short) {
+short.innerHTML =
+say('You\u2019ve reached the Ithaca Farmers Market. <b>This line records your message.</b> ' +
+'Press <b>1</b> if you\u2019ll be away from a market. Press <b>2</b> if you want a booth this Saturday. ' +
+'Press <b>3</b> for anything else.') +
+doThis('Then:') +
+say('After the tone, give your business name, the day you mean, and your own name. ' +
+'Say the day plainly \u2014 <i>this Saturday</i>, or <i>September the fifth</i>. ' +
+'The time of your call is what counts against the deadline.');
+}
+}
 async function initVoicemailScreen() {
 renderVoicemail();
 await loadVoicemail();
@@ -23448,7 +23527,12 @@ const MGR_OTHER_MARKETS = ['winter', 'wednesday', 'popups'];
 const MGR_DESK_STYLE = 'grid';
 let mgrOpenFolder = null;
 const MGR_FOLDERS = [
-{ s: 'voicemail', i: 'i-phone', t: 'Answering Machine', d: 'Messages left on the market\u2019s number, transcribed and waiting for you to approve one by one' },
+{ key: 'answering', title: 'Answering Machine', icon: 'i-phone',
+sub: 'The market\u2019s phone line \u2014 what callers hear, and what they leave',
+tiles: [
+{ s: 'voicemail', i: 'i-phone', t: 'Messages Waiting', d: 'Left on the market\u2019s number, transcribed and waiting for you to approve one by one' },
+{ s: 'vmscript', i: 'i-quill', t: 'The Greeting to Record', d: 'The script to read into the machine \u2014 what callers hear before the beep' },
+] },
 { s: 'callinout', i: 'i-phone', t: 'Manual Input', d: 'Enter by hand what a vendor told the office by phone, email, mail or at the desk \u2014 dated by when they told you, not when you typed it' },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
 sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
