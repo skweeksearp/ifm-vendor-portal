@@ -15963,7 +15963,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-12';
+const BUILD_ID = '16-13';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -19447,7 +19447,7 @@ name.innerHTML = '<div>' + esc(v.businessName) + '</div>' +
 '<div class="req-vendor-sub"><span class="req-state ' +
 (st === 'overdue' || st === 'returned' ? 'expired' : st === 'pending' ? 'submitted' : st) +
 '">' + esc(reqStateLabel(st)) + '</span> ' + esc(sub) + '</div>' +
-(rec.fileId ? reqFileLinkHTML(rec) : '');
+(rec.fileId ? reqFileLinkHTML(rec, v.businessName) : '');
 row.appendChild(name);
 const sel = document.createElement('select');
 REQUIREMENT_STATES.forEach(s => {
@@ -21209,12 +21209,19 @@ strip.appendChild(cell);
 tray.appendChild(strip);
 return tray;
 }
-function reqFileLinkHTML(rec) {
+function reqFileLinkHTML(rec, who) {
 if (!rec || !rec.fileId) return '';
+// One named context per file. Not _blank: a single shared view is what lets
+// the previous document still be on screen when the next one is opened.
+const ctx = 'ifmdoc_' + String(rec.fileId).replace(/[^A-Za-z0-9]/g, '');
+const name = rec.fileName ? String(rec.fileName) : '';
 return '<a class="ghost-btn" style="display:inline-block; width:auto; padding:7px 14px; ' +
 'font-size:14px; text-decoration:none; margin-top:6px; opacity:1;" ' +
 'href="https://drive.google.com/file/d/' + encodeURIComponent(rec.fileId) +
-'/view" target="_blank" rel="noopener">Open the document \u2014 market\u2019s Drive</a>';
+'/view" target="' + esc(ctx) + '" rel="noopener">Open ' +
+(who ? esc(who) + '\u2019s document' : 'the document') + ' \u2014 market\u2019s Drive</a>' +
+(name ? '<div class="req-meta" style="margin-top:4px;">Drive should show <b>' + esc(name) +
+'</b>. If it shows something else, it is the previous document still on screen \u2014 reload it before you decide.</div>' : '');
 }
 function vaultReady() {
 return typeof IFM_VAULT_URL === 'string' && IFM_VAULT_URL.length > 0;
@@ -21514,7 +21521,7 @@ main.innerHTML =
 : ' \u00b7 reported posted ' + esc(posted) +
 (days !== null && days > 14
 ? ' \u00b7 <b>' + days + ' days ago \u2014 worth chasing</b>' : '')) + '</div>';
-if (viaUpload) main.insertAdjacentHTML('beforeend', reqFileLinkHTML(item.rec));
+if (viaUpload) main.insertAdjacentHTML('beforeend', reqFileLinkHTML(item.rec, item.v.businessName));
 const lab = document.createElement('label');
 lab.setAttribute('for', 'rv_' + safe);
 lab.style.marginTop = '8px';
@@ -24877,7 +24884,7 @@ if (rec.state === 'onfile' && rec.expiry) val += ', expires ' + formatDisplayDat
 if (rec.state === 'pending') val += rec.via === 'upload'
 ? ' \u2014 uploaded' + (rec.uploadedOn ? ' ' + formatDisplayDate(rec.uploadedOn) : '')
 : ' \u2014 reported posted' + (rec.sentOn ? ' ' + formatDisplayDate(rec.sentOn) : '');
-const link = reqFileLinkHTML(rec);
+const link = reqFileLinkHTML(rec, v ? v.businessName : '');
 reqHtml += line(esc(req.name), esc(val)) + (link ? '<div>' + link + '</div>' : '');
 });
 html += section('Permits & Documents', reqHtml || none('No requirements apply to this vendor.'));
