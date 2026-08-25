@@ -3524,6 +3524,31 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 </div>
 </div>
+<section id="screen-vprofile" class="screen">
+<div class="screen-head" id="head-vprofile"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">A vendor&rsquo;s own details, changed on their behalf. This is the same record they edit themselves, so what you save here replaces what they had &mdash; it does not sit in a queue. Contact details, links and products all show in the <b>Vendor Directory</b>, and products feed what the kiosk finds when a shopper searches.</p>
+<div class="card manager-only desk-form">
+<label for="vpVendor">Vendor</label>
+<input type="text" id="vpVendorFind" class="find-field" autocomplete="off"
+placeholder="Type a few letters of the business or last name"
+oninput="filterVendorSelect('vpVendor', this.value, 'vpVendorFindNote')">
+<p class="empty-note" id="vpVendorFindNote" style="margin:6px 0 0; display:none;"></p>
+<select id="vpVendor" onchange="loadVpFields()"></select>
+<div id="vpFields"></div>
+<label for="vpChannel" style="margin-top:14px;">How they told you</label>
+<select id="vpChannel">
+<option>Phone</option><option>Email</option><option>Mail</option><option>In person</option>
+</select>
+<label for="vpWhen">When they told the office</label>
+<input type="datetime-local" id="vpWhen">
+<button type="button" class="primary-btn" onclick="saveVpProfile()"><svg class="ico"><use href="#i-checkmark"></use></svg> Save their profile</button>
+<div class="status-msg" id="vpMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This Does Not Change</h2>
+<p class="empty-note" style="margin-top:0;">Business name, membership class, points and booth history are not editable here &mdash; those are market records, not the vendor&rsquo;s own description of themselves. A business name or class change goes through the office&rsquo;s own records, not this form.</p>
+</div>
+</section>
 <section id="screen-vmscript" class="screen">
 <div class="screen-head" id="head-vmscript"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">Read this into the market&rsquo;s answering machine as the outgoing greeting. <b>Spoken lines are in the boxes</b> &mdash; read those aloud, word for word. Everything in italics is a direction to you, not something to say.</p>
@@ -10222,6 +10247,13 @@ sel.innerHTML = matches.map(v =>
 '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
 if (matches.some(v => v.vendorId === was)) sel.value = was;
 else if (matches.length) sel.value = matches[0].vendorId;
+else sel.value = '';
+// Tell the screen. Whatever the select's onchange does to keep the rest of
+// the form in step with the chosen vendor has to happen here too. Compared
+// against `was` -- the vendor the form is currently showing -- because
+// replacing innerHTML auto-selects the first option, so reading sel.value
+// just now would report the new choice and this would never fire.
+if (sel.value !== was) sel.dispatchEvent(new Event('change', { bubbles: true }));
 const note = noteId ? document.getElementById(noteId) : null;
 if (note) {
 if (!q) { note.style.display = 'none'; }
@@ -10234,7 +10266,6 @@ note.textContent = matches.length === 0
 : matches.length + ' of ' + cache.vendors.length + ' shown.';
 }
 }
-if (selId === 'obVendor') { fillObRequirements(); renderObPromoNote(); }
 }
 function pickObKind(btn) {
 document.getElementById('obKind').value = btn.dataset.k;
@@ -12739,6 +12770,7 @@ if (name === 'plainwords') renderPlainWords();
 if (name === 'ideapath') renderIdeaPath();
 if (name === 'voicemail') initVoicemailScreen();
 if (name === 'vmscript') initVmScriptScreen();
+if (name === 'vprofile') initVpScreen();
 if (name === 'merchmansion') initMerchMansion();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
@@ -12871,6 +12903,7 @@ unreservable:      { title: () => 'Booths Available for the ' + seasonYear() + '
 voicemail:         { title: 'Messages from the Answering Machine' },
 merchmansion:      { title: 'What the Market Runs' },
 vmscript:          { title: 'The Greeting to Record' },
+vprofile:          { title: 'Update a Vendor\u2019s Profile' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -15886,7 +15919,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-8';
+const BUILD_ID = '16-9';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21562,6 +21595,110 @@ renderManagerAlerts();
 // changes, this changes with it instead of quietly telling callers the old one.
 function say(t) { return '<div class="say-line">' + t + '</div>'; }
 function doThis(t) { return '<p class="say-do">' + t + '</p>'; }
+// The office's copy of the vendor's own profile form. Same fields, same save
+// rules -- including the seed-merge rule that a value matching the harvested
+// original is stored as "unchanged" rather than as an override -- so a record
+// typed here is indistinguishable from one the vendor typed, except that we
+// keep who said it, when, and how.
+const VP_FIELDS = [
+{ k: 'primaryContact', l: 'Who to ask for', ph: 'The person the office asks for' },
+{ k: 'phone', l: 'Phone', ph: '607-555-0100' },
+{ k: 'email', l: 'Email', ph: 'name@example.com' },
+{ k: 'address', l: 'Address', ph: 'Farm or workshop address' },
+{ k: 'secondContact', l: 'Second person', ph: 'Spouse, partner, family or employee' },
+{ k: 'secondRelation', l: 'Who they are', sel: ['', 'spouse or partner', 'parent', 'adult child', 'sibling', 'other family', 'business partner', 'employee'] },
+{ k: 'secondPhone', l: 'Their phone', ph: '607-555-0101' },
+{ k: 'boothDisplay', l: 'What their booth looks like', ph: 'How a shopper spots them' },
+{ k: 'website', l: 'Website', ph: 'example.com' },
+{ k: 'facebook', l: 'Facebook', ph: 'Page name' },
+{ k: 'instagram', l: 'Instagram', ph: '@handle' },
+{ k: 'products', l: 'What they sell', ph: 'Comma separated \u2014 this is what the kiosk searches' },
+];
+function initVpScreen() {
+const sel = document.getElementById('vpVendor');
+if (sel && !sel.dataset.filled) {
+sel.innerHTML = cache.vendors.slice().sort(byBusinessName)
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+sel.dataset.filled = '1';
+}
+const when = document.getElementById('vpWhen');
+if (when && !when.value) {
+const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+when.value = d.toISOString().slice(0, 16);
+}
+loadVpFields();
+}
+function loadVpFields() {
+const wrap = document.getElementById('vpFields');
+const sel = document.getElementById('vpVendor');
+if (!wrap || !sel) return;
+const v = cache.vendors.find(x => x.vendorId === sel.value);
+wrap.innerHTML = '';
+if (!v) return;
+VP_FIELDS.forEach(f => {
+const lab = document.createElement('label');
+lab.setAttribute('for', 'vp_' + f.k);
+lab.textContent = f.l;
+lab.style.marginTop = '10px';
+wrap.appendChild(lab);
+let el;
+if (f.sel) {
+el = document.createElement('select');
+f.sel.forEach(o => {
+const op = document.createElement('option');
+op.value = o; op.textContent = o || '\u2014 not recorded \u2014';
+el.appendChild(op);
+});
+} else {
+el = document.createElement('input');
+el.type = 'text';
+if (f.ph) el.placeholder = f.ph;
+}
+el.id = 'vp_' + f.k;
+el.value = vField(v, f.k);
+wrap.appendChild(el);
+});
+const note = document.createElement('p');
+note.className = 'empty-note';
+note.style.margin = '10px 0 0';
+note.innerHTML = 'Showing what is on record for <b>' + esc(v.businessName) + '</b> now. ' +
+'Leave a box as it is and it stays as it is; empty one and it is cleared.';
+wrap.appendChild(note);
+}
+async function saveVpProfile() {
+if (!requireManager('vpMsg')) return;
+const sel = document.getElementById('vpVendor');
+const v = cache.vendors.find(x => x.vendorId === sel.value);
+if (!v) { showMsg('vpMsg', 'err', 'Pick the vendor first.'); return; }
+const whenStr = document.getElementById('vpWhen').value;
+if (!whenStr) { showMsg('vpMsg', 'err', 'Say when they told the office.'); return; }
+const channel = document.getElementById('vpChannel').value;
+const harvested = HARVESTED_DIRECTORY_DATA[v.vendorId] || {};
+const changed = [];
+VP_FIELDS.forEach(f => {
+const el = document.getElementById('vp_' + f.k);
+if (!el) return;
+const val = String(el.value).trim();
+const before = vField(v, f.k);
+if (val === before) return;
+changed.push({ l: f.l, from: before, to: val });
+if (val === (harvested[f.k] || '') || (val === '' && !harvested[f.k])) delete v[f.k];
+else v[f.k] = val;
+});
+if (!changed.length) { showMsg('vpMsg', 'err', 'Nothing was changed \u2014 every box still says what it said.'); return; }
+// Provenance: a profile the office typed should be tellable from one the
+// vendor typed, so the record carries who said it and how it arrived.
+v.profileToldAt = new Date(whenStr).getTime();
+v.profileChannel = channel;
+v.profileRecordedBy = 'office';
+await storageSet('ifm-vendors-v1', cache.vendors);
+loadVpFields();
+const via = channel === 'In person' ? 'told the office in person' : 'told the office by ' + channel.toLowerCase();
+showMsg('vpMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Saved for <b>' +
+esc(v.businessName) + '</b>, ' + esc(via) + '. Changed: ' +
+changed.map(c => '<b>' + esc(c.l) + '</b> ' + (c.from ? esc(c.from) : 'blank') + ' \u2192 ' +
+(c.to ? esc(c.to) : 'blank')).join('; ') + '. It is in the Vendor Directory now.');
+}
 function initVmScriptScreen() {
 const before = document.getElementById('vmScriptBefore');
 if (before) {
@@ -23553,7 +23690,12 @@ tiles: [
 { s: 'voicemail', i: 'i-phone', t: 'Messages Waiting', d: 'Left on the market\u2019s number, transcribed and waiting for you to approve one by one' },
 { s: 'vmscript', i: 'i-quill', t: 'The Greeting to Record', d: 'The script to read into the machine \u2014 what callers hear before the beep' },
 ] },
-{ s: 'callinout', i: 'i-phone', t: 'Manual Input', d: 'Enter by hand what a vendor told the office by phone, email, mail or at the desk \u2014 dated by when they told you, not when you typed it' },
+{ key: 'manual', title: 'Manual Input', icon: 'i-quill',
+sub: 'What a vendor told the office by phone, email, mail or at the desk \u2014 typed in on their behalf',
+tiles: [
+{ s: 'callinout', i: 'i-phone', t: 'Record What They Told You', d: 'Absences, booth requests, shares, documents, proposals and sales \u2014 dated by when they told you, not when you typed it' },
+{ s: 'vprofile', i: 'i-columns', t: 'Update a Vendor\u2019s Profile', d: 'Their contact details, second person, links and products \u2014 changed on their behalf and marked as such' },
+] },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
 sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
 tiles: [
