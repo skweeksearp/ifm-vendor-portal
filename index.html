@@ -3471,8 +3471,8 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <section id="screen-unreservable" class="screen">
 <div class="screen-head" id="head-unreservable"></div>
 <div class="card desk-form">
-<h2><span class="emoji"><svg class="ico"><use href="#i-no-entry"></use></svg></span>Unreservable Booths</h2>
-<p class="empty-note" style="margin-top:0;">Booths no reservation can be taken on, available to vendors seeking a booth for Saturday or Sunday assignment. They are first handed out in the Thursday call-in round and stay in the pool for the in-person rounds after it. The Guide requires this list to be updated <b>before the March round each year</b>, once non-returning vendors are known.</p>
+<h2><span class="emoji"><svg class="ico"><use href="#i-tent"></use></svg></span><span id="urHeading"></span></h2>
+<p class="empty-note" style="margin-top:0;">The booths deliberately held back from the season-long reservations, so that there is always something to give a vendor who does not hold a booth. They go out first in the Thursday round and stay in the pool for the in-person rounds after it. The Guide requires the list to be set <b>before the March round each year</b>, once non-returning vendors are known. The Guide calls these the &ldquo;unreservable&rdquo; booths, which names what cannot be done with them rather than what they are for.</p>
 <p class="empty-note" id="urStamp"></p>
 <label for="urAdd">Add a booth to the list</label>
 <div style="display:flex; gap:8px;">
@@ -9265,7 +9265,7 @@ what: 'Not a record but a key, and it is on the Handover list rather than this o
 unblocks: 'The received column on My Account, and paying fees by card. The market creates its own token on its own Square account \u2014 never a developer\u2019s.' },
 { t: 'Reservation roster & unreservable list', keeper: 'The Operations Manager',
 what: 'Which booths carry reservations this season, and the unreservable list as set before the March Booth Selection.',
-unblocks: 'Honest booth availability in every Selection tool, and the Unreservable Booths tool on the Booth Selection desk.' },
+unblocks: 'Honest booth availability in every Selection tool, and the Booths Available for the Season tool on the Booth Selection desk.' },
 { t: 'Board amendments since the Guide', keeper: 'Board minutes / the board secretary',
 what: 'Every rule the board has changed since the 2026 Guide was approved \u2014 the frontage-sharing amendment is the one known example, and there may be others.',
 unblocks: 'Rule text throughout the app \u2014 the Board Amendments tool on the Board &amp; Committees desk holds the running log, but the history since the Guide printed needs backfilling from minutes.' },
@@ -9457,6 +9457,8 @@ await storageSet('ifm-unreservable', unreservableCache);
 async function initUnreservableScreen() {
 document.getElementById('urAdd').value = '';
 document.getElementById('urMsg').className = 'status-msg';
+const hd = document.getElementById('urHeading');
+if (hd) hd.textContent = 'Booths Available for the ' + seasonYear() + ' Season';
 await loadUnreservable();
 renderUnreservable();
 }
@@ -11272,7 +11274,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'config', k: 'ifm-reset-log', t: 'When the beta reset was pressed, and from which phone', v: () => [] },
 { g: 'traffic', k: 'ifm-wedlist', t: 'Who was at the Wednesday market, week by week', v: () => ({}) },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
-{ g: 'config', k: 'ifm-unreservable', t: 'Unreservable Booths', v: () => ({ nums: [], updated: '' }) },
+{ g: 'config', k: 'ifm-unreservable', t: 'Booths held back from reservation \u2014 available all season', v: () => ({ nums: [], updated: '' }) },
 { g: 'config', k: 'ifm-amendments', t: 'Board Amendments', v: () => ({ items: [
 { date: '', text: 'Sharing vendors no longer need to each occupy half the booth\u2019s frontage.',
 note: 'Reported by a board member; meeting date not recorded \u2014 fill it in when the minutes surface.' }
@@ -12614,7 +12616,7 @@ creativity:        { title: 'Creativity' },
 aboutedit:         { title: 'Information Screen Subjects' },
 betareset:         { title: 'Beta Reset' },
 principles:        { title: 'Principles' },
-unreservable:      { title: 'Unreservable Booths' },
+unreservable:      { title: () => 'Booths Available for the ' + seasonYear() + ' Season' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -15552,7 +15554,7 @@ const PLAIN_WORDS_KEPT = [
 { a: 'Member, and vendor', d: 'The Guide\u2019s glossary makes these technical: a Member votes and is Full, a vendor does not vote. Everyone says vendor for everybody. This app follows the everyday use and says Full Member wherever voting or reserving actually turns on it.' },
 { a: 'Good standing', d: 'Purely administrative: fees paid, work hours up to date, insurance valid and naming IFM as additionally insured. It is not a judgment of conduct, and nothing about being a good neighbor enters into it.' },
 { a: 'Shoulder season', d: 'The late-November and December tail, when the dock wing (booths 45\u201358) and the circle end (69\u201378) close section by section and reserved holders may join the weekly Booth Selection. The Operations Manager declares it; the calendar does not.' },
-{ a: 'Unreservable booths', d: 'Named for what cannot be done with them. In practice they are the booths the Operations Manager hands out day by day as part of the Thursday round. The list is set before the March Booth Selection each year.' },
+{ a: 'Booths available for the season', d: 'The Guide calls these the \u201Cunreservable\u201D booths, which is a contradiction to a vendor looking for somewhere to sell: it names what the market cannot do with them rather than what they are for. They are the booths deliberately held back from the season-long reservations so there is always something to hand out \u2014 first in the Thursday round, then in the in-person rounds. The list is set before the March Booth Selection each year, once non-returning vendors are known.' },
 { a: 'Non-working fee', d: '$25 for each work hour owed and not worked, due 28 February. It is the price of not working the hours, not a fee for something called non-working.' },
 { a: 'Leave of Absence', d: 'A year away with your place held \u2014 and you still pay the annual fee, and the Reserved Booth Fee if you hold a booth. Board approval required. Leaving without it costs points, banked hours and the booth.' },
 { a: 'Director, and who may be one', d: 'A seat on the Board of Directors. You do not have to be a vendor to hold one. The Bylaws make Members, Affiliated Vendors \u2014 that is, Easy Entry vendors \u2014 and \u201Cother persons\u201D all eligible to serve, and give every director an equal vote on Board matters whatever their membership class. So an Easy Entry vendor who cannot vote at a members\u2019 meeting votes as a full equal once elected to the Board, and somebody who sells nothing at the market at all may serve. What is restricted is the electing, not the standing: only Full Members vote in the November election, nine seats, three filled each year for three-year terms. The Vendor Guide does not mention any of this. (Bylaws Article IV \u00a73; Article III \u00a71.)' },
@@ -15582,7 +15584,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-63';
+const BUILD_ID = '15-64';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21540,7 +21542,7 @@ d: 'Two ways the app and the printed Guide now disagree about Sunday sign-in. Fi
 t: 'Late-absence fine escalation: settled, worth confirming',
 d: 'The fines table footnote says fines increase in $50 increments for each offense, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
 { id: 'BF16', kind: 'gap', cat: 'Booths', src: 'Vendor Guide, Non-reservable Stalls',
-t: 'Unreservable booths: the Guide names Thursday and nothing else',
+t: 'Booths available for the season: the Guide names Thursday and nothing else',
 d: 'One sentence covers it \u2014 the OpM assigns these stalls on Thursday morning as part of the call-in process. Saturday morning and Sunday are never mentioned in connection with them. Nothing suggests they are withheld: no reservation can be taken on them, both in-person rounds assign from whatever is open, and there is nothing they could be held back for. The app now says they are available to vendors seeking a booth for Saturday or Sunday, first handed out in the Thursday round. Two things for the OpM to confirm. First, that Sunday really does draw from the same pool. Second, whether the office ever holds one back on the day \u2014 for a vendor whose plans changed, or for a second business in the family. The Guide gives no such priority: a vendor\u2019s second business enters the lottery on its own points and status, and a reserved-booth holder may not enter the daily lottery at all outside shoulder season. But discretion is written into the day-of decisions, so a practice could exist that the Guide never records.' },
 { id: 'BF15', kind: 'gap', cat: 'Permissions', src: 'App defect \u2014 found in testing',
 t: 'Who can operate what has never been audited across the whole app',
@@ -22615,7 +22617,7 @@ tiles: [
 t: () => selectionSeason() + ' Season-Long Booth Reservations',
 d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held for the whole season &middot; the &ldquo;auction&rdquo;' },
 { s: 'orgstalls', i: 'i-tent', t: 'Community Organizations', d: 'A stall for a non-profit \u2014 once a season, when space allows' },
-{ s: 'unreservable', i: 'i-no-entry', t: 'Unreservable Booths', d: 'Available to vendors seeking a booth for Saturday or Sunday \u2014 updated before the March round' },
+{ s: 'unreservable', i: 'i-tent', t: () => 'Booths Available for the ' + seasonYear() + ' Season', d: 'The pool held back from every reservation, so it is there to hand out all season \u2014 set before the March round' },
 ] },
 { key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
 sub: 'Money taken and what happened, market day by market day',
