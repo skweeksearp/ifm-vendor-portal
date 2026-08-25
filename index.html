@@ -2177,6 +2177,11 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <div class="chair-bar-text"><b id="chairAlertCount"></b><span id="chairAlertWho"></span></div>
 <span class="chair-bar-go">Review &rsaquo;</span>
 </div>
+<div class="card" id="vendorAttn" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Needs Attention</h2>
+<p class="empty-note" id="vendorAttnSub" style="margin-top:0;"></p>
+<div id="vendorAttnList"></div>
+</div>
 <div class="card" id="vendorAlerts" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-envelope"></use></svg></span>Waiting on the Market</h2>
 <p class="empty-note" id="vendorAlertSub" style="margin-top:0;"></p>
@@ -2294,6 +2299,10 @@ I sell food (prepared food or produce)
 <tbody></tbody>
 </table>
 <div class="empty-note" id="ptsHistoryEmpty" style="display:none;">No points activity on record yet.</div>
+</div>
+<div class="card" id="myAttendCard" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Attendance<button type="button" class="help-dot" onclick="showPlanned('myattend')" aria-label="What are the rules here?">?</button></h2>
+<div id="myAttendBody"></div>
 </div>
 </div>
 </div>
@@ -4488,21 +4497,6 @@ comes from.</p>
 <div id="mdList"></div>
 <div class="empty-note" id="mdEmpty" style="display:none;">Nothing is outstanding. The office has not assigned you any documents.</div>
 <div class="status-msg" id="mdMsg"></div>
-</div>
-</section>
-<section id="screen-attendreq" class="screen">
-<div class="screen-head" id="head-attendreq"></div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Attendance Requirement<button type="button" class="help-dot" onclick="showPlanned('attendreq')" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" id="arOverview" style="margin-top:0;"></p>
-<label for="arFilter">Show</label>
-<select id="arFilter" onchange="renderAttendReq()">
-<option value="risk">At risk or short</option>
-<option value="all">Everyone with a requirement</option>
-<option value="met">Already met</option>
-</select>
-<div id="arList" style="margin-top:10px;"></div>
-<div class="empty-note" id="arEmpty" style="display:none;"></div>
 </div>
 </section>
 <section id="screen-noshow" class="screen">
@@ -10956,12 +10950,10 @@ body: '<p>Removed from the app in the 15-series: a mock-up that moved no money w
 // OFF THE DESK. The Market Days drawer was taken off the vendor desk at
 // Sean's instruction. Nothing links here now; the note is kept so the idea
 // and its reasoning survive rather than being rediscovered from scratch.
-myattend: { built: false, t: 'Market Days', when: 'Through the season \u2014 off the vendor desk',
-body: '<p>Your season at a glance: the Saturdays and Sundays you have sold, and how the year is shaping up. Built to help you plan the rest of the season \u2014 and if life is getting in the way, the Exception Request under Communicate with the Market exists for exactly that.</p>' },
-attendreq: { built: true, t: 'Attendance Requirement', when: 'Through the season',
-body: '<p>Measure each vendor against the attendance they owe, while there is still season left to make it up.</p>' +
-'<p>A reserved Saturday booth requires 15 Saturdays, a corner Ag booth 25. A reserved Sunday booth requires 12 Sundays. Full Members generally owe 5 days at the pavilion. Falling short costs up to $100 per market at Board discretion, or the reservation itself.</p>' +
-'<p>The attendance data is already in the app. Nothing compares it to the requirement or warns anyone in August that the arithmetic no longer works.</p>' },
+myattend: { built: true, t: 'Attendance', when: 'Through the season \u2014 on your desk, under Points',
+body: () => '<p>What your booth asks of you this season, and how far along you are \u2014 measured while there is still season left to make it up.</p>' +
+'<p>A reserved Saturday booth asks ' + ruleNum('attSat') + ' Saturdays, a corner Ag booth ' + ruleNum('attCorner') + '. A reserved Sunday booth asks ' + ruleNum('attSun') + ' Sundays. Full Members generally owe ' + ruleNum('attFull') + ' days at the pavilion. Falling short costs up to $100 per market at Board discretion, or the reservation itself.</p>' +
+'<p>If the arithmetic stops working \u2014 or is about to \u2014 it is said plainly here and again under Needs Attention at the top of your desk. Nobody has to wait until December to find out. If life is getting in the way, the Exception Request under Communicate with the Market exists for exactly that, and the Board decides.</p>' },
 pointsroll: { built: true, t: 'Annual Points Rollover', when: 'Annual &mdash; start of season',
 body: () => '<p>The once-a-year batch that turns last season into this season&rsquo;s standing. Points rank every Booth Selection, but they do not move on their own &mdash; this posting is what moves them.</p>' +
 '<p><b>What to do, in order:</b></p>' +
@@ -11837,6 +11829,7 @@ const thisYearAttendance = myLedger
 document.getElementById('ptsTotal').textContent = total;
 const fsp = document.getElementById('foldSubPoints');
 if (fsp) fsp.textContent = total + ' pts';
+renderMyAttendance(vendor.vendorId);
 document.getElementById('ptsYear').textContent = thisYearAttendance;
 const ptsBody = document.querySelector('#ptsHistoryTable tbody');
 ptsBody.innerHTML = '';
@@ -12393,8 +12386,7 @@ if (name === 'marketrules') initMarketRulesScreen();
 if (name === 'committees') initCommitteesScreen();
 if (name === 'mycommittees') initMyCommitteesScreen();
 renderRulingsBanner(name);
-if (name === 'dashboard') { renderVendorDocsSub(); applyDeskOrder(); attachDeskDrag(); loadFeeCart().then(updatePaySub); renderVendorAlerts(); }
-if (name === 'attendreq') initAttendReqScreen();
+if (name === 'dashboard') { renderVendorDocsSub(); applyDeskOrder(); attachDeskDrag(); loadFeeCart().then(updatePaySub); renderVendorAttn(); renderVendorAlerts(); }
 if (name === 'noshow') initNoShowScreen();
 if (name === 'fines') initFinesScreen();
 if (name === 'composition') renderComposition();
@@ -12553,7 +12545,6 @@ mydocs:            { title: 'Permits & Documents' },
 boardflags:        { title: 'Flagged for Attention by the Manager' },
 marketrules:       { title: 'On the Books' },
 plainwords:        { title: 'Vocabulary' },
-attendreq:         { title: 'Attendance Requirement' },
 noshow:            { title: 'No-Show Log' },
 fines:             { title: 'Fines & Penalties' },
 composition:       { title: 'Membership Composition' },
@@ -15452,7 +15443,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '15-52';
+const BUILD_ID = '15-53';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -18563,20 +18554,6 @@ detail: 'Article 20-C, a county health department permit, or a Home Processing R
 appliesTo: 'selected', categories: [], vendorIds: [],
 effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
 due: '2026-04-01' },
-{ id: 'REQ-cannabis-micro', name: 'Cannabis Microbusiness License',
-issuer: 'NYS Office of Cannabis Management',
-detail: 'The all-in-one license letting a small operator cultivate, process and sell its own cannabis. Held by the business, not the market.',
-appliesTo: 'selected', categories: [], vendorIds: [],
-effective: '2026-08-06', renewal: 'expiry', blocking: true,
-example: 'Seeded as an example. New York legalised cannabis sales at farmers\u2019 markets on 6 August 2026 (S.10113/A.11217). No vendor has been attached to this requirement \u2014 add them as they apply, or delete it if the market decides not to host cannabis sales.',
-link: '' },
-{ id: 'REQ-cannabis-cse', name: 'Cannabis Showcase Event Permit',
-issuer: 'NYS Office of Cannabis Management',
-detail: 'Location-specific permit for selling cannabis away from a fixed retail premises. Requires local municipal approval as well as the state permit, and carries state rules on age verification and security. A permit covers an approved event at an approved location, so it is per market rather than per season.',
-appliesTo: 'selected', categories: [], vendorIds: [],
-effective: '2026-08-06', renewal: 'event', blocking: true,
-example: 'Seeded as an example alongside the microbusiness license. The market itself would also need to be an approved location before any of this applies \u2014 that approval is the market\u2019s job, not a vendor record, and is not tracked here.',
-link: '' },
 ];
 const RENEWAL_LABEL = { annual: 'Renews annually', expiry: 'Renews on expiry',
 event: 'Per market or event', once: 'One time only' };
@@ -19035,55 +19012,93 @@ return 'short';
 }
 const VERDICT_LABEL = { met: 'Met', short: 'On track', risk: 'At risk', impossible: 'Cannot be met' };
 const VERDICT_CLASS = { met: 'onfile', short: 'submitted', risk: 'expiring', impossible: 'expired' };
-function initAttendReqScreen() {
-document.getElementById('arFilter').value = 'risk';
-renderAttendReq();
+function attendanceStanding(vendorId) {
+// One vendor's attendance, judged as a whole. Returns the obligations with a
+// verdict each, plus the worst verdict across them -- which is what the desk
+// summary and the Needs Attention card both key off.
+const obs = attendanceObligations(vendorId).map(o => {
+const r = Object.assign({}, o);
+r.verdict = obligationVerdict(o);
+r.shortBy = Math.max(0, o.need - o.done);
+return r;
+});
+const rank = { impossible: 0, risk: 1, short: 2, met: 3 };
+let worst = null;
+obs.forEach(o => { if (worst === null || rank[o.verdict] < rank[worst]) worst = o.verdict; });
+return { obligations: obs, worst: worst };
 }
-function renderAttendReq() {
-const filter = document.getElementById('arFilter').value;
-const wrap = document.getElementById('arList');
-const empty = document.getElementById('arEmpty');
-wrap.innerHTML = '';
-const rows = [];
-cache.vendors.forEach(v => {
-attendanceObligations(v.vendorId).forEach(o => {
-rows.push({ v: v, o: o, verdict: obligationVerdict(o) });
-});
-});
-const atRisk = rows.filter(r => r.verdict === 'risk' || r.verdict === 'impossible').length;
-const met = rows.filter(r => r.verdict === 'met').length;
-document.getElementById('arOverview').textContent =
-rows.length + ' obligations across the roster \u00b7 ' + met + ' met \u00b7 ' +
-atRisk + ' at risk or already impossible. Shortfalls cost up to $100 a market at ' +
-'Board discretion, or the reservation.';
-let shown = rows;
-if (filter === 'risk') shown = rows.filter(r => r.verdict === 'risk' || r.verdict === 'impossible' || r.verdict === 'short');
-if (filter === 'met') shown = rows.filter(r => r.verdict === 'met');
-const order = { impossible: 0, risk: 1, short: 2, met: 3 };
-shown = shown.slice().sort((a, b) =>
-order[a.verdict] - order[b.verdict] ||
-(a.need - a.done) - (b.need - b.done) ||
-byBusinessName(a, b));
-if (!shown.length) {
-empty.style.display = 'block';
-empty.textContent = 'Nothing matches that filter.';
+function attendanceLine(o) {
+// Plain words for one obligation -- what it means for this vendor, right now.
+if (o.verdict === 'met') {
+return 'Met \u2014 you have done what this booth asks for the season.';
+}
+if (o.verdict === 'impossible') {
+return 'You are ' + o.shortBy + ' short with only ' + o.left + ' ' + o.unit +
+' left, so this one can no longer be met this season.';
+}
+if (o.verdict === 'risk') {
+return 'You need ' + o.shortBy + ' more from the ' + o.left + ' ' + o.unit +
+' left \u2014 that is nearly every one of them.';
+}
+return o.shortBy + ' more to go, with ' + o.left + ' ' + o.unit + ' left. On track.';
+}
+function renderMyAttendance(vendorId) {
+const card = document.getElementById('myAttendCard');
+const body = document.getElementById('myAttendBody');
+if (!card || !body) return;
+const me = vendorId || currentVendorId;
+if (!me) { card.style.display = 'none'; return; }
+const st = attendanceStanding(me);
+card.style.display = 'block';
+body.innerHTML = '';
+if (!st.obligations.length) {
+const p = document.createElement('p');
+p.className = 'empty-note';
+p.style.marginTop = '0';
+p.textContent = 'No attendance requirement applies to you right now. ' +
+'If you take a reserved booth, what it asks of you appears here.';
+body.appendChild(p);
 return;
 }
-empty.style.display = 'none';
-shown.forEach(r => {
+const lead = document.createElement('p');
+lead.className = 'empty-note';
+lead.style.marginTop = '0';
+if (st.worst === 'met') {
+lead.textContent = st.obligations.length === 1
+? 'You have met the attendance your booth asks for this season.'
+: 'You have met every attendance requirement that applies to you this season.';
+} else if (st.worst === 'impossible') {
+lead.textContent = 'One of your requirements can no longer be met this season. ' +
+'The Board decides what happens next \u2014 an Exception Request is the way to put your side of it.';
+} else if (st.worst === 'risk') {
+lead.textContent = 'You are behind, with enough of the season left to catch up \u2014 but only just. ' +
+'Worth planning the rest of your markets around.';
+} else {
+lead.textContent = 'You are on track. Here is what is left.';
+}
+body.appendChild(lead);
+st.obligations.forEach(o => {
 const row = document.createElement('div');
 row.className = 'req-row';
 const main = document.createElement('div');
 main.className = 'req-row-main';
 main.innerHTML =
-'<div class="req-name">' + esc(r.v.businessName) + '</div>' +
-'<div class="req-meta">' + esc(r.o.what) + ' \u00b7 ' + r.o.done + ' of ' + r.o.need +
-' ' + esc(r.o.unit) + ' \u00b7 ' + r.o.left + ' left this season</div>' +
-'<div class="req-tally"><span class="req-state ' + VERDICT_CLASS[r.verdict] + '">' +
-VERDICT_LABEL[r.verdict] + '</span></div>';
+'<div class="req-name">' + esc(o.what) + '</div>' +
+'<div class="req-meta">' + o.done + ' of ' + o.need + ' ' + esc(o.unit) +
+' \u00b7 ' + esc(attendanceLine(o)) + '</div>' +
+'<div class="req-tally"><span class="req-state ' + VERDICT_CLASS[o.verdict] + '">' +
+VERDICT_LABEL[o.verdict] + '</span></div>';
 row.appendChild(main);
-wrap.appendChild(row);
+body.appendChild(row);
 });
+if (st.worst === 'risk' || st.worst === 'impossible') {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'ghost-btn';
+b.textContent = 'Exception Request';
+b.onclick = () => showScreen('communicate');
+body.appendChild(b);
+}
 }
 function noShowCandidates(date) {
 const md = allMarketDatesInSeason(seasonYear()).find(m => m.date === date);
@@ -21104,6 +21119,50 @@ m: r.status + (r.meeting ? ' \u00b7 ' + formatDisplayDate(r.meeting) : '') + (r.
 });
 return out;
 }
+function renderVendorAttn() {
+const card = document.getElementById('vendorAttn');
+const wrap = document.getElementById('vendorAttnList');
+if (!card || !wrap) return;
+const me = currentVendorId;
+wrap.innerHTML = '';
+if (!me) { card.style.display = 'none'; return; }
+const items = [];
+const st = attendanceStanding(me);
+st.obligations.forEach(o => {
+if (o.verdict !== 'risk' && o.verdict !== 'impossible') return;
+items.push({
+t: o.what + ' \u2014 attendance',
+m: o.done + ' of ' + o.need + ' ' + o.unit + ' \u00b7 ' + attendanceLine(o),
+label: o.verdict === 'impossible' ? 'Can\u2019t be met' : 'At risk',
+cls: o.verdict === 'impossible' ? 'expired' : 'expiring'
+});
+});
+card.style.display = items.length ? 'block' : 'none';
+if (!items.length) return;
+const sub = document.getElementById('vendorAttnSub');
+if (sub) sub.textContent = items.length === 1
+? 'One thing to keep an eye on this season.'
+: items.length + ' things to keep an eye on this season.';
+items.forEach(a => {
+const row = document.createElement('div');
+row.className = 'req-row';
+const main = document.createElement('div');
+main.className = 'req-row-main';
+main.innerHTML =
+'<div class="req-name">' + esc(a.t) + '</div>' +
+'<div class="req-meta">' + esc(a.m) + '</div>' +
+'<div class="req-tally"><span class="req-state ' + a.cls + '">' + esc(a.label) + '</span></div>';
+main.onclick = () => {
+const fold = document.querySelector('.dash-fold[data-fold="fPoints"]');
+const bar = fold && fold.querySelector('.fold-bar');
+if (!bar) return;
+if (!fold.classList.contains('open')) toggleFold(bar);
+bar.scrollIntoView({ block: 'start', behavior: 'smooth' });
+};
+row.appendChild(main);
+wrap.appendChild(row);
+});
+}
 async function renderVendorAlerts() {
 const card = document.getElementById('vendorAlerts');
 if (!card) return;
@@ -21613,7 +21672,7 @@ const FLAG_SCREENS = {
 'Fire lane': ['fines', 'dayfees'],
 'Booth condition': ['optool:stallcheck', 'fines'],
 'Buildings & Grounds': ['optool:bgwalk', 'optool:compliance', 'facilitiestracker'],
-'Attendance': ['attendreq', 'noshow'],
+'Attendance': ['noshow'],
 'Insurance': ['requirements', 'standing'],
 'Permits': ['requirements'],
 'Leave of absence': ['leaves'],
@@ -22295,23 +22354,18 @@ tiles: [
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
 ] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
-sub: 'The roster and its paperwork \u2014 who they are, on file',
+sub: 'Who they are and how they\u2019re doing \u2014 records, points, absences, fines and discipline',
+head: buildStandingLookup,
 tiles: [
 { s: 'records', i: 'i-list', t: 'Vendor Records', d: 'Everything on file, vendor by vendor' },
 { s: 'addvendor', i: 'i-clipboard', t: 'Add New Vendor', d: 'Onboard and draft a welcome letter' },
 { s: 'requirements', i: 'i-key', t: 'Vendor Requirements', d: 'Licenses, permits, insurance and expiry' },
 { s: 'composition', i: 'i-columns', t: 'Membership Composition', d: 'The 105 cap, the 60/40 rule, and recording a change of class' },
-] },
-{ key: 'standing', title: 'Points & Standing', icon: 'i-star',
-sub: 'How each vendor is doing \u2014 points, absences, fines and discipline',
-head: buildStandingLookup,
-tiles: [
 { s: 'pointsmanager', i: 'i-star', t: 'Points Manager', d: "Award or adjust a vendor's points" },
 { soon: 'pointsroll', s: 'pointsroll', i: 'i-star', t: 'Annual Points Rollover', d: 'Sets the ranking every selection uses' },
 { s: 'standing', i: 'i-warning', t: 'Vendor Standing', d: 'Fees, insurance, and who may have quit' },
 { s: 'leaves', i: 'i-calendar', t: 'Leaves of Absence', d: 'Approvals, fees, seniority' },
 { s: 'calloutpatterns', i: 'i-phone', t: 'Absence Patterns', d: 'Who is missing the deadline \u2014 and whether a deadline is the problem' },
-{ soon: 'attendreq', s: 'attendreq', i: 'i-checkmark', t: 'Attendance Requirement', d: 'What holding a reserved booth obliges' },
 { soon: 'fines', s: 'fines', i: 'i-scale', t: 'Fines &amp; Penalties', d: 'What is owed, with the escalation' },
 { soon: 'disciplinary', ot: 'disciplinary', i: 'i-warning', t: 'Disciplinary Record', d: 'Which stage a vendor is at' },
 { s: 'account', i: 'i-basket', t: 'Vendor Accounts', d: 'One vendor\u2019s whole balance \u2014 fees, fines, share, hours owed' },
