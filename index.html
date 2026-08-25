@@ -3524,6 +3524,48 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 </div>
 </div>
+<section id="screen-vreset" class="screen">
+<div class="screen-head" id="head-vreset"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">A vendor turns up at the office saying they cannot get in. This checks it really is them, issues a one-time code they use to set a new password, and writes down that you did it &mdash; who, when, and how they proved who they were.</p>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>1. Who Is Standing There</h2>
+<input type="text" id="vrFind" class="find-field" autocomplete="off"
+placeholder="Type a few letters of the business or last name"
+oninput="filterVendorSelect('vrVendor', this.value, 'vrFindNote')">
+<p class="empty-note" id="vrFindNote" style="margin:6px 0 0; display:none;"></p>
+<select id="vrVendor" onchange="renderResetCheck()"></select>
+</div>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>2. Check It Is Them</h2>
+<p class="empty-note" style="margin-top:0;">Ask them one of these and let them answer <b>before</b> you look. A code handed to the wrong person gives away a vendor&rsquo;s whole account, and the office is the only check there is.</p>
+<div id="vrChallenge"></div>
+<label for="vrProof" style="margin-top:12px;">How they proved it</label>
+<select id="vrProof">
+<option value="known">I know them by sight</option>
+<option value="matched">They answered a question above</option>
+<option value="photo">Photo ID</option>
+<option value="other">Something else — written in the note</option>
+</select>
+<label for="vrNote">Note (optional)</label>
+<input type="text" id="vrNote" placeholder="e.g. came to the desk Saturday morning with her husband">
+</div>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>3. Issue the Code</h2>
+<p class="empty-note" style="margin-top:0;">Good for <b>30 minutes</b> and one use. Read it to them or write it down &mdash; it is shown once and is not stored anywhere you can look it up again.</p>
+<button type="button" class="primary-btn" onclick="issueResetCode()"><svg class="ico"><use href="#i-key"></use></svg> Issue a one-time code</button>
+<div class="status-msg" id="vrMsg"></div>
+<div id="vrCodeBox" style="display:none;"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Resets You Have Done</h2>
+<div id="vrLog"></div>
+<div class="empty-note" id="vrLogEmpty" style="display:none;">No resets yet.</div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Where This Stands</h2>
+<p class="empty-note" style="margin-top:0;">Sign-in is deliberately incomplete during beta, so a code issued today has nothing to sign into yet. What this tool does now is real: it makes the office’s check a step rather than an afterthought, and it keeps the record. When credentials are switched on, the code becomes usable and nothing here has to change.</p>
+</div>
+</section>
 <section id="screen-vprofile" class="screen">
 <div class="screen-head" id="head-vprofile"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">A vendor&rsquo;s own details, changed on their behalf. This is the same record they edit themselves, so what you save here replaces what they had &mdash; it does not sit in a queue. Contact details, links and products all show in the <b>Vendor Directory</b>, and products feed what the kiosk finds when a shopper searches.</p>
@@ -12771,6 +12813,7 @@ if (name === 'ideapath') renderIdeaPath();
 if (name === 'voicemail') initVoicemailScreen();
 if (name === 'vmscript') initVmScriptScreen();
 if (name === 'vprofile') initVpScreen();
+if (name === 'vreset') initVresetScreen();
 if (name === 'merchmansion') initMerchMansion();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
@@ -12904,6 +12947,7 @@ voicemail:         { title: 'Messages from the Answering Machine' },
 merchmansion:      { title: 'What the Market Runs' },
 vmscript:          { title: 'The Greeting to Record' },
 vprofile:          { title: 'Update a Vendor\u2019s Profile' },
+vreset:            { title: 'Help a Vendor Get Back In' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -15919,7 +15963,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-9';
+const BUILD_ID = '16-10';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21614,6 +21658,126 @@ const VP_FIELDS = [
 { k: 'instagram', l: 'Instagram', ph: '@handle' },
 { k: 'products', l: 'What they sell', ph: 'Comma separated \u2014 this is what the kiosk searches' },
 ];
+// Helping somebody back into their account is the one desk job where being
+// helpful is the risk. The office is the only check there is, so the tool
+// makes the check a step: ask first, look second. Answers stay hidden until
+// the office says it has heard one, because a screen showing the answer turns
+// the question into a prompt.
+let vrRevealed = {};
+function initVresetScreen() {
+const sel = document.getElementById('vrVendor');
+if (sel && !sel.dataset.filled) {
+sel.innerHTML = cache.vendors.slice().sort(byBusinessName)
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+sel.dataset.filled = '1';
+}
+renderResetCheck();
+renderResetLog();
+}
+function renderResetCheck() {
+const wrap = document.getElementById('vrChallenge');
+const sel = document.getElementById('vrVendor');
+if (!wrap || !sel) return;
+vrRevealed = {};
+const v = cache.vendors.find(x => x.vendorId === sel.value);
+const box = document.getElementById('vrCodeBox');
+if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+showMsg('vrMsg', '', '');
+wrap.innerHTML = '';
+if (!v) return;
+const asks = [
+{ q: 'What phone number is on your account?', a: vField(v, 'phone') },
+{ q: 'What email do we have for you?', a: vField(v, 'email') },
+{ q: 'Who else is named on your account, and how are they related to you?',
+a: vField(v, 'secondContact') ? vField(v, 'secondContact') +
+(vField(v, 'secondRelation') ? ' (' + vField(v, 'secondRelation') + ')' : '') : '' },
+{ q: 'What year did you join the market?', a: v.joinYear ? String(v.joinYear) : '' },
+].filter(x => x.a);
+if (!asks.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;"><b>Nothing is on record to ask them about.</b> ' +
+'No phone, email, second person or join year is stored for ' + esc(v.businessName) +
+'. Ask for photo ID instead, and put what you saw in the note.</p>';
+return;
+}
+asks.forEach((x, i) => {
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' + esc(x.q) + '</div>' +
+'<div class="req-meta" id="vrA' + i + '">Answer hidden \u2014 let them say it first.</div></div>';
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'ghost-btn';
+btn.style.cssText = 'margin:0 0 0 6px; width:auto; padding:7px 10px; font-size:13px;';
+btn.textContent = 'Show';
+btn.onclick = () => {
+document.getElementById('vrA' + i).innerHTML = '<b>' + esc(x.a) + '</b>';
+btn.style.display = 'none';
+vrRevealed[i] = true;
+};
+row.appendChild(btn);
+wrap.appendChild(row);
+});
+}
+function resetCode() {
+// No I, O, 0 or 1 -- this gets read aloud across a desk.
+const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+let out = '';
+for (let i = 0; i < 8; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+return out.slice(0, 4) + '-' + out.slice(4);
+}
+async function issueResetCode() {
+if (!requireManager('vrMsg')) return;
+const sel = document.getElementById('vrVendor');
+const v = cache.vendors.find(x => x.vendorId === sel.value);
+if (!v) { showMsg('vrMsg', 'err', 'Pick the vendor first.'); return; }
+const proof = document.getElementById('vrProof').value;
+if (proof === 'matched' && !Object.keys(vrRevealed).length) {
+showMsg('vrMsg', 'err', 'You have said they answered a question, but none has been checked. ' +
+'Show the answer to the one they gave, or pick a different reason.');
+return;
+}
+const code = resetCode();
+const now = Date.now();
+const mins = 30;
+// The code is not kept. Only a hash-free fingerprint of the fact it existed:
+// who, when, who helped, and how they proved it. Storing the code would make
+// this log a way in rather than a record of one.
+const log = (await storageGet('ifm-resets')) === STORAGE_MISSING ? [] : (await storageGet('ifm-resets') || []);
+log.push({ id: 'rs' + now, vendorId: v.vendorId, at: now, expiresAt: now + mins * 60000,
+proof: proof, note: document.getElementById('vrNote').value.trim(), by: 'office' });
+await storageSet('ifm-resets', log);
+cache.resets = log;
+const box = document.getElementById('vrCodeBox');
+box.style.display = 'block';
+box.innerHTML = '<div class="say-line" style="text-align:center; font-size:30px; font-weight:900; letter-spacing:0.12em;">' +
+esc(code) + '</div>' +
+'<p class="empty-note" style="margin:6px 0 0;">For <b>' + esc(v.businessName) + '</b>, good until <b>' +
+esc(new Date(now + mins * 60000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })) +
+'</b>. Shown once \u2014 leaving this screen loses it, and the office cannot look it up again.</p>';
+document.getElementById('vrNote').value = '';
+renderResetLog();
+showMsg('vrMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Issued and recorded.');
+}
+function renderResetLog() {
+const wrap = document.getElementById('vrLog');
+const empty = document.getElementById('vrLogEmpty');
+if (!wrap) return;
+wrap.innerHTML = '';
+const rows = (cache.resets || []).slice().reverse().slice(0, 12);
+if (empty) empty.style.display = rows.length ? 'none' : 'block';
+const words = { known: 'known by sight', matched: 'answered a question on record',
+photo: 'photo ID', other: 'see the note' };
+rows.forEach(r => {
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' +
+esc(boothVendorName(r.vendorId) || r.vendorId) + '</div>' +
+'<div class="req-meta">' + esc(new Date(r.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })) +
+' \u00b7 ' + esc(words[r.proof] || r.proof) +
+(r.note ? ' \u00b7 ' + esc(r.note) : '') + '</div></div>';
+wrap.appendChild(row);
+});
+}
 function initVpScreen() {
 const sel = document.getElementById('vpVendor');
 if (sel && !sel.dataset.filled) {
@@ -22520,6 +22684,18 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF42', kind: 'question', cat: 'Board', src: 'Bylaws Articles IV, V and VI against how the app is built',
+t: 'How should the Board be able to override, freeze or lock out the Market Manager \u2014 and should Directors have their own login?',
+d: 'Raised 25 Aug 2026. Four questions the Board should settle together, because the answers depend on each other. ' +
+'(1) WHAT POWER. A ladder exists, weakest to strongest: visibility only, where every consequential manager action is logged where the Board can read it; a two-person rule on a named short list such as Beta Reset, data export and large fine waivers; a freeze putting the manager role in read-only; or full suspension of the role. ' +
+'(2) THE DANGER OF THE TOP TWO. This app is meant to be indispensable to the office. A freeze at 7 AM on a Saturday means nobody can record absences, run Booth Selection or take a booth request \u2014 so a freeze needs a floor of things that keep working regardless, or the Board acquires the power to break market day. It also cuts against the app\u2019s own principle of flag-not-gate: a lockout is the purest possible gate. ' +
+'(3) WHO HOLDS IT. Article V \u00a75 already makes the President the principal executive officer who supervises and controls all the business and affairs of the corporation, and \u00a76 makes the Vice President the fallback when the President cannot or refuses to act \u2014 which matters, because any lockout power needs a route around the person holding it. But Article IV \u00a71 gives hiring of personnel to the Board collectively. A President who can freeze the manager alone is a standing threat in every disagreement between them; a freeze requiring a recorded Board vote is an institutional act. The Personnel Committee is the body that would naturally handle manager conduct, and it currently has no members at all. ' +
+'(4) CO-PRESIDENT. Article V \u00a71 lists President, one or more Vice Presidents, Secretary and Treasurer. There is no co-president. Two offices may be held by one person except President and Secretary. If IFM operates with co-presidents in practice, the Bylaws and the practice disagree, and that should be settled before either is written into software. ' +
+'(5) A DIRECTORS\u2019 LOGIN. BF40 established that Directors need not be vendors, so some Board members have no account type that fits them. A read-only Board role answers a real problem today, independent of overrides. The hard part is what it shows: Directors reading individual vendor balances, fines and points is a governance decision rather than a design one, and Article IV \u00a77 confining executive session to personnel, litigation and real estate suggests the Board already treats some matters differently. ' +
+'NOTE ON CREDENTIALS: the app\u2019s incomplete sign-in is deliberate for beta testing, not an oversight \u2014 it is not evidence about how access will work in service.' },
+{ id: 'BF43', kind: 'discrepancy', cat: 'Board', src: 'Bylaws Article VI \u00a72 against the Committees tool',
+t: 'The Bylaws give the President the power to appoint committee chairs; the app gives it to the Market Manager',
+d: 'Article VI \u00a72: \u201CThe President shall appoint the chairpersons of such committees, and may designate the members thereof, or authorize the chairperson to make such designations.\u201D In the app, the Market Manager sets chairs and members from the Committees tool. That is the office exercising a power the Bylaws place with the President. The mechanism itself is sound \u2014 what is wrong is who the app assumes is using it. Smallest honest fix is to relabel the action as recording the President\u2019s appointment rather than making it, which is true today and stays true if a Board login is added later. Removing the manager\u2019s ability to record it would leave chairs unrecordable until a President logs in, which is worse.' },
 { id: 'BF41', kind: 'gap', cat: 'Safety', src: 'Emergency Evacuation Procedure (Becca Rimmel) against the venue calendar',
 t: 'The only written evacuation plan is Steamboat\u2019s \u2014 Winter Market and East Hill have none',
 d: 'The Emergency Evacuation Procedure in the app is written for the pavilion: waterfront trail directions, pavilion exits by name, a script that says \u201Cmarket pavilion.\u201D The market also runs January\u2013March inside Triphammer Marketplace and Wednesdays at East Hill Plaza, and no written plan for either building exists in the app or among the market\u2019s documents given to it. Decided 25 Aug 2026: the plan is hidden during Winter Market season rather than shown for a closed building \u2014 Steamboat\u2019s trail directions standing at Triphammer would be worse than nothing. It returns when the pavilion season does. Whether plans for the other two buildings should be written \u2014 and by whom, since both are other people\u2019s buildings with their own fire procedures \u2014 remains the Board\u2019s to take up.' },
@@ -23695,6 +23871,7 @@ sub: 'What a vendor told the office by phone, email, mail or at the desk \u2014 
 tiles: [
 { s: 'callinout', i: 'i-phone', t: 'Record What They Told You', d: 'Absences, booth requests, shares, documents, proposals and sales \u2014 dated by when they told you, not when you typed it' },
 { s: 'vprofile', i: 'i-columns', t: 'Update a Vendor\u2019s Profile', d: 'Their contact details, second person, links and products \u2014 changed on their behalf and marked as such' },
+{ s: 'vreset', i: 'i-key', t: 'Help a Vendor Get Back In', d: 'A vendor at the desk who cannot sign in \u2014 check it is them, issue a one-time code, and leave a record that you did' },
 ] },
 { key: 'selection', title: 'Booth Selection', icon: 'i-gavel',
 sub: 'Booths given out \u2014 a day at a time in the weekly selections, a season at a time by reservation, plus winter and the pool held back from all of it',
