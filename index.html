@@ -2479,7 +2479,7 @@ I sell food (prepared food or produce)
 <p class="empty-note" id="shareOwnBoothLine" style="margin-bottom:0;"></p>
 <label for="shareGuest">Who Is Sharing Your Booth?</label>
 <select id="shareGuest"></select>
-<p class="empty-note" style="margin-bottom:0;">The list is vendors without a booth that day \u2014 no reservation of their own, and nothing assigned to them in that day\u2019s Booth Selection.</p>
+<p class="empty-note" style="margin-bottom:0;">The list is vendors without a booth that day — no reservation of their own, and nothing assigned to them in that day’s Booth Selection.</p>
 </div>
 <label for="shareFamily" style="margin-top:12px;">Are the two businesses owned by the same family?</label>
 <select id="shareFamily">
@@ -3541,6 +3541,30 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 </div>
 </div>
+<section id="screen-aginspect" class="screen">
+<div class="screen-head" id="head-aginspect"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Ag Guidelines p.5: the Agriculture Committee <b>may annually select up to four vendors to inspect at random</b> &mdash; on top of inspecting new applicants, and any inspection needed to look into a complaint. Those other two are not drawn here; this is only the random four.</p>
+<div class="card manager-only desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-carrot"></use></svg></span>Draw the Four</h2>
+<p class="empty-note" id="agPoolNote" style="margin-top:0;"></p>
+<button type="button" class="primary-btn" onclick="drawInspectionFarms()"><svg class="ico"><use href="#i-star"></use></svg> Draw four farms</button>
+<button type="button" class="ghost-btn" onclick="askRedraw()">Draw again &mdash; with a reason</button>
+<div class="status-msg" id="agDrawMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>This Season&rsquo;s Draw</h2>
+<div id="agDrawNow"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Every Draw Ever Made</h2>
+<p class="empty-note" style="margin-top:0;">Including any that were set aside. A draw that can be quietly repeated until it produces a comfortable answer is not a random draw, so none of them are deleted.</p>
+<div id="agDrawLog"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This Does Not Do</h2>
+<p class="empty-note" style="margin-top:0;">It draws names. It does not give the 24 hours&rsquo; notice the Guidelines require, book the visit, record what was found, or carry anything forward to next season &mdash; the Guidelines say nothing about excluding a farm inspected last year, so this draws from every Ag vendor every time and the same farm can come up two years running. That is <b>flagged for the Board as BF44</b> — whether to exclude is a market decision, and the rule should be written into the Guidelines before the tool follows it.</p>
+</div>
+</section>
 <section id="screen-presplanned" class="screen">
 <div class="screen-head" id="head-presplanned"></div>
 <p class="empty-note" style="margin:-4px 0 14px;"><b>None of this is built.</b> This desk currently holds the tools that were already on the Market Manager&rsquo;s desk but belong to the Board. What follows is what would have to exist before this desk could honestly be called supervision rather than a second copy of the office&rsquo;s screens. It is a list for the Board to consider, not a promise.</p>
@@ -3722,7 +3746,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
-<div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first \u2014 that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
+<div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first — that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
 <div class="comm-item"><div class="comm-title">Retiring a tool</div><div class="comm-desc">Before removing one, prove the thing that replaced it actually reaches the same place. <em>Add a Vendor to This Saturday</em> was retired once it was shown end to end that a booth request entered in Manual Input puts the vendor in Saturday&rsquo;s pool by the same route as one sent from a phone &mdash; and that is the better route, because it carries how the request arrived and when the vendor told the office. Sunday keeps its own version: that desk is a sign-in sheet at the 8:30 meeting and nothing else feeds it, so removing it there would take away the only way in. Sweep the tool&rsquo;s <em>id</em> out of the screen registry too, and guard whatever used to reach for it. One thing must not be deleted: a <code>HELP_TEXTS</code> entry, because every help dot is numbered by position and removing one silently moves all the rest &mdash; mark the slot retired and leave it.</div></div>
 <div class="comm-item"><div class="comm-title">A screen that needs a record the app may not hold yet</div><div class="comm-desc">Draw first, fetch second. A screen that opens with <code>await loadSomething()</code> before it writes anything to the page will show <em>nothing at all</em> while that one fetch is outstanding &mdash; not a spinner, not a heading, nothing &mdash; and a person tapping it will say the tool is frozen. It is not frozen; it is being polite to a fetch that most of the screen does not depend on. This bites hardest on a <em>new</em> storage key, because until somebody writes to it the sheet has no row and every phone fetches it separately and gets a cold Apps Script. Draw everything already in hand, then call the loader and redraw when it lands. A <em>write</em> still waits, because writing into a half-known list would drop whatever had not arrived. Others that still open this way, should they ever feel slow: <code>initUnreservableScreen</code>, <code>initFeePayScreen</code>, <code>renderTaskManager</code>, <code>renderAvailableTasks</code>, <code>renderOrgStalls</code>.</div></div>
 <div class="comm-item"><div class="comm-title">A new tool on the Market Manager&rsquo;s desk</div><div class="comm-desc">Two desks are built two different ways, and a tool added to one does <em>not</em> appear on the other. The <strong>staff</strong> desk is hand-written drawers in the markup. The <strong>Market Manager</strong> desk is generated from the tool registry &mdash; the list of groups and tiles &mdash; so a manager tool has to be added <em>there</em>, whatever the markup says. SNAP Tokens In &amp; Out was written into the markup alone and turned up on the staff desk only, where nobody was looking for it. When testing, look <em>inside</em> the drawer the tool is meant to be in: a document-wide search for the title finds it on the wrong desk and reports success.</div></div>
@@ -12947,6 +12971,7 @@ if (name === 'vmscript') initVmScriptScreen();
 if (name === 'vprofile') initVpScreen();
 if (name === 'vreset') initVresetScreen();
 if (name === 'presplanned') initPresPlanned();
+if (name === 'aginspect') initAgInspect();
 if (name === 'merchmansion') initMerchMansion();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
@@ -13082,6 +13107,7 @@ vmscript:          { title: 'The Greeting to Record' },
 vprofile:          { title: 'Update a Vendor\u2019s Profile' },
 vreset:            { title: 'Help a Vendor Get Back In' },
 presplanned:       { title: 'What Is Missing' },
+aginspect:         { title: 'Random Farm Inspections' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -16102,7 +16128,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-23';
+const BUILD_ID = '16-25';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21936,6 +21962,59 @@ presP4: [
 ['A freeze or lockout of the Market Manager', 'Recommended against. This app is meant to be indispensable to the office: a freeze at 7 AM on a Saturday means nobody can record absences, run Booth Selection or take a booth request, so the Board would acquire the power to break market day. It is also the purest possible gate in an app built on flag-not-gate. If the Board wants it, it should be a recorded Board act rather than a button on one person\u2019s screen, and it needs a floor of things that keep working regardless. Bylaws IV \u00a71 puts hiring of personnel with the Board collectively, not with the President alone \u2014 and V \u00a76 makes the Vice President the fallback when the President cannot or refuses to act, which any such power would need a route around.'],
 ],
 };
+function renderInspectionDraw() {
+const pool = agInspectionPool();
+const note = document.getElementById('agPoolNote');
+if (note) note.innerHTML = 'The pool is <b>' + pool.length + ' Ag vendors</b> \u2014 everyone whose membership class ' +
+'begins &ldquo;Ag&rdquo;. Craft and food-only members are not inspected under these Guidelines. ' +
+'Members of the Agriculture Committee stay in the pool.';
+const now = document.getElementById('agDrawNow');
+const cur = currentInspectionDraw();
+if (now) {
+if (!cur) {
+now.innerHTML = '<p class="empty-note">No draw for ' + seasonYear() + ' yet.</p>';
+} else {
+now.innerHTML = '<p class="empty-note" style="margin-top:0;">Drawn ' +
+esc(new Date(cur.at).toLocaleString([], { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })) +
+' by ' + esc(cur.drawnBy) + ', from ' + cur.poolSize + ' Ag vendors.' +
+(cur.supersedes ? ' <b>This replaced an earlier draw:</b> ' + esc(cur.reason) : '') + '</p>';
+cur.picked.forEach((id, i) => {
+const v = cache.vendors.find(x => x.vendorId === id);
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' + (i + 1) + '. ' +
+esc(v ? v.businessName : id) + '</div>' +
+'<div class="req-meta">' + esc(v ? v.category : '') +
+' \u00b7 24 hours\u2019 notice required, and a farm representative present unless the Board permits otherwise</div></div>';
+now.appendChild(row);
+});
+}
+}
+const log = document.getElementById('agDrawLog');
+if (log) {
+log.innerHTML = '';
+const all = inspectionDraws().slice().reverse();
+if (!all.length) { log.innerHTML = '<p class="empty-note">Nothing drawn yet.</p>'; return; }
+all.forEach(d => {
+const row = document.createElement('div');
+row.className = 'req-row';
+const names = d.picked.map(id => { const v = cache.vendors.find(x => x.vendorId === id); return v ? v.businessName : id; });
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' + d.year + ' \u00b7 ' +
+esc(new Date(d.at).toLocaleDateString([], { month: 'short', day: 'numeric' })) +
+(d.discarded ? ' \u2014 set aside' : '') + '</div>' +
+'<div class="req-meta">' + esc(names.join(', ')) + ' \u00b7 from ' + d.poolSize + ' \u00b7 ' + esc(d.drawnBy) +
+(d.discardedReason ? ' \u00b7 replaced because: ' + esc(d.discardedReason) : '') + '</div></div>';
+log.appendChild(row);
+});
+}
+}
+async function initAgInspect() {
+if (!cache.inspections) {
+const got = await storageGet('ifm-inspections');
+cache.inspections = (got === STORAGE_MISSING || !got) ? [] : got;
+}
+renderInspectionDraw();
+}
 function initPresPlanned() {
 Object.keys(PRES_PLANNED).forEach(id => {
 const wrap = document.getElementById(id);
@@ -22970,6 +23049,12 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF44', kind: 'question', cat: 'Board', src: 'Ag Guidelines p.5 against the Random Farm Inspections tool',
+t: 'Should a farm inspected at random one year be excluded from the next year\u2019s draw?',
+d: 'Raised 26 Aug 2026, when the draw was built. The Guidelines say the Agriculture Committee "may annually select up to 4 vendors to inspect at random", and say nothing at all about what happens the following year. So the tool draws from every Ag vendor every time, and the same farm can be drawn two or three years running. ' +
+'THE CASE FOR LEAVING IT ALONE: that is what random means. Any exclusion makes later draws predictable \u2014 in a pool of 77, holding back four a year means a farm not yet drawn faces steadily worse odds than one that has been, which is the opposite of even treatment. It also creates a record of who has been inspected that the committee must then keep accurately for years, or the exclusions go wrong quietly. ' +
+'THE CASE FOR EXCLUDING: an inspection is a real imposition \u2014 24 hours\u2019 notice, a representative present, growing areas and financial records opened up. A farm drawn three years running would reasonably believe it was being singled out, and the committee would have no way to show otherwise. A one-year cooling-off period costs the market almost nothing at 77 farms and removes that suspicion entirely. ' +
+'WHAT THE APP DOES MEANWHILE: draws from everyone, records the pool size and every draw including any set aside, and states on the screen that no exclusion is applied. If the Board or the Agriculture Committee decides otherwise, the rule should be written into the Guidelines first and the tool changed to match \u2014 not the reverse. This is a market decision, not a code decision, and the app should not quietly invent a fairness rule the Guidelines never granted it.' },
 { id: 'BF42', kind: 'question', cat: 'Board', src: 'Bylaws Articles IV, V and VI against how the app is built',
 t: 'How should the Board be able to override, freeze or lock out the Market Manager \u2014 and should Directors have their own login?',
 d: 'Raised 25 Aug 2026. Four questions the Board should settle together, because the answers depend on each other. ' +
@@ -23523,6 +23608,62 @@ row.innerHTML = '<div class="req-row-main"><div class="req-name">' + esc(e.l) +
 log.appendChild(row);
 });
 }
+// Who can be drawn. The Guidelines put farm inspection on Ag vendors -- it is
+// growing, storage, income, expense and harvest records that are inspected --
+// so craft and food-only members are not in the pool. Anyone on the Ag
+// Committee itself is still eligible: the Guidelines exempt nobody, and a
+// committee that could not draw its own members would be marking its own work.
+function agInspectionPool() {
+return cache.vendors.filter(v => /^Ag\b/.test(String(v.category || ''))).sort(byBusinessName);
+}
+function inspectionDraws() {
+if (!cache.inspections) cache.inspections = [];
+return cache.inspections;
+}
+function currentInspectionDraw() {
+const year = seasonYear();
+return inspectionDraws().filter(d => d.year === year && !d.discarded).slice(-1)[0] || null;
+}
+async function drawInspectionFarms(redrawReason) {
+if (!requireManager('agDrawMsg')) return;
+const pool = agInspectionPool();
+if (pool.length < 4) {
+showMsg('agDrawMsg', 'err', 'There are only ' + pool.length + ' Ag vendors on record \u2014 not enough to draw four.');
+return;
+}
+const year = seasonYear();
+const existing = currentInspectionDraw();
+if (existing && !redrawReason) {
+showMsg('agDrawMsg', 'err', 'A draw for ' + year + ' already stands. Use <b>Draw again</b> and say why \u2014 ' +
+'a second draw with no reason on it is indistinguishable from choosing the answer.');
+return;
+}
+if (existing) { existing.discarded = true; existing.discardedReason = redrawReason; existing.discardedAt = Date.now(); }
+// Fisher-Yates over the whole pool, then take four. Not four separate picks:
+// those can land on the same farm twice and need retry logic nobody checks.
+const bag = pool.slice();
+for (let i = bag.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+const t = bag[i]; bag[i] = bag[j]; bag[j] = t;
+}
+inspectionDraws().push({
+id: 'dr' + Date.now(), year: year, at: Date.now(),
+poolSize: pool.length, poolIds: pool.map(v => v.vendorId),
+picked: bag.slice(0, 4).map(v => v.vendorId),
+drawnBy: currentRole === 'president' ? 'the Board President' : 'the office',
+supersedes: existing ? existing.id : null, reason: redrawReason || '',
+});
+await storageSet('ifm-inspections', cache.inspections);
+renderInspectionDraw();
+showMsg('agDrawMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Four farms drawn from ' +
+pool.length + '. Every draw is kept, including any set aside.');
+}
+async function askRedraw() {
+const why = prompt('Why is the standing draw being replaced? This is kept on the record.');
+if (why === null) return;
+if (!why.trim()) { showMsg('agDrawMsg', 'err', 'A redraw needs a reason.'); return; }
+await drawInspectionFarms(why.trim());
+}
 const COMMITTEES = [
 { key: 'ag', name: 'Agriculture',
 note: 'Juries agricultural products and runs farm inspections \u2014 up to four random inspections a year.' },
@@ -23539,7 +23680,7 @@ note: 'Employee matters. Confidential by nature \u2014 keep agenda wording gener
 ];
 const COMMITTEE_SEED = {
 ag:        { members: [{ id: 'V003', chair: true }, { id: 'V018' }, { id: 'V028' }],
-items: [{ id: 'ci1', kind: 'task', text: 'Spring inspection round \u2014 pick the four random farms', date: '2026-08-24' }] },
+items: [{ id: 'ci1', kind: 'task', text: 'Spring inspection round \u2014 draw the four random farms (Random Farm Inspections tool)', date: '2026-08-24' }] },
 artisan:   { members: [{ id: 'V049', chair: true }, { id: 'V101' }], items: [] },
 food:      { members: [{ id: 'V004', chair: true }, { id: 'V038' }, { id: 'V048' }],
 items: [{ id: 'ci2', kind: 'agenda', text: 'Jury two new cider applications', date: '2026-08-31' },
@@ -24186,6 +24327,7 @@ tiles: [
 { s: 'records', i: 'i-list', t: 'Vendor Records', d: 'Everything on file, vendor by vendor' },
 { s: 'addvendor', i: 'i-clipboard', t: 'Add New Vendor', d: 'Onboard and draft a welcome letter' },
 { s: 'requirements', i: 'i-key', t: 'Vendor Requirements', d: 'Licenses, permits, insurance and expiry' },
+{ s: 'aginspect', i: 'i-carrot', t: 'Random Farm Inspections', d: 'The Agriculture Committee\u2019s four random draws for the year' },
 { s: 'composition', i: 'i-columns', t: 'Membership Composition', d: 'The 105 cap, the 60/40 rule, and recording a change of class' },
 { s: 'pointsmanager', i: 'i-star', t: 'Points Manager', d: "Award or adjust a vendor's points" },
 { soon: 'pointsroll', s: 'pointsroll', i: 'i-star', t: 'Annual Points Rollover', d: 'Sets the ranking every selection uses' },
@@ -24784,6 +24926,7 @@ tiles: [
 { s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, who chairs, and what is in front of them \u2014 the President\u2019s appointments, recorded' },
 { soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
 { s: 'facilitiestracker', i: 'i-wrench', t: 'Send to a Committee or Program', d: 'Put a proposal or a question on their list \u2014 straight to the chair or lead who has to act on it' },
+{ s: 'aginspect', i: 'i-carrot', t: 'Random Farm Inspections', d: 'Draw the four farms the Agriculture Committee may inspect at random this year \u2014 and keep the record of how they were drawn' },
 ] },
 { key: 'presrules', title: 'Rules & Rates', icon: 'i-scale',
 sub: 'What the market charges and requires \u2014 Board decisions, not office ones',
