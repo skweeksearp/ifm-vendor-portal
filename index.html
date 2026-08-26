@@ -3711,7 +3711,7 @@ oninput="filterVendorSelect('vpVendor', this.value, 'vpVendorFindNote')">
 <section id="screen-snaptokens" class="screen">
 <div class="screen-head" id="head-snaptokens"></div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Do You Take SNAP?<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_VENDOR)" aria-label="What are the rules here?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Do You Accept SNAP Tokens?<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_VENDOR)" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" id="snapWhoNote" style="margin-top:0;"></p>
 <div class="row" id="snapToggleRow" style="display:flex; gap:8px;">
 <button type="button" class="primary-btn" id="snapYes" onclick="setSnapAccepts(true)">I accept SNAP</button>
@@ -9852,24 +9852,28 @@ no.className = on ? 'ghost-btn' : 'primary-btn';
 }
 const note = document.getElementById('snapWhoNote');
 if (note) {
+const why = ' <em>Nobody has set this yet, so the app has guessed from your membership class (' +
+esc(v.category) + '). It does not know what you actually sell \u2014 if the guess is wrong, ' +
+'the two buttons below are yours to change it.</em>';
 note.innerHTML = on
 ? 'SNAP tokens are wooden tokens a shopper buys at the office with their SNAP benefit. ' +
-'You take them like cash, bring them back to the office, and the market pays you out.' +
-(chosen ? '' : ' <em>This is set on for you because you sell food \u2014 change it if that is wrong.</em>')
-: 'You are down as not taking SNAP tokens.' +
-(chosen ? '' : ' <em>This is set off for you because SNAP buys food and yours is not a food business ' +
-'\u2014 change it if that is wrong.</em>');
+'You take them like cash, bring them back to the office, and the market pays you out. ' +
+'<b>You decide whether you take them, and you can change your mind whenever you like.</b>' +
+(chosen ? '' : why)
+: 'You are down as <b>not</b> accepting SNAP tokens, so shoppers filtering for SNAP at the kiosk ' +
+'will not see you. <b>This is yours to change whenever you like.</b>' +
+(chosen ? '' : why);
 }
 // The two cards below go quiet when the answer is no. Dimmed, not hidden:
 // a vendor should be able to see what they would be looking at if they said
 // yes, and the reason the app thinks they said no.
 setDeskRelevance('snapVendorSeasonCard', on,
-'You are down as not taking SNAP tokens, so there is nothing to total. Say you accept them above ' +
-'and this fills in as you turn tokens in at the office.');
+'Nothing to total while you are down as not accepting SNAP tokens. Switch to <b>I accept SNAP</b> ' +
+'above and this fills in as you turn tokens in at the office.');
 setDeskRelevance('snapVendorLogCard', on,
-'Nothing to list while you are down as not taking SNAP. If you have taken tokens anyway \u2014 a ' +
-'shopper handed one over and you took it \u2014 the office can still redeem them, and saying you ' +
-'accept SNAP above will show them here.');
+'Nothing to list while you are down as not accepting SNAP tokens. If you have taken some anyway ' +
+'\u2014 a shopper handed one over and you took it \u2014 the office can still redeem them for you; ' +
+'switching above will show them here.');
 
 const year = seasonYear();
 const mine = snapEntriesFor(v.vendorId, year);
@@ -9913,7 +9917,7 @@ const v = currentVendor();
 if (!sub || !v) return;
 const on = snapAccepts(v.vendorId);
 const total = snapTotal(snapEntriesFor(v.vendorId, seasonYear()));
-sub.textContent = !on ? 'You are down as not accepting SNAP'
+sub.textContent = !on ? 'You do not accept SNAP \u2014 tap to change'
 : (total ? total + ' token' + (total === 1 ? '' : 's') + ' turned in this season'
 : 'You accept SNAP \u2014 nothing turned in yet this season');
 }
@@ -9928,8 +9932,10 @@ snapCache.accepts[v.vendorId] = !!yes;
 await saveSnap();
 renderSnapVendor();
 showMsg('snapVendorMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
-(yes ? 'Noted \u2014 you accept SNAP tokens. The office sees this when they take tokens in.'
-: 'Noted \u2014 you do not accept SNAP tokens.'));
+(yes ? 'Noted \u2014 you accept SNAP tokens. Shoppers filtering for SNAP at the kiosk can now see you, '
++ 'and the office sees it when they take tokens in.'
+: 'Noted \u2014 you do not accept SNAP tokens. Shoppers filtering for SNAP at the kiosk will not see you. '
++ 'Switch back any time.'));
 }
 
 // ---- the manager's half --------------------------------------------------
@@ -11211,7 +11217,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "SNAP Tokens",
-"body": "<p>SNAP tokens are wooden tokens a shopper buys at the office with their SNAP benefit. You take them like cash, bring them back to the office, and the market pays you out.</p><p>The toggle starts <b>on for Ag vendors and off for craft vendors</b>, of any membership class, because SNAP buys food. That is a starting point, not a judgement about your business — the moment you set it yourself, your choice is recorded and the category default never overrides it again.</p><p>Saying no dims the rest of this drawer rather than hiding it, so you can see what you would be looking at if you said yes.</p><p>Every time the office takes tokens in from you it appears here and on your desk. <b>The office's count is the one that pays out</b> — if a line is wrong or one is missing, tell them.</p>"
+"body": "<p>SNAP tokens are wooden tokens a shopper buys at the office with their SNAP benefit. You take them like cash, bring them back to the office, and the market pays you out.</p><p>Until you set it, the app guesses: <b>on for Ag vendors, off for everyone else</b>, whatever the membership class. That guess is a poor one and the market knows it — a baker or a prepared-food vendor is not an Ag vendor but plainly sells food, and SNAP buys food. So if you have been put down as not accepting them and that is wrong, it is the guess that is wrong, not you. <b>The switch is yours.</b> The moment you set it either way your choice is recorded, and the guess never overrides it again — not next season, not ever.</p><p>Saying no dims the rest of this drawer rather than hiding it, so you can see what you would be looking at if you said yes.</p><p>Every time the office takes tokens in from you it appears here and on your desk. <b>The office's count is the one that pays out</b> — if a line is wrong or one is missing, tell them.</p>"
 },
 {
 "title": "Pretend It Is Another Day",
@@ -13111,8 +13117,9 @@ setDeskRelevance('menuSnapTokens', snapAccepts(vendor.vendorId),
 snapIsChosen(vendor.vendorId)
 ? 'You told the app you do not accept SNAP tokens, so there is nothing to turn in here. '
 + 'If that has changed, the switch is inside \u2014 flip it and this drawer wakes up.'
-: 'You are down as not accepting SNAP tokens \u2014 that is the app\u2019s guess from your product '
-+ 'category, not something you said. If it is wrong, the switch to correct it is inside.');
+: 'Nobody has said whether you accept SNAP tokens, so the app has guessed from your membership '
++ 'class and put you down as not accepting them. It does not know what you sell. The switch is '
++ 'inside, and it is yours \u2014 open this and set it either way.');
 const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
 renderSnapDeskSub();
 applyVenueToDesk();
@@ -15963,7 +15970,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-13';
+const BUILD_ID = '16-14';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
