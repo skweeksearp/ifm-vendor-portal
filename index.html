@@ -10864,6 +10864,11 @@ el.style.display = '';
 el.classList.toggle('not-yours', !relevant);
 el.dataset.whyNot = relevant ? '' : (reason || '');
 // A dimmed CARD says its piece in place; a dimmed DRAWER says it on opening.
+// CAUTION: a dimmed drawer does not open at all -- toggleToolFold shows the
+// why panel and returns before the tool is loaded. So never dim a drawer that
+// contains the control for the condition being dimmed on: doing that hides
+// the switch from exactly the people who need it. (Done once, to the SNAP
+// drawer in 15-81, reverted in 16-15.) Dim the cards inside instead.
 if (!el.classList.contains('dash-fold')) {
 let why = el.querySelector(':scope > .why-panel');
 if (!relevant) {
@@ -13113,13 +13118,6 @@ setDeskRelevance('commAgOnly', isAg,
 'The Value-Added Farm Products application is for Ag vendors. It is what an Ag vendor files to sell a product ' +
 'made from what they grow. Your membership is recorded as ' + vendor.category + '. If that is wrong, or if your ' +
 'business has changed, the office can record a class change.');
-setDeskRelevance('menuSnapTokens', snapAccepts(vendor.vendorId),
-snapIsChosen(vendor.vendorId)
-? 'You told the app you do not accept SNAP tokens, so there is nothing to turn in here. '
-+ 'If that has changed, the switch is inside \u2014 flip it and this drawer wakes up.'
-: 'Nobody has said whether you accept SNAP tokens, so the app has guessed from your membership '
-+ 'class and put you down as not accepting them. It does not know what you sell. The switch is '
-+ 'inside, and it is yours \u2014 open this and set it either way.');
 const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
 renderSnapDeskSub();
 applyVenueToDesk();
@@ -15970,7 +15968,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-14';
+const BUILD_ID = '16-15';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
