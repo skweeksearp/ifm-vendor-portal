@@ -121,6 +121,7 @@ font-size: var(--ifm-size); transform: translate(-50%, -50%); }
    puts each body behind the sunflower for that half and in front for the
    other. Nothing to keep in sync: one clock drives both. */
 @keyframes ifmdepth { 0% { z-index: 1; } 50% { z-index: 3; } }
+.screen-title-quiet { margin: 0 0 10px; text-align: right; }
 .act-switch { display: flex; gap: 8px; }
 .act-switch button { flex: 1 1 0; margin: 0; }
 /* A notable line carries a quiet edge rather than a colour block: the list is
@@ -3792,6 +3793,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-arrows-cycle"></use></svg></span>After a Major Change, Sweep These</h2>
 <p class="empty-note" style="margin-top:0;">A rename, a moved tool, or a rephrasing ripples further than the screen it happens on. This is the sweep list &mdash; each entry is a place stale wording has actually been found.</p>
+<div class="comm-item"><div class="comm-title">Never print a title the header already printed</div><div class="comm-desc">The header names whoever is at the desk; a screen title saying the same words directly beneath it is repetition, and it has been shipped twice (&ldquo;Market Manager&rdquo; over &ldquo;Market Manager&rdquo;, then &ldquo;Board President&rdquo; over &ldquo;Board President&rdquo;). The rule is enforced in <code>renderScreenHead</code>: any title matching the header&rsquo;s name is suppressed, on every screen, automatically. Do not work round it with a hand-written <code>&lt;h1&gt;</code> in the markup &mdash; the rule cannot see those.</div></div>
 <div class="comm-item"><div class="comm-title">A screen is described in five places</div><div class="comm-desc">Change what a tool <em>is</em> and five separate texts go stale, each written at a different time and none of them next to the others in the file. Walk all five, every time:
 <br>&bull; <b>The desk tile</b> &mdash; the folder entry in <code>MGR_FOLDERS</code>, or the drawer&rsquo;s <code>fold-sub</code> on the vendor desk.
 <br>&bull; <b>The screen&rsquo;s own intro</b> &mdash; the <code>empty-note</code> under its heading.
@@ -13467,14 +13469,17 @@ const slot = document.getElementById('head-' + name);
 if (!slot) return;
 const meta = SCREEN_META[name] || { title: name };
 const title = typeof meta.title === 'function' ? meta.title() : meta.title;
-slot.innerHTML =
-(meta.home ? '' : screenCrumb(name)) +
-'<h1 class="screen-title">' + esc(title) +
-(SCREEN_HELP[name] !== undefined
+const headerName = ((document.getElementById('bizName') || {}).textContent || '').trim();
+const repeats = !!title && !!headerName && title.trim() === headerName;
+const help = SCREEN_HELP[name] !== undefined
 ? '<button type="button" class="help-dot" onclick="showHelp(' + SCREEN_HELP[name] +
 ')" aria-label="What are the rules here?">?</button>'
-: '') +
-'</h1>';
+: '';
+slot.innerHTML =
+(meta.home ? '' : screenCrumb(name)) +
+(repeats
+? (help ? '<div class="screen-title-quiet">' + help + '</div>' : '')
+: '<h1 class="screen-title">' + esc(title) + help + '</h1>');
 }
 const BACK_HAND_IMG =
 '<img class="back-hand" alt="Back" src="data:image/png;base64,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">';
@@ -16265,7 +16270,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-26';
+const BUILD_ID = '16-27';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
