@@ -121,6 +121,11 @@ font-size: var(--ifm-size); transform: translate(-50%, -50%); }
    puts each body behind the sunflower for that half and in front for the
    other. Nothing to keep in sync: one clock drives both. */
 @keyframes ifmdepth { 0% { z-index: 1; } 50% { z-index: 3; } }
+.vfind { margin: 0 0 6px; }
+.vfind-input { width: 100%; box-sizing: border-box; }
+/* 16px or iOS zooms the whole page when the box is tapped. */
+.vfind-input { font-size: 16px; }
+.vfind-note { font-size: 13px; color: #6E6A57; margin: 5px 2px 0; line-height: 1.35; }
 #ifmUpdateBar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
 z-index: 998; background: #4A6741; color: #fff; border: none; border-radius: 999px;
 padding: 12px 22px; font-family: 'Manrope', -apple-system, sans-serif; font-weight: 700;
@@ -3561,10 +3566,6 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <p class="empty-note" style="margin:-4px 0 14px;">A vendor turns up at the office saying they cannot get in. This checks it really is them, issues a one-time code they use to set a new password, and writes down that you did it &mdash; who, when, and how they proved who they were.</p>
 <div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>1. Who Is Standing There</h2>
-<input type="text" id="vrFind" class="find-field" autocomplete="off"
-placeholder="Type a few letters of the business or last name"
-oninput="filterVendorSelect('vrVendor', this.value, 'vrFindNote')">
-<p class="empty-note" id="vrFindNote" style="margin:6px 0 0; display:none;"></p>
 <select id="vrVendor" onchange="renderResetCheck()"></select>
 </div>
 <div class="card manager-only desk-form">
@@ -3603,10 +3604,6 @@ oninput="filterVendorSelect('vrVendor', this.value, 'vrFindNote')">
 <p class="empty-note" style="margin:-4px 0 14px;">A vendor&rsquo;s own details, changed on their behalf. This is the same record they edit themselves, so what you save here replaces what they had &mdash; it does not sit in a queue. Contact details, links and products all show in the <b>Vendor Directory</b>, and products feed what the kiosk finds when a shopper searches.</p>
 <div class="card manager-only desk-form">
 <label for="vpVendor">Vendor</label>
-<input type="text" id="vpVendorFind" class="find-field" autocomplete="off"
-placeholder="Type a few letters of the business or last name"
-oninput="filterVendorSelect('vpVendor', this.value, 'vpVendorFindNote')">
-<p class="empty-note" id="vpVendorFindNote" style="margin:6px 0 0; display:none;"></p>
 <select id="vpVendor" onchange="loadVpFields()"></select>
 <div id="vpFields"></div>
 <label for="vpChannel" style="margin-top:14px;">How they told you</label>
@@ -4287,10 +4284,6 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div class="card manager-only desk-form">
 <p class="empty-note" style="margin-top:0;">A document is the one that behaves differently: this only notes that one is on its way, and you mark it received on Vendor Requirements when it actually arrives. A sale goes straight to the kiosk under that vendor&rsquo;s booth. The rest become the record itself.</p>
 <label for="obVendor">Vendor</label>
-<input type="text" id="obVendorFind" class="find-field" autocomplete="off"
-placeholder="Type a few letters of the business or last name"
-oninput="filterVendorSelect('obVendor', this.value, 'obVendorFindNote')">
-<p class="empty-note" id="obVendorFindNote" style="margin:6px 0 0; display:none;"></p>
 <select id="obVendor" onchange="fillObRequirements(); renderObPromoNote();"></select>
 <label>What they told you</label>
 <input type="hidden" id="obKind" value="Out">
@@ -4304,10 +4297,6 @@ oninput="filterVendorSelect('obVendor', this.value, 'obVendorFindNote')">
 </div>
 <div id="obShareWrap" style="display:none;">
 <label for="obGuest">Who is joining them in the booth</label>
-<input type="text" id="obGuestFind" class="find-field" autocomplete="off"
-placeholder="Type a few letters of the business or last name"
-oninput="filterVendorSelect('obGuest', this.value, 'obGuestFindNote')">
-<p class="empty-note" id="obGuestFindNote" style="margin:6px 0 0; display:none;"></p>
 <select id="obGuest"></select>
 <label for="obFamily">Same family?</label>
 <select id="obFamily"><option value="no">Separate businesses</option><option value="yes">Same family</option></select>
@@ -4734,11 +4723,9 @@ comes from.</p>
 <select id="bfCat" onchange="renderBoardFlags()">
 <option value="">Every kind</option>
 </select>
-<div id="bfList" style="margin-top:10px;"></div>
-<div class="empty-note" id="bfEmpty" style="display:none;">Nothing matches that filter.</div>
-<button class="ghost-btn" onclick="showScreen('boardcycle')">See the meeting calendar</button>
-<button class="ghost-btn" onclick="showScreen('marketrules')">What is on the books</button>
 </div>
+<div id="bfList" style="margin-top:18px;"></div>
+<div class="empty-note" id="bfEmpty" style="display:none;">Nothing matches that filter.</div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Add Your Own</h2>
 <label for="bfNewTitle">Topic</label>
@@ -10326,37 +10313,117 @@ when.value = d.toISOString().slice(0, 16);
 // downstream has to change. A selection that still matches is kept; one that
 // no longer matches is dropped rather than left silently pointing at a name
 // the office can no longer see.
-function filterVendorSelect(selId, text, noteId) {
-const sel = document.getElementById(selId);
-if (!sel) return;
-const q = (text || '').trim().toLowerCase();
+const vfindState = new WeakMap();
+function vendorOptionCount(sel) {
+let hits = 0;
+for (const o of sel.options) if (o.value && cache.vendors.some(v => v.vendorId === o.value)) hits++;
+return hits;
+}
+// A vendor list is one whose options are vendors. Short lists are left alone:
+// a picker of five is not a scrolling problem, and putting a search box on it
+// would be noise.
+function isVendorSelect(sel) {
+if (!sel || sel.tagName !== 'SELECT' || sel.multiple) return false;
+if (sel.dataset.noFind === '1') return false;
+if (sel.options.length < 12) return false;
+return vendorOptionCount(sel) >= Math.max(10, Math.floor(sel.options.length * 0.6));
+}
+function vfindMatches(q) {
+const s = (q || '').trim().toLowerCase();
+return cache.vendors.filter(v => !s ||
+v.businessName.toLowerCase().includes(s) ||
+(v.lastName || '').toLowerCase().includes(s)).sort(byBusinessName);
+}
+function applyVendorFilter(sel) {
+const st = vfindState.get(sel);
+if (!st) return;
+const text = st.input.value;
+const q = text.trim();
 const was = sel.value;
-const matches = cache.vendors.filter(v =>
-!q || v.businessName.toLowerCase().includes(q) || (v.lastName || '').toLowerCase().includes(q)
-).sort(byBusinessName);
+const matches = vfindMatches(q);
 sel.innerHTML = matches.map(v =>
 '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+st.sig = matches.map(v => v.vendorId).join(',');
 if (matches.some(v => v.vendorId === was)) sel.value = was;
 else if (matches.length) sel.value = matches[0].vendorId;
 else sel.value = '';
-// Tell the screen. Whatever the select's onchange does to keep the rest of
-// the form in step with the chosen vendor has to happen here too. Compared
-// against `was` -- the vendor the form is currently showing -- because
-// replacing innerHTML auto-selects the first option, so reading sel.value
-// just now would report the new choice and this would never fire.
+// Compared against `was`, not against sel.value read after the rewrite:
+// replacing innerHTML auto-selects the first option, so reading it here
+// would report the new choice and this would never fire. Without it a form
+// keeps the previous vendor's values and saves them onto the new one.
 if (sel.value !== was) sel.dispatchEvent(new Event('change', { bubbles: true }));
-const note = noteId ? document.getElementById(noteId) : null;
-if (note) {
-if (!q) { note.style.display = 'none'; }
-else {
-note.style.display = 'block';
-note.textContent = matches.length === 0
-? 'No vendor matches \u201C' + text.trim() + '\u201D. Clear the box to see everyone again.'
+if (!q) { st.note.style.display = 'none'; st.note.textContent = ''; return; }
+st.note.style.display = 'block';
+st.note.textContent = matches.length === 0
+? 'No vendor matches \u201C' + q + '\u201D. Clear the box to see everyone again.'
 : matches.length === 1
 ? 'One match: ' + matches[0].businessName + '.'
 : matches.length + ' of ' + cache.vendors.length + ' shown.';
 }
+function mountVendorFinder(sel) {
+if (!isVendorSelect(sel)) return;
+let st = vfindState.get(sel);
+const sig = Array.from(sel.options).map(o => o.value).join(',');
+if (st) {
+// Already fitted. If the screen repopulated the list behind us, put the
+// filter back over the top of it rather than leaving a stale box.
+if (st.sig !== sig && st.input.value.trim()) applyVendorFilter(sel);
+else st.sig = sig;
+return;
 }
+const wrap = document.createElement('div');
+wrap.className = 'vfind';
+const input = document.createElement('input');
+input.type = 'text';
+input.className = 'find-field vfind-input';
+input.autocomplete = 'off';
+input.setAttribute('aria-label', 'Find a vendor');
+input.placeholder = 'Type a few letters \u2014 business or last name';
+const note = document.createElement('div');
+note.className = 'vfind-note';
+note.style.display = 'none';
+wrap.appendChild(input);
+wrap.appendChild(note);
+sel.parentNode.insertBefore(wrap, sel);
+st = { input, note, sig };
+vfindState.set(sel, st);
+input.addEventListener('input', () => applyVendorFilter(sel));
+}
+// Every select on screen, checked. Cheap: a handful of selects, one pass.
+function sweepVendorFinders(root) {
+(root || document).querySelectorAll('select').forEach(mountVendorFinder);
+}
+// Lists are built by render functions that run long after a screen opens, so
+// waiting for screen-open would miss most of them. This watches for options
+// arriving in any select, anywhere, and fits the box when they do -- which is
+// what makes this hold for tools that do not exist yet.
+let vfindPending = null;
+if (typeof MutationObserver !== 'undefined') {
+new MutationObserver(muts => {
+let touched = false;
+for (const m of muts) {
+if (m.target && m.target.tagName === 'SELECT') { touched = true; break; }
+for (const n of m.addedNodes) {
+if (n.nodeType !== 1) continue;
+if (n.tagName === 'SELECT' || n.querySelector('select')) { touched = true; break; }
+}
+if (touched) break;
+}
+if (!touched) return;
+if (vfindPending) return;
+vfindPending = setTimeout(() => { vfindPending = null; sweepVendorFinders(); }, 60);
+}).observe(document.documentElement, { childList: true, subtree: true });
+}
+// Kept as a shim so any older call lands on the one implementation rather
+// than growing a second one beside it.
+function filterVendorSelect(selId, text) {
+const sel = document.getElementById(selId);
+if (!sel) return;
+mountVendorFinder(sel);
+const st = vfindState.get(sel);
+if (!st) return;
+if (typeof text === 'string') st.input.value = text;
+applyVendorFilter(sel);
 }
 function pickObKind(btn) {
 document.getElementById('obKind').value = btn.dataset.k;
@@ -16035,7 +16102,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-21';
+const BUILD_ID = '16-23';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
