@@ -121,6 +121,11 @@ font-size: var(--ifm-size); transform: translate(-50%, -50%); }
    puts each body behind the sunflower for that half and in front for the
    other. Nothing to keep in sync: one clock drives both. */
 @keyframes ifmdepth { 0% { z-index: 1; } 50% { z-index: 3; } }
+.act-switch { display: flex; gap: 8px; }
+.act-switch button { flex: 1 1 0; margin: 0; }
+/* A notable line carries a quiet edge rather than a colour block: the list is
+   long and a wall of highlight is the same as no highlight. */
+.req-row.act-notable { border-left: 3px solid #C2703D; padding-left: 11px; }
 .vfind { margin: 0 0 6px; }
 .vfind-input { width: 100%; box-sizing: border-box; }
 /* 16px or iOS zooms the whole page when the box is tapped. */
@@ -2847,6 +2852,60 @@ announces any change.</p>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"><div id="mgrAlertList"></div></div>
+</div>
+<div class="dash-fold" id="presActivity" data-fold="activity" style="display:none; margin-bottom:14px;">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Activity Log</span>
+<span class="fold-sub" id="presActivitySub">What has been done in the app</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<p class="empty-note" style="margin-top:0;">Opens on <b>what is worth a look</b> &mdash; money moved, records removed, rules changed, overrides used. Everything else is one tap away. Nothing is hidden; the default is just not a list of every tick on a market morning.</p>
+<div class="card desk-form" style="margin-top:10px;">
+<div class="act-switch">
+<button type="button" class="primary-btn" id="actWorth" onclick="setActScope('notable')">Worth a look</button>
+<button type="button" class="ghost-btn" id="actAll" onclick="setActScope('all')">Everything</button>
+</div>
+<label for="actSearch" style="margin-top:12px;">Search</label>
+<input type="text" id="actSearch" class="find-field" autocomplete="off" placeholder="Any word &mdash; a vendor, a tool, a kind of change" oninput="renderActivity()">
+<label for="actWindow" style="margin-top:10px;">When</label>
+<select id="actWindow" onchange="renderActivity()">
+<option value="1">Today</option>
+<option value="7" selected>Last 7 days</option>
+<option value="30">Last 30 days</option>
+<option value="365">This season</option>
+<option value="0">All of it</option>
+</select>
+<label for="actKind" style="margin-top:10px;">Kind</label>
+<select id="actKind" onchange="renderActivity()">
+<option value="">Everything</option>
+<option value="money">Money</option>
+<option value="records">Records</option>
+<option value="vendors">Vendor details</option>
+<option value="day">Market day</option>
+<option value="governance">Governance</option>
+<option value="system">The app itself</option>
+</select>
+<label for="actWho" style="margin-top:10px;">Who</label>
+<select id="actWho" onchange="renderActivity()">
+<option value="">Anyone</option>
+<option value="manager">Market Manager</option>
+<option value="president">Board President</option>
+<option value="staff">Staff</option>
+<option value="vendor">A vendor</option>
+<option value="volunteer">Volunteer</option>
+</select>
+<label for="actVendor" style="margin-top:10px;">About one vendor</label>
+<select id="actVendor" onchange="renderActivity()"></select>
+<button type="button" class="ghost-btn" onclick="clearActFilters()">Clear all of that</button>
+</div>
+<p class="empty-note" id="actCount" style="margin:12px 2px 6px;"></p>
+<div id="actList"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This Does Not Show</h2>
+<p class="empty-note" style="margin-top:0;">It records writes the app makes, and it began on the build that introduced it &mdash; there is nothing here from before that. It does not say what a value was before it changed, and it cannot say <em>who</em> in the sense of a person: with no sign-in, &ldquo;the Market Manager&rdquo; means whoever tapped that button on the landing screen. It keeps the last <b id="actCap">4000</b> entries and drops the oldest beyond that. Reading it is not the same as being able to undo anything &mdash; nothing here reverses.</p>
+</div>
+</div>
 </div>
 <div id="mgrFolders"></div>
 </section>
@@ -6984,7 +7043,77 @@ return res ? JSON.parse(res.value) : STORAGE_MISSING;
 return STORAGE_MISSING;
 }
 }
+const ACT_MAX = 4000;
+const ACT_KEYS = {
+'ifm-vendors-v1':      { t: 'Vendor records', k: 'vendors' },
+'ifm-requirements':    { t: 'Permits and documents', k: 'records' },
+'ifm-submissions':     { t: 'Document submissions', k: 'records' },
+'ifm-ledger':          { t: 'Points ledger', k: 'money', w: 'notable' },
+'ifm-accounts':        { t: 'Vendor accounts', k: 'money', w: 'notable' },
+'ifm-fines':           { t: 'Fines', k: 'money', w: 'notable' },
+'ifm-dayfees':         { t: 'Day-fee collection', k: 'money', w: 'notable' },
+'ifm-giftcerts':       { t: 'Gift certificates', k: 'money', w: 'notable' },
+'ifm-snap':            { t: 'SNAP tokens', k: 'money', w: 'notable' },
+'ifm-hours':           { t: 'Work hours', k: 'records' },
+'ifm-tasks':           { t: 'Work-hour tasks', k: 'records' },
+'ifm-attendance':      { t: 'Attendance', k: 'day' },
+'ifm-lottery':         { t: 'Booth Selection', k: 'day' },
+'ifm-auction':         { t: 'Season reservations', k: 'day', w: 'notable' },
+'ifm-booths':          { t: 'Booth assignments', k: 'day' },
+'ifm-shares':          { t: 'Booth shares', k: 'day' },
+'ifm-promos':          { t: 'Sales and promotions', k: 'day' },
+'ifm-committees':      { t: 'Committees', k: 'governance', w: 'notable' },
+'ifm-tracker-proposal':{ t: 'Board proposals', k: 'governance', w: 'notable' },
+'ifm-tracker-facilities': { t: 'Committee and programme lists', k: 'governance' },
+'ifm-amendments':      { t: 'Board amendments', k: 'governance', w: 'notable' },
+'ifm-boardflags':      { t: 'Rule decisions', k: 'governance', w: 'notable' },
+'ifm-marketrules':     { t: 'Market rates and rules', k: 'governance', w: 'notable' },
+'ifm-inspections':     { t: 'Random farm inspections', k: 'governance', w: 'notable' },
+'ifm-resets':          { t: 'Sign-in help', k: 'system', w: 'notable' },
+'ifm-leaves':          { t: 'Leaves of absence', k: 'records', w: 'notable' },
+'ifm-standing':        { t: 'Vendor standing', k: 'records', w: 'notable' },
+'ifm-voicemail':       { t: 'Answering machine', k: 'day' },
+'ifm-tuning':          { t: 'App tuning', k: 'system', w: 'notable' },
+};
+// A caller can name what it is doing just before it writes. The next write
+// within a moment takes the name; anything else falls back to the key. This
+// keeps the log complete without needing every one of a hundred call sites
+// instrumented before it is worth anything.
+let actContext = null;
+function actAs(text, opts) {
+actContext = Object.assign({ text: text, at: Date.now() }, opts || {});
+}
+function activityLog() {
+if (!cache.activity) cache.activity = [];
+return cache.activity;
+}
+let actSaveTimer = null;
+function noteActivity(key) {
+const meta = ACT_KEYS[key];
+if (!meta && !actContext) return;                 // not something we can describe
+const ctx = (actContext && Date.now() - actContext.at < 2000) ? actContext : null;
+actContext = null;
+if (key === 'ifm-activity') return;               // never log the log
+const e = {
+at: Date.now(),
+who: currentRole || 'unknown',
+k: (ctx && ctx.kind) || (meta && meta.k) || 'system',
+t: (ctx && ctx.text) || (meta ? meta.t + ' changed' : key),
+w: (ctx && ctx.weight) || (meta && meta.w) || 'routine',
+v: (ctx && ctx.vendorId) || null,
+};
+const log = activityLog();
+log.push(e);
+if (log.length > ACT_MAX) log.splice(0, log.length - ACT_MAX);
+if (typeof renderActivity === 'function' && currentRole === 'president') renderActivity();
+// Written back on a delay: a busy Saturday would otherwise save the log once
+// per entry, which is the sort of thing that makes an audit trail cost more
+// than it is worth.
+if (actSaveTimer) clearTimeout(actSaveTimer);
+actSaveTimer = setTimeout(() => { actSaveTimer = null; storageSet('ifm-activity', cache.activity); }, 4000);
+}
 async function storageSet(key, value) {
+noteActivity(key);
 try {
 const res = await window.storage.set(key, JSON.stringify(value));
 if (!res) storageBroken = true;
@@ -10365,10 +10494,14 @@ const text = st.input.value;
 const q = text.trim();
 const was = sel.value;
 const matches = vfindMatches(q);
-sel.innerHTML = matches.map(v =>
+const lead = sel.dataset.leadOption
+? '<option value="">' + esc(sel.dataset.leadOption) + '</option>' : '';
+sel.innerHTML = lead + matches.map(v =>
 '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
 st.sig = matches.map(v => v.vendorId).join(',');
-if (matches.some(v => v.vendorId === was)) sel.value = was;
+const heldPlaceholder = !!lead && was === '';
+if (heldPlaceholder) sel.value = '';
+else if (matches.some(v => v.vendorId === was)) sel.value = was;
 else if (matches.length) sel.value = matches[0].vendorId;
 else sel.value = '';
 // Compared against `was`, not against sel.value read after the rewrite:
@@ -10388,6 +10521,10 @@ function mountVendorFinder(sel) {
 if (!isVendorSelect(sel)) return;
 let st = vfindState.get(sel);
 const sig = Array.from(sel.options).map(o => o.value).join(',');
+// Remember a leading placeholder the first time we see the list.
+if (!st && sel.options.length && !sel.options[0].value) {
+sel.dataset.leadOption = sel.options[0].textContent;
+}
 if (st) {
 // Already fitted. If the screen repopulated the list behind us, put the
 // filter back over the top of it rather than leaving a stale box.
@@ -16128,7 +16265,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-25';
+const BUILD_ID = '16-26';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21962,6 +22099,148 @@ presP4: [
 ['A freeze or lockout of the Market Manager', 'Recommended against. This app is meant to be indispensable to the office: a freeze at 7 AM on a Saturday means nobody can record absences, run Booth Selection or take a booth request, so the Board would acquire the power to break market day. It is also the purest possible gate in an app built on flag-not-gate. If the Board wants it, it should be a recorded Board act rather than a button on one person\u2019s screen, and it needs a floor of things that keep working regardless. Bylaws IV \u00a71 puts hiring of personnel with the Board collectively, not with the President alone \u2014 and V \u00a76 makes the Vice President the fallback when the President cannot or refuses to act, which any such power would need a route around.'],
 ],
 };
+let actScope = 'notable';
+let actOpen = {};
+function setActScope(s) {
+actScope = s;
+const w = document.getElementById('actWorth'), a = document.getElementById('actAll');
+if (w && a) { w.className = s === 'notable' ? 'primary-btn' : 'ghost-btn'; a.className = s === 'all' ? 'primary-btn' : 'ghost-btn'; }
+renderActivity();
+}
+function clearActFilters() {
+['actSearch'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+const w = document.getElementById('actWindow'); if (w) w.value = '7';
+['actKind', 'actWho'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+const v = document.getElementById('actVendor'); if (v) v.value = '';
+const fv = v && v.previousElementSibling && v.previousElementSibling.querySelector('input');
+if (fv) { fv.value = ''; }
+setActScope('notable');
+}
+const ACT_WHO = { manager: 'Market Manager', president: 'Board President', staff: 'Staff',
+vendor: 'A vendor', volunteer: 'Volunteer', kiosk: 'Kiosk', developer: 'Developer', unknown: 'Unrecorded' };
+function actFiltered() {
+const q = (document.getElementById('actSearch') || {}).value || '';
+const days = Number((document.getElementById('actWindow') || {}).value || 7);
+const kind = (document.getElementById('actKind') || {}).value || '';
+const who = (document.getElementById('actWho') || {}).value || '';
+const vsel = document.getElementById('actVendor');
+const vendor = vsel && vsel.value && vsel.selectedIndex > 0 ? vsel.value : '';
+const cutoff = days ? Date.now() - days * 86400000 : 0;
+const s = q.trim().toLowerCase();
+return activityLog().filter(e => {
+if (actScope === 'notable' && e.w !== 'notable') return false;
+if (cutoff && e.at < cutoff) return false;
+if (kind && e.k !== kind) return false;
+if (who && e.who !== who) return false;
+if (vendor && e.v !== vendor) return false;
+if (s) {
+const name = e.v ? (cache.vendors.find(v => v.vendorId === e.v) || {}).businessName || '' : '';
+const hay = (e.t + ' ' + (ACT_WHO[e.who] || e.who) + ' ' + e.k + ' ' + name).toLowerCase();
+if (!hay.includes(s)) return false;
+}
+return true;
+});
+}
+// Consecutive entries of the same kind, by the same role, on the same day
+// become one row. This is what stops a market Saturday from burying the four
+// things somebody actually needs to see.
+function actRollUp(rows) {
+const out = [];
+rows.forEach(e => {
+const last = out[out.length - 1];
+const day = new Date(e.at).toDateString();
+if (last && last.t === e.t && last.who === e.who && last.day === day && last.w === e.w) {
+last.n++; last.first = e.at; last.items.push(e);
+} else {
+out.push({ t: e.t, who: e.who, k: e.k, w: e.w, day: day, n: 1, last: e.at, first: e.at, items: [e], id: 'g' + e.at });
+}
+});
+return out;
+}
+function renderActivity() {
+const list = document.getElementById('actList');
+const sub = document.getElementById('presActivitySub');
+const total = activityLog().length;
+const notable = activityLog().filter(e => e.w === 'notable').length;
+if (sub) sub.textContent = total
+? notable + ' worth a look, ' + total + ' recorded in all'
+: 'Nothing recorded yet';
+const cap = document.getElementById('actCap');
+if (cap) cap.textContent = ACT_MAX;
+if (!list) return;
+const rows = actFiltered().slice().reverse();
+const groups = actRollUp(rows);
+const count = document.getElementById('actCount');
+if (count) count.textContent = rows.length
+? 'Showing ' + rows.length + ' of ' + total + ' entries, in ' + groups.length + ' line' + (groups.length === 1 ? '' : 's') + '.'
+: 'Nothing matches that.';
+list.innerHTML = '';
+if (!rows.length) {
+list.innerHTML = '<p class="empty-note" style="text-align:center;">' +
+(total ? 'Nothing matches those filters. Widen the window, or switch to Everything.'
+: 'Nothing has been recorded yet. This begins from the build that added it.') + '</p>';
+return;
+}
+let lastDay = null;
+groups.forEach(g => {
+if (g.day !== lastDay) {
+lastDay = g.day;
+const hd = document.createElement('p');
+hd.className = 'empty-note';
+hd.style.cssText = 'margin:14px 2px 4px; font-weight:700; color:#3A382C;';
+hd.textContent = new Date(g.last).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+list.appendChild(hd);
+}
+const row = document.createElement('div');
+row.className = 'req-row' + (g.w === 'notable' ? ' act-notable' : '');
+const when = g.n > 1
+? new Date(g.first).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '\u2013' +
+new Date(g.last).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+: new Date(g.last).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const names = Array.from(new Set(g.items.map(e => e.v).filter(Boolean)))
+.map(id => (cache.vendors.find(v => v.vendorId === id) || {}).businessName).filter(Boolean);
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' + esc(g.t) +
+(g.n > 1 ? ' <b>\u00d7' + g.n + '</b>' : '') + '</div>' +
+'<div class="req-meta">' + esc(when) + ' \u00b7 ' + esc(ACT_WHO[g.who] || g.who) +
+(names.length === 1 ? ' \u00b7 ' + esc(names[0])
+: names.length > 1 ? ' \u00b7 ' + names.length + ' vendors' : '') + '</div></div>';
+if (g.n > 1) {
+const more = document.createElement('button');
+more.type = 'button';
+more.className = 'ghost-btn';
+more.style.cssText = 'margin:0 0 0 6px; width:auto; padding:7px 10px; font-size:13px;';
+more.textContent = actOpen[g.id] ? 'Hide' : 'Show ' + g.n;
+more.onclick = () => { actOpen[g.id] = !actOpen[g.id]; renderActivity(); };
+row.appendChild(more);
+}
+list.appendChild(row);
+if (g.n > 1 && actOpen[g.id]) {
+g.items.slice().reverse().forEach(e => {
+const sub2 = document.createElement('div');
+sub2.className = 'req-row';
+sub2.style.cssText = 'margin-left:14px; opacity:0.82;';
+const nm = e.v ? (cache.vendors.find(v => v.vendorId === e.v) || {}).businessName : '';
+sub2.innerHTML = '<div class="req-row-main"><div class="req-meta">' +
+esc(new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })) +
+(nm ? ' \u00b7 ' + esc(nm) : '') + '</div></div>';
+list.appendChild(sub2);
+});
+}
+});
+}
+async function initActivity() {
+if (!cache.activity) {
+const got = await storageGet('ifm-activity');
+cache.activity = (got === STORAGE_MISSING || !got) ? [] : got;
+}
+const sel = document.getElementById('actVendor');
+if (sel && !sel.dataset.filled) {
+sel.innerHTML = '<option value="">Any vendor</option>' + cache.vendors.slice().sort(byBusinessName)
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+sel.dataset.filled = '1';
+}
+renderActivity();
+}
 function renderInspectionDraw() {
 const pool = agInspectionPool();
 const note = document.getElementById('agPoolNote');
@@ -22108,6 +22387,7 @@ const mins = 30;
 // who, when, who helped, and how they proved it. Storing the code would make
 // this log a way in rather than a record of one.
 const log = (await storageGet('ifm-resets')) === STORAGE_MISSING ? [] : (await storageGet('ifm-resets') || []);
+actAs('Sign-in code issued at the desk', { kind: 'system', weight: 'notable', vendorId: v.vendorId });
 log.push({ id: 'rs' + now, vendorId: v.vendorId, at: now, expiresAt: now + mins * 60000,
 proof: proof, note: document.getElementById('vrNote').value.trim(), by: 'office' });
 await storageSet('ifm-resets', log);
@@ -22217,6 +22497,7 @@ else v[f.k] = val;
 if (!changed.length) { showMsg('vpMsg', 'err', 'Nothing was changed \u2014 every box still says what it said.'); return; }
 // Provenance: a profile the office typed should be tellable from one the
 // vendor typed, so the record carries who said it and how it arrived.
+actAs('Vendor profile changed by the office \u2014 ' + changed.length + ' field' + (changed.length === 1 ? '' : 's'), { kind: 'vendors', weight: 'notable', vendorId: v.vendorId });
 v.profileToldAt = new Date(whenStr).getTime();
 v.profileChannel = channel;
 v.profileRecordedBy = 'office';
@@ -23646,6 +23927,7 @@ for (let i = bag.length - 1; i > 0; i--) {
 const j = Math.floor(Math.random() * (i + 1));
 const t = bag[i]; bag[i] = bag[j]; bag[j] = t;
 }
+actAs(redrawReason ? 'Farm inspection draw replaced \u2014 ' + redrawReason : 'Four farms drawn for random inspection', { kind: 'governance', weight: 'notable' });
 inspectionDraws().push({
 id: 'dr' + Date.now(), year: year, at: Date.now(),
 poolSize: pool.length, poolIds: pool.map(v => v.vendorId),
@@ -24963,6 +25245,12 @@ function renderManagerFolders() {
 const vp = document.getElementById('mgrVenuePicker');
 if (currentRole === 'president') { if (vp) vp.innerHTML = ''; }
 else buildSeasonNote('mgrVenuePicker');
+// The log is the President's supervisory view; it sits under Needs Attention.
+const act = document.getElementById('presActivity');
+if (act) {
+act.style.display = currentRole === 'president' ? 'block' : 'none';
+if (currentRole === 'president') initActivity();
+}
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 renderManagerAlerts();
