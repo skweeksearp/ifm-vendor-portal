@@ -1684,8 +1684,10 @@ border-color: transparent; font-size: 22px;
    in the markup so a screen shared between roles cannot leak them by being
    rendered from the wrong desk. */
 .manager-only { display: none !important; }
-body.role-manager .manager-only { display: revert !important; }
-body.role-manager button.manager-only, body.role-manager .manager-only.block { display: block !important; }
+body.role-manager .manager-only,
+body.role-president .manager-only { display: revert !important; }
+body.role-manager button.manager-only, body.role-manager .manager-only.block,
+body.role-president button.manager-only, body.role-president .manager-only.block { display: block !important; }
 .attn-panel { padding: 2px 12px 10px; border-top: 1px dashed rgba(0,0,0,0.18); }
 .decide-panel { margin: -6px 0 12px; padding: 9px 13px 11px; border-top: none;
 background: #FBF9EF; border: 1px solid var(--paper-dim); border-radius: 0 0 12px 12px; }
@@ -2139,6 +2141,7 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
 <div style="text-align:center; margin: 2px 0 0;"><button type="button" class="help-dot" onclick="showHelp(59)" aria-label="About this build">?</button></div>
 <button class="primary-btn" style="margin-top:22px; width:100%;" onclick="enterAsVendor()"><svg class="ico"><use href="#i-basket"></use></svg> Members / Vendors</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsManager()"><svg class="ico"><use href="#i-toolbox"></use></svg> Market Manager</button>
+<button class="primary-btn" style="width:100%;" onclick="enterAsPresident()"><svg class="ico"><use href="#i-gavel"></use></svg> President</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsStaff()"><svg class="ico"><use href="#i-clipboard"></use></svg> Staff</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsVolunteer()"><svg class="ico"><use href="#i-sun-rays"></use></svg> Volunteers / Partners</button>
 <button class="primary-btn" style="width:100%;" onclick="enterAsKiosk()"><svg class="ico"><use href="#i-search"></use></svg> Kiosk <span style="opacity:.7; font-weight:400;">(tap six times rapidly to exit)</span></button>
@@ -3533,6 +3536,26 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 </div>
 </div>
+<section id="screen-presplanned" class="screen">
+<div class="screen-head" id="head-presplanned"></div>
+<p class="empty-note" style="margin:-4px 0 14px;"><b>None of this is built.</b> This desk currently holds the tools that were already on the Market Manager&rsquo;s desk but belong to the Board. What follows is what would have to exist before this desk could honestly be called supervision rather than a second copy of the office&rsquo;s screens. It is a list for the Board to consider, not a promise.</p>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Before Anything Else</h2>
+<div id="presP1"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-gavel"></use></svg></span>Running the Board</h2>
+<div id="presP2"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Supervising the Office</h2>
+<div id="presP3"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>Argued Against</h2>
+<div id="presP4"></div>
+</div>
+</section>
 <section id="screen-vreset" class="screen">
 <div class="screen-head" id="head-vreset"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">A vendor turns up at the office saying they cannot get in. This checks it really is them, issues a one-time code they use to set a new password, and writes down that you did it &mdash; who, when, and how they proved who they were.</p>
@@ -9394,7 +9417,7 @@ el.value = '';
 let deskHandoverQuiet = false;
 function setRoleHeader(role) {
 if (!deskHandoverQuiet) clearDeskState();
-['vendor', 'manager', 'staff', 'volunteer', 'developer', 'kiosk'].forEach(r =>
+['vendor', 'manager', 'president', 'staff', 'volunteer', 'developer', 'kiosk'].forEach(r =>
 document.body.classList.toggle('role-' + r, role === r));
 paintHeaderBadge();
 const evac = document.getElementById('evacBar');
@@ -9402,6 +9425,9 @@ if (evac) evac.style.display = ((role === 'vendor' || role === 'manager' || role
 if (role === 'manager') {
 document.getElementById('bizName').textContent = 'Market Manager';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 full admin toolkit';
+} else if (role === 'president') {
+document.getElementById('bizName').textContent = 'Board President';
+document.getElementById('bizMeta').textContent = 'Demo login \u2014 no officer is recorded in the app yet';
 } else if (role === 'staff') {
 document.getElementById('bizName').textContent = 'Staff';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 basic day-of tools';
@@ -10942,6 +10968,17 @@ document.getElementById('landing').style.display = 'none';
 document.getElementById('main').style.display = 'block';
 setRoleHeader('developer');
 showScreen('developer');
+}
+async function enterAsPresident() {
+document.body.classList.remove('kiosk-mode');
+currentRole = 'president';
+homeScreen = 'managerdash';
+currentVendorId = null;
+mgrOpenFolder = null;
+document.getElementById('landing').style.display = 'none';
+document.getElementById('main').style.display = 'block';
+setRoleHeader('president');
+showScreen('managerdash');
 }
 async function enterAsStaff() {
 document.body.classList.remove('kiosk-mode');
@@ -12834,6 +12871,7 @@ if (name === 'voicemail') initVoicemailScreen();
 if (name === 'vmscript') initVmScriptScreen();
 if (name === 'vprofile') initVpScreen();
 if (name === 'vreset') initVresetScreen();
+if (name === 'presplanned') initPresPlanned();
 if (name === 'merchmansion') initMerchMansion();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
@@ -12968,6 +13006,7 @@ merchmansion:      { title: 'What the Market Runs' },
 vmscript:          { title: 'The Greeting to Record' },
 vprofile:          { title: 'Update a Vendor\u2019s Profile' },
 vreset:            { title: 'Help a Vendor Get Back In' },
+presplanned:       { title: 'What Is Missing' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
 recordsneeded:     { title: 'Records Needed' },
@@ -15977,7 +16016,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-16';
+const BUILD_ID = '16-17';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20721,9 +20760,10 @@ await saveOps();
 renderAuction();
 showMsg('auMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Booth ' + esc(num) + ' released.');
 }
+function isDeskAdmin() { return currentRole === 'manager' || currentRole === 'president'; }
 function requireManager(msgId) {
-if (currentRole === 'manager') return true;
-if (msgId) showMsg(msgId, 'err', 'Only the Market Manager can change these records.');
+if (isDeskAdmin()) return true;
+if (msgId) showMsg(msgId, 'err', 'Only the Market Manager or the Board President can change these records.');
 return false;
 }
 // The Sunday and Saturday desks are run by staff as often as by the manager.
@@ -21783,6 +21823,47 @@ const VP_FIELDS = [
 // the office says it has heard one, because a screen showing the answer turns
 // the question into a prompt.
 let vrRevealed = {};
+// Eleven things, written where the President can read them, with the reason
+// each matters and what it depends on. The last card argues against something
+// rather than proposing it, because a list of powers with nothing refused is
+// a wish list, not advice.
+const PRES_PLANNED = {
+presP1: [
+['An officer roster', 'The app records no officers at all \u2014 no President, no Treasurer, no Secretary, no terms of office. Every other item on this list needs one first, and so does this desk: it does not currently know whose it is.'],
+['A directors\u2019 login', 'BF40 established that Directors need not be vendors, so some Board members have no account type that fits them. Until that exists, this desk is a role anyone can tap, like every other role in beta.'],
+['An activity log', 'Who did what, and when. This is the foundation of supervision \u2014 without it, supervising means asking the Market Manager and believing the answer. It is also the weakest rung of the override ladder in BF42, and the one that costs the market nothing.'],
+],
+presP2: [
+['Board votes and resolutions', 'Board Amendments records outcomes. It does not record who voted, whether there was a quorum, or what the motion actually said.'],
+['Chair appointments', 'Bylaws VI \u00a72 gives the President the power to appoint committee chairpersons. The app currently has the Market Manager do it \u2014 that is BF43. The mechanism is sound; what is wrong is whose hand is on it.'],
+['Elections', 'Nine Directors, three seats a year, three-year terms, elected each November by Full Members. None of that is in the app.'],
+['Annual meeting and quorum', 'The Secretary\u2019s duty to give notice, and the Board\u2019s ability to act at all, both turn on this.'],
+['Conflict-of-interest declarations', 'Directors who are also vendors voting on vendor matters. Nothing records the interest or the recusal.'],
+],
+presP3: [
+['A weekly digest of what changed', 'Supervision that requires going looking is not supervision. A short list of what the office did this week, unprompted.'],
+['A manager review file', 'The Personnel Committee\u2019s proper business. It currently has no members at all, which is worth noticing before it is needed.'],
+['An executive session workspace', 'Bylaws IV \u00a77 confines executive session to personnel, litigation and real estate. A tool that held to that scope would be doing real work rather than providing a private room.'],
+['A two-person rule', 'For Beta Reset, Data Export and large fine waivers. Not a lockout \u2014 simply no single hand. This is rung two of BF42 and the cheapest real check available.'],
+],
+presP4: [
+['A freeze or lockout of the Market Manager', 'Recommended against. This app is meant to be indispensable to the office: a freeze at 7 AM on a Saturday means nobody can record absences, run Booth Selection or take a booth request, so the Board would acquire the power to break market day. It is also the purest possible gate in an app built on flag-not-gate. If the Board wants it, it should be a recorded Board act rather than a button on one person\u2019s screen, and it needs a floor of things that keep working regardless. Bylaws IV \u00a71 puts hiring of personnel with the Board collectively, not with the President alone \u2014 and V \u00a76 makes the Vice President the fallback when the President cannot or refuses to act, which any such power would need a route around.'],
+],
+};
+function initPresPlanned() {
+Object.keys(PRES_PLANNED).forEach(id => {
+const wrap = document.getElementById(id);
+if (!wrap) return;
+wrap.innerHTML = '';
+PRES_PLANNED[id].forEach(([t, d]) => {
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main"><div class="req-name">' + esc(t) + '</div>' +
+'<div class="req-meta">' + esc(d) + '</div></div>';
+wrap.appendChild(row);
+});
+});
+}
 function initVresetScreen() {
 const sel = document.getElementById('vrVendor');
 if (sel && !sel.dataset.filled) {
@@ -24026,20 +24107,17 @@ tiles: [
 { s: 'leaves', i: 'i-calendar', t: 'Leaves of Absence', d: 'Approvals, fees, seniority' },
 { s: 'calloutpatterns', i: 'i-phone', t: 'Absence Patterns', d: 'Who is missing the deadline \u2014 and whether a deadline is the problem' },
 { soon: 'fines', s: 'fines', i: 'i-scale', t: 'Fines &amp; Penalties', d: 'What is owed, with the escalation' },
-{ soon: 'disciplinary', ot: 'disciplinary', i: 'i-warning', t: 'Disciplinary Record', d: 'Which stage a vendor is at' },
 ] },
 { key: 'money', title: 'Money', icon: 'i-basket',
 sub: 'What a vendor owes and has paid, and the year totalled up',
 tiles: [
 { s: 'account', i: 'i-basket', t: 'Vendor Accounts', d: 'One vendor\u2019s whole balance \u2014 fees, fines, share, hours owed' },
-{ s: 'yearend', i: 'i-document', t: 'Year-End Money Worksheet', d: 'Every figure the app holds for a year, and what it does not' },
 ] },
 { key: 'hours', title: 'Work Hours', icon: 'i-clock',
 sub: 'What is owed, worked, and billed',
 tiles: [
 { s: 'hoursreport', i: 'i-clock', t: 'Work Hours Report', d: "See who's short on hours" },
 { s: 'taskmanager', i: 'i-clipboard', t: 'Work Hours Tasks', d: 'Post tasks for vendors to claim' },
-{ s: 'whrate', i: 'i-gem', t: 'Work Hour Rate', d: 'Dollar value of an hour owed' },
 ] },
 { key: 'booths', title: 'The Pavilion', icon: 'i-wrench',
 sub: 'The building itself \u2014 what is built, laid out, inspected and repaired',
@@ -24085,16 +24163,7 @@ sub: 'What is in front of the board, and who serves',
 tiles: [
 { s: 'facilitiestracker', i: 'i-wrench', t: 'Send to a Committee or Program', d: 'Put a repair, a proposal, or anything else on their list \u2014 straight to the chair or lead who has to act on it' },
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
-{ s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
-{ s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
-{ s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
-{ soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
-{ soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
 { s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Download CSVs for the board' },
-{ s: 'marketrules', i: 'i-scale', t: 'Market Wide Rate Adjustments',
-d: 'The written rule, enforced or not \u2014 fees, fines, deadlines, minimums' },
-{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Enforce These or Not?',
-d: 'Rules nobody is enforcing, and what you decided to do about it' },
 ] },
 // Vocabulary sits alone at the absolute foot of the desk.
 { s: 'plainwords', i: 'i-quill', t: 'Vocabulary', foot: true,
@@ -24614,6 +24683,50 @@ body.className = 'fold-body';
 fold.appendChild(body);
 return fold;
 }
+const PRES_FOLDERS = [
+{ key: 'presboard', title: 'The Board', icon: 'i-columns',
+sub: 'Meetings, proposals and what the Board has decided',
+tiles: [
+{ s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
+{ s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
+{ s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
+{ s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
+] },
+{ key: 'prescommittees', title: 'Committees', icon: 'i-columns',
+sub: 'Who serves and who chairs \u2014 the President appoints the chairs (Bylaws VI \u00a72)',
+tiles: [
+{ soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
+{ soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
+{ s: 'facilitiestracker', i: 'i-wrench', t: 'Send to a Committee or Program', d: 'Put a proposal or a question on their list \u2014 straight to the chair or lead who has to act on it' },
+] },
+{ key: 'presrules', title: 'Rules & Rates', icon: 'i-scale',
+sub: 'What the market charges and requires \u2014 Board decisions, not office ones',
+tiles: [
+{ s: 'marketrules', i: 'i-scale', t: 'Market Wide Rate Adjustments',
+d: 'The written rule, enforced or not \u2014 fees, fines, deadlines, minimums' },
+{ s: 'whrate', i: 'i-gem', t: 'Work Hour Rate', d: 'Dollar value of an hour owed' },
+{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Enforce These or Not?',
+d: 'Rules nobody is enforcing, and what you decided to do about it' },
+] },
+{ key: 'presconduct', title: 'Conduct & Discipline', icon: 'i-gavel',
+sub: 'What the Board has decided about a member \u2014 the office applies it, the Board owns it',
+tiles: [
+{ soon: 'disciplinary', ot: 'disciplinary', i: 'i-warning', t: 'Disciplinary Record', d: 'Which stage a vendor is at' },
+] },
+{ key: 'prestreasurer', title: 'The Treasurer\u2019s Books', icon: 'i-document',
+sub: 'Not the President\u2019s own \u2014 the Treasurer brings the financials to the Board (Bylaws VI \u00a77)',
+tiles: [
+{ s: 'yearend', i: 'i-document', t: 'Year-End Money Worksheet', d: 'Every figure the app holds for a year, and what it does not' },
+] },
+{ key: 'presnotbuilt', title: 'Not Built Yet', icon: 'i-warning',
+sub: 'What supervising this app would need, and does not have. Nothing here works.',
+foot: true,
+tiles: [
+{ s: 'presplanned', i: 'i-list', t: 'What Is Missing', d: 'Eleven things the President would need before this desk could honestly be called supervision' },
+] },
+];
+// The desk knows whose it is. One renderer, two lists.
+function deskFolders() { return currentRole === 'president' ? PRES_FOLDERS : MGR_FOLDERS; }
 function renderManagerFolders() {
 buildSeasonNote('mgrVenuePicker');
 const grid = document.getElementById('mgrFolders');
@@ -24621,7 +24734,7 @@ if (!grid) return;
 renderManagerAlerts();
 grid.innerHTML = '';
 const inSeason = [], stable = [], off = [];
-MGR_FOLDERS.forEach(f => {
+deskFolders().forEach(f => {
 if (MGR_OTHER_MARKETS.indexOf(f.key) !== -1) { off.push(f); return; }
 const own = MGR_VENUE_OF[f.key];
 if (!own || venueInSeason(own)) inSeason.push(f);
