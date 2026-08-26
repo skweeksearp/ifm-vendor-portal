@@ -2297,6 +2297,29 @@ I sell food (prepared food or produce)
 </div>
 </div>
 <div id="vendorVenuePicker"></div>
+<div class="dash-fold" data-fold="account">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">My Account</span>
+<span class="fold-sub" id="menuAccountSub">Money, hours and points — where you stand with the market</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<div class="dash-fold" data-fold="accountmoney">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
+<span class="fold-title">Fees &amp; Payments</span>
+<span class="fold-sub" id="menuPaySub">What you owe the market, and how to pay it</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="hours">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'hours')">
+<span class="fold-title">Work Hours</span>
+<span class="fold-sub">Log &amp; track your hours</span>
+<span class="fold-chev">›</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="fPoints">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitlePoints">Points</span>
@@ -2333,21 +2356,7 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
-<div class="dash-fold" data-fold="hours">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'hours')">
-<span class="fold-title">Work Hours</span>
-<span class="fold-sub">Log &amp; track your hours</span>
-<span class="fold-chev">›</span>
-</button>
-<div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="account">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
-<span class="fold-title">My Account</span>
-<span class="fold-sub" id="menuPaySub">What you owe the market, and how to pay it</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
 </div>
 <div class="dash-fold" data-fold="mydocs">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mydocs')">
@@ -15968,7 +15977,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-15';
+const BUILD_ID = '16-16';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
