@@ -121,6 +121,10 @@ font-size: var(--ifm-size); transform: translate(-50%, -50%); }
    puts each body behind the sunflower for that half and in front for the
    other. Nothing to keep in sync: one clock drives both. */
 @keyframes ifmdepth { 0% { z-index: 1; } 50% { z-index: 3; } }
+.mr-unit-row { display: flex; align-items: center; gap: 8px; }
+.mr-unit-row input { flex: 1 1 auto; min-width: 0; }
+.mr-unit { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #6E6A57;
+text-transform: uppercase; letter-spacing: 0.04em; }
 .screen-title-quiet { margin: 0 0 10px; text-align: right; }
 .act-switch { display: flex; gap: 8px; }
 .act-switch button { flex: 1 1 0; margin: 0; }
@@ -4777,7 +4781,6 @@ comes from.</p>
 <div id="mrLog" style="margin-top:12px;"></div>
 <div class="empty-note" id="mrLogEmpty" style="display:none;">Nothing has been changed from the Guide.</div>
 <button class="ghost-btn" onclick="resetAllRules()">Put everything back to the Guide</button>
-<button class="ghost-btn" onclick="showScreen('boardflags')">Enforce These or Not?</button>
 <div class="status-msg" id="mrMsg"></div>
 </div>
 <div class="card">
@@ -16270,7 +16273,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-27';
+const BUILD_ID = '16-28';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -23755,26 +23758,26 @@ const RULE_DEFS = [
 { g: 'Fines', id: 'fineStall', l: 'Items left at close, first offense', u: '$', d: 10, src: 'Guide, Maintenance and Cleaning' },
 { g: 'Fines', id: 'fineHour', l: 'Owed for each work hour not worked by season end', u: '$', d: 25, src: 'Guide, Vendor Rules and Fines' },
 { g: 'Fines', id: 'fineStallMult', l: 'What that fine is multiplied by each time it happens again', u: '\u00d7', d: 2, src: 'Guide, Maintenance and Cleaning' },
-{ g: 'Attendance owed', id: 'attSat', l: 'Saturdays for a reserved booth', d: 15, src: 'Guide, Saturday Reserved Stalls' },
-{ g: 'Attendance owed', id: 'attCorner', l: 'Saturdays for a corner Ag booth', d: 25, src: 'Guide, Saturday Reserved Stalls' },
-{ g: 'Attendance owed', id: 'attSun', l: 'Sundays for a reserved Sunday booth', d: 12, src: 'Guide, Sunday Reserved Stalls' },
-{ g: 'Attendance owed', id: 'attFull', l: 'Weekend days at the Pavilion owed by every Full Member', d: 5, src: 'Guide, Full Members' },
+{ g: 'Attendance owed', id: 'attSat', l: 'Saturdays for a reserved booth', u: 'days', d: 15, src: 'Guide, Saturday Reserved Stalls' },
+{ g: 'Attendance owed', id: 'attCorner', l: 'Saturdays for a corner Ag booth', u: 'days', d: 25, src: 'Guide, Saturday Reserved Stalls' },
+{ g: 'Attendance owed', id: 'attSun', l: 'Sundays for a reserved Sunday booth', u: 'days', d: 12, src: 'Guide, Sunday Reserved Stalls' },
+{ g: 'Attendance owed', id: 'attFull', l: 'Weekend days at the Pavilion owed by every Full Member', u: 'days', d: 5, src: 'Guide, Full Members' },
 { g: 'Renewal', id: 'renewDue', l: 'Renewals due by', u: 'date', d: '12-31', src: 'Guide, Fee Deadlines' },
 { g: 'Renewal', id: 'renewCutoff', l: 'After this date the vendor\u2019s place at the market ends', u: 'date', d: '01-15', src: 'Guide, Fee Deadlines' },
 { g: 'Renewal', id: 'renewSurcharge', l: 'Late surcharge inside that window', u: '$', d: 100, src: 'Guide, Fee Deadlines' },
-{ g: 'Membership', id: 'fullCap', l: 'Cap on Full Members', d: 105, src: 'Guide, 60/40 Membership Rule' },
+{ g: 'Membership', id: 'fullCap', l: 'Cap on Full Members', u: 'members', d: 105, src: 'Guide, 60/40 Membership Rule' },
 { g: 'Membership', id: 'agShare', l: 'Least share that must be agriculture', u: '%', d: 60, src: 'Guide, 60/40 Membership Rule' },
 { g: 'Membership', id: 'certTotal', l: 'Membership share (Certificate of Membership), in full', u: '$', d: 300, src: 'Guide, Certificate of Membership' },
 { g: 'Membership', id: 'certInstal', l: 'Each annual installment', u: '$', d: 100, src: 'Guide, Certificate of Membership' },
-{ g: 'Points', id: 'ptsYear', l: 'Points for each year at the market', d: 5, src: 'Guide, Vendor Point System' },
-{ g: 'Points', id: 'ptsDay', l: 'Points for each market day attended', d: 1, src: 'Guide, Vendor Point System' },
+{ g: 'Points', id: 'ptsYear', l: 'Points for each year at the market', u: 'pts', d: 5, src: 'Guide, Vendor Point System' },
+{ g: 'Points', id: 'ptsDay', l: 'Points for each market day attended', u: 'pts', d: 1, src: 'Guide, Vendor Point System' },
 { g: 'Clocks and warnings', id: 'expiryWarn', l: 'Warn this many days before a document expires', u: 'days', d: 30, src: 'App convention \u2014 the Guide promises reminders but sets no number' },
 { g: 'Clocks and warnings', id: 'planDays', l: 'Days to submit a correction plan after notice', u: 'days', d: 60, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'safetyYears', l: 'Years between booth safety updates', u: 'years', d: 2, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'lookbackYears', l: 'Years before an unsold juried product may be reclaimed', u: 'years', d: 3, src: 'Food Committee Guidelines' },
-{ g: 'Board meetings', id: 'boardWeek', l: 'Which week of the month the Board meets', d: 2, src: 'Guide, Board of Directors' },
-{ g: 'Board meetings', id: 'boardDay', l: 'Day of the week (0 Sunday to 6 Saturday)', d: 3, src: 'Guide, Board of Directors' },
-{ g: 'Board meetings', id: 'snrWeek', l: 'Exception Requests due by this Wednesday of December', d: 1, src: 'Guide, Fee Deadlines, Penalties, and Requests for Exceptions' },
+{ g: 'Board meetings', id: 'boardWeek', l: 'Which week of the month the Board meets', u: 'weekOfMonth', d: 2, src: 'Guide, Board of Directors' },
+{ g: 'Board meetings', id: 'boardDay', l: 'The day of the week the Board meets', u: 'weekday', d: 3, src: 'Guide, Board of Directors' },
+{ g: 'Board meetings', id: 'snrWeek', l: 'Exception Requests due by this meeting-day of December', u: 'weekOfMonth', d: 1, src: 'Guide, Fee Deadlines, Penalties, and Requests for Exceptions' },
 ];
 function ruleDef(id) { return RULE_DEFS.find(r => r.id === id); }
 function rule(id) {
@@ -23854,11 +23857,24 @@ main.innerHTML = '<div class="req-name">' + esc(r.l) + '</div>' +
 (ruleChanged(r.id) ? ' \u00b7 the Guide says ' +
 esc(r.u === '$' ? '$' + r.d : String(r.d)) : '') + '</div>';
 row.appendChild(main);
-const inp = document.createElement('input');
-if (r.u === 'date') {
+const UNIT_WORDS = { '$': 'dollars', '%': 'percent', '\u00d7': 'times', 'days': 'days',
+'years': 'years', 'pts': 'points', 'members': 'members', 'date': 'month and day' };
+let inp;
+if (r.u === 'weekday') {
+// Stored as 0 Sunday to 6 Saturday, as ever; shown as the days themselves.
+inp = document.createElement('select');
+[['1','Monday'],['2','Tuesday'],['3','Wednesday'],['4','Thursday'],['5','Friday'],['6','Saturday'],['0','Sunday']]
+.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; inp.appendChild(o); });
+} else if (r.u === 'weekOfMonth') {
+inp = document.createElement('select');
+[['1','First'],['2','Second'],['3','Third'],['4','Fourth']]
+.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; inp.appendChild(o); });
+} else if (r.u === 'date') {
+inp = document.createElement('input');
 inp.type = 'text';
 inp.placeholder = 'MM-DD';
 } else {
+inp = document.createElement('input');
 inp.type = 'number';
 inp.step = '1';
 inp.min = '0';
@@ -23866,7 +23882,19 @@ inp.min = '0';
 inp.id = 'mr_' + r.id;
 inp.value = String(rule(r.id));
 inp.onchange = () => setRule(r.id, inp.value);
+const unitWord = r.u === 'weekday' || r.u === 'weekOfMonth' ? '' : (UNIT_WORDS[r.u] || (r.u ? r.u : ''));
+if (unitWord) {
+const line = document.createElement('div');
+line.className = 'mr-unit-row';
+line.appendChild(inp);
+const tag = document.createElement('span');
+tag.className = 'mr-unit';
+tag.textContent = unitWord;
+line.appendChild(tag);
+row.appendChild(line);
+} else {
 row.appendChild(inp);
+}
 if (ruleChanged(r.id)) {
 const rst = document.createElement('button');
 rst.type = 'button';
