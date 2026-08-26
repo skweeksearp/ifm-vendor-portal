@@ -3631,7 +3631,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </section>
 <section id="screen-presplanned" class="screen">
 <div class="screen-head" id="head-presplanned"></div>
-<p class="empty-note" style="margin:-4px 0 14px;"><b>None of this is built.</b> This desk currently holds the tools that were already on the Market Manager&rsquo;s desk but belong to the Board. What follows is what would have to exist before this desk could honestly be called supervision rather than a second copy of the office&rsquo;s screens. It is a list for the Board to consider, not a promise.</p>
+<p class="empty-note" style="margin:-4px 0 14px;"><b>None of this is built.</b> This desk currently holds the tools that were already on the Market Manager&rsquo;s desk but belong to the Board. What follows is what the app <b>could</b> offer if the Board ever wants parts of its work carried in here &mdash; a list to consider, take pieces of, or decline entirely. The Board supervises the market with or without software; what each entry describes is only what the app cannot show or make convenient until it is built. It is a list for the Board to consider, not a promise and not a requirement.</p>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Before Anything Else</h2>
 <div id="presP1"></div>
@@ -5344,7 +5344,11 @@ const TUNING_DEFAULTS = {
   kioskExitTaps:      6,   // taps to leave kiosk mode
   kioskExitWindowMs: 2000, // ...within this long
   spinFloorMs:     1800,   // shortest the loader will show, to stop it flickering
-  pollMs:         11000    // how often the app asks the sheet for news
+  pollMs:         11000,   // asks the sheet for news this often while being used
+  pollSlowMs:     30000,   // after pollFastForMs of quiet, this often
+  pollRestMs:     60000,   // after pollSlowForMs of quiet, this often (touch = instant)
+  pollFastForMs:  90000,   // how long after a touch the fast rate holds
+  pollSlowForMs: 180000    // quiet beyond this is resting
 };
 let TUNING = Object.assign({}, TUNING_DEFAULTS);
 try {
@@ -6697,6 +6701,7 @@ async function ifmPump() {
 if (ifmPosting) return;
 ifmPosting = true;
 try {
+let posted = false;
 while (ifmWriteQueue.size) {
 const [key, value] = ifmWriteQueue.entries().next().value;
 ifmWriteQueue.delete(key);
@@ -6704,8 +6709,13 @@ try {
 await ifmFetch(IFM_BACKEND_URL, { method: 'POST',
 headers: { 'Content-Type': 'text/plain' },
 body: JSON.stringify({ key: key, value: value }) }, 10000);
+posted = true;
 } catch (e) { noteStorageFailure(key, e); ifmWriteQueue.set(key, value); setTimeout(ifmPump, 30000); break; }
 }
+// The radio is already up from the posts above; a poll in the same breath is
+// nearly free, and it is the moment freshness matters most -- right after
+// this person changed something other devices may be watching.
+if (posted && !ifmWriteQueue.size && !document.hidden) ifmPollChanges();
 } finally { ifmPosting = false; }
 }
 if (typeof window.storage === 'undefined') {
@@ -7011,26 +7021,52 @@ if (document.hidden) return false;
 if (typeof currentRole !== 'undefined' && currentRole === 'kiosk') return true;
 return (Date.now() - ifmLastTouch) < IFM_IDLE_PAUSE_MS;
 }
+function ifmPollGap() {
+if (typeof currentRole !== 'undefined' && currentRole === 'kiosk') return tune('pollMs');
+const quiet = Date.now() - ifmLastTouch;
+if (quiet < tune('pollFastForMs')) return tune('pollMs');
+if (quiet < tune('pollSlowForMs')) return tune('pollSlowMs');
+return tune('pollRestMs');
+}
 function ifmNoteTouch() {
-const wasAsleep = !ifmAwake();
+const wasQuiet = (Date.now() - ifmLastTouch) > tune('pollFastForMs') || !ifmAwake();
 ifmLastTouch = Date.now();
-if (wasAsleep && !document.hidden) { ifmPollChanges(); ifmCheckForUpdate(); }
+// Any touch after quiet fetches at once -- the person has started looking,
+// and this is the moment freshness is worth a radio wake.
+if (wasQuiet && !document.hidden) { ifmPollChanges(); if (typeof ifmRearmPoll === 'function') ifmRearmPoll(); }
 }
 ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => {
 document.addEventListener(ev, ifmNoteTouch, { passive: true, capture: true });
 });
-(function schedulePoll() {
-setTimeout(() => {
-(ifmAwake() ? ifmPollChanges() : Promise.resolve()).finally(schedulePoll);
+let ifmLastUpdCheck = Date.now();
+let ifmPollTimer = null;
+function schedulePoll() {
+const gap = ifmPollGap();
+ifmPollTimer = setTimeout(() => {
+(ifmAwake() ? ifmPollChanges() : Promise.resolve()).finally(() => {
+// The update check rides the same radio session as a data poll instead of
+// keeping its own timer: same ten-minute latency, zero extra radio wakes.
+if (ifmAwake() && Date.now() - ifmLastUpdCheck > 10 * 60 * 1000) {
+ifmLastUpdCheck = Date.now();
+ifmCheckForUpdate();
+}
+schedulePoll();
+});
 // The jitter matters at 168 phones: without it they would all ask the sheet
 // in the same second, and Apps Script would answer them one at a time.
-}, tune('pollMs') + Math.random() * (tune('pollMs') * 0.18));
-})();
+}, gap + Math.random() * (gap * 0.18));
+}
+schedulePoll();
+// Called on a touch after quiet: the pending long fuse is thrown away and
+// the loop re-armed at whatever ifmPollGap now says, which is the fast rate.
+function ifmRearmPoll() {
+if (ifmPollTimer) { clearTimeout(ifmPollTimer); ifmPollTimer = null; }
+schedulePoll();
+}
 document.addEventListener('visibilitychange', () => {
 if (!document.hidden) { ifmLastTouch = Date.now(); ifmPollChanges(); ifmCheckForUpdate(); }
 });
 setTimeout(ifmCheckForUpdate, 5000);
-setInterval(() => { if (ifmAwake()) ifmCheckForUpdate(); }, 10 * 60 * 1000);
 }
 // -----------------------------------------------------------------------
 const STORAGE_MISSING = Symbol('missing');
@@ -9096,7 +9132,11 @@ const TUNING_UI = [
 { k: 'kioskDealWatchMs', t: 'Kiosk looks for a new sale every', u: 's', div: 1000, min: 1, max: 60, step: 1,
   d: 'Compares two numbers and nothing else, so this is cheap.' },
 { k: 'pollMs', t: 'App asks the sheet for news every', u: 's', div: 1000, min: 3, max: 300, step: 1,
-  d: 'See the note below before changing this one.' },
+  d: 'While being used. See the note below before changing this one.' },
+{ k: 'pollSlowMs', t: 'After 90 quiet seconds, asks every', u: 's', div: 1000, min: 5, max: 600, step: 5,
+  d: 'The phone is open but untouched. Any touch fetches at once and returns to the fast rate, so nobody waits on this.' },
+{ k: 'pollRestMs', t: 'After three quiet minutes, asks every', u: 's', div: 1000, min: 10, max: 900, step: 5,
+  d: 'Nobody is looking. Past five minutes it stops entirely, as it always has. The kiosk never slows down.' },
 { k: 'spinFloorMs', t: 'Shortest the loader will show', u: 's', div: 1000, min: 0, max: 20, step: 0.1,
   d: 'A floor against flicker, not a delay.' },
 { k: 'kioskExitTaps', t: 'Taps to leave kiosk mode', u: '', div: 1, min: 2, max: 15, step: 1,
@@ -13248,7 +13288,7 @@ merchmansion:      { title: 'What the Market Runs' },
 vmscript:          { title: 'The Greeting to Record' },
 vprofile:          { title: 'Update a Vendor\u2019s Profile' },
 vreset:            { title: 'Help a Vendor Get Back In' },
-presplanned:       { title: 'What Is Missing' },
+presplanned:       { title: 'What the App Could Offer' },
 aginspect:         { title: 'Random Farm Inspections' },
 amendments:        { title: 'Board Amendments' },
 volrole:           { title: () => (VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || {}).t || 'Volunteer Role' },
@@ -16273,7 +16313,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-28';
+const BUILD_ID = '16-30';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22088,7 +22128,7 @@ const PRES_PLANNED = {
 presP1: [
 ['An officer roster', 'The app records no officers at all \u2014 no President, no Treasurer, no Secretary, no terms of office. Every other item on this list needs one first, and so does this desk: it does not currently know whose it is.'],
 ['A directors\u2019 login', 'BF40 established that Directors need not be vendors, so some Board members have no account type that fits them. Until that exists, this desk is a role anyone can tap, like every other role in beta.'],
-['An activity log', 'Who did what, and when. This is the foundation of supervision \u2014 without it, supervising means asking the Market Manager and believing the answer. It is also the weakest rung of the override ladder in BF42, and the one that costs the market nothing.'],
+['An activity log', 'Who did what in the app, and when. Most of the other entries on this list lean on it, and it is the weakest rung of the ladder in BF42 \u2014 the one that costs the market nothing. Without it the app simply has nothing to show about what has been done, and the Board learns what it learns the way it always has.'],
 ],
 presP2: [
 ['Board votes and resolutions', 'Board Amendments records outcomes. It does not record who voted, whether there was a quorum, or what the motion actually said.'],
@@ -22098,7 +22138,7 @@ presP2: [
 ['Conflict-of-interest declarations', 'Directors who are also vendors voting on vendor matters. Nothing records the interest or the recusal.'],
 ],
 presP3: [
-['A weekly digest of what changed', 'Supervision that requires going looking is not supervision. A short list of what the office did this week, unprompted.'],
+['A weekly digest of what changed', 'A short list of what the office did this week, unprompted \u2014 for a President who would rather be told than have to come in here and look.'],
 ['A manager review file', 'The Personnel Committee\u2019s proper business. It currently has no members at all, which is worth noticing before it is needed.'],
 ['An executive session workspace', 'Bylaws IV \u00a77 confines executive session to personnel, litigation and real estate. A tool that held to that scope would be doing real work rather than providing a private room.'],
 ['A two-person rule', 'For Beta Reset, Data Export and large fine waivers. Not a lockout \u2014 simply no single hand. This is rung two of BF42 and the cheapest real check available.'],
@@ -25263,10 +25303,10 @@ tiles: [
 { s: 'yearend', i: 'i-document', t: 'Year-End Money Worksheet', d: 'Every figure the app holds for a year, and what it does not' },
 ] },
 { key: 'presnotbuilt', title: 'Not Built Yet', icon: 'i-warning',
-sub: 'What supervising this app would need, and does not have. Nothing here works.',
+sub: 'What the app could offer the Board \u2014 none of it built, none of it required. Nothing here works.',
 foot: true,
 tiles: [
-{ s: 'presplanned', i: 'i-list', t: 'What Is Missing', d: 'Eleven things the President would need before this desk could honestly be called supervision' },
+{ s: 'presplanned', i: 'i-list', t: 'What the App Could Offer', d: 'Tools the Board may want someday, may take in pieces, or may never want at all \u2014 with the reasoning either way' },
 ] },
 ];
 // The desk knows whose it is. One renderer, two lists.
