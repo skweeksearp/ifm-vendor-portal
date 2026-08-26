@@ -5035,6 +5035,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 </section>
 <section id="screen-committees" class="screen">
 <div class="screen-head" id="head-committees"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Bylaws VI &sect;2: <b>the President appoints committee chairpersons</b>, and may name the members or leave that to the chair. This screen <b>records</b> those appointments so the rest of the app knows who to route work to &mdash; it does not make them. The office keeps the record; the President makes the decision.</p>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Committee</h2>
 <label for="cmteSelect">Which committee?</label>
@@ -12954,7 +12955,7 @@ runScreenInit(name);
 }
 const SCREEN_META = {
 dashboard:         { title: () => vendorClassLine(currentVendor()), home: true },
-managerdash:       { title: 'Market Manager', home: true },
+managerdash:       { title: () => currentRole === 'president' ? 'Board President' : 'Market Manager', home: true },
 staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
 winter:            { title: 'Winter Market' },
@@ -16016,7 +16017,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-17';
+const BUILD_ID = '16-19';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21835,7 +21836,7 @@ presP1: [
 ],
 presP2: [
 ['Board votes and resolutions', 'Board Amendments records outcomes. It does not record who voted, whether there was a quorum, or what the motion actually said.'],
-['Chair appointments', 'Bylaws VI \u00a72 gives the President the power to appoint committee chairpersons. The app currently has the Market Manager do it \u2014 that is BF43. The mechanism is sound; what is wrong is whose hand is on it.'],
+
 ['Elections', 'Nine Directors, three seats a year, three-year terms, elected each November by Full Members. None of that is in the app.'],
 ['Annual meeting and quorum', 'The Secretary\u2019s duty to give notice, and the Board\u2019s ability to act at all, both turn on this.'],
 ['Conflict-of-interest declarations', 'Directors who are also vendors voting on vendor matters. Nothing records the interest or the recusal.'],
@@ -23638,7 +23639,7 @@ row.appendChild(label);
 if (!m.chair) {
 const chairBtn = document.createElement('button');
 chairBtn.type = 'button';
-chairBtn.textContent = 'Make chair';
+chairBtn.textContent = 'Record as chair';
 chairBtn.onclick = () => setCommitteeChair(key, m.id);
 row.appendChild(chairBtn);
 }
@@ -24695,7 +24696,7 @@ tiles: [
 { key: 'prescommittees', title: 'Committees', icon: 'i-columns',
 sub: 'Who serves and who chairs \u2014 the President appoints the chairs (Bylaws VI \u00a72)',
 tiles: [
-{ soon: 'committees', s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, and what is in front of them' },
+{ s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, who chairs, and what is in front of them \u2014 the President\u2019s appointments, recorded' },
 { soon: 'lookback', ot: 'lookback', i: 'i-search', t: 'Food Committee Look-Back', d: 'Juried products unsold for three years' },
 { s: 'facilitiestracker', i: 'i-wrench', t: 'Send to a Committee or Program', d: 'Put a proposal or a question on their list \u2014 straight to the chair or lead who has to act on it' },
 ] },
