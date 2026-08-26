@@ -4922,7 +4922,6 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>Board Meeting Cycle<button type="button" class="help-dot" onclick="showPlanned('boardcycle')" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" id="bcNext" style="margin-top:0;"></p>
 <div id="bcList"></div>
-<button class="ghost-btn" onclick="showScreen('proposaltracker')">Open Board Proposals</button>
 </div>
 </section>
 <section id="screen-calloutpatterns" class="screen">
@@ -4984,7 +4983,9 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <section id="screen-proposaltracker" class="screen">
 <div class="screen-head" id="head-proposaltracker"></div>
 <div class="card">
-<label for="ptTitle">Title<button type="button" class="help-dot" onclick="showHelp(48)" aria-label="What are the rules here?">?</button></label>
+<h2><span class="emoji"><svg class="ico"><use href="#i-quill"></use></svg></span>Proposals Put to the Board<button type="button" class="help-dot" onclick="showHelp(48)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">A running list of what has been put to the Board and where each one got to. The proposal itself still goes in on the Google Form, and the Guide (p.34) requires the vendor to attend and present it in person &mdash; this is the record of it, not the route for it.</p>
+<label for="ptTitle">Title</label>
 <input type="text" id="ptTitle" placeholder="e.g. Proposal to add a second Sunday Booth Selection">
 <label for="ptNote" style="margin-top:10px;">Note (optional)</label>
 <input type="text" id="ptNote">
@@ -6848,10 +6849,14 @@ let ifmUpdating = false;
 // either will do; if a server sends neither we fall back to the old way rather
 // than never noticing an update at all.
 let ifmFileStamp = null, ifmStampless = false;
-let ifmQueueSeen = -1, ifmQueueSince = 0;
+let ifmQueueSeen = -1, ifmQueueSince = 0, ifmQueueBusySince = 0;
 function ifmQueueStuck() {
 const n = ifmWriteQueue.size;
-if (n === 0) return false;
+if (n === 0) { ifmQueueBusySince = 0; return false; }
+if (!ifmQueueBusySince) ifmQueueBusySince = Date.now();
+// Churn cannot reset this one: it asks how long since the queue was last
+// empty, not how long since its size last changed.
+if (Date.now() - ifmQueueBusySince > 180000) return true;
 if (n !== ifmQueueSeen) { ifmQueueSeen = n; ifmQueueSince = Date.now(); return false; }
 return (Date.now() - ifmQueueSince) > 90000;
 }
@@ -6910,10 +6915,12 @@ bar.textContent = 'Updating to build ' + m[1] + '\u2026';
 setTimeout(() => location.replace(location.pathname + '?v=' + encodeURIComponent(m[1])), 1200);
 return;
 }
+const waited = ifmQueueBusySince ? Math.round((Date.now() - ifmQueueBusySince) / 1000) : 0;
 bar.textContent = typing
 ? 'Build ' + m[1] + ' ready \u2014 finish typing, then tap'
 : 'Build ' + m[1] + ' ready \u2014 ' + ifmWriteQueue.size + ' change' +
-(ifmWriteQueue.size === 1 ? '' : 's') + ' still saving \u00b7 tap to update anyway';
+(ifmWriteQueue.size === 1 ? '' : 's') + ' still saving' +
+(waited > 60 ? ' for ' + Math.round(waited / 60) + ' min' : '') + ' \u00b7 tap to update anyway';
 } catch (e) { /* offline or mid-redeploy; try again later */ }
 }
 if (typeof window !== 'undefined') {
@@ -15157,9 +15164,20 @@ renderTrackerList(kind);
 }
 async function renderTrackerList(kind) {
 const key = 'ifm-tracker-' + kind;
-const list = await storageGet(key);
-const items = list === STORAGE_MISSING ? [] : list;
 const container = document.getElementById(kind === 'facilities' ? 'facilitiesTrackerList' : 'proposalTrackerList');
+if (!container) return;
+// Say something before waiting on anything. A blank panel and a panel that
+// is still loading look identical, and only one of them is worth waiting for.
+container.innerHTML = '<p class="empty-note" style="text-align:center;">Reading the list\u2026</p>';
+let list;
+try {
+list = await storageGet(key);
+} catch (e) {
+container.innerHTML = '<p class="empty-note" style="text-align:center;">' +
+'That list did not come back. The market\u2019s sheet may be waking up \u2014 close this and open it again.</p>';
+return;
+}
+const items = list === STORAGE_MISSING ? [] : (list || []);
 container.innerHTML = '';
 if (!items.length) {
 container.innerHTML = '<p class="empty-note" style="text-align:center;">Nothing tracked yet.</p>';
@@ -16017,7 +16035,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-19';
+const BUILD_ID = '16-21';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -23541,17 +23559,17 @@ if (!body) return;
 body.innerHTML = '';
 IDEA_ROUTES.forEach(r => {
 const fold = document.createElement('div');
-fold.className = 'dash-fold';
-const bar = document.createElement('button');
-bar.type = 'button';
-bar.className = 'fold-bar';
-bar.innerHTML = '<span class="fold-title">' + r.t + '</span>' +
-'<span class="fold-sub">' + r.eg + '</span>' +
-'<span class="fold-chev">\u203a</span>';
-bar.onclick = () => toggleFold(bar);
-fold.appendChild(bar);
+fold.className = 'card';
+const head = document.createElement('h2');
+head.style.cssText = 'margin-top:0; font-size:17px;';
+head.textContent = r.t;
+fold.appendChild(head);
+const eg = document.createElement('p');
+eg.className = 'empty-note';
+eg.style.margin = '0 0 10px';
+eg.textContent = r.eg;
+fold.appendChild(eg);
 const box = document.createElement('div');
-box.className = 'fold-body';
 r.steps.forEach((st, i) => {
 const row = document.createElement('div');
 row.className = 'req-row';
@@ -24729,7 +24747,12 @@ tiles: [
 // The desk knows whose it is. One renderer, two lists.
 function deskFolders() { return currentRole === 'president' ? PRES_FOLDERS : MGR_FOLDERS; }
 function renderManagerFolders() {
-buildSeasonNote('mgrVenuePicker');
+// The venue note tells whoever is on duty which markets are running today.
+// That is a market-day fact for the office, not board business, so the
+// President's desk does not carry it.
+const vp = document.getElementById('mgrVenuePicker');
+if (currentRole === 'president') { if (vp) vp.innerHTML = ''; }
+else buildSeasonNote('mgrVenuePicker');
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 renderManagerAlerts();
