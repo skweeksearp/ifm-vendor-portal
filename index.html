@@ -3183,6 +3183,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <button type="button" id="ktnTabAbout" onclick="tunerTarget('about')">Window</button>
 <button type="button" id="ktnTabCarrot" onclick="tunerTarget('carrot')">Carrot</button>
 <button type="button" id="ktnTabLogo" onclick="tunerTarget('logo')">Logo</button>
+<button type="button" id="ktnTabQr" onclick="tunerTarget('qr')">QR&nbsp;code</button>
 </div>
 <div id="ktnRowW"><label>Width <span id="ktnW"></span></label>
 <input type="range" id="ktnFW" min="56" max="900" oninput="tunerSet('w', this.value)"></div>
@@ -16566,7 +16567,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-44';
+const BUILD_ID = '16-45';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -16857,8 +16858,7 @@ if (stage) stage.addEventListener('pointerdown', noteKioskTap, true);
 bindKioskMapGestures();
 const jq = document.getElementById('kioskJoinQr');
 if (jq && !jq.dataset.drawn) { jq.innerHTML = joinQrSvg(); jq.dataset.drawn = '1'; }
-const jw = document.getElementById('kioskJoinWin');
-if (jw) { jw.style.left = '12px'; jw.style.bottom = '12px'; }
+applyChromeStyle();
 kioskResizeBound = true;
 }
 }
@@ -17085,7 +17085,8 @@ const ABOUT_WIN_DEFAULT = { leftPct: 56.53, bottomPct: 5.38, wPct: 38.67, hPct: 
 // build that lands before someone has saved a layout \u2014 already looks right.
 const CHROME_DEFAULT = {
 carrot: { rightPct: 82.93, bottomPct: 4.59, sizePct: 8.00 },
-logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 }
+logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 },
+qr:     { rightPct: 79.80, bottomPct: 3.20, sizePct: 18.20 }
 };
 function kioskStageSize() {
 const stage = document.getElementById('kioskStage');
@@ -17140,7 +17141,7 @@ sizePct: +(px.size / s.w * 100).toFixed(2)
 };
 }
 function applyChromeStyle() {
-const c = { carrot: chromePx('carrot'), logo: chromePx('logo') };
+const c = { carrot: chromePx('carrot'), logo: chromePx('logo'), qr: chromePx('qr') };
 const rose = document.querySelector('.north-rose');
 if (rose && c.carrot) {
 rose.style.right = c.carrot.right + 'px';
@@ -17156,6 +17157,41 @@ logo.style.bottom = c.logo.bottom + 'px';
 logo.style.left = 'auto'; logo.style.top = 'auto';
 const img = logo.querySelector('img');
 if (img) img.style.width = c.logo.size + 'px';
+}
+const qr = document.getElementById('kioskJoinWin');
+if (qr && c.qr) {
+qr.style.right = c.qr.right + 'px';
+qr.style.bottom = c.qr.bottom + 'px';
+qr.style.left = 'auto'; qr.style.top = 'auto';
+qr.style.width = c.qr.size + 'px';
+const t = qr.querySelector('.kjw-text');
+if (t) t.style.fontSize = Math.max(11, Math.round(c.qr.size * 0.082)) + 'px';
+}
+}
+const CHROME_ELS = { carrot: '.north-rose', logo: '.kiosk-logo', qr: '#kioskJoinWin' };
+function clampChromeOnStage(which) {
+const el = document.querySelector(CHROME_ELS[which] || '');
+const stage = document.getElementById('kioskStage');
+if (!el || !stage) return;
+const s = stage.getBoundingClientRect();
+const r = el.getBoundingClientRect();
+const c = chromeState(which);
+if (!c) return;
+let changed = false;
+if (r.height > s.height && c.size > 40) {
+c.size = Math.max(40, Math.round(c.size - (r.height - s.height)));
+changed = true;
+}
+if (c.size > s.width) { c.size = Math.round(s.width); changed = true; }
+if (changed) { setChromePx(which, c); applyChromeStyle(); }
+const r2 = changed ? el.getBoundingClientRect() : r;
+const maxR = Math.max(0, Math.round(s.width - r2.width));
+const maxB = Math.max(0, Math.round(s.height - r2.height));
+const nr = Math.min(c.right, maxR), nb = Math.min(c.bottom, maxB);
+if (nr !== c.right || nb !== c.bottom || changed) {
+c.right = nr; c.bottom = nb;
+setChromePx(which, c);
+applyChromeStyle();
 }
 }
 function chromeState(which) {
@@ -17459,7 +17495,7 @@ const show = tunerOn() && currentRole === 'kiosk';
 panel.style.display = show ? '' : 'none';
 if (!show) return;
 document.body.classList.add('tuning');
-['About','Carrot','Logo'].forEach(k =>
+['About','Carrot','Logo','Qr'].forEach(k =>
 document.getElementById('ktnTab' + k).className = (tunerWhich === k.toLowerCase() ? 'on' : ''));
 const isAbout = tunerWhich === 'about';
 document.getElementById('ktnRowW').style.display = isAbout ? '' : 'none';
@@ -17486,13 +17522,13 @@ document.getElementById('ktnOut').textContent =
 } else {
 const c = chromeState(tunerWhich) || { right: 0, bottom: 0, size: 34 };
 const fs = document.getElementById('ktnFS');
-fs.min = tunerWhich === 'carrot' ? 16 : 30;
-fs.max = tunerWhich === 'carrot' ? 160 : 400;
+fs.min = tunerWhich === 'carrot' ? 16 : tunerWhich === 'qr' ? 90 : 30;
+fs.max = tunerWhich === 'carrot' ? 160 : tunerWhich === 'qr' ? 460 : 400;
 fs.value = c.size;
 document.getElementById('ktnS').textContent = c.size + 'px';
 const cp = (cache.kioskChrome || {})[tunerWhich] || {};
 document.getElementById('ktnOut').textContent =
-(tunerWhich === 'carrot' ? 'carrot' : 'logo') + ' size ' + c.size + ' px' +
+(tunerWhich === 'carrot' ? 'carrot' : tunerWhich === 'qr' ? 'QR window width' : 'logo') + ' ' + (tunerWhich === 'qr' ? '' : 'size ') + c.size + ' px' +
 (cp.sizePct ? '  (saved as ' + cp.sizePct + '%)' : '') +
 '\nright ' + c.right + '  bottom ' + c.bottom +
 '\ndrag it on the map to move it';
@@ -17503,6 +17539,7 @@ const w = aboutWinPct();
 const c = cache.kioskChrome || {};
 const car = Object.assign({}, CHROME_DEFAULT.carrot, c.carrot || {});
 const log = Object.assign({}, CHROME_DEFAULT.logo, c.logo || {});
+const qrw = Object.assign({}, CHROME_DEFAULT.qr, c.qr || {});
 const n = v => Math.round(Number(v) * 100) / 100;
 const out = document.getElementById('ktnDefaults');
 out.style.display = '';
@@ -17510,7 +17547,8 @@ out.textContent =
 'ABOUT_WIN_DEFAULT = { leftPct: ' + n(w.leftPct) + ', bottomPct: ' + n(w.bottomPct) +
 ', wPct: ' + n(w.wPct) + ', hPct: ' + n(w.hPct) + ', r: ' + (aboutWin().r || 15) + ' }\n' +
 'carrot: { rightPct: ' + n(car.rightPct) + ', bottomPct: ' + n(car.bottomPct) + ', sizePct: ' + n(car.sizePct) + ' }\n' +
-'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }';
+'logo:   { rightPct: ' + n(log.rightPct) + ', bottomPct: ' + n(log.bottomPct) + ', sizePct: ' + n(log.sizePct) + ' }\n' +
+'qr:     { rightPct: ' + n(qrw.rightPct) + ', bottomPct: ' + n(qrw.bottomPct) + ', sizePct: ' + n(qrw.sizePct) + ' }';
 }
 function tunerSet(field, v) {
 if (tunerWhich === 'about') {
@@ -17522,6 +17560,7 @@ applyAboutWinStyle(); renderAboutWindow();
 const px = chromeState(tunerWhich);
 if (px) { px[field] = Number(v); setChromePx(tunerWhich, px); }
 applyChromeStyle();
+clampChromeOnStage(tunerWhich);
 }
 renderTuner();
 }
@@ -17537,7 +17576,8 @@ async function tunerSave() {
 await storageSetShared('ifm-about-win', aboutWinPct());
 await storageSetShared('ifm-kiosk-chrome', {
 carrot: (cache.kioskChrome || {}).carrot || CHROME_DEFAULT.carrot,
-logo: (cache.kioskChrome || {}).logo || CHROME_DEFAULT.logo
+logo: (cache.kioskChrome || {}).logo || CHROME_DEFAULT.logo,
+qr: (cache.kioskChrome || {}).qr || CHROME_DEFAULT.qr
 });
 const out = document.getElementById('ktnOut');
 if (out) out.textContent = 'Saved \u2014 every screen uses this placement.\n' + out.textContent;
@@ -17594,7 +17634,7 @@ const done = () => { if (d && d.moved) win.dataset.justDragged = '1'; d = null; 
 win.addEventListener('pointerup', done);
 win.addEventListener('pointercancel', done);
 }
-[['carrot', '.north-rose'], ['logo', '.kiosk-logo']].forEach(pair => {
+[['carrot', '.north-rose'], ['logo', '.kiosk-logo'], ['qr', '#kioskJoinWin']].forEach(pair => {
 const which = pair[0], el = document.querySelector(pair[1]);
 if (!el || el.dataset.bound) return;
 el.dataset.bound = '1';
