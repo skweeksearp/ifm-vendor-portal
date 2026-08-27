@@ -135,6 +135,9 @@ font-weight: 600; color: #3A382C; padding: 5px 0; }
 .cio-action { margin-top: 5px; }
 .cio-undo { margin: 0; width: auto; padding: 5px 11px; font-size: 13px; }
 .cio-held { font-size: 12px; font-weight: 700; color: #6E6A57; }
+.fold-optional { font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+text-transform: uppercase; color: #8A8674; background: #EDE9DA;
+border-radius: 999px; padding: 2px 7px; margin-left: 7px; vertical-align: 2px; }
 @media (max-width: 430px) { .pref-grid { grid-template-columns: 1fr; } }
 .act-switch { display: flex; gap: 8px; }
 .act-switch button { flex: 1 1 0; margin: 0; }
@@ -1357,12 +1360,14 @@ touch-action: none;
 .kiosk-learn, .kiosk-learn-card, .kiosk-learn-card * { touch-action: pan-y; }
 .kiosk-learn-card { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .kiosk-about-win { touch-action: manipulation; }
-.kiosk-join-win { position: absolute; z-index: 7; background: #FFFDF4;
-border: 1px solid #D8D2BC; border-radius: 14px; box-shadow: 0 6px 22px rgba(30,28,18,0.22);
-padding: 10px 10px 9px; width: 148px; touch-action: manipulation; }
-.kjw-qr svg { display: block; width: 100%; height: auto; border-radius: 6px; }
-.kjw-text { font-size: 12px; font-weight: 700; color: #3A382C; line-height: 1.3;
-text-align: center; margin-top: 7px; }
+.kiosk-join-win { position: absolute; z-index: 7; width: 148px; touch-action: manipulation; }
+.kjw-qr svg { display: block; width: 100%; height: auto; }
+/* The caption carries the same halo the map labels use, so it stays readable
+   over whatever it happens to sit on without a panel behind it. */
+.kjw-text { font-size: 12px; font-weight: 800; color: #2A2A20; line-height: 1.3;
+text-align: center; margin-top: 5px;
+text-shadow: 0 1px 0 #F2EDDF, 0 -1px 0 #F2EDDF, 1px 0 0 #F2EDDF, -1px 0 0 #F2EDDF,
+0 2px 5px rgba(242,237,223,0.9); }
 .kiosk-zoomreset {
 position: absolute; left: 16px; bottom: 20px; z-index: 16;
 background: rgba(255,255,255,0.6); color: #5A543F; border: 1px solid #B9AF92;
@@ -2492,12 +2497,12 @@ I sell food (prepared food or produce)
 </div>
 <div class="dash-fold" data-fold="fPrefs">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title">What Booth Would Suit You</span>
-<span class="fold-sub" id="prefSub">Standing preferences for Booth Selection</span>
+<span class="fold-title">What Booth Would Suit You <span class="fold-optional">optional</span></span>
+<span class="fold-sub" id="prefSub">Nothing set \u2014 you will be called as usual</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body">
-<p class="empty-note" style="margin-top:0;">Tell the office in advance what would suit you. When your turn comes in a Booth Selection, if one of the open booths matches, it is yours and the line moves on &mdash; no call, no waiting five minutes for the phone. <b>This never changes where you stand in line</b>, and it can never win you a booth you would not have been offered anyway.</p>
+<p class="empty-note" style="margin-top:0;"><b>You do not have to use this.</b> Leave it alone and the Booth Selection works exactly as it always has: the office calls you in turn and you pick from what is open. Fill it in and, when your turn comes, if one of your choices is open it is yours straight away &mdash; no call, no waiting five minutes for the phone. <b>It never changes where you stand in line</b>, and it can never win you a booth you would not have been offered anyway.</p>
 <div class="card desk-form">
 <div id="prefSlots"></div>
 <p class="empty-note" style="margin:8px 0 0;">Each choice can be a particular booth, an area of the market, or any booth with something you need. They are tried in order: if your first choice is taken when your turn comes, your second is tried, then your third.</p>
@@ -16818,7 +16823,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-49';
+const BUILD_ID = '16-50';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -17292,8 +17297,8 @@ cells.push('<rect x="' + c + '" y="' + r + '" width="1" height="1"/>');
 });
 // 4-module quiet zone on every side: part of the standard, not padding.
 return '<svg viewBox="-4 -4 45 45" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">' +
-'<rect x="-4" y="-4" width="45" height="45" fill="#FFFFFF"/>' +
-'<g fill="#1A1A14">' + cells.join('') + '</g></svg>';
+'<rect x="-4" y="-4" width="45" height="45" rx="2" fill="#F0EEE2"/>' +
+'<g fill="#17170F">' + cells.join('') + '</g></svg>';
 }
 const ABOUT_SEED_FILES = { history: 'photos/about-history.jpg',
 farming: 'photos/about-farming.jpg', dish: 'photos/about-dish.jpg',
@@ -17337,7 +17342,7 @@ const ABOUT_WIN_DEFAULT = { leftPct: 56.53, bottomPct: 5.38, wPct: 38.67, hPct: 
 const CHROME_DEFAULT = {
 carrot: { rightPct: 82.93, bottomPct: 4.59, sizePct: 8.00 },
 logo:   { rightPct: 4.27,  bottomPct: 87.40, sizePct: 18.93 },
-qr:     { rightPct: 79.80, bottomPct: 3.20, sizePct: 18.20 }
+qr:     { rightPct: 56.53, bottomPct: 4.20, sizePct: 18.13 }
 };
 function kioskStageSize() {
 const stage = document.getElementById('kioskStage');
