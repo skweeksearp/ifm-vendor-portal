@@ -2470,10 +2470,6 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
-
-
-</div>
-</div>
 <div class="dash-fold" data-fold="fShare">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitleShare">Sharing a Booth</span>
@@ -2504,6 +2500,8 @@ I sell food (prepared food or produce)
 <button type="button" class="primary-btn" onclick="submitBoothShare()">Report It</button>
 <div class="status-msg" id="shareMsg"></div>
 <div id="shareList" style="margin-top:12px;"></div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -11042,10 +11040,15 @@ document.getElementById('volRoleCard').innerHTML =
 // Three zones, top to bottom: in season now, the file cabinet (identical
 // order all year), out of season. Business Profile is fixed above all of it.
 // The file cabinet: a vendor's own records, same order every day of the year.
-const DESK_STABLE_ORDER = ['hours', 'account', 'fPoints', 'snaptokens', 'mydocs',
-'mycommittees', 'directory', 'communicate', 'homescreen', 'guide'];
+const DESK_STABLE_ORDER = [
+// Where you stand with the market: money first, then what you owe it.
+'account', 'snaptokens', 'mydocs',
+// Your part in the market: the committees you sit on, and how to reach the office.
+'mycommittees', 'communicate',
+// Things you look up rather than do.
+'directory', 'guide', 'homescreen'];
 // Steamboat's day-to-day tools, on top while Steamboat is running.
-const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos', 'fShare'];
+const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos'];
 // The other three markets, always adjacent and always in this order, so a
 // vendor learns one place to look for all of them. Which are running is said
 // on each bar rather than by moving them about.
@@ -11717,7 +11720,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "How You Can Pay",
-"body": "<p>Three ways, and they are not equivalent. <b>Cash</b> at the office window \u2014 ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market\u2019s Square account. The card total includes Square\u2019s fee for that transaction \u2014 the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> Telling the app you paid is a report, and a useful one \u2014 it tells the office what to look for \u2014 but it is not a receipt and it never counts toward the balance on its own.</p>"
+"body": "<p>Three ways, and they are not equivalent. <b>Cash</b> at the office window \u2014 ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market\u2019s Square account. The card total includes Square\u2019s fee for that transaction \u2014 the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> The office can now record a cash, check or card payment at the desk while you are standing there, and it appears in your account straight away. Telling the app you paid yourself is still a report, and a useful one \u2014 it tells the office what to look for \u2014 but it is not a receipt and it never counts toward the balance on its own.</p>"
 },
 {
 "title": "Which Wednesday",
@@ -13640,7 +13643,7 @@ note.textContent = 'This desk is filtered specifically for you \u2014 ' +
 note.style.display = '';
 }
 }
-const SCREEN_HELP = {"evacuation": 50, "stallimprove": 49, "dataexport": 46, "calloutpatterns": 45, "pointsmanager": 42, "winterbooths": 28, "standing": 25, "leaves": 24, "whrate": 23, "satlottery": 21, "popupsvendor": 8, "winter": 5};
+const SCREEN_HELP = {"evacuation": 50, "stallimprove": 49, "dataexport": 46, "calloutpatterns": 45, "pointsmanager": 42, "winterbooths": 28, "standing": 25, "leaves": 24, "whrate": 23, "satlottery": 21, "popupsvendor": 8, "winter": 5, "yearend": 65, "snaptokens": 67, "snaplog": 66, "pretend": 68, "tuning": 69, "winterpaperwork": 70, "records": 64};
 function renderScreenHead(name) {
 const slot = document.getElementById('head-' + name);
 if (!slot) return;
@@ -13648,8 +13651,11 @@ const meta = SCREEN_META[name] || { title: name };
 const title = typeof meta.title === 'function' ? meta.title() : meta.title;
 const headerName = ((document.getElementById('bizName') || {}).textContent || '').trim();
 const repeats = !!title && !!headerName && title.trim() === headerName;
-const help = SCREEN_HELP[name] !== undefined
-? '<button type="button" class="help-dot" onclick="showHelp(' + SCREEN_HELP[name] +
+const helpIdx = SCREEN_HELP[name];
+const helpBody = helpIdx !== undefined && HELP_TEXTS[helpIdx]
+? String(HELP_TEXTS[helpIdx].body || '').replace(/<[^>]*>/g, '').trim() : '';
+const help = helpBody
+? '<button type="button" class="help-dot" onclick="showHelp(' + helpIdx +
 ')" aria-label="What are the rules here?">?</button>'
 : '';
 slot.innerHTML =
@@ -16450,7 +16456,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-36';
+const BUILD_ID = '16-38';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
