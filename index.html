@@ -126,6 +126,13 @@ font-size: var(--ifm-size); transform: translate(-50%, -50%); }
 .mr-unit { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #6E6A57;
 text-transform: uppercase; letter-spacing: 0.04em; }
 .screen-title-quiet { margin: 0 0 10px; text-align: right; }
+.pref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 6px; }
+.pref-item { display: flex; align-items: center; gap: 7px; font-size: 14px;
+font-weight: 600; color: #3A382C; padding: 5px 0; }
+.pref-item input { width: auto; margin: 0; flex: 0 0 auto; }
+.pref-count { font-size: 12px; font-weight: 600; color: #8A8674; margin-left: auto; }
+.pref-item.pref-dead { opacity: 0.5; }
+@media (max-width: 430px) { .pref-grid { grid-template-columns: 1fr; } }
 .act-switch { display: flex; gap: 8px; }
 .act-switch button { flex: 1 1 0; margin: 0; }
 /* A notable line carries a quiet edge rather than a colour block: the list is
@@ -2480,6 +2487,26 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="fPrefs">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">What Booth Would Suit You</span>
+<span class="fold-sub" id="prefSub">Standing preferences for Booth Selection</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<p class="empty-note" style="margin-top:0;">Tell the office in advance what would suit you. When your turn comes in a Booth Selection, if one of the open booths matches, it is yours and the line moves on &mdash; no call, no waiting five minutes for the phone. <b>This never changes where you stand in line</b>, and it can never win you a booth you would not have been offered anyway.</p>
+<div class="card desk-form">
+<div id="prefSlots"></div>
+<p class="empty-note" style="margin:8px 0 0;">Each choice can be a particular booth, an area of the market, or any booth with something you need. They are tried in order: if your first choice is taken when your turn comes, your second is tried, then your third.</p>
+<label style="margin-top:12px;">
+<input type="checkbox" id="prefAuto" checked> Assign a matching booth without calling me
+</label>
+<p class="empty-note" style="margin:4px 0 0;">Untick this and your preferences are recorded for the office to see, but you will still be called in turn.</p>
+<button type="button" class="primary-btn" onclick="saveBoothPrefs()"><svg class="ico"><use href="#i-checkmark"></use></svg> Save my preferences</button>
+<div class="status-msg" id="prefMsg"></div>
+</div>
+</div>
+</div>
 <div class="dash-fold" data-fold="fShare">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitleShare">Sharing a Booth</span>
@@ -3120,6 +3147,9 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 </div>
 <div class="card">
 <p class="empty-note" id="satTiebreakNote" style="margin-bottom:0;"></p>
+<button type="button" class="ghost-btn" onclick="lottoRunPrefs('saturday')">Place everyone whose preference is open</button>
+<p class="empty-note" style="margin:6px 2px 0;">Walks the line in its existing order. A vendor who asked in advance for a booth that is open now gets it without a call; the first vendor whose wish is not available stops the pass, and you carry on by phone from there.</p>
+<div id="satPrefOut" style="margin-top:8px;"></div>
 </div>
 <div id="satLottoSections"></div>
 </section>
@@ -13395,6 +13425,7 @@ if (name === 'vprofile') initVpScreen();
 if (name === 'vreset') initVresetScreen();
 if (name === 'presplanned') initPresPlanned();
 if (name === 'aginspect') initAgInspect();
+if (name === 'dashboard') renderBoothPrefs();
 if (name === 'merchmansion') initMerchMansion();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
 if (name === 'hours') renderAvailableTasks();
@@ -14823,7 +14854,7 @@ day: 'Saturday',
 ids: { date: 'satLottoDate', chips: 'satLottoDateChips',
 boothChips: 'satOpenBoothChips', canvas: 'satLottoBoothCanvas', turn: 'satLottoTurn',
 summary: 'satLottoSummary', sections: 'satLottoSections',
-noAnswer: 'satNoAnswerBtn', tiebreak: 'satTiebreakNote' },
+noAnswer: 'satNoAnswerBtn', tiebreak: 'satTiebreakNote', prefOut: 'satPrefOut' },
 defaultDate: () => nextSaturday(),
 sections: () => saturdayLottoSections(),
 rankTier: (section, date) => satRankTier(section, date),
@@ -15002,6 +15033,158 @@ k.turnSub(v) + '</div>' +
 '<p class="empty-note" style="margin:8px 0 0;">' + k.turnNote(openCount, placed, pool.length) + '</p>';
 if (noAnswer && k.showNoAnswer && k.showNoAnswer() && openCount) noAnswer.style.display = '';
 }
+const PREF_FEATURES = [
+{ k: 'u',       label: 'Upgraded electric',        test: b => !!b.u },
+{ k: 'stdpark', label: 'Parking beside the booth',  test: b => !b.np && !b.cp },
+{ k: 'w',       label: 'Water spigot nearby',       test: b => !!b.w },
+{ k: 'counter', label: 'Built-in counter',          test: b => blHas(b.num, 'c') },
+{ k: 'shelf',   label: 'Built-in shelving',         test: b => blHas(b.num, 's') },
+{ k: 'sink',    label: 'Sink in the booth',         test: b => blHas(b.num, 'w') },
+{ k: 'wood',    label: 'Wood floor',                test: b => b.floor === 'wood' },
+{ k: 'corner',  label: 'Corner booth',              test: b => !!b.corner },
+];
+// Reads the same per-booth drawing the map shows, so "has a counter" means
+// the counter somebody actually recorded, not a second list to maintain.
+function blHas(num, code) {
+const own = boothLayoutFor(num);
+const grid = own ? String(own.grid || '') : boothMapGrid(num);
+return String(grid || '').indexOf(code) !== -1;
+}
+function boothSectionNames() {
+const seen = [];
+(cache.booths || []).forEach(b => { if (b.section && !seen.includes(b.section)) seen.push(b.section); });
+return seen;
+}
+// One grouped menu per choice: every way of asking, in one place, so a
+// vendor picks what they mean rather than learning which box does what.
+function prefOptionsHTML(sel) {
+const opt = (val, label, on) => '<option value="' + esc(val) + '"' + (on ? ' selected' : '') + '>' + esc(label) + '</option>';
+let s = opt('', '\u2014 nothing chosen \u2014', !sel);
+s += '<optgroup label="A particular booth">';
+(cache.booths || []).slice().sort((a, b) => boothSortKey(a.num) - boothSortKey(b.num))
+.forEach(b => { s += opt('booth:' + b.num, 'Booth ' + b.num + ' \u2014 ' + b.section, sel === 'booth:' + b.num); });
+s += '</optgroup><optgroup label="Somewhere in the market">';
+boothSectionNames().forEach(x => {
+const n = (cache.booths || []).filter(b => b.section === x).length;
+s += opt('section:' + x, 'A booth in ' + x + ' (' + n + ')', sel === 'section:' + x);
+});
+s += '</optgroup><optgroup label="Any booth with">';
+PREF_FEATURES.forEach(f => {
+const n = (cache.booths || []).filter(b => f.test(b)).length;
+if (!n) return;   // an option that can never match is worse than no option
+s += opt('feature:' + f.k, f.label + ' (' + n + ')', sel === 'feature:' + f.k);
+});
+s += '</optgroup>';
+return s;
+}
+function renderBoothPrefs() {
+const v = currentVendor();
+if (!v) return;
+const p = vendorPrefs(v.vendorId);
+const auto = document.getElementById('prefAuto');
+if (auto) auto.checked = p.auto;
+const slots = document.getElementById('prefSlots');
+if (slots) {
+const ord = ['First choice', 'Second choice', 'Third choice'];
+slots.innerHTML = ord.map((name, i) => {
+const c = p.choices[i];
+const val = c ? c.k + ':' + c.v : '';
+return '<label for="prefSlot' + i + '"' + (i ? ' style="margin-top:12px;"' : '') + '>' + name + '</label>' +
+'<select id="prefSlot' + i + '" data-no-find="1" onchange="renderPrefSlotNote(' + i + ')">' +
+prefOptionsHTML(val) + '</select>' +
+'<p class="empty-note" id="prefSlotNote' + i + '" style="margin:5px 0 0;"></p>';
+}).join('');
+ord.forEach((x, i) => renderPrefSlotNote(i));
+}
+const sub = document.getElementById('prefSub');
+if (sub) {
+const n = p.choices.length;
+sub.textContent = !n ? 'Nothing set \u2014 you will be called as usual'
+: p.auto ? n + ' choice' + (n === 1 ? '' : 's') + ' set: ' + p.choices.map(prefChoiceLabel).join(', then ')
+: n + ' set, but you asked to be called anyway';
+}
+}
+// Says how many booths this choice could ever match, so a vendor can see
+// they have asked for something almost nobody gives up.
+function renderPrefSlotNote(i) {
+const sel = document.getElementById('prefSlot' + i);
+const note = document.getElementById('prefSlotNote' + i);
+if (!sel || !note) return;
+const raw = sel.value;
+if (!raw) { note.textContent = ''; return; }
+const c = { k: raw.split(':')[0], v: raw.slice(raw.indexOf(':') + 1) };
+const n = (cache.booths || []).filter(prefChoiceTest(c)).length;
+note.textContent = n === 1 ? 'One booth in the market matches this.'
+: n + ' booths match this. It only counts if one of them is open when your turn comes.';
+}
+async function saveBoothPrefs() {
+const v = currentVendor();
+if (!v) return;
+const picked = [];
+const seen = new Set();
+let dupe = false;
+for (let i = 0; i < PREF_SLOTS; i++) {
+const sel = document.getElementById('prefSlot' + i);
+const raw = sel ? sel.value : '';
+if (!raw) continue;
+if (seen.has(raw)) { dupe = true; continue; }   // same wish twice wastes a slot
+seen.add(raw);
+picked.push({ k: raw.split(':')[0], v: raw.slice(raw.indexOf(':') + 1) });
+}
+v.boothPrefs = { choices: picked, auto: document.getElementById('prefAuto').checked };
+actAs('Booth choices updated', { kind: 'day', weight: 'routine', vendorId: v.vendorId });
+await storageSet('ifm-vendors-v1', cache.vendors);
+renderBoothPrefs();
+showMsg('prefMsg', 'ok',
+(dupe ? 'The same choice was picked twice; the repeat was dropped. ' : '') +
+(!picked.length ? 'No choices set: you will be called in turn as usual.'
+: '<svg class="ico"><use href="#i-checkmark"></use></svg> Saved: ' +
+picked.map((c, i) => (i + 1) + ') ' + prefChoiceLabel(c)).join(', ') + '. ' +
+(document.getElementById('prefAuto').checked
+? 'When your turn comes, the first of these that is open is yours \u2014 no call needed.'
+: 'The office can see these, and will still call you in turn.')));
+}
+const PREF_SLOTS = 3;
+function vendorPrefs(vendorId) {
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+const p = (v && v.boothPrefs) || {};
+if (Array.isArray(p.choices)) {
+return { choices: p.choices.filter(c => c && c.k && c.v).slice(0, PREF_SLOTS), auto: p.auto !== false };
+}
+// Anything saved by the earlier three-list version is read in its old
+// priority order, so nobody's stored wishes are lost or silently reordered.
+const old = [];
+(Array.isArray(p.booths) ? p.booths : []).forEach(n => old.push({ k: 'booth', v: String(n) }));
+(Array.isArray(p.features) ? p.features : []).forEach(f => old.push({ k: 'feature', v: f }));
+(Array.isArray(p.sections) ? p.sections : []).forEach(s => old.push({ k: 'section', v: s }));
+return { choices: old.slice(0, PREF_SLOTS), auto: p.auto !== false };
+}
+function prefChoiceLabel(c) {
+if (!c || !c.k) return '';
+if (c.k === 'booth') return 'booth ' + c.v;
+if (c.k === 'section') return 'a booth in ' + c.v;
+const f = PREF_FEATURES.find(x => x.k === c.v);
+return 'any booth with ' + (f ? f.label.toLowerCase() : c.v);
+}
+function prefChoiceTest(c) {
+if (!c || !c.k) return () => false;
+if (c.k === 'booth') return b => String(b.num) === String(c.v);
+if (c.k === 'section') return b => b.section === c.v;
+const f = PREF_FEATURES.find(x => x.k === c.v);
+return f ? f.test : () => false;
+}
+// Returns the booth to give this vendor, and why -- or null to call them.
+function prefMatch(vendorId, openBooths) {
+const p = vendorPrefs(vendorId);
+if (!p.auto) return null;
+for (let i = 0; i < p.choices.length; i++) {
+const c = p.choices[i];
+const hit = openBooths.find(prefChoiceTest(c));
+if (hit) return { booth: hit, rank: i + 1,
+why: 'choice ' + (i + 1) + ' \u2014 ' + prefChoiceLabel(c) };
+}
+return null;
+}
 async function lottoAssignNext(kind, boothNum) {
 if (!requireMarketRole()) return;
 const date = lottoDateOf(kind);
@@ -15016,6 +15199,56 @@ rec.assignments[nextVendorId] = boothNum;
 await storageSet('ifm-lottery', cache.lottery);
 lottoRenderBooths(kind);
 lottoRenderSections(kind);
+}
+async function lottoRunPrefs(kind) {
+if (!requireMarketRole()) return;
+const date = lottoDateOf(kind) || LOTTO_KINDS[kind].defaultDate();
+if (!date) {
+const out0 = lottoEl(kind, 'prefOut');
+if (out0) out0.innerHTML = '<p class="empty-note" style="margin:0;">Pick the market day first.</p>';
+return;
+}
+const rec = lottoRec(kind);
+const pool = lottoPool(kind, date);
+const done = [];
+let stoppedAt = null;
+for (const vid of pool) {
+if (rec.assignments[vid]) continue;
+const taken = Object.values(rec.assignments);
+const vendor = (cache.vendors || []).find(x => x.vendorId === vid);
+// Eligibility is checked here, not in the matcher: a preference must never
+// win a booth this vendor could not have been given on the phone.
+const open = computeOpenBooths(date)
+.filter(b => !taken.includes(b.num))
+.map(b => (cache.booths || []).find(x => String(x.num) === String(b.num)))
+.filter(b => b && !boothIneligibleReason(b, vendor));
+const m = prefMatch(vid, open);
+if (!m) { stoppedAt = vid; break; }
+rec.assignments[vid] = m.booth.num;
+done.push({ vid: vid, num: m.booth.num, why: m.why });
+}
+if (done.length) {
+actAs('Booth Selection \u2014 ' + done.length + ' assigned from standing preferences',
+{ kind: 'day', weight: 'notable' });
+await storageSet('ifm-lottery', cache.lottery);
+}
+lottoRenderBooths(kind);
+lottoRenderSections(kind);
+const out = lottoEl(kind, 'prefOut');
+if (out) {
+if (!done.length) {
+out.innerHTML = '<p class="empty-note" style="margin:0;">Nobody at the front of the line had a preference that matches an open booth. Call them as usual.</p>';
+} else {
+out.innerHTML = '<p class="empty-note" style="margin:0 0 6px;"><b>' + done.length + ' assigned without a call.</b> ' +
+'Each got a booth they asked for in advance; the order of the line was not changed.</p>' +
+done.map(d => '<div class="req-row"><div class="req-row-main"><div class="req-name">' +
+esc(boothVendorName(d.vid) || d.vid) + ' \u2192 booth ' + esc(d.num) + '</div>' +
+'<div class="req-meta">' + esc(d.why) + '</div></div></div>').join('') +
+(stoppedAt ? '<p class="empty-note" style="margin:8px 0 0;">Stopped at <b>' +
+esc(boothVendorName(stoppedAt) || stoppedAt) + '</b> \u2014 no open booth matched what they asked for, ' +
+'so they are next on the phone.</p>' : '');
+}
+}
 }
 async function lottoUnassign(kind, boothNum) {
 if (!requireMarketRole()) return;
@@ -16567,7 +16800,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-45';
+const BUILD_ID = '16-47';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
