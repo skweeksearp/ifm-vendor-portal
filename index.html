@@ -2495,26 +2495,7 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="fPrefs">
-<button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title">What Booth Would Suit You <span class="fold-optional">optional</span></span>
-<span class="fold-sub" id="prefSub">Nothing set \u2014 you will be called as usual</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<p class="empty-note" style="margin-top:0;"><b>You do not have to use this.</b> Leave it alone and the Booth Selection works exactly as it always has: the office calls you in turn and you pick from what is open. Fill it in and, when your turn comes, if one of your choices is open it is yours straight away &mdash; no call, no waiting five minutes for the phone. <b>It never changes where you stand in line</b>, and it can never win you a booth you would not have been offered anyway.</p>
-<div class="card desk-form">
-<div id="prefSlots"></div>
-<p class="empty-note" style="margin:8px 0 0;">Each choice can be a particular booth, an area of the market, or any booth with something you need. They are tried in order: if your first choice is taken when your turn comes, your second is tried, then your third.</p>
-<label style="margin-top:12px;">
-<input type="checkbox" id="prefAuto" checked> Assign a matching booth without calling me
-</label>
-<p class="empty-note" style="margin:4px 0 0;">Untick this and your preferences are recorded for the office to see, but you will still be called in turn.</p>
-<button type="button" class="primary-btn" onclick="saveBoothPrefs()"><svg class="ico"><use href="#i-checkmark"></use></svg> Save my preferences</button>
-<div class="status-msg" id="prefMsg"></div>
-</div>
-</div>
-</div>
+
 <div class="dash-fold" data-fold="fShare">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitleShare">Sharing a Booth</span>
@@ -4530,6 +4511,17 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <select id="cioDateSelect" style="display:none;" onchange="pickCioSingleDate(this.value)"></select>
 <div id="cioDateList" class="cio-date-list"></div>
 <p class="empty-note desk-transient" id="cioNoDates" style="display:none; margin:6px 0 0;"></p>
+<div id="cioPrefs" style="display:none; margin-top:16px; padding-top:14px; border-top:1px dashed #D8D2BC;">
+<label style="margin:0;">What booth would suit you <span class="fold-optional">optional</span></label>
+<p class="empty-note" style="margin:5px 0 10px;">Leave this alone and the Booth Selection works as it always has: the office calls you in turn and you pick from what is open. Fill it in and, when your turn comes, if one of your choices is open it is yours straight away. It never changes where you stand in line.</p>
+<div id="prefSlots"></div>
+<label style="margin-top:12px;">
+<input type="checkbox" id="prefAuto" checked> Assign a matching booth without calling me
+</label>
+<p class="empty-note" style="margin:4px 0 0;">Untick this and your choices are recorded for the office to see, but you will still be called in turn.</p>
+<button type="button" class="ghost-btn" onclick="saveBoothPrefs()">Save these choices</button>
+<div class="status-msg" id="prefMsg"></div>
+</div>
 <div id="cioFeeRow" class="desk-transient"></div>
 <p class="empty-note desk-transient" id="cioSundayNote" style="display:none; margin:10px 0 0;"></p>
 <button class="primary-btn" id="submitCio" onclick="submitCallInOut()" disabled><svg class="ico"><use href="#i-sprig"></use></svg> Submit</button>
@@ -13450,7 +13442,7 @@ if (name === 'presplanned') initPresPlanned();
 if (name === 'aginspect') initAgInspect();
 if (name === 'dashboard') renderBoothPrefs();
 if (name === 'merchmansion') initMerchMansion();
-if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); }
+if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); renderCioPrefsVisibility(); }
 if (name === 'hours') renderAvailableTasks();
 if (name === 'addvendor') {
 document.getElementById('welcomeLetterCard').style.display = 'none';
@@ -15118,13 +15110,6 @@ prefOptionsHTML(val) + '</select>' +
 '<p class="empty-note" id="prefSlotNote' + i + '" style="margin:5px 0 0;"></p>';
 }).join('');
 ord.forEach((x, i) => renderPrefSlotNote(i));
-}
-const sub = document.getElementById('prefSub');
-if (sub) {
-const n = p.choices.length;
-sub.textContent = !n ? 'Nothing set \u2014 you will be called as usual'
-: p.auto ? n + ' choice' + (n === 1 ? '' : 's') + ' set: ' + p.choices.map(prefChoiceLabel).join(', then ')
-: n + ' set, but you asked to be called anyway';
 }
 }
 // Says how many booths this choice could ever match, so a vendor can see
@@ -16823,7 +16808,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-50';
+const BUILD_ID = '16-51';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27556,6 +27541,14 @@ if (!vendor) return all;
 const held = d => !!vendorBaselineBoothOn(vendor.vendorId, d) || vendorAssignedOn(vendor.vendorId, d);
 return cioMode === 'absence' ? all.filter(e => held(e.date)) : all.filter(e => !held(e.date));
 }
+function renderCioPrefsVisibility() {
+const box = document.getElementById('cioPrefs');
+if (!box) return;
+const asking = (typeof cioMode === 'undefined' ? true : cioMode !== 'absence')
+&& selectedStatus !== 'Out' && currentRole === 'vendor';
+box.style.display = asking ? 'block' : 'none';
+if (asking) renderBoothPrefs();
+}
 function renderCioDateList() {
 const upcoming = cioDatesForMode();
 cioDateDayMap = {};
@@ -27639,6 +27632,7 @@ cioMode = mode;
 selectedStatus = mode === 'absence' ? 'Out' : 'In';
 selectedCioDates.clear();
 toggleToolFold(btn, 'callinout');
+setTimeout(renderCioPrefsVisibility, 60);
 }
 // From "I asked for a booth" to "I cannot come", on the day the vendor is
 // already looking at. Opens the absence form rather than acting for them:
@@ -27672,6 +27666,7 @@ selectedCioDates.add(earliest);
 renderCioDateMode();
 renderCioDateList();
 renderCioSundayNote();
+renderCioPrefsVisibility();
 }
 function renderCioDateMode() {
 const single = cioSingleDateMode();
