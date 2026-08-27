@@ -12403,11 +12403,11 @@ kind: 'Renewal', amount: ruleNum('renewSurcharge') || 100 });
 const hl = buildHoursLedger(vendorId, year);
 const seasonOver = new Date().getMonth() === 11 && new Date().getDate() >= 31;
 if (hl && hl.owed > 0) {
-const amount = Math.round(hl.owed * (ruleNum('fineHour') || 25) * 100) / 100;
+const amount = Math.round(hl.owed * workHourRate(year) * 100) / 100;
 if (seasonOver) charged.push({ date: year + '-12-31', what: Number(hl.owed).toFixed(1) +
 ' work hours not worked', kind: 'Work hours', amount: amount });
 else unseen.push(Number(hl.owed).toFixed(1) + ' work hours are still owed this season. ' +
-'At $' + (ruleNum('fineHour') || 25) + ' an hour that would come to $' + fmtMoney(amount) +
+'At $' + fmtMoney(workHourRate(year)) + ' an hour that would come to $' + fmtMoney(amount) +
 ' if the season closed today \u2014 not a charge yet, and avoidable by working them.');
 }
 
@@ -16313,7 +16313,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-30';
+const BUILD_ID = '16-31';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -23796,7 +23796,7 @@ const RULE_DEFS = [
 { g: 'SNAP', id: 'snapTokenValue', l: 'What one SNAP token is worth', u: '$', d: 1, src: 'Set by the market \u2014 not in the Guide' },
 { g: 'Fines', id: 'fineCallOut', l: 'Late absence notice, and each further offense adds the same again', u: '$', d: 50, src: 'Guide, Vendor Rules and Fines' },
 { g: 'Fines', id: 'fineStall', l: 'Items left at close, first offense', u: '$', d: 10, src: 'Guide, Maintenance and Cleaning' },
-{ g: 'Fines', id: 'fineHour', l: 'Owed for each work hour not worked by season end', u: '$', d: 25, src: 'Guide, Vendor Rules and Fines' },
+{ g: 'Fines', note: 'Dollars per work hour not worked are set <b>per season</b> in the Work Hour Rate tool, one drawer over \u2014 a rate changed there today does not restate a season already closed, which a single number here could not promise.' },
 { g: 'Fines', id: 'fineStallMult', l: 'What that fine is multiplied by each time it happens again', u: '\u00d7', d: 2, src: 'Guide, Maintenance and Cleaning' },
 { g: 'Attendance owed', id: 'attSat', l: 'Saturdays for a reserved booth', u: 'days', d: 15, src: 'Guide, Saturday Reserved Stalls' },
 { g: 'Attendance owed', id: 'attCorner', l: 'Saturdays for a corner Ag booth', u: 'days', d: 25, src: 'Guide, Saturday Reserved Stalls' },
@@ -23873,11 +23873,12 @@ renderMarketRules();
 function renderMarketRules() {
 const wrap = document.getElementById('mrGroups');
 wrap.innerHTML = '';
-const changed = RULE_DEFS.filter(r => ruleChanged(r.id)).length;
+const settable = RULE_DEFS.filter(r => r.id);
+const changed = settable.filter(r => ruleChanged(r.id)).length;
 document.getElementById('mrSummary').textContent = changed
-? changed + ' of ' + RULE_DEFS.length + ' differ from the Vendor Guide. ' +
+? changed + ' of ' + settable.length + ' differ from the Vendor Guide. ' +
 'Changing one here changes it everywhere the app uses it, from now on \u2014 it does not restate a season already closed.'
-: 'All ' + RULE_DEFS.length + ' match the Vendor Guide. Change one and it changes ' +
+: 'All ' + settable.length + ' match the Vendor Guide. Change one and it changes ' +
 'everywhere the app uses it, from now on.';
 const groups = [];
 RULE_DEFS.forEach(r => { if (!groups.includes(r.g)) groups.push(r.g); });
@@ -23888,6 +23889,14 @@ const h = document.createElement('h2');
 h.textContent = g;
 card.appendChild(h);
 RULE_DEFS.filter(r => r.g === g).forEach(r => {
+if (!r.id) {
+const p = document.createElement('p');
+p.className = 'empty-note';
+p.style.margin = '10px 0 4px';
+p.innerHTML = r.note;
+card.appendChild(p);
+return;
+}
 const row = document.createElement('div');
 row.className = 'req-row';
 const main = document.createElement('div');
