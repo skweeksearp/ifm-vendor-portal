@@ -3232,7 +3232,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <div id="kioskAboutWin" class="kiosk-about-win"><div id="kioskAboutDots" class="kaw-dots"></div><div id="kioskAboutSlides"></div></div>
 <div id="kioskJoinWin" class="kiosk-join-win">
 <div class="kjw-qr" id="kioskJoinQr"></div>
-<div class="kjw-text">Interested in joining us as a vendor? Scan this link with your phone!</div>
+<div class="kjw-text">Join us!</div>
 </div>
 <div id="kioskLearn" class="kiosk-learn" style="display:none;" onclick="closeKioskLearn(event)"></div>
 <button type="button" id="kioskZoomReset" class="kiosk-zoomreset"
@@ -16800,7 +16800,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-47';
+const BUILD_ID = '16-48';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
