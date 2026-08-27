@@ -8612,7 +8612,8 @@ const AUDIT_ROLES = ['vendor', 'staff', 'volunteer'];
 const AUDIT_VENDOR_ACTIONS = ['submitBoothShare', 'deleteBoothShare', 'claimSelectedBooth',
 'reportDocumentSent', 'toggleWinterReservation', 'toggleSundaySignIn', 'saveBoothLayout',
 'revertBoothLayout', 'claimTask', 'reportTaskComplete', 'undoTaskReport', 'submitCallInOut',
-'saveTasks', 'saveOps', 'loadAllData', 'payFeeCart', 'addFeeToCart'];
+'saveTasks', 'saveOps', 'loadAllData', 'payFeeCart', 'addFeeToCart',
+'uploadRequirementDoc'];
 
 async function runSelfAudit() {
 const out = { ownership: [], roles: [], descriptions: [], guards: [], residue: [], maps: [], sheets: [] };
@@ -13297,7 +13298,7 @@ document.getElementById('addVendorStatusMsg').className = 'status-msg';}
 if (name === 'hoursreport') initHoursReportScreen();
 if (name === 'pointsmanager') {
 document.getElementById('pmSearch').value = '';
-document.getElementById('pmSearchResults').innerHTML = '';
+renderPointsManagerSearch('');
 document.getElementById('pmSelectedCard').style.display = 'none';
 }
 if (name === 'winter') renderWinterVendorView();
@@ -15105,10 +15106,13 @@ container.appendChild(row);
 });
 }
 function renderPointsManagerSearch(query) {
-const q = query.trim().toLowerCase();
+const q = (query || '').trim().toLowerCase();
 const results = document.getElementById('pmSearchResults');
 results.innerHTML = '';
-if (q.length < 2) return;
+if (q.length < 2) {
+results.innerHTML = '<p class="empty-note" style="margin:8px 2px 2px;">Points are awarded and adjusted from here \u2014 attendance, work parties, PopUps, corrections. Type the first letters of a business name to bring a vendor up.</p>';
+return;
+}
 const matches = cache.vendors.filter(v => v.businessName.toLowerCase().includes(q))
 .sort(byBusinessName).slice(0, 8);
 matches.forEach(v => {
@@ -16446,7 +16450,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-35';
+const BUILD_ID = '16-36';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
