@@ -1347,6 +1347,12 @@ touch-action: none;
 .kiosk-learn, .kiosk-learn-card, .kiosk-learn-card * { touch-action: pan-y; }
 .kiosk-learn-card { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .kiosk-about-win { touch-action: manipulation; }
+.kiosk-join-win { position: absolute; z-index: 7; background: #FFFDF4;
+border: 1px solid #D8D2BC; border-radius: 14px; box-shadow: 0 6px 22px rgba(30,28,18,0.22);
+padding: 10px 10px 9px; width: 148px; touch-action: manipulation; }
+.kjw-qr svg { display: block; width: 100%; height: auto; border-radius: 6px; }
+.kjw-text { font-size: 12px; font-weight: 700; color: #3A382C; line-height: 1.3;
+text-align: center; margin-top: 7px; }
 .kiosk-zoomreset {
 position: absolute; left: 16px; bottom: 20px; z-index: 16;
 background: rgba(255,255,255,0.6); color: #5A543F; border: 1px solid #B9AF92;
@@ -3193,6 +3199,10 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 </div>
 </div>
 <div id="kioskAboutWin" class="kiosk-about-win"><div id="kioskAboutDots" class="kaw-dots"></div><div id="kioskAboutSlides"></div></div>
+<div id="kioskJoinWin" class="kiosk-join-win">
+<div class="kjw-qr" id="kioskJoinQr"></div>
+<div class="kjw-text">Interested in joining us as a vendor? Scan this link with your phone!</div>
+</div>
 <div id="kioskLearn" class="kiosk-learn" style="display:none;" onclick="closeKioskLearn(event)"></div>
 <button type="button" id="kioskZoomReset" class="kiosk-zoomreset"
 style="display:none;" onclick="resetKioskZoom()">Fit map</button>
@@ -14216,8 +14226,8 @@ const when = sat
 const tiebreak = sat
 ? (satLottoStage === 'phone'
 ? 'Point ties broken by earliest call or form received Wednesday.'
-: 'Point ties broken by earliest join date, then by market attendances.')
-: 'Point ties broken by earliest join date, then by market attendances.';
+: 'Point ties broken by the year and month a vendor joined (Guide p.9), then by market attendances.' + satMonthGapNote())
+: 'Point ties broken by the year and month a vendor joined (Guide p.9), then by market attendances.' + satMonthGapNote();
 const closing = sat
 ? 'Order is by category tier, then points within tier, per the 2026 Vendor Guide. ' + tiebreak +
 (satLottoStage === 'phone' ? ' No answer within five minutes and the OpM assigns a booth.' : '')
@@ -14748,6 +14758,11 @@ const rec = cache.callinout.find(r =>
 r.vendorId === vendorId && r.marketDate === date && r.status === 'In' && r.submittedAt);
 return rec ? rec.submittedAt : Infinity;
 }
+function satMonthGapNote() {
+// True today, deletes itself the day months are recorded.
+const anyMonth = cache.vendors.some(v => v.joinMonth);
+return anyMonth ? '' : ' (Join months are not on vendor records yet, so a same-year tie goes by attendances.)';
+}
 function satRankTier(section, date) {
 return cache.vendors.filter(section.match)
 .map(v => ({ v, pts: vendorPoints(v.vendorId) }))
@@ -14758,6 +14773,8 @@ return satCallInTime(a.v.vendorId, date) - satCallInTime(b.v.vendorId, date);
 }
 const ay = Number(a.v.joinYear || 9999), by = Number(b.v.joinYear || 9999);
 if (ay !== by) return ay - by;
+const am = Number(a.v.joinMonth || 0), bm = Number(b.v.joinMonth || 0);
+if (am && bm && am !== bm) return am - bm;
 return satAttendanceCount(b.v.vendorId) - satAttendanceCount(a.v.vendorId);
 });
 }
@@ -16549,7 +16566,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-41';
+const BUILD_ID = '16-44';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -16838,6 +16855,10 @@ kioskDealWatch = setInterval(refreshKioskDeal, tune('kioskDealWatchMs'));
 const stage = document.getElementById('kioskStage');
 if (stage) stage.addEventListener('pointerdown', noteKioskTap, true);
 bindKioskMapGestures();
+const jq = document.getElementById('kioskJoinQr');
+if (jq && !jq.dataset.drawn) { jq.innerHTML = joinQrSvg(); jq.dataset.drawn = '1'; }
+const jw = document.getElementById('kioskJoinWin');
+if (jw) { jw.style.left = '12px'; jw.style.bottom = '12px'; }
 kioskResizeBound = true;
 }
 }
@@ -17000,7 +17021,32 @@ renderKioskDetail(occ);
 // photographs, and the kiosk shows well-formed text cards until somebody
 // uploads some. That is recorded on the Handover checklist as a thing to do,
 // not a thing that broke.
+// The four original photographs are still here, just not inside this file.
+// They sit beside index.html as about-history.jpg and friends, so the browser
+// asks for one only when it is about to draw it -- which means the kiosk
+// fetches them and a vendor's phone never does, because a vendor's phone
+// never opens the information screen. They are also cached by the browser
+// separately from the app, so a new build does not re-download them.
+// Uploading a replacement in Information Screen Subjects overrides the file
+// without touching it; deleting the files loses nothing but the starting set.
 const ABOUT_SEED_PHOTOS = {};
+const JOIN_QR_URL = 'https://ithacamarket.com/business-directory/becoming-a-vendor/';
+const JOIN_QR = ['1fffffffff','1fffffffff','180df81603','1bee13fefb','1a2bb7128b','1a29196a8b','1a2bda568b','1be9009efb','180aaaaa03','1ff9bb07ff','1a0c4de20f','1dfd1a564b','1cef82cfaf','1b30ef8883','1e2ab4e91f','187d1830d3','1a69c5ccc7','19341308cf','1c8ae1213b','1f9bc81643','1de8b3b927','1a3a038b03','1c2f85e51f','1ad71916cb','1b25d79a27','1afecbc14b','1940486833','1ff8ba2ba3','180d45a2a7','1beb1e4387','1a2a056817','1a285819b3','1a2b91b04f','1bef73948f','180a756057','1fffffffff','1fffffffff'];
+function joinQrSvg() {
+const n = 37, cells = [];
+JOIN_QR.forEach((hex, r) => {
+const row = parseInt(hex, 16).toString(2).padStart(n, '0');
+for (let c = 0; c < n; c++) if (row[c] === '1')
+cells.push('<rect x="' + c + '" y="' + r + '" width="1" height="1"/>');
+});
+// 4-module quiet zone on every side: part of the standard, not padding.
+return '<svg viewBox="-4 -4 45 45" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">' +
+'<rect x="-4" y="-4" width="45" height="45" fill="#FFFFFF"/>' +
+'<g fill="#1A1A14">' + cells.join('') + '</g></svg>';
+}
+const ABOUT_SEED_FILES = { history: 'photos/about-history.jpg',
+farming: 'photos/about-farming.jpg', dish: 'photos/about-dish.jpg',
+music: 'photos/about-music.jpg' };
 const ABOUT_SEED = [
 { id: 'history', title: 'The Market\u2019s Story', sub: 'Fifty years, six homes, one pavilion',
 photo: 'seed:history', credit: 'Market archive', permit: '', hidden: false,
@@ -17285,7 +17331,7 @@ document.getElementById('abBody').value = String(p.body || '')
 document.getElementById('abCredit').value = p.credit || '';
 document.getElementById('abPermit').value = p.permit || '';
 const prev = document.getElementById('abPhotoPrev');
-const photo = p.id ? aboutPhoto(p) : '';
+const photo = p.id ? aboutPhoto(p) : '';   // resolves seed: to its file
 if (photo) { prev.src = photo; prev.style.display = ''; } else prev.style.display = 'none';
 const msg = document.getElementById('abEditMsg');
 if (msg) { msg.className = 'status-msg'; msg.innerHTML = ''; }
@@ -17348,7 +17394,10 @@ return list.filter(p => !p.hidden);
 }
 function aboutPhoto(p) {
 if (!p || !p.photo) return '';
-if (p.photo.indexOf('seed:') === 0) return ABOUT_SEED_PHOTOS[p.photo.slice(5)] || '';
+if (p.photo.indexOf('seed:') === 0) {
+const k = p.photo.slice(5);
+return ABOUT_SEED_PHOTOS[k] || ABOUT_SEED_FILES[k] || '';
+}
 if (p.photo.indexOf('data:') === 0) return p.photo;
 return (cache.aboutPhotos && cache.aboutPhotos[p.photo]) || '';
 }
@@ -17967,7 +18016,7 @@ wrap.dataset.kioskBound = '1';
 // kiosk, add it to this list and give it touch-action in the CSS block by
 // .kiosk-results, or its scroll will fight the map and lose.
 const onPanel = ev => !!(ev.target && ev.target.closest &&
-ev.target.closest('.kiosk-results, .kiosk-detail, .kiosk-bar, .kiosk-zoomreset, .kiosk-learn, .kiosk-about-win, .kiosk-tuner'));
+ev.target.closest('.kiosk-results, .kiosk-detail, .kiosk-bar, .kiosk-zoomreset, .kiosk-learn, .kiosk-about-win, .kiosk-tuner, .kiosk-join-win'));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const pts = () => Array.from(kioskPointers.values());
 wrap.addEventListener('pointerdown', ev => {
