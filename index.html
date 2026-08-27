@@ -1342,6 +1342,11 @@ touch-action: none;
 }
 .kiosk-detail, .kiosk-detail *, .kiosk-results, .kiosk-results * { touch-action: pan-y; }
 .kiosk-results { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+/* The reading panel scrolls like the results list; the About window takes
+   taps. Neither is map. */
+.kiosk-learn, .kiosk-learn-card, .kiosk-learn-card * { touch-action: pan-y; }
+.kiosk-learn-card { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.kiosk-about-win { touch-action: manipulation; }
 .kiosk-zoomreset {
 position: absolute; left: 16px; bottom: 20px; z-index: 16;
 background: rgba(255,255,255,0.6); color: #5A543F; border: 1px solid #B9AF92;
@@ -16441,7 +16446,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-34';
+const BUILD_ID = '16-35';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -17841,8 +17846,13 @@ function bindKioskMapGestures() {
 const wrap = document.getElementById('kioskStage') || document.getElementById('kioskMapWrap');
 if (!wrap || wrap.dataset.kioskBound === '1') return;
 wrap.dataset.kioskBound = '1';
+// EVERY overlay that sits on the stage must be listed here, or a finger on
+// it drags the MAP underneath -- that is how scrolling the About article
+// panned the map while the article held still. If you add an overlay to the
+// kiosk, add it to this list and give it touch-action in the CSS block by
+// .kiosk-results, or its scroll will fight the map and lose.
 const onPanel = ev => !!(ev.target && ev.target.closest &&
-ev.target.closest('.kiosk-results, .kiosk-detail, .kiosk-bar, .kiosk-zoomreset'));
+ev.target.closest('.kiosk-results, .kiosk-detail, .kiosk-bar, .kiosk-zoomreset, .kiosk-learn, .kiosk-about-win, .kiosk-tuner'));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const pts = () => Array.from(kioskPointers.values());
 wrap.addEventListener('pointerdown', ev => {
