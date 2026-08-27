@@ -132,6 +132,9 @@ font-weight: 600; color: #3A382C; padding: 5px 0; }
 .pref-item input { width: auto; margin: 0; flex: 0 0 auto; }
 .pref-count { font-size: 12px; font-weight: 600; color: #8A8674; margin-left: auto; }
 .pref-item.pref-dead { opacity: 0.5; }
+.cio-action { margin-top: 5px; }
+.cio-undo { margin: 0; width: auto; padding: 5px 11px; font-size: 13px; }
+.cio-held { font-size: 12px; font-weight: 700; color: #6E6A57; }
 @media (max-width: 430px) { .pref-grid { grid-template-columns: 1fr; } }
 .act-switch { display: flex; gap: 8px; }
 .act-switch button { flex: 1 1 0; margin: 0; }
@@ -12851,11 +12854,26 @@ const myCio = cache.callinout.filter(r => r.vendorId === vendor.vendorId)
 .sort((a, b) => (a.marketDate < b.marketDate ? 1 : -1)).slice(0, 10);
 const cioBody = document.querySelector('#cioTable tbody');
 cioBody.innerHTML = '';
+const shownDates = new Set();
 myCio.forEach(row => {
 const tr = document.createElement('tr');
 const cls = /late/i.test(row.status) ? 'late' : (row.status === 'In' ? 'in' : 'out');
+let action = '';
+if (row.status === 'In' && !shownDates.has(row.marketDate)) {
+shownDates.add(row.marketDate);
+const st = requestWithdrawState(row.marketDate);
+action = st.can
+? '<button type="button" class="ghost-btn cio-undo" onclick="withdrawBoothRequest(\'' +
+esc(row.marketDate) + '\')">Withdraw</button>'
+: st.assigned
+? '<div class="cio-held">Booth ' + esc(st.assigned) + ' is held for you</div>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="callOutFromRequest(\'' +
+esc(row.marketDate) + '\')">Tell the office you will be away</button>'
+: '';
+}
 tr.innerHTML = '<td>' + row.marketDate + '</td><td>' + row.marketDay + '</td>' +
-'<td><span class="stamp ' + cls + '">' + cioLabel(row.status) + '</span></td>';
+'<td><span class="stamp ' + cls + '">' + cioLabel(row.status) + '</span>' +
+(action ? '<div class="cio-action">' + action + '</div>' : '') + '</td>';
 cioBody.appendChild(tr);
 });
 document.getElementById('cioEmpty').style.display = myCio.length ? 'none' : 'block';
@@ -16800,7 +16818,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-48';
+const BUILD_ID = '16-49';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27617,6 +27635,28 @@ selectedStatus = mode === 'absence' ? 'Out' : 'In';
 selectedCioDates.clear();
 toggleToolFold(btn, 'callinout');
 }
+// From "I asked for a booth" to "I cannot come", on the day the vendor is
+// already looking at. Opens the absence form rather than acting for them:
+// an absence has consequences, so it should be a thing they send, not a
+// thing that happens when they tap Undo.
+function callOutFromRequest(date) {
+const fold = document.querySelector('.dash-fold[data-fold="callout"] > .fold-bar')
+|| document.querySelector('.dash-fold[data-fold="callin"] > .fold-bar');
+cioMode = 'absence';
+selectedStatus = 'Out';
+selectedCioDates.clear();
+selectedCioDates.add(date);
+if (fold) openCioTool(fold, 'absence');
+setTimeout(() => {
+selectedCioDates.add(date);
+renderCioDateMode(); renderCioDateList(); renderCioSundayNote(); updateCioSubmitState();
+const el = document.getElementById('screen-callinout');
+if (el) el.scrollIntoView({ block: 'start' });
+showMsg('cioStatusMsg', 'ok', 'A booth is set aside for you on ' + esc(date) +
+'. Send this to give it up \u2014 the office will put it back in the line. ' +
+'Nothing is recorded until you press Submit.');
+}, 260);
+}
 function selectStatus(status) {
 selectedStatus = status;
 if (cioSingleDateMode() && selectedCioDates.size > 1) {
@@ -27747,6 +27787,38 @@ deadline.setHours(23, 59, 0, 0);
 deadline.setHours(8, 0, 0, 0);
 }
 return deadline;
+}
+function myBoothAssignmentFor(date) {
+const isSun = new Date(date + 'T12:00:00').getDay() === 0;
+const rec = (cache.lottery || {})[(isSun ? 'sunday' : 'saturday') + ':' + date];
+const asg = (rec && rec.assignments) || {};
+return asg[currentVendorId] || null;
+}
+function requestWithdrawState(date) {
+if (!date) return { can: false };
+const past = new Date(date + 'T23:59:59') < new Date();
+if (past) return { can: false, why: 'That market has been and gone.' };
+const booth = myBoothAssignmentFor(date);
+if (booth) return { can: false, assigned: booth,
+why: 'Booth ' + booth + ' has already been set aside for you on that day. ' +
+'Pulling out now is an absence, not a withdrawal \u2014 tell the office you will be away ' +
+'and the booth goes back to the next vendor in line.' };
+return { can: true };
+}
+async function withdrawBoothRequest(date) {
+const st = requestWithdrawState(date);
+if (!st.can) return;
+const mine = (cache.callinout || []).filter(r =>
+r.vendorId === currentVendorId && r.marketDate === date && r.status === 'In');
+if (!mine.length) return;
+cache.callinout = cache.callinout.filter(r => !(
+r.vendorId === currentVendorId && r.marketDate === date && r.status === 'In'));
+actAs('Booth request withdrawn for ' + date, { kind: 'day', weight: 'routine', vendorId: currentVendorId });
+await storageSet('ifm-callinout', cache.callinout);
+renderAll();
+showMsg('cioStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+'Your booth request for ' + esc(date) + ' has been withdrawn. You are out of the line for that day, ' +
+'and nothing is owed \u2014 you can ask again any time before the deadline.');
 }
 async function submitCallInOut() {
 const dates = Array.from(selectedCioDates);
