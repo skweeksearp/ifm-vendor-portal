@@ -4373,7 +4373,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div class="card manager-only desk-form">
 <p class="empty-note" style="margin-top:0;">A document is the one that behaves differently: this only notes that one is on its way, and you mark it received on Vendor Requirements when it actually arrives. A sale goes straight to the kiosk under that vendor&rsquo;s booth. The rest become the record itself.</p>
 <label for="obVendor">Vendor</label>
-<select id="obVendor" onchange="fillObRequirements(); renderObPromoNote();"></select>
+<select id="obVendor" onchange="fillObRequirements(); renderObPromoNote(); renderObCheckSeen();"></select>
 <label>What they told you</label>
 <input type="hidden" id="obKind" value="Out">
 <div class="ob-kinds" id="obKinds">
@@ -4383,6 +4383,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <button type="button" class="ob-kind" data-k="doc"><b>A document</b><span>Insurance, permit, license</span></button>
 <button type="button" class="ob-kind" data-k="improve"><b>A proposal to a committee</b><span>Their idea, put to the committee that handles it</span></button>
 <button type="button" class="ob-kind" data-k="promo"><b>A sale or promotion</b><span>An offer to show at the kiosk</span></button>
+<button type="button" class="ob-kind" data-k="check"><b>A payment</b><span>Check, card or cash</span></button>
 </div>
 <div id="obShareWrap" style="display:none;">
 <label for="obGuest">Who is joining them in the booth</label>
@@ -4394,6 +4395,35 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <label for="obPromoText">The offer, in their words</label>
 <input type="text" id="obPromoText" placeholder="e.g. 3 pints for $10, or half price after 1 PM">
 <p class="empty-note" style="margin:6px 0 0;" id="obPromoNote"></p>
+</div>
+<div id="obCheckWrap" style="display:none;">
+<label for="obPayMethod">How they paid</label>
+<select id="obPayMethod" onchange="toggleObPayMethod()">
+<option value="check">Check</option>
+<option value="card">Card, taken at the desk</option>
+<option value="cash">Cash</option>
+</select>
+<p class="empty-note" id="obPayCardNote" style="margin:6px 0 0; display:none;">Once the market&rsquo;s Square account is connected, payments Square confirms appear in the account on their own. Record a card payment here only if it will not come through Square &mdash; otherwise it would show twice.</p>
+<label for="obCheckAmt" style="margin-top:10px;">Amount</label>
+<div class="mr-unit-row">
+<input type="number" id="obCheckAmt" min="0.01" step="0.01" placeholder="0.00" oninput="renderObCheckSeen()">
+<span class="mr-unit">dollars</span>
+</div>
+<div id="obCheckNoWrap">
+<label for="obCheckNo" style="margin-top:10px;" id="obCheckNoLabel">Check number</label>
+<input type="text" id="obCheckNo" placeholder="From the top right of the check" inputmode="numeric">
+</div>
+<label for="obCheckFor" style="margin-top:10px;">What it pays toward</label>
+<select id="obCheckFor">
+<option>Membership share</option>
+<option>Fines</option>
+<option>Work hours not worked</option>
+<option>Day fees</option>
+<option>Something else — in the note</option>
+</select>
+<label for="obCheckNote" style="margin-top:10px;">Note (optional)</label>
+<input type="text" id="obCheckNote" placeholder="e.g. second installment, or what they wrote on the memo line">
+<p class="empty-note" style="margin:8px 0 0;" id="obCheckSeen"></p>
 </div>
 <div id="obDocWrap" style="display:none;">
 <label for="obReq">Which document</label>
@@ -7111,6 +7141,7 @@ const ACT_KEYS = {
 'ifm-marketrules':     { t: 'Market rates and rules', k: 'governance', w: 'notable' },
 'ifm-inspections':     { t: 'Random farm inspections', k: 'governance', w: 'notable' },
 'ifm-resets':          { t: 'Sign-in help', k: 'system', w: 'notable' },
+'ifm-checks':          { t: 'Payments received', k: 'money', w: 'notable' },
 'ifm-leaves':          { t: 'Leaves of absence', k: 'records', w: 'notable' },
 'ifm-standing':        { t: 'Vendor standing', k: 'records', w: 'notable' },
 'ifm-voicemail':       { t: 'Answering machine', k: 'day' },
@@ -7670,7 +7701,7 @@ else { await ifmPrimeAll(); }
 await ifmPrimeAll();
 }
 const seed = seedData();
-const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops, mapKiosk, mapBooth] = await Promise.all([
+const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops, mapKiosk, mapBooth, checks] = await Promise.all([
 storageGet('ifm-ledger'),
 storageGet('ifm-callinout'),
 storageGet('ifm-workhours'),
@@ -7692,7 +7723,8 @@ storageGet('ifm-booth-shares'),
 storageGet('ifm-requirements'),
 storageGet('ifm-ops'),
 storageGet('ifm-map-kiosk'),
-storageGet('ifm-map-booth')
+storageGet('ifm-map-booth'),
+storageGet('ifm-checks')
 ]);
 mapFurniture = {
 kiosk: Array.isArray(mapKiosk) ? mapKiosk : [],
@@ -7738,6 +7770,7 @@ await storageSet('ifm-photo-idx', ids);
 }
 }
 cache.promos = promos === STORAGE_MISSING ? [] : (promos || []);
+cache.checks = checks === STORAGE_MISSING ? [] : (checks || []);
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -10640,6 +10673,7 @@ function toggleObKind() {
 const k = (document.getElementById('obKind') || {}).value;
 const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
 show('obShareWrap', k === 'share');
+show('obCheckWrap', k === 'check');
 show('obDocWrap', k === 'doc');
 show('obImpWrap', k === 'improve');
 show('obPromoWrap', k === 'promo');
@@ -10648,12 +10682,40 @@ if (k === 'promo') renderObPromoNote();
 const dateLbl = document.querySelector('label[for="obDate"]');
 if (dateLbl) dateLbl.textContent = k === 'doc' ? 'Date they sent it'
 : k === 'improve' ? 'Date it arrived'
-: k === 'promo' ? 'Market day it runs on' : 'Market day it concerns';
+: k === 'promo' ? 'Market day it runs on'
+: k === 'check' ? 'Date written on the check' : 'Market day it concerns';
+if (k === 'check') { toggleObPayMethod(); renderObCheckSeen(); }
 if (k === 'doc') fillObRequirements();
 }
 // An offer only ever appears when somebody taps that vendor's booth at the
 // kiosk, so a sale on a day they are not standing is invisible. Say so before
 // it is recorded, not after.
+function toggleObPayMethod() {
+const m = (document.getElementById('obPayMethod') || {}).value || 'check';
+const noWrap = document.getElementById('obCheckNoWrap');
+const noLbl = document.getElementById('obCheckNoLabel');
+const noInp = document.getElementById('obCheckNo');
+const cardNote = document.getElementById('obPayCardNote');
+if (noWrap) noWrap.style.display = m === 'cash' ? 'none' : '';
+if (noLbl) noLbl.textContent = m === 'card' ? 'Receipt or reference (optional)' : 'Check number';
+if (noInp) noInp.placeholder = m === 'card' ? 'From the terminal slip, if there is one' : 'From the top right of the check';
+if (cardNote) cardNote.style.display = m === 'card' ? 'block' : 'none';
+const dateLbl = document.querySelector('label[for="obDate"]');
+if (dateLbl && (document.getElementById('obKind') || {}).value === 'check')
+dateLbl.textContent = m === 'check' ? 'Date written on the check' : 'Day they paid';
+}
+function renderObCheckSeen() {
+const el = document.getElementById('obCheckSeen');
+if (!el) return;
+const vid = document.getElementById('obVendor').value;
+if (!vid) { el.textContent = ''; return; }
+const year = new Date().getFullYear();
+const a = accountData(vid, year);
+const amt = Number(document.getElementById('obCheckAmt').value || 0);
+el.innerHTML = 'On the books for ' + esc(a.vendor.businessName) + ' this season: $' +
+fmtMoney(a.chargedTotal) + ' charged, $' + fmtMoney(a.receivedTotal) + ' received' +
+(amt > 0 ? ' \u2014 this check would bring the received column to $' + fmtMoney(a.receivedTotal + amt) + '.' : '.');
+}
 function renderObPromoNote() {
 const el = document.getElementById('obPromoNote');
 if (!el) return;
@@ -10722,6 +10784,51 @@ if (!vendorId || !marketDate) { showMsg('obMsg', 'err', 'Pick the vendor and the
 if (!whenStr) { showMsg('obMsg', 'err', 'Say when they told the office \u2014 that is what the deadline is judged against.'); return; }
 const told = new Date(whenStr).getTime();
 const name = esc(boothVendorName(vendorId) || vendorId);
+if (status === 'check') {
+const method = (document.getElementById('obPayMethod') || {}).value || 'check';
+const amt = Math.round(Number(document.getElementById('obCheckAmt').value || 0) * 100) / 100;
+const ref = document.getElementById('obCheckNo').value.trim();
+const forWhat = document.getElementById('obCheckFor').value;
+const cNote = document.getElementById('obCheckNote').value.trim();
+const words = { check: 'check', card: 'card', cash: 'cash' };
+if (!(amt > 0)) { showMsg('obMsg', 'err', 'Enter the amount paid.'); return; }
+if (method === 'check' && !ref) { showMsg('obMsg', 'err', 'Enter the check number \u2014 it is how this payment is found again if it bounces or the bank asks.'); return; }
+if (!cache.checks) cache.checks = [];
+if (method === 'check') {
+const dup = cache.checks.find(c => c.vendorId === vendorId && (c.method || 'check') === 'check' && c.checkNo === ref && !c.voided);
+if (dup) {
+showMsg('obMsg', 'err', 'Check #' + esc(ref) + ' from ' + name + ' is already on the books \u2014 $' +
+fmtMoney(dup.amount) + ' recorded ' + esc(new Date(dup.at).toLocaleDateString()) +
+'. The same check cannot be taken in twice.');
+return;
+}
+} else {
+const recent = cache.checks.find(c => c.vendorId === vendorId && (c.method || 'check') === method &&
+Number(c.amount) === amt && (c.note || '') === cNote && !c.voided &&
+Date.now() - (c.recordedAt || c.at) < 180000 && Date.now() >= (c.recordedAt || c.at));
+if (recent) {
+showMsg('obMsg', 'err', 'An identical ' + words[method] + ' payment of $' + fmtMoney(amt) + ' from ' + name +
+' was recorded ' + Math.max(0, Math.round((Date.now() - (recent.recordedAt || recent.at)) / 60000)) + ' minute(s) ago \u2014 this looks like the same one twice. ' +
+'If they really did pay twice, say so in the note and it will go through.');
+return;
+}
+}
+actAs('Payment received \u2014 $' + fmtMoney(amt) + ' by ' + words[method] + ' toward ' + forWhat.toLowerCase(),
+{ kind: 'money', weight: 'notable', vendorId: vendorId });
+cache.checks.push({ id: 'ck' + Date.now(), vendorId: vendorId, method: method, amount: amt,
+checkNo: ref, forWhat: forWhat, note: cNote, checkDate: marketDate, at: told,
+recordedAt: Date.now(), channel: channel, recordedBy: 'office' });
+await storageSet('ifm-checks', cache.checks);
+renderObCheckSeen();
+const a = accountData(vendorId, new Date(told).getFullYear());
+const what = method === 'check' ? 'Check #' + esc(ref)
+: method === 'card' ? 'A card payment' : 'A cash payment';
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + what +
+' for <b>$' + fmtMoney(amt) + '</b> from <b>' + name + '</b> is on the books toward ' +
+esc(forWhat.toLowerCase()) + '. Their received column now reads $' + fmtMoney(a.receivedTotal) +
+' against $' + fmtMoney(a.chargedTotal) + ' charged this season.');
+return;
+}
 const via = channel === 'In person' ? ', told the office in person.' : ', told the office by ' + esc(channel.toLowerCase()) + '.';
 if (status === 'share') {
 const guestId = document.getElementById('obGuest').value;
@@ -12420,6 +12527,19 @@ received.push({ date: d, what: 'Day fee collected on site' + (md ? ' (' + md.day
 amount: dayFeeFor(md ? md.day : 'Saturday') });
 });
 
+// Checks the office recorded at the desk or from the mail. Dated by when
+// they arrived, not by what is written on them.
+(cache.checks || []).filter(c => c.vendorId === vendorId && !c.voided &&
+String(new Date(c.at).getFullYear()) === String(year)).forEach(c => {
+const m = c.method || 'check';
+const label = m === 'check' ? 'Check #' + c.checkNo
+: m === 'card' ? 'Card at the desk' + (c.checkNo ? ' (' + c.checkNo + ')' : '')
+: 'Cash';
+received.push({ date: new Date(c.at).toISOString().slice(0, 10),
+what: label + ' \u2014 ' + c.forWhat + (c.note ? ' (' + c.note + ')' : ''),
+amount: Number(c.amount || 0) });
+});
+
 // Confirmed card payments, once Square is connected.
 (payCache || []).filter(p => p.vendorId === vendorId && inYear(p.date)).forEach(p => {
 received.push({ date: p.date, what: (p.note || 'Card payment') + ' \u00b7 Square', amount: Number(p.amount || 0) });
@@ -12428,8 +12548,9 @@ received.push({ date: p.date, what: (p.note || 'Card payment') + ' \u00b7 Square
 const reported = ((vpCache && vpCache.items) || [])
 .filter(it => it.vendorId === vendorId && inYear(it.date));
 
-unseen.push('Season and booth fees invoiced outside the app, and any cash or check handed ' +
-'across the office desk. Nothing records those here.');
+unseen.push('Season and booth fees invoiced outside the app. Payments the office records in ' +
+'Manual Input \u2014 check, card or cash \u2014 appear above; card payments confirmed by Square ' +
+'will appear on their own once that account is connected.');
 if (!squareConnected()) unseen.push('Card payments through Square. The market\u2019s Square account ' +
 'is not connected yet, so no confirmed payment can appear in the received column.');
 
@@ -16313,7 +16434,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-31';
+const BUILD_ID = '16-33';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
