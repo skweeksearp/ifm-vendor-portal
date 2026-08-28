@@ -135,6 +135,7 @@ font-weight: 600; color: #3A382C; padding: 5px 0; }
 .cio-action { margin-top: 5px; }
 .cio-undo { margin: 0; width: auto; padding: 5px 11px; font-size: 13px; }
 .cio-held { font-size: 12px; font-weight: 700; color: #6E6A57; }
+.gcv-scan-btn { width: 100%; font-size: 17px; padding: 16px; margin: 0 0 14px; }
 .gcv-frame { position: relative; width: 100%; aspect-ratio: 4 / 3; min-height: 220px;
 background: #14140E; border-radius: 12px; overflow: hidden; }
 .gcv-frame video { position: absolute; inset: 0; width: 100%; height: 100%;
@@ -2752,17 +2753,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 <section id="screen-gcvendor" class="screen">
 <div class="screen-head" id="head-gcvendor"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">A customer hands you a gift certificate sticker. Take what they are spending; the rest stays on their sticker for another day.</p>
-<div class="card gcv-how">
-<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>The quick way: don&rsquo;t start here</h2>
-<p class="empty-note" style="margin-top:0;"><b>Point your phone&rsquo;s ordinary camera at the sticker</b>, the way you would at any QR code &mdash; no app, no button. A link appears at the top of the camera screen; tap it and this app opens with that certificate already loaded and its balance showing. That is the whole scan.</p>
-<p class="empty-note" id="gcvScanRow" style="margin-bottom:0;"></p>
-</div>
-<div class="card desk-form">
-<label for="gcvCode">Or type the code by hand</label>
-<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="The code printed under the square" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
-<p class="empty-note" style="margin:6px 0 0;">You do not have to type it letter by letter: on an iPhone, tap the box, then choose <b>Scan Text</b> (the camera mark above the keyboard) and point it at the code printed under the square &mdash; the phone reads the letters in for you. Typing is the fallback for a scuffed or wet sticker; the code is printed there for exactly this reason.</p>
-<div class="status-msg" id="gcvMsg"></div>
-</div>
+<div id="gcvScanRow"></div>
 <div id="gcvScanBox" style="display:none;" class="card">
 <div class="gcv-frame">
 <video id="gcvVideo" playsinline webkit-playsinline muted autoplay></video>
@@ -2770,6 +2761,11 @@ Recording it here puts that notice in front of every vendor when they open the a
 </div>
 <p id="gcvScanStatus" class="gcv-status"></p>
 <button type="button" class="ghost-btn" onclick="gcvStopScan()">Stop scanning</button>
+</div>
+<div class="card desk-form">
+<label for="gcvCode">Or type the code under the square</label>
+<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="For a scuffed or wet sticker" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
+<div class="status-msg" id="gcvMsg"></div>
 </div>
 <div id="gcvOut"></div>
 <div class="card">
@@ -16894,7 +16890,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-57';
+const BUILD_ID = '16-58';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -35805,9 +35801,9 @@ function renderGcvScanRow() {
 const row = document.getElementById('gcvScanRow');
 if (!row) return;
 row.innerHTML = gcvCanScan()
-? '<button type="button" class="ghost-btn" style="margin:0;" onclick="gcvStartScan()">' +
-'Or scan it here, without leaving the app</button>'
-: 'This phone will not open its camera for the app \u2014 use the ordinary camera as above, or type the code below.';
+? '<button type="button" class="primary-btn gcv-scan-btn" onclick="gcvStartScan()">' +
+'<svg class="ico"><use href="#i-search"></use></svg> Scan the sticker</button>'
+: '<p class="empty-note">This phone will not open its camera for the app. Type the code printed under the square instead.</p>';
 }
 let gcvStream = null, gcvScanTimer = null;
 function gcvSetStatus(text, looking, hit) {
