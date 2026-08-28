@@ -2733,7 +2733,6 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Whose account</h2>
 <select id="acctVendor" onchange="renderAccount()"></select>
 </div>
-<div class="empty-note" id="acctSquareState" style="margin:0 0 12px;"></div>
 <div id="acctBody"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>This Month&rsquo;s Statement</h2>
@@ -13561,20 +13560,6 @@ const host = document.getElementById('acctBody');
 if (!host) return;
 const pick = document.getElementById('acctVendor');
 const vid = (currentRole === 'manager' && pick && pick.value) ? pick.value : currentVendorId;
-const state = document.getElementById('acctSquareState');
-if (state) {
-state.innerHTML = squareConnected()
-? '<b>Square is connected.</b> Card payments confirmed by Square appear in what the market has received. ' +
-'Paying by card costs Square\u2019s fee for that transaction on top of the amount owed \u2014 the market ' +
-'passes that on at cost and keeps none of it, and you will see the full total before you pay. ' +
-'Cash or a check costs the amount owed and nothing more.'
-: '<b>Not yet live.</b> This page is finished but the market\u2019s Square account is not connected, so no ' +
-'card payment can be confirmed here. Everything below is computed from the market\u2019s own records. ' +
-'Loading Square credentials into the backend turns the received column on \u2014 nothing else changes. ' +
-'When it does, paying by card will cost Square\u2019s own fee for that transaction on top: the market ' +
-'passes it on at cost and keeps none of it.';
-state.style.color = squareConnected() ? '' : '#8A3B2E';
-}
 if (!vid) { host.innerHTML = ''; return; }
 const d = accountData(vid, seasonYear());
 const money = n => '$' + fmtMoney(n);
@@ -17726,7 +17711,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-68';
+const BUILD_ID = '16-69';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
