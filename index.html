@@ -2736,11 +2736,21 @@ Recording it here puts that notice in front of every vendor when they open the a
 </section>
 <section id="screen-gcvendor" class="screen">
 <div class="screen-head" id="head-gcvendor"></div>
-<p class="empty-note" style="margin:-4px 0 14px;">A customer hands you a gift certificate sticker. Point your phone&rsquo;s camera at the code and it opens here, or type the code printed under it. Take what they are spending; the rest stays on their sticker for another day.</p>
+<p class="empty-note" style="margin:-4px 0 14px;">A customer hands you a gift certificate sticker. Take what they are spending; the rest stays on their sticker for another day.</p>
+<div class="card gcv-how">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>The quick way: don&rsquo;t start here</h2>
+<p class="empty-note" style="margin-top:0;"><b>Point your phone&rsquo;s ordinary camera at the sticker</b>, the way you would at any QR code &mdash; no app, no button. A link appears at the top of the camera screen; tap it and this app opens with that certificate already loaded and its balance showing. That is the whole scan.</p>
+<p class="empty-note" id="gcvScanRow" style="margin-bottom:0;"></p>
+</div>
 <div class="card desk-form">
-<label for="gcvCode">The code on the sticker</label>
-<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="Scan it, or type the code under the square" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
+<label for="gcvCode">Or type the code by hand</label>
+<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="The code printed under the square" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
+<p class="empty-note" style="margin:6px 0 0;">For when the camera will not read a scuffed or wet sticker. The code is printed under the square for exactly this reason.</p>
 <div class="status-msg" id="gcvMsg"></div>
+</div>
+<div id="gcvScanBox" style="display:none;" class="card">
+<video id="gcvVideo" playsinline muted style="width:100%; border-radius:12px; background:#000;"></video>
+<button type="button" class="ghost-btn" onclick="gcvStopScan()">Stop scanning</button>
 </div>
 <div id="gcvOut"></div>
 <div class="card">
@@ -13487,6 +13497,8 @@ if (name === 'vreset') initVresetScreen();
 if (name === 'presplanned') initPresPlanned();
 if (name === 'aginspect') initAgInspect();
 if (name === 'gcvendor') {
+renderGcvScanRow();
+gcvStopScan();
 const el = document.getElementById('gcvCode');
 if (window.gcPendingScan) {
 if (el) el.value = window.gcPendingScan;
@@ -16863,7 +16875,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-54';
+const BUILD_ID = '16-55';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25648,6 +25660,55 @@ c.status = 'redeemed'; c.redeemed = todayISO();
 await saveGiftCerts();
 gcLookup(id);
 renderGcBook();
+}
+function gcvCanScan() { return typeof BarcodeDetector !== 'undefined'
+&& !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
+function renderGcvScanRow() {
+const row = document.getElementById('gcvScanRow');
+if (!row) return;
+row.innerHTML = gcvCanScan()
+? '<button type="button" class="ghost-btn" style="margin:0;" onclick="gcvStartScan()">' +
+'Or scan it here, without leaving the app</button>'
+: 'This phone cannot read a code from inside an app \u2014 iPhones keep that to the camera. ' +
+'Use the camera as above, or type the code below.';
+}
+let gcvStream = null;
+async function gcvStartScan() {
+if (!gcvCanScan()) return;
+const box = document.getElementById('gcvScanBox');
+const vid = document.getElementById('gcvVideo');
+if (!box || !vid) return;
+try {
+gcvStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+vid.srcObject = gcvStream;
+await vid.play();
+box.style.display = 'block';
+const det = new BarcodeDetector({ formats: ['qr_code'] });
+const tick = async () => {
+if (!gcvStream) return;
+try {
+const found = await det.detect(vid);
+if (found && found.length) {
+const code = gcCodeFromScan(found[0].rawValue);
+gcvStopScan();
+const el = document.getElementById('gcvCode');
+if (el) el.value = code;
+await gcVendorLookup(code);
+return;
+}
+} catch (e) {}
+requestAnimationFrame(tick);
+};
+requestAnimationFrame(tick);
+} catch (e) {
+gcvStopScan();
+showMsg('gcvMsg', 'err', 'The camera could not be opened. Type the code under the square instead.');
+}
+}
+function gcvStopScan() {
+if (gcvStream) { gcvStream.getTracks().forEach(t => t.stop()); gcvStream = null; }
+const box = document.getElementById('gcvScanBox');
+if (box) box.style.display = 'none';
 }
 async function gcVendorLookup(raw) {
 const out = document.getElementById('gcvOut');
