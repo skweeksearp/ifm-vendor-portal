@@ -2420,8 +2420,8 @@ I sell food (prepared food or produce)
 <div class="fold-body">
 <div class="dash-fold" data-fold="accountmoney">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
-<span class="fold-title">Fees &amp; Payments</span>
-<span class="fold-sub" id="menuPaySub">What you owe the market, and how to pay it</span>
+<span class="fold-title">Monthly Statements</span>
+<span class="fold-sub" id="menuPaySub">What you owe for the month, and how to pay it</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -2736,7 +2736,7 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div class="empty-note" id="acctSquareState" style="margin:0 0 12px;"></div>
 <div id="acctBody"></div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>This Month</h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>This Month&rsquo;s Statement</h2>
 <div id="myStmtCurrent"></div>
 </div>
 <div class="card">
@@ -11537,10 +11537,22 @@ return (feeCart && feeCart.items || []).reduce((s, x) => s + x.amount, 0);
 }
 function updatePaySub() {
 const el = document.getElementById('menuPaySub');
-if (!el || !feeCart) return;
-el.textContent = feeCart.items.length
-? feeCart.items.length + ' in the basket \u00b7 $' + fmtMoney(cartTotal())
-: 'What you owe the market, and how to pay it';
+if (!el) return;
+if (feeCart && feeCart.items && feeCart.items.length) {
+el.textContent = feeCart.items.length + ' in the basket \u00b7 $' + fmtMoney(cartTotal());
+return;
+}
+if (currentRole !== 'vendor' || !currentVendorId || stmtCache === null) {
+el.textContent = 'What you owe for the month, and how to pay it';
+return;
+}
+const s = statementFor(currentVendorId, stmtMonthOptions()[0]);
+el.textContent = s.outstanding > 0
+? '$' + fmtMoney(s.outstanding) + ' due by ' + formatDisplayDate(s.due) +
+(todayISO() > s.due ? ' \u2014 that date has passed' : '')
+: s.outstanding < 0
+? '$' + fmtMoney(Math.abs(s.outstanding)) + ' in your favour this month'
+: 'This month is settled \u2014 nothing due';
 }
 function renderFeeCart() {
 const wrap = document.getElementById('vpCartList');
@@ -13650,6 +13662,7 @@ renderAccount();
 }
 function renderAll() {
 paintHeaderBadge();
+updatePaySub();
 renderChairAlertBar();
 maybeShowPavNotice();
 const vendor = currentVendor();
@@ -14284,7 +14297,7 @@ if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); sto
 if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
 if (name === 'demostmt') renderDemoStatements();
 if (name === 'pavrentals') initPavRentalsScreen();
-if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); renderMyStatements(); }
+if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); renderMyStatements(); updatePaySub(); }
 if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
@@ -17713,7 +17726,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-67';
+const BUILD_ID = '16-68';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
