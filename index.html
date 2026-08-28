@@ -135,6 +135,12 @@ font-weight: 600; color: #3A382C; padding: 5px 0; }
 .cio-action { margin-top: 5px; }
 .cio-undo { margin: 0; width: auto; padding: 5px 11px; font-size: 13px; }
 .cio-held { font-size: 12px; font-weight: 700; color: #6E6A57; }
+.gc-balance { text-align: center; padding: 14px 10px; margin: 10px 0 0;
+background: #EFF3EA; border: 1.5px solid #C9D6BC; border-radius: 14px; }
+.gc-balance.gc-spent { background: #F4EDEA; border-color: #DFC5BC; }
+.gc-bal-num { font-size: 34px; font-weight: 800; color: #3F5B33; line-height: 1; }
+.gc-balance.gc-spent .gc-bal-num { color: #8A3B2E; }
+.gc-bal-label { font-size: 13px; font-weight: 700; color: #6E6A57; margin-top: 5px; }
 .fold-optional { font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
 text-transform: uppercase; color: #8A8674; background: #EDE9DA;
 border-radius: 999px; padding: 2px 7px; margin-left: 7px; vertical-align: 2px; }
@@ -2583,6 +2589,14 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
+<div class="dash-fold" data-fold="fGiftCert">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'gcvendor')">
+<span class="fold-title">Take a Gift Certificate</span>
+<span class="fold-sub">Scan a customer&rsquo;s sticker &middot; the money comes to you</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="snaptokens" id="menuSnapTokens">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaptokens')">
 <span class="fold-title">SNAP Tokens</span>
@@ -2720,6 +2734,21 @@ Recording it here puts that notice in front of every vendor when they open the a
 <div id="prList"></div>
 </div>
 </section>
+<section id="screen-gcvendor" class="screen">
+<div class="screen-head" id="head-gcvendor"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">A customer hands you a gift certificate sticker. Point your phone&rsquo;s camera at the code and it opens here, or type the code printed under it. Take what they are spending; the rest stays on their sticker for another day.</p>
+<div class="card desk-form">
+<label for="gcvCode">The code on the sticker</label>
+<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="Scan it, or type the code under the square" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
+<div class="status-msg" id="gcvMsg"></div>
+</div>
+<div id="gcvOut"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>How This Settles</h2>
+<p class="empty-note" style="margin-top:0;">What you take goes straight onto <b>your account with the market</b> as money the market owes you, the same as any payment the office records for you. The certificate was paid for at the office window when it was sold, so you are not waiting on the customer for anything. You do not need to bring the sticker to the office &mdash; the customer keeps it until it is empty.</p>
+<p class="empty-note">The app records what you enter here. Nothing checks it against the customer, so enter what they actually spent.</p>
+</div>
+</section>
 <section id="screen-giftcerts" class="screen">
 <div class="screen-head" id="head-giftcerts"></div>
 <div class="card manager-only">
@@ -2728,6 +2757,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 the camera opens this screen with the code filled in. Typing the code under the sticker works too.</p>
 <input type="text" id="gcSerial" class="find-field" placeholder="GC-2026-0000-XXX" autocomplete="off"
 oninput="gcLookup(this.value)" style="text-transform:uppercase;">
+<div id="gcLookupMsg" class="status-msg"></div>
 <div id="gcLookupOut" class="desk-transient"></div>
 </div>
 <div class="card manager-only desk-form">
@@ -7758,7 +7788,7 @@ else { await ifmPrimeAll(); }
 await ifmPrimeAll();
 }
 const seed = seedData();
-const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops, mapKiosk, mapBooth, checks] = await Promise.all([
+const [ledger, callinout, workhours, booths, lottery, vendors, popups, wintermarket, hoursGoals, boothLayouts, winterReservations, seasonFlags, leaves, quitWatch, settings, vendorPhotos, promos, boothShares, requirements, ops, mapKiosk, mapBooth, checks, giftcerts] = await Promise.all([
 storageGet('ifm-ledger'),
 storageGet('ifm-callinout'),
 storageGet('ifm-workhours'),
@@ -7781,7 +7811,8 @@ storageGet('ifm-requirements'),
 storageGet('ifm-ops'),
 storageGet('ifm-map-kiosk'),
 storageGet('ifm-map-booth'),
-storageGet('ifm-checks')
+storageGet('ifm-checks'),
+storageGet('ifm-giftcerts')
 ]);
 mapFurniture = {
 kiosk: Array.isArray(mapKiosk) ? mapKiosk : [],
@@ -7828,6 +7859,7 @@ await storageSet('ifm-photo-idx', ids);
 }
 cache.promos = promos === STORAGE_MISSING ? [] : (promos || []);
 cache.checks = checks === STORAGE_MISSING ? [] : (checks || []);
+if (gcCache === null) gcCache = giftcerts === STORAGE_MISSING ? [] : (giftcerts || []);
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -11176,7 +11208,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'account', 'snaptokens', 'mydocs',
+'account', 'fGiftCert', 'snaptokens', 'mydocs',
 // Your part in the market: the committees you sit on, and how to reach the office.
 'mycommittees', 'communicate',
 // Things you look up rather than do.
@@ -12677,6 +12709,19 @@ received.push({ date: d, what: 'Day fee collected on site' + (md ? ' (' + md.day
 amount: dayFeeFor(md ? md.day : 'Saturday') });
 });
 
+// Gift certificates spent at this vendor's stall. The market was paid at the
+// office window; the vendor gave up goods, so the market owes them and it
+// comes off their balance. Dated by the day it was spent.
+(gcCache || []).forEach(c => {
+gcDraws(c).forEach(d => {
+if (!d.vendorId || d.vendorId !== vendorId) return;
+if (String(new Date(d.at || (d.on + 'T12:00:00')).getFullYear()) !== String(year)) return;
+received.push({ date: d.on || new Date(d.at).toISOString().slice(0, 10),
+what: 'Gift certificate ' + c.id + ' spent at your stall',
+amount: Number(d.amount || 0) });
+});
+});
+
 // Checks the office recorded at the desk or from the mail. Dated by when
 // they arrived, not by what is written on them.
 (cache.checks || []).filter(c => c.vendorId === vendorId && !c.voided &&
@@ -12699,7 +12744,8 @@ const reported = ((vpCache && vpCache.items) || [])
 .filter(it => it.vendorId === vendorId && inYear(it.date));
 
 unseen.push('Season and booth fees invoiced outside the app. Payments the office records in ' +
-'Manual Input \u2014 check, card or cash \u2014 appear above; card payments confirmed by Square ' +
+'Manual Input \u2014 check, card or cash \u2014 appear above, as do gift certificates spent at your ' +
+'stall once the office records which vendor took them; card payments confirmed by Square ' +
 'will appear on their own once that account is connected.');
 if (!squareConnected()) unseen.push('Card payments through Square. The market\u2019s Square account ' +
 'is not connected yet, so no confirmed payment can appear in the received column.');
@@ -13440,6 +13486,14 @@ if (name === 'vprofile') initVpScreen();
 if (name === 'vreset') initVresetScreen();
 if (name === 'presplanned') initPresPlanned();
 if (name === 'aginspect') initAgInspect();
+if (name === 'gcvendor') {
+const el = document.getElementById('gcvCode');
+if (window.gcPendingScan) {
+if (el) el.value = window.gcPendingScan;
+gcVendorLookup(window.gcPendingScan);
+window.gcPendingScan = null;
+} else if (el) { el.value = ''; const o = document.getElementById('gcvOut'); if (o) o.innerHTML = ''; setTimeout(() => el.focus(), 120); }
+}
 if (name === 'dashboard') renderBoothPrefs();
 if (name === 'merchmansion') initMerchMansion();
 if (name === 'callinout') { renderCioDateList(); renderCalendar(); renderCallInOutContext(); renderCioPrefsVisibility(); }
@@ -13530,6 +13584,7 @@ winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
 giftcerts:         { title: 'Gift Certificates' },
+gcvendor:          { title: 'Take a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
 homescreen:        { title: 'Put It On Your Phone' },
@@ -16808,7 +16863,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-51';
+const BUILD_ID = '16-54';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25495,24 +25550,97 @@ out.innerHTML = roll
 'If it is one of the old handwritten certificates, it stays with the paper system.</p>';
 return;
 }
-let body = '<div class="tracker-row"><div class="t-title"><b>' + esc(c.id) + '</b> \u00b7 $' + c.amount +
-' \u00b7 issued ' + esc(formatDisplayDate(c.issued)) +
+const left = gcBalance(c);
+const spent = gcDrawnTotal(c);
+let body = '<div class="tracker-row"><div class="t-title"><b>' + esc(c.id) + '</b> \u00b7 loaded with $' +
+fmtMoney(c.amount) + ' on ' + esc(formatDisplayDate(c.issued)) +
 (c.batch ? ' \u00b7 ' + esc(c.batch) : '') + '</div></div>';
-if (c.status === 'redeemed') {
-body += '<p class="empty-note" style="color:#8A3B2E;"><b>Already redeemed on ' +
-esc(formatDisplayDate(c.redeemed)) + '.</b> A certificate can only come back once \u2014 if this ' +
-'paper is in your hand now, that is worth a close look.</p>';
-} else if (c.status === 'void') {
+if (c.status === 'void') {
 body += '<p class="empty-note" style="color:#8A3B2E;"><b>Voided</b>' +
 (c.redeemed ? ' on ' + esc(formatDisplayDate(c.redeemed)) : '') + '. Do not accept it.</p>';
 } else {
-body += '<button type="button" class="primary-btn" onclick="gcRedeem(\'' + c.id + '\')">Mark it redeemed</button> ' +
-'<button type="button" class="ghost-btn" onclick="gcVoid(\'' + c.id + '\')">Void it instead</button>';
+body += '<div class="gc-balance' + (left > 0 ? '' : ' gc-spent') + '">' +
+'<div class="gc-bal-num">$' + fmtMoney(left) + '</div>' +
+'<div class="gc-bal-label">' + (left > 0 ? 'still on this sticker' : 'nothing left on it') + '</div></div>';
+if (spent > 0) {
+body += '<p class="empty-note" style="margin:8px 2px 4px;"><b>$' + fmtMoney(spent) + ' spent so far</b></p>';
+gcDraws(c).slice().reverse().forEach(d => {
+body += '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">$' + fmtMoney(d.amount) + '</div>' +
+'<div class="req-meta">' + esc(formatDisplayDate(d.on)) +
+(d.vendorId ? ' \u00b7 ' + esc(boothVendorName(d.vendorId) || d.vendorId) : '') +
+' \u00b7 recorded by ' + esc(d.by || 'the office') + '</div></div></div>';
+});
+}
+if (left > 0) {
+body += '<div class="card desk-form" style="margin-top:10px;">' +
+'<label for="gcDrawAmt">Amount being spent now</label>' +
+'<div class="mr-unit-row"><input type="number" id="gcDrawAmt" min="0.01" step="0.01" ' +
+'max="' + left + '" placeholder="0.00"><span class="mr-unit">dollars</span></div>' +
+'<label for="gcDrawVendor" style="margin-top:10px;">Which vendor is being paid</label>' +
+'<select id="gcDrawVendor"><option value="">Not recorded</option>' +
+(cache.vendors || []).slice().sort(byBusinessName).map(v =>
+'<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('') + '</select>' +
+'<button type="button" class="primary-btn" onclick="gcDraw(\'' + c.id + '\')">' +
+'<svg class="ico"><use href="#i-checkmark"></use></svg> Take this off the certificate</button>' +
+'<button type="button" class="ghost-btn" onclick="gcDrawAll(\'' + c.id + '\')">Spend the whole $' + fmtMoney(left) + '</button>' +
+'<button type="button" class="ghost-btn" onclick="gcVoid(\'' + c.id + '\')">Void it instead</button>' +
+'</div>';
+} else {
+body += '<p class="empty-note" style="color:#8A3B2E;"><b>Fully spent' +
+(c.redeemed ? ' as of ' + esc(formatDisplayDate(c.redeemed)) : '') + '.</b> ' +
+'There is nothing left to draw on. If somebody is presenting this sticker as having value, ' +
+'that is worth a close look.</p>';
+}
 }
 out.innerHTML = body;
+sweepVendorFinders(out);
+}
+function gcDraws(c) { return Array.isArray(c && c.draws) ? c.draws : []; }
+function gcDrawnTotal(c) {
+return Math.round(gcDraws(c).reduce((t, d) => t + Number(d.amount || 0), 0) * 100) / 100;
+}
+function gcBalance(c) {
+if (!c || c.status === 'void') return 0;
+// Certificates redeemed under the old all-or-nothing rule carry no draws;
+// they are spent, and must not read as fully loaded.
+if (c.status === 'redeemed' && !gcDraws(c).length) return 0;
+return Math.round((Number(c.amount || 0) - gcDrawnTotal(c)) * 100) / 100;
+}
+async function gcDraw(id) {
+if (!requireManager('gcLookupMsg')) return;
+await loadGiftCerts();
+const c = (gcCache || []).find(x => x.id === id);
+if (!c || c.status === 'void') { gcLookup(id); return; }
+const left = gcBalance(c);
+if (left <= 0) { gcLookup(id); return; }
+const input = document.getElementById('gcDrawAmt');
+const amt = Math.round(Number((input && input.value) || 0) * 100) / 100;
+if (!(amt > 0)) { showMsg('gcLookupMsg', 'err', 'Enter how much of the certificate is being spent.'); return; }
+if (amt > left) {
+showMsg('gcLookupMsg', 'err', 'That certificate has $' + fmtMoney(left) + ' left on it \u2014 ' +
+'it cannot cover $' + fmtMoney(amt) + '. Take the rest another way.');
+return;
+}
+const vsel = document.getElementById('gcDrawVendor');
+const vid = vsel ? vsel.value : '';
+c.draws = gcDraws(c).concat([{ at: Date.now(), on: todayISO(), amount: amt,
+vendorId: vid || null, by: currentRole === 'president' ? 'the Board President' : 'the office' }]);
+const nowLeft = gcBalance(c);
+if (nowLeft <= 0) { c.status = 'redeemed'; c.redeemed = todayISO(); }
+actAs('Gift certificate drawn down \u2014 $' + fmtMoney(amt) + ' of ' + id,
+{ kind: 'money', weight: 'notable', vendorId: vid || null });
+await saveGiftCerts();
+if (input) input.value = '';
+await gcLookup(id);
+renderGcBook();
+showMsg('gcLookupMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
+' taken off ' + esc(id) + (vid ? ' for ' + esc(boothVendorName(vid) || vid) : '') + '. ' +
+(nowLeft > 0 ? 'It still carries <b>$' + fmtMoney(nowLeft) + '</b> \u2014 the customer keeps the sticker.'
+: 'That empties it; the sticker is spent.'));
 }
 async function gcRedeem(id) {
-if (!requireManager('gcIssueMsg')) return;
+if (!requireManager('gcLookupMsg')) return;
 await loadGiftCerts();
 const c = gcCache.find(x => x.id === id);
 if (!c || c.status !== 'issued') { gcLookup(id); return; }
@@ -25521,8 +25649,99 @@ await saveGiftCerts();
 gcLookup(id);
 renderGcBook();
 }
+async function gcVendorLookup(raw) {
+const out = document.getElementById('gcvOut');
+if (!out) return;
+const q = gcCodeFromScan(raw);
+if (q.length < 7) { out.innerHTML = ''; return; }
+await loadGiftCerts(); await loadGcRolls();
+const c = (gcCache || []).find(x => x.id.toUpperCase() === q);
+if (!c) {
+out.innerHTML = '<p class="empty-note"><b>That code is not a gift certificate this market sold.</b> ' +
+'Take payment another way, and tell the office what the sticker says.</p>';
+return;
+}
+if (c.status === 'void') {
+out.innerHTML = '<p class="empty-note" style="color:#8A3B2E;"><b>This certificate was voided.</b> ' +
+'Do not accept it. The office can tell the customer why.</p>';
+return;
+}
+const left = gcBalance(c);
+let body = '<div class="gc-balance' + (left > 0 ? '' : ' gc-spent') + '">' +
+'<div class="gc-bal-num">$' + fmtMoney(left) + '</div>' +
+'<div class="gc-bal-label">' + (left > 0 ? 'left on this certificate' : 'nothing left on it') + '</div></div>';
+if (left <= 0) {
+body += '<p class="empty-note" style="color:#8A3B2E;">It has all been spent. Take payment another way.</p>';
+} else {
+body += '<div class="card desk-form" style="margin-top:10px;">' +
+'<label for="gcvAmt">How much of it are you taking?</label>' +
+'<div class="mr-unit-row"><input type="number" id="gcvAmt" min="0.01" step="0.01" max="' + left +
+'" placeholder="0.00"><span class="mr-unit">dollars</span></div>' +
+'<p class="empty-note" style="margin:6px 0 0;">This goes on <b>your</b> account with the market, ' +
+'because you are signed in as ' + esc(currentVendor() ? currentVendor().businessName : '') + '. ' +
+'The customer keeps the sticker with whatever is left on it.</p>' +
+'<button type="button" class="primary-btn" onclick="gcVendorDraw(\'' + c.id + '\')">' +
+'<svg class="ico"><use href="#i-checkmark"></use></svg> Take this off the certificate</button>' +
+'<button type="button" class="ghost-btn" onclick="gcVendorDrawAll(\'' + c.id + '\')">Take the whole $' +
+fmtMoney(left) + '</button></div>';
+}
+if (gcDrawnTotal(c) > 0) {
+body += '<p class="empty-note" style="margin:10px 2px 4px;">Spent so far, at any stall:</p>';
+gcDraws(c).slice().reverse().forEach(d => {
+body += '<div class="req-row"><div class="req-row-main"><div class="req-name">$' + fmtMoney(d.amount) +
+'</div><div class="req-meta">' + esc(formatDisplayDate(d.on)) +
+(d.vendorId === currentVendorId ? ' \u00b7 you' : d.vendorId ? ' \u00b7 another stall' : '') +
+'</div></div></div>';
+});
+}
+out.innerHTML = body;
+}
+async function gcVendorDraw(id) {
+if (currentRole !== 'vendor' || !currentVendorId) return;
+await loadGiftCerts();
+const c = (gcCache || []).find(x => x.id === id);
+if (!c || c.status === 'void') return;
+const left = gcBalance(c);
+const input = document.getElementById('gcvAmt');
+const amt = Math.round(Number((input && input.value) || 0) * 100) / 100;
+if (!(amt > 0)) { showMsg('gcvMsg', 'err', 'Enter how much of the certificate you are taking.'); return; }
+if (amt > left) {
+showMsg('gcvMsg', 'err', 'There is only $' + fmtMoney(left) + ' left on this certificate. ' +
+'Take that much and the rest another way.');
+return;
+}
+c.draws = gcDraws(c).concat([{ at: Date.now(), on: todayISO(), amount: amt,
+vendorId: currentVendorId, by: 'the vendor at the stall' }]);
+const nowLeft = gcBalance(c);
+if (nowLeft <= 0) { c.status = 'redeemed'; c.redeemed = todayISO(); }
+actAs('Gift certificate drawn at a stall \u2014 $' + fmtMoney(amt) + ' of ' + id,
+{ kind: 'money', weight: 'notable', vendorId: currentVendorId });
+await saveGiftCerts();
+if (input) input.value = '';
+await gcVendorLookup(id);
+showMsg('gcvMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
+' is on your account with the market. ' +
+(nowLeft > 0 ? 'Give the sticker back \u2014 it still carries <b>$' + fmtMoney(nowLeft) + '</b>.'
+: 'That empties the certificate; the sticker is spent.'));
+}
+async function gcVendorDrawAll(id) {
+await loadGiftCerts();
+const c = (gcCache || []).find(x => x.id === id);
+if (!c) return;
+const input = document.getElementById('gcvAmt');
+if (input) input.value = String(gcBalance(c));
+await gcVendorDraw(id);
+}
+async function gcDrawAll(id) {
+await loadGiftCerts();
+const c = (gcCache || []).find(x => x.id === id);
+if (!c) return;
+const input = document.getElementById('gcDrawAmt');
+if (input) input.value = String(gcBalance(c));
+await gcDraw(id);
+}
 async function gcVoid(id) {
-if (!requireManager('gcIssueMsg')) return;
+if (!requireManager('gcLookupMsg')) return;
 if (!confirm('Void ' + id + '? A voided certificate can never be redeemed.')) return;
 await loadGiftCerts();
 const c = gcCache.find(x => x.id === id);
@@ -25536,14 +25755,28 @@ function renderGcBook() {
 const host = document.getElementById('gcBook');
 if (!host) return;
 const all = gcCache || [];
-const sum = s => all.filter(c => c.status === s).reduce((t, c) => t + c.amount, 0);
+const outstanding = all.filter(c => c.status !== 'void' && gcBalance(c) > 0);
+const owed = Math.round(outstanding.reduce((t, c) => t + gcBalance(c), 0) * 100) / 100;
+const back = Math.round(all.filter(c => c.status !== 'void')
+.reduce((t, c) => t + gcDrawnTotal(c) + (c.status === 'redeemed' && !gcDraws(c).length ? Number(c.amount || 0) : 0), 0) * 100) / 100;
+const partly = outstanding.filter(c => gcDrawnTotal(c) > 0).length;
 const n = s => all.filter(c => c.status === s).length;
 const left = gcStickersLeft();
 let html = '<div class="stat-row">' +
 '<div class="stat"><div class="stat-num">' + left + '</div><div class="stat-label">Stickers left</div></div>' +
-'<div class="stat"><div class="stat-num">$' + sum('issued') + '</div><div class="stat-label">Out there \u00b7 ' + n('issued') + '</div></div>' +
-'<div class="stat"><div class="stat-num">$' + sum('redeemed') + '</div><div class="stat-label">Came back \u00b7 ' + n('redeemed') + '</div></div>' +
-'</div>';
+'<div class="stat"><div class="stat-num">$' + fmtMoney(owed) + '</div><div class="stat-label">Still owed \u00b7 ' + outstanding.length + ' live</div></div>' +
+'<div class="stat"><div class="stat-num">$' + fmtMoney(back) + '</div><div class="stat-label">Spent so far</div></div>' +
+'</div>' +
+(partly ? '<p class="empty-note" style="margin:6px 2px 0;">' + partly + ' certificate' + (partly === 1 ? ' is' : 's are') +
+' part-spent and still carrying a balance.</p>' : '');
+{
+let loose = 0, looseN = 0;
+all.forEach(c => gcDraws(c).forEach(d => { if (!d.vendorId) { loose += Number(d.amount || 0); looseN++; } }));
+if (looseN) html += '<p class="empty-note" style="color:#8A3B2E; margin:6px 2px 0;"><b>$' +
+fmtMoney(loose) + ' across ' + looseN + ' draw' + (looseN === 1 ? '' : 's') +
+' has no vendor on it.</b> That money is owed to somebody, and the record cannot say who \u2014 ' +
+'it reaches nobody\u2019s account until a vendor is named on it.</p>';
+}
 const bar = document.getElementById('gcOutOfStickers');
 if (bar) {
 bar.style.display = left ? 'none' : 'block';
