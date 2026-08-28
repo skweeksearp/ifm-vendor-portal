@@ -191,6 +191,14 @@ text-transform: uppercase; color: #8A8674; border-bottom: 1px solid #DDD6C0; pad
 .stmt-table tfoot td { border-top: 1px solid #DDD6C0; border-bottom: none;
 font-weight: 700; padding-top: 8px; }
 .stmt-table tfoot tr.stmt-total td { border-top: 2px solid #3F5B33; font-size: 15px; font-weight: 800; }
+.stmt-annual { border: 1.5px solid #C2703D; border-radius: 6px; padding: 11px 12px;
+margin: 14px 0 0; background: #FDF6EE; }
+.stmt-annual.stmt-annual-soft { border-style: dashed; border-color: #C9C3AD; background: #FAF8F0; }
+.stmt-annual-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.stmt-annual-num { font-size: 20px; font-weight: 800; color: #8A3B2E; }
+.stmt-annual-soft .stmt-annual-num { color: #6E6A57; }
+.stmt-annual .stmt-table td { border-bottom: 1px solid #F0E3D5; }
+.stmt-annual-note { font-size: 11px; color: #6E6A57; margin-top: 7px; }
 .stmt-none { color: #6E6A57; font-style: italic; margin: 14px 0; }
 .stmt-standing, .stmt-pay { border-top: 1px solid #EFEADA; padding-top: 10px; margin-top: 12px; }
 .stmt-standing .stmt-lbl, .stmt-pay .stmt-lbl { margin-bottom: 3px; }
@@ -12879,6 +12887,38 @@ return todayISO() > stmtDueDate(ym);
 }
 // Everything the vendor owes or is owed for one month, from every source the
 // account screen knows about, plus points and hours for context.
+// A charge is year-end if the Guide dates it to the close of the season
+// rather than to a market day. They are recognised by what they are, not by
+// the month they happen to fall in.
+const YEAR_END_PATTERNS = [
+/work hours? not worked/i,
+/membership share installment/i,
+/late renewal surcharge/i,
+/annual (vendor )?fee/i,
+/renewal/i
+];
+function isYearEndLine(r) {
+return YEAR_END_PATTERNS.some(p => p.test(String(r.what || '')));
+}
+function yearEndDueDate(year) { return String(year) + '-12-31'; }
+// What the vendor is heading toward, before it becomes a charge. Shown from
+// September so December confirms a number they have watched approaching.
+function yearEndForecast(vendorId, year) {
+const hl = buildHoursLedger(vendorId, year);
+const out = [];
+if (hl && hl.owed > 0) {
+out.push({ what: Number(hl.owed).toFixed(1) + ' work hours not worked',
+amount: Math.round(hl.owed * workHourRate(year) * 100) / 100,
+note: 'Avoidable \u2014 working them before the season closes removes this entirely.' });
+}
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+if (v && String(v.category || '').endsWith('Full')) {
+const paidShare = (cache.ops.shares || {})[vendorId + ':' + year];
+if (!paidShare) out.push({ what: 'Membership share installment', amount: 100,
+note: 'Due with renewal by December 31 (Guide, Certificate of Membership).' });
+}
+return out;
+}
 function statementFor(vendorId, ym) {
 const year = ym.slice(0, 4);
 const a = accountData(vendorId, year);
@@ -12886,14 +12926,25 @@ const inMonth = rows => rows.filter(r => ymOf(r.date) === ym);
 // Demo lines are merged in only while the switch is on, and are never
 // written into the real records they sit beside.
 const demo = demoRowsFor(vendorId, ym);
-const charged = inMonth(a.charged).concat(demo.filter(r => r.kind === 'charge'));
+const allCharged = inMonth(a.charged).concat(demo.filter(r => r.kind === 'charge'));
 const received = inMonth(a.received).concat(demo.filter(r => r.kind === 'credit'));
+// Year-end items are pulled out here and carry the Guide's own deadline.
+// They are never added into the month's total: a vendor settling December's
+// booth fees on the second Saturday of January has not thereby missed a
+// deadline that fell on the 31st, and the statement must not imply they have.
+const yearEnd = allCharged.filter(isYearEndLine);
+const charged = allCharged.filter(r => !isYearEndLine(r));
 const sum = rows => Math.round(rows.reduce((t, r) => t + Number(r.amount || 0), 0) * 100) / 100;
 const rec = stmtRecord(vendorId, ym);
 // A late fee is charged only once the office marks the statement late, so
 // nobody is fined by the mere passing of a date while a cheque is in the post.
 const lateFee = rec.lateCharged ? Number(rec.lateCharged) : 0;
 const owed = Math.round((sum(charged) + lateFee - sum(received)) * 100) / 100;
+const yearEndTotal = sum(yearEnd);
+// From September the year-end items are shown as a forecast so December
+// confirms a figure rather than announcing one.
+const showForecast = Number(ym.slice(5, 7)) >= 9 && !yearEnd.length;
+const forecast = showForecast ? yearEndForecast(vendorId, Number(ym.slice(0, 4))) : [];
 const carry = ruleNum('stmtCarryUnder') || 0;
 return {
 vendorId: vendorId, ym: ym, vendor: (cache.vendors || []).find(v => v.vendorId === vendorId),
@@ -12903,6 +12954,10 @@ lateFee: lateFee, owed: owed,
 due: stmtDueDate(ym),
 paid: Number(rec.paid || 0),
 outstanding: Math.round((owed - Number(rec.paid || 0)) * 100) / 100,
+yearEnd: yearEnd, yearEndTotal: yearEndTotal,
+yearEndDue: yearEndDueDate(ym.slice(0, 4)),
+forecast: forecast,
+forecastTotal: Math.round(forecast.reduce((t, f) => t + f.amount, 0) * 100) / 100,
 sentAt: rec.sentAt || null, settledAt: rec.settledAt || null,
 // Under the carry line there is nothing worth a stamp or a chase.
 carried: Math.abs(owed) > 0 && Math.abs(owed) < carry,
@@ -12974,6 +13029,34 @@ body += '<tr class="stmt-total"><td colspan="3">' + stateWord + '</td>' +
 } else {
 body += '<p class="stmt-none">No charges or credits were recorded for this month.</p>';
 }
+// Year-end items, kept visually apart because they are due on a different
+// day under a different rule.
+if (s.yearEnd && s.yearEnd.length) {
+body += '<div class="stmt-annual"><div class="stmt-annual-head">' +
+'<span class="stmt-lbl">Annual \u2014 due ' + esc(formatDisplayDate(s.yearEndDue)) + '</span>' +
+'<span class="stmt-annual-num">' + money(s.yearEndTotal) + '</span></div>' +
+'<table class="stmt-table" style="margin-top:6px;"><tbody>';
+s.yearEnd.forEach(r => {
+body += '<tr><td>' + esc(r.what) + (r.demo ? ' <span class="season-tag">demo</span>' : '') +
+'</td><td class="num">' + money(r.amount) + '</td></tr>';
+});
+body += '</tbody></table>' +
+'<div class="stmt-annual-note">These fall due on <b>December 31</b> under the Vendor Guide, ' +
+'not on the monthly date above. Settling the month does not settle these.</div></div>';
+}
+if (s.forecast && s.forecast.length) {
+body += '<div class="stmt-annual stmt-annual-soft"><div class="stmt-annual-head">' +
+'<span class="stmt-lbl">Coming at year end \u2014 December 31</span>' +
+'<span class="stmt-annual-num">' + money(s.forecastTotal) + '</span></div>' +
+'<table class="stmt-table" style="margin-top:6px;"><tbody>';
+s.forecast.forEach(f => {
+body += '<tr><td>' + esc(f.what) + '<div class="stmt-sub">' + esc(f.note) + '</div></td>' +
+'<td class="num">' + money(f.amount) + '</td></tr>';
+});
+body += '</tbody></table>' +
+'<div class="stmt-annual-note"><b>Not owed yet.</b> This is what would fall due on December 31 ' +
+'if the season closed today, shown early so it is not a surprise.</div></div>';
+}
 // Standing, because points and hours are what a vendor actually asks about
 body += '<div class="stmt-standing"><div class="stmt-lbl">Where you stand</div><div>' +
 '<b>Points:</b> ' + (s.points == null ? 'not recorded' : esc(s.points)) +
@@ -13033,6 +13116,20 @@ L.push('  Total credits: ' + money(s.receivedTotal));
 L.push('');
 }
 if (s.paid) { L.push('Already paid against this statement: ' + money(s.paid)); L.push(''); }
+if (s.yearEnd && s.yearEnd.length) {
+L.push('ANNUAL \u2014 DUE ' + formatDisplayDate(s.yearEndDue).toUpperCase());
+s.yearEnd.forEach(r => L.push('  ' + money(r.amount).padStart(9) + '  ' + r.what));
+L.push('  Total: ' + money(s.yearEndTotal));
+L.push('  These fall due on December 31 under the Vendor Guide, not on the');
+L.push('  monthly date above. Settling the month does not settle these.');
+L.push('');
+}
+if (s.forecast && s.forecast.length) {
+L.push('COMING AT YEAR END \u2014 DECEMBER 31 (not owed yet)');
+s.forecast.forEach(f => L.push('  ' + money(f.amount).padStart(9) + '  ' + f.what));
+L.push('  Total if the season closed today: ' + money(s.forecastTotal));
+L.push('');
+}
 L.push('WHERE YOU STAND');
 L.push('  Points: ' + (s.points == null ? 'not recorded' : s.points));
 if (s.hours) L.push('  Work hours: ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
@@ -17711,7 +17808,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-69';
+const BUILD_ID = '16-70';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21318,6 +21415,7 @@ wrap.appendChild(row);
 async function saveOps() { await storageSet('ifm-ops', cache.ops); }
 function allMarketDatesInSeason(year) {
 const out = [];
+year = Number(year);
 const d = new Date(year, 0, 1);
 while (d.getFullYear() === year) {
 const dow = d.getDay(), month = d.getMonth();
@@ -24864,6 +24962,12 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF46', kind: 'conflict', cat: 'Board', src: 'Vendor Guide, Annual Fees and Certificate of Membership, against the monthly statement rule',
+t: 'Year-end fees are due December 31, but the monthly statement rule would put them in January \u2014 which date governs?',
+d: 'Raised 28 Aug 2026, when year-end items first appeared on a monthly statement. The Guide is explicit and repeated: renewal must be postmarked no later than December 31, with a $100 surcharge on anything postmarked January 1 to 15; the $100 share installment is due by December 31 along with other annual fees; work hour documentation is due to the Market Managers by December 31 or a $50 fine follows. ' +
+'THE CONFLICT: the statement rule the Board is being asked to set in BF45 makes a month\u2019s charges due on the second market Saturday of the following month. Applied to December, that is roughly January 9 \u2014 nine days after the renewal surcharge has already begun running. A statement that printed one due date across all of it would be telling vendors they had until January for money the Guide says was due on the 31st. ' +
+'WHAT THE APP DOES MEANWHILE: it does not merge them. Year-end items are separated out of the monthly total and carry the Guide\u2019s own December 31 date on their own block, headed Annual, with a line saying settling the month does not settle these. From September they also appear as a forecast \u2014 marked not owed yet \u2014 so December confirms a figure the vendor has watched approaching rather than announcing one. ' +
+'WHAT THE BOARD MIGHT DECIDE: leave it as built, and the two deadlines simply coexist on one page; or move the annual deadlines to match the statement cycle, which would need the Guide amended and the surcharge dates with it; or exempt December from the monthly rule so the whole December statement falls due on the 31st. The app should not pick. It currently follows the Guide wherever the two disagree, which is the only defensible default, but that means a vendor sees two dates on one page and someone should decide whether that is acceptable or merely tolerable.' },
 { id: 'BF45', kind: 'question', cat: 'Board', src: 'Vendor Guide p.9 Daily Fee Payment against the coming online payments',
 t: 'When online payment replaces the office window, how often must a vendor settle up \u2014 daily, monthly, quarterly, or annually?',
 d: 'Raised 28 Aug 2026, while planning online payments. Today the deadline enforces itself physically: the Guide says daily fees are paid at the office before the market begins, so nobody sells without settling, and the work-hours buyout settles once at year end. Online payment removes the window and with it the built-in deadline \u2014 one must be chosen, and nothing in the Guide chooses it. ' +
