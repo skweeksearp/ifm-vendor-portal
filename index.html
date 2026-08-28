@@ -158,6 +158,49 @@ background: #EFF3EA; border: 1.5px solid #C9D6BC; border-radius: 14px; }
 .gc-balance.gc-spent .gc-bal-num { color: #8A3B2E; }
 .gc-bal-label { font-size: 13px; font-weight: 700; color: #6E6A57; margin-top: 5px; }
 .handover-later { opacity: 0.78; border-style: dashed; }
+/* The statement document. Deliberately plainer and squarer than the rest of
+   the app: this is the one screen a vendor may print and hand to an
+   accountant, and it should look like paperwork, not like an app. */
+.stmt-doc { background: #FFFDF7; border: 1px solid #DDD6C0; border-radius: 6px;
+padding: 20px 18px; color: #23231B; font-size: 14px; line-height: 1.45; }
+.stmt-head { display: flex; justify-content: space-between; align-items: flex-start;
+gap: 12px; border-bottom: 2px solid #3F5B33; padding-bottom: 10px; }
+.stmt-org { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.stmt-org-sub { font-size: 11px; color: #6E6A57; margin-top: 2px; }
+.stmt-doctype { font-size: 13px; font-weight: 800; letter-spacing: 0.14em;
+text-transform: uppercase; color: #3F5B33; white-space: nowrap; }
+.stmt-meta { display: flex; justify-content: space-between; gap: 16px; margin: 14px 0 4px; }
+.stmt-lbl { font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+text-transform: uppercase; color: #8A8674; }
+.stmt-val { font-weight: 700; }
+.stmt-sub { font-size: 12px; color: #6E6A57; }
+.stmt-due { border: 1.5px solid #3F5B33; border-radius: 6px; padding: 12px;
+margin: 14px 0; text-align: right; background: #F3F6EF; }
+.stmt-due.stmt-due-clear { border-color: #C9C3AD; background: #F7F5EC; }
+.stmt-due-lbl { font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+text-transform: uppercase; color: #6E6A57; }
+.stmt-due-num { font-size: 30px; font-weight: 800; color: #2F4A26; line-height: 1.1; }
+.stmt-due-clear .stmt-due-num { color: #6E6A57; }
+.stmt-due-note { font-size: 11px; color: #8A3B2E; margin-top: 4px; }
+.stmt-table { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 13px; }
+.stmt-table th { text-align: left; font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+text-transform: uppercase; color: #8A8674; border-bottom: 1px solid #DDD6C0; padding: 6px 4px; }
+.stmt-table td { padding: 7px 4px; border-bottom: 1px solid #EFEADA; vertical-align: top; }
+.stmt-table .num { text-align: right; white-space: nowrap; }
+.stmt-table .nw { white-space: nowrap; color: #6E6A57; }
+.stmt-table tfoot td { border-top: 1px solid #DDD6C0; border-bottom: none;
+font-weight: 700; padding-top: 8px; }
+.stmt-table tfoot tr.stmt-total td { border-top: 2px solid #3F5B33; font-size: 15px; font-weight: 800; }
+.stmt-none { color: #6E6A57; font-style: italic; margin: 14px 0; }
+.stmt-standing, .stmt-pay { border-top: 1px solid #EFEADA; padding-top: 10px; margin-top: 12px; }
+.stmt-standing .stmt-lbl, .stmt-pay .stmt-lbl { margin-bottom: 3px; }
+.stmt-foot { border-top: 1px solid #EFEADA; margin-top: 14px; padding-top: 10px;
+font-size: 11px; color: #6E6A57; }
+@media print {
+body * { visibility: hidden; }
+.stmt-doc, .stmt-doc * { visibility: visible; }
+.stmt-doc { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+}
 .fold-optional { font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
 text-transform: uppercase; color: #8A8674; background: #EDE9DA;
 border-radius: 999px; padding: 2px 7px; margin-left: 7px; vertical-align: 2px; }
@@ -2693,10 +2736,18 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div class="empty-note" id="acctSquareState" style="margin:0 0 12px;"></div>
 <div id="acctBody"></div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Your Monthly Statements</h2>
-<p class="empty-note" style="margin-top:0;">One for each month, the same statement the office sends you. Built from the market&rsquo;s records &mdash; if a line looks wrong, tell the office and correcting the record corrects this too.</p>
+<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>This Month</h2>
+<div id="myStmtCurrent"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Earlier Statements</h2>
 <div id="myStatements"></div>
 </div>
+<details class="card" id="acctOlderTools">
+<summary style="font-weight:800; cursor:pointer;">Other ways to settle up <span class="fold-optional">still here if you use them</span></summary>
+<p class="empty-note" style="margin:8px 0 0;">These came before monthly statements and still work. The basket is for telling the office about a payment it has not recorded yet; the year&rsquo;s record is the one to print at tax time.</p>
+<div id="acctOlderBody"></div>
+</details>
 <div id="acctPayHalf">
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>How You Can Pay<button type="button" class="help-dot" onclick="showHelp(79)" aria-label="What are the ways to pay?">?</button></h2>
@@ -2705,7 +2756,8 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div class="tracker-row"><div class="t-title">Credit or debit card</div><div class="t-sub" id="acctCardLine"></div></div>
 <p class="empty-note">However you pay, <b>the office recording it is what settles the balance above.</b> Anything you tell the app is a report until then.</p>
 </div>
-<div class="card">
+</div>
+<div id="acctOlderStash" style="display:none;"><div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Fees On Your Record</h2>
 <p class="empty-note" style="margin-top:0;">Everything the app can work out that you owe. Add any of them to the
 basket below, then tell the office in one go once you have paid &mdash; cash, check or card, whichever you used.</p>
@@ -2731,6 +2783,7 @@ basket below, then tell the office in one go once you have paid &mdash; cash, ch
 <p class="empty-note" style="margin-top:0;">Whatever way you paid &mdash; cash, check or card &mdash; the app cannot see it happen, so anything here is a report, not a receipt. The office confirms it against the money itself. <b>Reported money is never counted in the balance above</b>; it counts when the office records it.</p>
 <div id="vpList"></div>
 <div class="empty-note" id="vpEmpty">Nothing reported yet.</div>
+</div>
 </div>
 </div>
 </section>
@@ -12849,6 +12902,90 @@ hours: buildHoursLedger(vendorId, year)
 // The email body. Plain text on purpose: it has to survive every mail client
 // a vendor might use, and a vendor reading it on a phone in a truck should be
 // able to see what they owe in the first three lines.
+function stmtShortDate(iso) {
+const d = new Date(String(iso) + 'T12:00:00');
+return isNaN(d) ? String(iso) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function stmtDocHTML(s, opts) {
+const o = opts || {};
+const money = n => '$' + fmtMoney(Math.abs(n));
+const rows = s.charged.map(r => ({ ...r, k: 'charge' }))
+.concat(s.received.map(r => ({ ...r, k: 'credit' })))
+.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+const stateWord = s.outstanding > 0 ? 'Amount due'
+: s.outstanding < 0 ? 'Credit in your favour' : 'Paid in full';
+let body = '<div class="stmt-doc">';
+// Letterhead
+body += '<div class="stmt-head">' +
+'<div><div class="stmt-org">Ithaca Farmers Market</div>' +
+'<div class="stmt-org-sub">Steamboat Landing &middot; 545 Third St, Ithaca NY 14850</div></div>' +
+'<div class="stmt-doctype">Statement</div></div>';
+// Bill-to and meta, the two-column block every statement has
+body += '<div class="stmt-meta">' +
+'<div><div class="stmt-lbl">Vendor</div>' +
+'<div class="stmt-val">' + esc(s.vendor ? s.vendor.businessName : s.vendorId) + '</div>' +
+(s.vendor && s.vendor.contactName ? '<div class="stmt-sub">' + esc(s.vendor.contactName) + '</div>' : '') +
+'</div>' +
+'<div><div class="stmt-lbl">Statement period</div>' +
+'<div class="stmt-val">' + esc(ymLabel(s.ym)) + '</div>' +
+'<div class="stmt-lbl" style="margin-top:8px;">Payment due</div>' +
+'<div class="stmt-val">' + esc(formatDisplayDate(s.due)) + '</div>' +
+'</div></div>';
+// The number that matters, in a box, near the top
+body += '<div class="stmt-due' + (s.outstanding > 0 ? '' : ' stmt-due-clear') + '">' +
+'<div class="stmt-due-lbl">' + stateWord + '</div>' +
+'<div class="stmt-due-num">' + money(s.outstanding) + '</div>' +
+(s.outstanding > 0 && ruleNum('stmtLateFee') > 0
+? '<div class="stmt-due-note">A late fee of ' + money(ruleNum('stmtLateFee')) +
+' applies after ' + esc(formatDisplayDate(s.due)) + '</div>' : '') +
+'</div>';
+// The lines
+if (rows.length || s.lateFee) {
+body += '<table class="stmt-table"><thead><tr>' +
+'<th>Date</th><th>Description</th><th class="num">Charges</th><th class="num">Credits</th>' +
+'</tr></thead><tbody>';
+rows.forEach(r => {
+body += '<tr><td class="nw">' + esc(stmtShortDate(r.date)) + '</td>' +
+'<td>' + esc(r.what) + (r.demo ? ' <span class="season-tag">demo</span>' : '') + '</td>' +
+'<td class="num">' + (r.k === 'charge' ? money(r.amount) : '') + '</td>' +
+'<td class="num">' + (r.k === 'credit' ? money(r.amount) : '') + '</td></tr>';
+});
+if (s.lateFee) body += '<tr><td class="nw">' + esc(stmtShortDate(s.due)) + '</td><td>Late fee</td>' +
+'<td class="num">' + money(s.lateFee) + '</td><td class="num"></td></tr>';
+body += '</tbody><tfoot>' +
+'<tr><td colspan="2">Totals</td><td class="num">' + money(s.chargedTotal + s.lateFee) +
+'</td><td class="num">' + money(s.receivedTotal) + '</td></tr>';
+if (s.paid) body += '<tr><td colspan="3">Paid against this statement</td>' +
+'<td class="num">' + money(s.paid) + '</td></tr>';
+body += '<tr class="stmt-total"><td colspan="3">' + stateWord + '</td>' +
+'<td class="num">' + money(s.outstanding) + '</td></tr>' +
+'</tfoot></table>';
+} else {
+body += '<p class="stmt-none">No charges or credits were recorded for this month.</p>';
+}
+// Standing, because points and hours are what a vendor actually asks about
+body += '<div class="stmt-standing"><div class="stmt-lbl">Where you stand</div><div>' +
+'<b>Points:</b> ' + (s.points == null ? 'not recorded' : esc(s.points)) +
+(s.hours ? ' &nbsp;&nbsp; <b>Work hours:</b> ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
+(s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' still owed this season' : '') : '') +
+'</div></div>';
+// How to pay it -- on the statement itself, where it is needed
+if (s.outstanding > 0) {
+body += '<div class="stmt-pay"><div class="stmt-lbl">How to pay</div>' +
+'<div><b>Cash or check</b> at the office window &mdash; checks to Ithaca Farmers Market. ' +
+'What counts is the postmark, not the day it arrives.<br>' +
+'<b>Card</b> ' + (squareConnected()
+? 'in the app, or at the office. The card fee is shown before you pay and the market keeps none of it.'
+: '&mdash; not yet live; the market&rsquo;s card account is not connected.') +
+'</div></div>';
+}
+body += '<div class="stmt-foot">This statement is built from the market&rsquo;s records on ' +
+esc(formatDisplayDate(todayISO())) + '. If a line looks wrong, tell the office &mdash; ' +
+'correcting the record corrects this statement.' +
+(demoOn() ? ' <b>Lines marked demo are invented for testing and are not owed.</b>' : '') +
+'</div>';
+return body + '</div>';
+}
 function stmtEmailBody(s) {
 const money = n => '$' + fmtMoney(Math.abs(n));
 const L = [];
@@ -13109,14 +13246,52 @@ downloadCSV('statements-' + ym + '.csv',
 ['Vendor', 'Month', 'Charges', 'Late fee', 'Credits', 'Owed', 'Paid', 'Outstanding',
 'Due', 'Sent', 'Settled', 'Points', 'Hours done'], rows);
 }
+// Move the older tools inside the fold once, at render. Doing it in the DOM
+// rather than by rewriting the markup keeps every id and handler they already
+// depend on intact -- these are working tools, not decoration.
+function stashOlderAccountTools() {
+const stash = document.getElementById('acctOlderStash');
+const host = document.getElementById('acctOlderBody');
+if (!stash || !host || host.children.length) return;
+while (stash.firstElementChild) host.appendChild(stash.firstElementChild);
+stash.remove();
+// The year-long breakdown answers the same question the statements answer,
+// a year at a time, so it belongs with the older tools rather than above
+// the month a vendor actually has to settle.
+const body = document.getElementById('acctBody');
+if (body) host.insertBefore(body, host.firstElementChild);
+// How to pay belongs immediately after the statement it applies to, not
+// below the fold that hides everything else.
+const scr = document.getElementById('screen-account');
+const pay = document.getElementById('acctPayHalf');
+const earlier = document.getElementById('myStatements');
+const earlierCard = earlier ? earlier.closest('.card') : null;
+if (scr && pay && earlierCard) scr.insertBefore(pay, earlierCard);
+}
+function renderMyStatementCurrent() {
+const host = document.getElementById('myStmtCurrent');
+if (!host || !currentVendorId) return;
+// The month just gone is the one with a deadline attached.
+const ym = stmtMonthOptions()[0];
+const s = statementFor(currentVendorId, ym);
+const overdue = s.outstanding > 0 && todayISO() > s.due;
+host.innerHTML =
+'<div class="stmt-doc-wrap">' + stmtDocHTML(s) + '</div>' +
+'<button type="button" class="ghost-btn" onclick="window.print()">Print or save it</button>' +
+(s.outstanding > 0
+? '<p class="empty-note" style="margin:6px 2px 0;">' +
+(overdue ? '<b style="color:#8A3B2E;">The due date has passed.</b> ' : '') +
+'Paid already? Tell the office under <b>Other ways to settle up</b> below, so it can be matched to the money.</p>'
+: '');
+}
 function renderMyStatements() {
 const host = document.getElementById('myStatements');
 if (!host || !currentVendorId) return;
-const months = stmtMonthOptions().slice(0, 6)
+const months = stmtMonthOptions().slice(1, 7)
 .map(ym => statementFor(currentVendorId, ym))
 .filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
 if (!months.length) {
-host.innerHTML = '<p class="empty-note">No statements yet. One appears here for each month you owed or were credited anything.</p>';
+host.innerHTML = '<p class="empty-note">Nothing earlier than this month yet.</p>';
 return;
 }
 host.innerHTML = months.map(s => {
@@ -13133,14 +13308,14 @@ esc(s.charged.length + s.received.length) + ' line' + (s.charged.length + s.rece
 (s.paid ? ' \u00b7 $' + fmtMoney(s.paid) + ' paid' : '') + '</div>' +
 '<button type="button" class="ghost-btn" style="margin-top:6px;" onclick="showMyStatement(\'' + s.ym + '\')">Read it</button>' +
 '</div></div>';
-}).join('') + '<pre id="myStmtText" style="display:none; white-space:pre-wrap; font-size:12px; background:#FBFAF5; border:1px solid #E4DFCB; border-radius:10px; padding:10px; margin-top:10px;"></pre>';
+}).join('') + '<div id="myStmtText" style="display:none; margin-top:12px;"></div>';
 }
 function showMyStatement(ym) {
-const pre = document.getElementById('myStmtText');
-if (!pre) return;
-pre.textContent = stmtEmailBody(statementFor(currentVendorId, ym));
-pre.style.display = 'block';
-pre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+const box = document.getElementById('myStmtText');
+if (!box) return;
+box.innerHTML = stmtDocHTML(statementFor(currentVendorId, ym));
+box.style.display = 'block';
+box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 const DEMO_STMT_KEY = 'ifm-demo-statements';
 let demoStmt = null;
@@ -14109,7 +14284,7 @@ if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); sto
 if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
 if (name === 'demostmt') renderDemoStatements();
 if (name === 'pavrentals') initPavRentalsScreen();
-if (name === 'account') { initAccountScreen(); renderMyStatements(); }
+if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); renderMyStatements(); }
 if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
@@ -17538,7 +17713,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-66';
+const BUILD_ID = '16-67';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
