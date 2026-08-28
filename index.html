@@ -2780,8 +2780,26 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p class="empty-note">The app records what you enter here. Nothing checks it against the customer, so enter what they actually spent.</p>
 </div>
 </section>
+<section id="screen-demostmt" class="screen">
+<div class="screen-head" id="head-demostmt"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Fictional charges and credits for every vendor, so the Monthly Statements tool can be looked at with something in it. <b>These live in their own record and are never written into the real fines, day fees or gift certificates</b> &mdash; switching them off leaves nothing behind, and every line shows a <span class="season-tag">demo</span> mark wherever it appears.</p>
+<div class="card desk-form">
+<label for="demoMonths">How many months back</label>
+<select id="demoMonths"><option value="3">3 months</option><option value="6" selected>6 months</option><option value="12">12 months</option></select>
+<button type="button" class="primary-btn" onclick="demoStatementsGenerate(document.getElementById('demoMonths').value)"><svg class="ico"><use href="#i-checkmark"></use></svg> Generate them</button>
+<div id="demoSwitch" style="margin-top:10px;"></div>
+<button type="button" class="ghost-btn" onclick="demoStatementsWipe()">Wipe every fictional line</button>
+<div class="status-msg" id="demoMsg"></div>
+</div>
+<div id="demoState"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Before Handing the App to the Market</h2>
+<p class="empty-note" style="margin-top:0;">Press <b>Wipe</b>. The Beta Reset tool clears these too, but Wipe is the one that says what it does. Once wiped, the statement tool shows only what the market actually recorded.</p>
+</div>
+</section>
 <section id="screen-statements" class="screen">
 <div class="screen-head" id="head-statements"></div>
+<div id="stmtDemoBanner"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">One statement a month for every vendor: what they were charged, what they paid or were credited, and where they stand on points and hours. Built from the market&rsquo;s records each time it is opened, so a correction anywhere corrects the statement too.</p>
 <div class="card desk-form">
 <label for="stmtMonth">Statement month</label>
@@ -4322,6 +4340,14 @@ this side of it.</p>
 <span class="fold-title">Information Window Tuner</span>
 <span class="fold-sub" id="tunerState">Arrange the kiosk&rsquo;s About window on this device &mdash; off</span>
 </button>
+</div>
+<div class="dash-fold" data-fold="dev-demostmt" id="demoStmtTile" style="display:none;">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'demostmt')">
+<span class="fold-title">Demo Statement Records</span>
+<span class="fold-sub" id="demoStmtState">Fictional months for every vendor, to look at the statement tool</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
 </div>
 <div class="dash-fold" data-fold="dev-betareset" id="betaResetTile" style="display:none;">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'betareset')">
@@ -7942,6 +7968,7 @@ cache.checks = checks === STORAGE_MISSING ? [] : (checks || []);
 if (gcCache === null) gcCache = giftcerts === STORAGE_MISSING ? [] : (giftcerts || []);
 if (siteBridge === null) loadSiteBridge();
 if (stmtCache === null) loadStatements();
+if (demoStmt === null) loadDemoStatements();
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -12246,6 +12273,8 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-voicemail', t: 'Answering machine messages awaiting approval', v: () => ({ msgs: [] }) },
 { g: 'traffic', k: 'ifm-booth-shares', t: 'Booths being shared', v: () => [] },
 { g: 'traffic', k: 'ifm-promos', t: 'Deals vendors posted', v: () => [] },
+{ g: 'traffic', k: 'ifm-statements', t: 'Monthly statements \u2014 sent marks and payments recorded', v: () => ({}) },
+{ g: 'traffic', k: 'ifm-demo-statements', t: 'Demo statement records \u2014 the invented months', v: () => ({ on: false, rows: [] }) },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
 { g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-feecart', t: 'Fee baskets', v: () => ({ items: [] }) },
@@ -12790,8 +12819,11 @@ function statementFor(vendorId, ym) {
 const year = ym.slice(0, 4);
 const a = accountData(vendorId, year);
 const inMonth = rows => rows.filter(r => ymOf(r.date) === ym);
-const charged = inMonth(a.charged);
-const received = inMonth(a.received);
+// Demo lines are merged in only while the switch is on, and are never
+// written into the real records they sit beside.
+const demo = demoRowsFor(vendorId, ym);
+const charged = inMonth(a.charged).concat(demo.filter(r => r.kind === 'charge'));
+const received = inMonth(a.received).concat(demo.filter(r => r.kind === 'credit'));
 const sum = rows => Math.round(rows.reduce((t, r) => t + Number(r.amount || 0), 0) * 100) / 100;
 const rec = stmtRecord(vendorId, ym);
 // A late fee is charged only once the office marks the statement late, so
@@ -13011,7 +13043,8 @@ if (rows.length) {
 body += '<p class="empty-note" style="margin:10px 2px 4px;"><b>' + rows.length + ' line' + (rows.length === 1 ? '' : 's') + ' this month</b></p>';
 rows.sort((a, b) => String(a[1].date).localeCompare(String(b[1].date))).forEach(([k, r]) => {
 body += '<div class="req-row"><div class="req-row-main"><div class="req-name">' +
-(k === 'charge' ? '' : '\u2212 ') + '$' + fmtMoney(r.amount) + '</div>' +
+(k === 'charge' ? '' : '\u2212 ') + '$' + fmtMoney(r.amount) +
+(r.demo ? ' <span class="season-tag">demo</span>' : '') + '</div>' +
 '<div class="req-meta">' + esc(formatDisplayDate(r.date)) + ' \u00b7 ' + esc(r.what) + '</div></div></div>';
 });
 }
@@ -13108,6 +13141,128 @@ if (!pre) return;
 pre.textContent = stmtEmailBody(statementFor(currentVendorId, ym));
 pre.style.display = 'block';
 pre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+const DEMO_STMT_KEY = 'ifm-demo-statements';
+let demoStmt = null;
+async function loadDemoStatements() {
+const v = await storageGet(DEMO_STMT_KEY);
+demoStmt = (v !== STORAGE_MISSING && v) ? v : { on: false, rows: [] };
+return demoStmt;
+}
+function demoOn() { return !!(demoStmt && demoStmt.on && (demoStmt.rows || []).length); }
+function demoRowsFor(vendorId, ym) {
+if (!demoOn()) return [];
+return (demoStmt.rows || []).filter(r => r.vendorId === vendorId && ymOf(r.date) === ym);
+}
+// A deterministic shuffle: the same vendor gets the same fictional history
+// every time it is generated, so a screenshot taken today matches one taken
+// tomorrow and nobody chases a difference that is only randomness.
+function demoSeedNum(s, salt) {
+let n = 0;
+const str = String(s) + '|' + salt;
+for (let i = 0; i < str.length; i++) n = (n * 31 + str.charCodeAt(i)) >>> 0;
+return n;
+}
+const DEMO_CHARGES = [
+{ what: 'Booth fee \u2014 Saturday', amt: [30, 40, 45] },
+{ what: 'Booth fee \u2014 Sunday', amt: [20, 25] },
+{ what: 'Late absence', amt: [50] },
+{ what: 'No-show', amt: [75] },
+{ what: 'Membership share installment', amt: [100] },
+{ what: 'Wednesday Market space', amt: [20, 25] },
+];
+const DEMO_CREDITS = [
+{ what: 'Day fee collected on site', amt: [30, 40] },
+{ what: 'Card payment \u00b7 Square', amt: [40, 60, 100] },
+{ what: 'Gift certificate spent at your stall', amt: [12, 18, 25] },
+{ what: 'SNAP tokens turned in', amt: [15, 30, 45] },
+{ what: 'Check received at the office', amt: [50, 75] },
+];
+function buildDemoStatementRows(months) {
+const rows = [];
+const vendors = cache.vendors || [];
+const now = new Date();
+vendors.forEach(v => {
+for (let m = 1; m <= months; m++) {
+const d = new Date(now.getFullYear(), now.getMonth() - m + 1, 1);
+const ym = d.toISOString().slice(0, 7);
+const seed = demoSeedNum(v.vendorId, ym);
+// About one vendor in eight has a quiet month, which is what the real
+// thing looks like -- a tool that shows every vendor owing every month
+// would flatter itself.
+if (seed % 8 === 0) continue;
+const nCharges = 1 + (seed % 3);
+for (let i = 0; i < nCharges; i++) {
+const pick = DEMO_CHARGES[(seed + i * 7) % DEMO_CHARGES.length];
+const amt = pick.amt[(seed + i) % pick.amt.length];
+const day = 1 + ((seed + i * 5) % 26);
+rows.push({ vendorId: v.vendorId, kind: 'charge', demo: true,
+date: ym + '-' + String(day).padStart(2, '0'),
+what: pick.what, amount: amt });
+}
+const nCredits = (seed % 3);
+for (let i = 0; i < nCredits; i++) {
+const pick = DEMO_CREDITS[(seed + i * 11) % DEMO_CREDITS.length];
+const amt = pick.amt[(seed + i) % pick.amt.length];
+const day = 1 + ((seed + i * 9) % 26);
+rows.push({ vendorId: v.vendorId, kind: 'credit', demo: true,
+date: ym + '-' + String(day).padStart(2, '0'),
+what: pick.what, amount: amt });
+}
+}
+});
+return rows;
+}
+async function demoStatementsGenerate(months) {
+if (currentRole !== 'developer') { showMsg('demoMsg', 'err', 'Developer login only.'); return; }
+const n = Math.max(1, Math.min(12, Number(months) || 6));
+demoStmt = { on: true, rows: buildDemoStatementRows(n), madeAt: todayISO(), months: n };
+await storageSet(DEMO_STMT_KEY, demoStmt);
+renderDemoStatements();
+showMsg('demoMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+demoStmt.rows.length + ' fictional lines across ' + n + ' months, for ' +
+(cache.vendors || []).length + ' vendors. Nothing real was touched.');
+}
+async function demoStatementsToggle(on) {
+if (!demoStmt) await loadDemoStatements();
+demoStmt.on = !!on;
+await storageSet(DEMO_STMT_KEY, demoStmt);
+renderDemoStatements();
+showMsg('demoMsg', 'ok', on
+? 'Demo statements are showing again.'
+: 'Demo statements hidden. The lines are still stored \u2014 use Wipe to remove them.');
+}
+async function demoStatementsWipe() {
+demoStmt = { on: false, rows: [] };
+await storageSet(DEMO_STMT_KEY, demoStmt);
+renderDemoStatements();
+showMsg('demoMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+'Every fictional line is gone. The statement tool now shows only real records.');
+}
+function renderDemoStatements() {
+const sw = document.getElementById('demoSwitch');
+const st = document.getElementById('demoState');
+const sub = document.getElementById('demoStmtState');
+const has = (demoStmt && (demoStmt.rows || []).length) || 0;
+if (sw) sw.innerHTML = !has ? '<p class="empty-note" style="margin:0;">Nothing generated yet.</p>'
+: '<label class="pref-item" style="padding:0;"><input type="checkbox" ' +
+(demoStmt.on ? 'checked' : '') + ' onchange="demoStatementsToggle(this.checked)"> ' +
+'Show these in the statement tool</label>';
+if (st) st.innerHTML = !has ? '' :
+'<div class="card"><p class="empty-note" style="margin:0;"><b>' + has + ' fictional lines</b> across ' +
+esc(demoStmt.months || '?') + ' months, generated ' + esc(formatDisplayDate(demoStmt.madeAt)) +
+'. Currently <b>' + (demoStmt.on ? 'showing' : 'hidden') + '</b>.</p></div>';
+if (sub) sub.textContent = !has ? 'Fictional months for every vendor, to look at the statement tool'
+: has + ' fictional lines \u00b7 ' + (demoStmt.on ? 'showing' : 'hidden');
+// The statements screen says so too, so nobody screenshots a demo month
+// believing it to be the market's books.
+const banner = document.getElementById('stmtDemoBanner');
+if (banner) {
+banner.innerHTML = demoOn()
+? '<p class="empty-note" style="color:#8A3B2E; margin:0 0 10px;"><b>Demo records are switched on.</b> ' +
+'Lines marked <span class="season-tag">demo</span> are invented for looking at this tool and are not money anybody owes. ' +
+'Turn them off in Developer \u2192 Demo Statement Records.</p>' : '';
+}
 }
 function accountData(vendorId, year) {
 const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
@@ -13951,7 +14106,8 @@ if (name === 'winterpaperwork') initWinterPaperwork();
 if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
-if (name === 'statements') initStatementsScreen();
+if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
+if (name === 'demostmt') renderDemoStatements();
 if (name === 'pavrentals') initPavRentalsScreen();
 if (name === 'account') { initAccountScreen(); renderMyStatements(); }
 if (name === 'homescreen') initHomeScreenScreen();
@@ -14056,7 +14212,9 @@ if (name === 'improve') initImproveScreen();
 if (name === 'recordsneeded') initRecordsNeededScreen();
 if (name === 'handover') initHandoverScreen();
 if (name === 'aboutedit') renderAboutEditor();
-if (name === 'developer') { const t = document.getElementById('betaResetTile'); if (t) t.style.display = BETA_RESET_TOOLS ? '' : 'none'; updateTunerTile(); }
+if (name === 'developer') { const t = document.getElementById('betaResetTile'); if (t) t.style.display = BETA_RESET_TOOLS ? '' : 'none';
+const dt = document.getElementById('demoStmtTile'); if (dt) dt.style.display = BETA_RESET_TOOLS ? '' : 'none';
+renderDemoStatements(); updateTunerTile(); }
 if (name === 'volunteer') initVolunteerScreen();
 
 if (name === 'appglossary') initAppGlossaryScreen();
@@ -14100,6 +14258,7 @@ wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
 giftcerts:         { title: 'Gift Certificates' },
 statements:        { title: 'Monthly Statements' },
+demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Take a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
@@ -17379,7 +17538,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-65';
+const BUILD_ID = '16-66';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
