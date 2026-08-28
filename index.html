@@ -199,6 +199,7 @@ margin: 14px 0 0; background: #FDF6EE; }
 .stmt-annual-soft .stmt-annual-num { color: #6E6A57; }
 .stmt-annual .stmt-table td { border-bottom: 1px solid #F0E3D5; }
 .stmt-annual-note { font-size: 11px; color: #6E6A57; margin-top: 7px; }
+.stmt-annual tr.stmt-settled td { opacity: 0.62; }
 .stmt-none { color: #6E6A57; font-style: italic; margin: 14px 0; }
 .stmt-standing, .stmt-pay { border-top: 1px solid #EFEADA; padding-top: 10px; margin-top: 12px; }
 .stmt-standing .stmt-lbl, .stmt-pay .stmt-lbl { margin-bottom: 3px; }
@@ -12904,18 +12905,33 @@ function yearEndDueDate(year) { return String(year) + '-12-31'; }
 // What the vendor is heading toward, before it becomes a charge. Shown from
 // September so December confirms a number they have watched approaching.
 function yearEndForecast(vendorId, year) {
-const hl = buildHoursLedger(vendorId, year);
+year = Number(year);
 const out = [];
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+if (!v) return out;
+const full = String(v.category || '').endsWith('Full');
+// Renewal: the office records a postmark, not an amount, so the figure is
+// inferred from the class held today -- right for almost everyone, wrong for
+// anyone who changed class, and the note says so rather than hiding it.
+const renewed = !!(((cache.ops.renewal || {})[year] || {})[vendorId] || {}).postmarked;
+out.push({ what: 'Annual Vendor Fee (' + (full ? 'Full Member' : 'Easy Entry') + ')',
+amount: full ? 230 : 115, settled: renewed,
+note: renewed ? 'Renewal postmark recorded \u2014 nothing further owed.'
+: 'Renew by December 31. A postmark of January 1\u201315 adds a $100 surcharge.' });
+if (full) {
+const paidShare = !!((cache.ops.shares || {})[vendorId + ':' + year]);
+out.push({ what: 'Membership share installment', amount: 100, settled: paidShare,
+note: paidShare ? 'Recorded as paid for this year.'
+: '$100 of the $300 Certificate, due December 31 with renewal.' });
+}
+const hl = buildHoursLedger(vendorId, year);
 if (hl && hl.owed > 0) {
 out.push({ what: Number(hl.owed).toFixed(1) + ' work hours not worked',
-amount: Math.round(hl.owed * workHourRate(year) * 100) / 100,
-note: 'Avoidable \u2014 working them before the season closes removes this entirely.' });
-}
-const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
-if (v && String(v.category || '').endsWith('Full')) {
-const paidShare = (cache.ops.shares || {})[vendorId + ':' + year];
-if (!paidShare) out.push({ what: 'Membership share installment', amount: 100,
-note: 'Due with renewal by December 31 (Guide, Certificate of Membership).' });
+amount: Math.round(hl.owed * workHourRate(year) * 100) / 100, settled: false,
+note: 'Only if you pay instead of working them \u2014 working them before the season closes removes this entirely.' });
+} else if (hl) {
+out.push({ what: 'Work hours', amount: 0, settled: true,
+note: 'Nothing owed \u2014 ' + Number(hl.done || 0).toFixed(1) + ' hours done this season.' });
 }
 return out;
 }
@@ -12941,10 +12957,9 @@ const rec = stmtRecord(vendorId, ym);
 const lateFee = rec.lateCharged ? Number(rec.lateCharged) : 0;
 const owed = Math.round((sum(charged) + lateFee - sum(received)) * 100) / 100;
 const yearEndTotal = sum(yearEnd);
-// From September the year-end items are shown as a forecast so December
-// confirms a figure rather than announcing one.
-const showForecast = Number(ym.slice(5, 7)) >= 9 && !yearEnd.length;
-const forecast = showForecast ? yearEndForecast(vendorId, Number(ym.slice(0, 4))) : [];
+// On every statement, so a vendor is never nine months into a year without
+// having seen what falls due at the end of it.
+const forecast = yearEnd.length ? [] : yearEndForecast(vendorId, Number(ym.slice(0, 4)));
 const carry = ruleNum('stmtCarryUnder') || 0;
 return {
 vendorId: vendorId, ym: ym, vendor: (cache.vendors || []).find(v => v.vendorId === vendorId),
@@ -12957,7 +12972,7 @@ outstanding: Math.round((owed - Number(rec.paid || 0)) * 100) / 100,
 yearEnd: yearEnd, yearEndTotal: yearEndTotal,
 yearEndDue: yearEndDueDate(ym.slice(0, 4)),
 forecast: forecast,
-forecastTotal: Math.round(forecast.reduce((t, f) => t + f.amount, 0) * 100) / 100,
+forecastTotal: Math.round(forecast.filter(f => !f.settled).reduce((t, f) => t + f.amount, 0) * 100) / 100,
 sentAt: rec.sentAt || null, settledAt: rec.settledAt || null,
 // Under the carry line there is nothing worth a stamp or a chase.
 carried: Math.abs(owed) > 0 && Math.abs(owed) < carry,
@@ -13045,17 +13060,23 @@ body += '</tbody></table>' +
 'not on the monthly date above. Settling the month does not settle these.</div></div>';
 }
 if (s.forecast && s.forecast.length) {
+const anyOwed = s.forecastTotal > 0;
 body += '<div class="stmt-annual stmt-annual-soft"><div class="stmt-annual-head">' +
-'<span class="stmt-lbl">Coming at year end \u2014 December 31</span>' +
+'<span class="stmt-lbl">Due at year end \u2014 December 31</span>' +
 '<span class="stmt-annual-num">' + money(s.forecastTotal) + '</span></div>' +
 '<table class="stmt-table" style="margin-top:6px;"><tbody>';
 s.forecast.forEach(f => {
-body += '<tr><td>' + esc(f.what) + '<div class="stmt-sub">' + esc(f.note) + '</div></td>' +
-'<td class="num">' + money(f.amount) + '</td></tr>';
+body += '<tr class="' + (f.settled ? 'stmt-settled' : '') + '"><td>' + esc(f.what) +
+(f.settled ? ' <span class="season-tag">settled</span>' : '') +
+'<div class="stmt-sub">' + esc(f.note) + '</div></td>' +
+'<td class="num">' + (f.settled && !f.amount ? '\u2014' : money(f.amount)) + '</td></tr>';
 });
 body += '</tbody></table>' +
-'<div class="stmt-annual-note"><b>Not owed yet.</b> This is what would fall due on December 31 ' +
-'if the season closed today, shown early so it is not a surprise.</div></div>';
+'<div class="stmt-annual-note">' + (anyOwed
+? '<b>Not owed yet.</b> This is what falls due on December 31 if the season closed today. ' +
+'It is shown on every statement so it is never a surprise in December.'
+: '<b>Nothing outstanding.</b> The year-end items are all settled or nil.') +
+'</div></div>';
 }
 // Standing, because points and hours are what a vendor actually asks about
 body += '<div class="stmt-standing"><div class="stmt-lbl">Where you stand</div><div>' +
@@ -13125,9 +13146,11 @@ L.push('  monthly date above. Settling the month does not settle these.');
 L.push('');
 }
 if (s.forecast && s.forecast.length) {
-L.push('COMING AT YEAR END \u2014 DECEMBER 31 (not owed yet)');
-s.forecast.forEach(f => L.push('  ' + money(f.amount).padStart(9) + '  ' + f.what));
-L.push('  Total if the season closed today: ' + money(s.forecastTotal));
+L.push('DUE AT YEAR END \u2014 DECEMBER 31');
+s.forecast.forEach(f => L.push('  ' + (f.settled && !f.amount ? '        \u2014' : money(f.amount).padStart(9)) +
+'  ' + f.what + (f.settled ? '  (settled)' : '')));
+L.push('  Still to settle: ' + money(s.forecastTotal));
+L.push('  Not owed yet. Shown on every statement so December is not a surprise.');
 L.push('');
 }
 L.push('WHERE YOU STAND');
@@ -13451,7 +13474,6 @@ const DEMO_CHARGES = [
 { what: 'Booth fee \u2014 Sunday', amt: [20, 25] },
 { what: 'Late absence', amt: [50] },
 { what: 'No-show', amt: [75] },
-{ what: 'Membership share installment', amt: [100] },
 { what: 'Wednesday Market space', amt: [20, 25] },
 ];
 const DEMO_CREDITS = [
@@ -17808,7 +17830,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-70';
+const BUILD_ID = '16-71';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
