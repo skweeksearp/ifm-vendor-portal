@@ -2608,7 +2608,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="fGiftCert">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'gcvendor')">
 <span class="fold-title">Take a Gift Certificate</span>
-<span class="fold-sub">Scan a customer&rsquo;s sticker &middot; the money comes to you</span>
+<span class="fold-sub">Scan a customer&rsquo;s certificate &middot; the money comes to you</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -2752,7 +2752,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 </section>
 <section id="screen-gcvendor" class="screen">
 <div class="screen-head" id="head-gcvendor"></div>
-<p class="empty-note" style="margin:-4px 0 14px;">A customer hands you a gift certificate sticker. Take what they are spending; the rest stays on their sticker for another day.</p>
+<p class="empty-note" style="margin:-4px 0 14px;">A customer hands you a gift certificate. Take what they are spending; the rest stays on their certificate for another day.</p>
 <div id="gcvScanRow"></div>
 <div id="gcvScanBox" style="display:none;" class="card">
 <div class="gcv-frame">
@@ -2763,14 +2763,14 @@ Recording it here puts that notice in front of every vendor when they open the a
 <button type="button" class="ghost-btn" onclick="gcvStopScan()">Stop scanning</button>
 </div>
 <div class="card desk-form">
-<label for="gcvCode">Or type the code under the square</label>
-<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="For a scuffed or wet sticker" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
+<label for="gcvCode">Or type the code printed on the certificate</label>
+<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="For a scuffed or wet certificate" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
 <div class="status-msg" id="gcvMsg"></div>
 </div>
 <div id="gcvOut"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>How This Settles</h2>
-<p class="empty-note" style="margin-top:0;">What you take goes straight onto <b>your account with the market</b> as money the market owes you, the same as any payment the office records for you. The certificate was paid for at the office window when it was sold, so you are not waiting on the customer for anything. You do not need to bring the sticker to the office &mdash; the customer keeps it until it is empty.</p>
+<p class="empty-note" style="margin-top:0;">What you take goes straight onto <b>your account with the market</b> as money the market owes you, the same as any payment the office records for you. The certificate was paid for at the office window when it was sold, so you are not waiting on the customer for anything. You do not need to bring the certificate to the office &mdash; the customer keeps it until it is empty.</p>
 <p class="empty-note">The app records what you enter here. Nothing checks it against the customer, so enter what they actually spent.</p>
 </div>
 </section>
@@ -16890,7 +16890,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-58';
+const BUILD_ID = '16-59';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -35802,8 +35802,8 @@ const row = document.getElementById('gcvScanRow');
 if (!row) return;
 row.innerHTML = gcvCanScan()
 ? '<button type="button" class="primary-btn gcv-scan-btn" onclick="gcvStartScan()">' +
-'<svg class="ico"><use href="#i-search"></use></svg> Scan the sticker</button>'
-: '<p class="empty-note">This phone will not open its camera for the app. Type the code printed under the square instead.</p>';
+'<svg class="ico"><use href="#i-search"></use></svg> Scan the certificate</button>'
+: '<p class="empty-note">This phone will not open its camera for the app. Type the code printed on the certificate instead.</p>';
 }
 let gcvStream = null, gcvScanTimer = null;
 function gcvSetStatus(text, looking, hit) {
@@ -35855,7 +35855,7 @@ setTimeout(go, 1500);
 });
 }
 await vid.play();
-gcvSetStatus('Point it at the square on the sticker\u2026', true);
+gcvSetStatus('Point it at the square on the certificate\u2026', true);
 const det = typeof BarcodeDetector !== 'undefined'
 ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
 const canvas = document.createElement('canvas');
@@ -35914,7 +35914,7 @@ await loadGiftCerts(); await loadGcRolls();
 const c = (gcCache || []).find(x => x.id.toUpperCase() === q);
 if (!c) {
 out.innerHTML = '<p class="empty-note"><b>That code is not a gift certificate this market sold.</b> ' +
-'Take payment another way, and tell the office what the sticker says.</p>';
+'Take payment another way, and tell the office what the certificate says.</p>';
 return;
 }
 if (c.status === 'void') {
@@ -35935,7 +35935,7 @@ body += '<div class="card desk-form" style="margin-top:10px;">' +
 '" placeholder="0.00"><span class="mr-unit">dollars</span></div>' +
 '<p class="empty-note" style="margin:6px 0 0;">This goes on <b>your</b> account with the market, ' +
 'because you are signed in as ' + esc(currentVendor() ? currentVendor().businessName : '') + '. ' +
-'The customer keeps the sticker with whatever is left on it.</p>' +
+'The customer keeps the certificate with whatever is left on it.</p>' +
 '<button type="button" class="primary-btn" onclick="gcVendorDraw(\'' + c.id + '\')">' +
 '<svg class="ico"><use href="#i-checkmark"></use></svg> Take this off the certificate</button>' +
 '<button type="button" class="ghost-btn" onclick="gcVendorDrawAll(\'' + c.id + '\')">Take the whole $' +
@@ -35977,8 +35977,8 @@ if (input) input.value = '';
 await gcVendorLookup(id);
 showMsg('gcvMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
 ' is on your account with the market. ' +
-(nowLeft > 0 ? 'Give the sticker back \u2014 it still carries <b>$' + fmtMoney(nowLeft) + '</b>.'
-: 'That empties the certificate; the sticker is spent.'));
+(nowLeft > 0 ? 'Give the certificate back \u2014 it still carries <b>$' + fmtMoney(nowLeft) + '</b>.'
+: 'That empties the certificate; there is nothing left on it.'));
 }
 async function gcVendorDrawAll(id) {
 await loadGiftCerts();
