@@ -157,6 +157,7 @@ background: #EFF3EA; border: 1.5px solid #C9D6BC; border-radius: 14px; }
 .gc-bal-num { font-size: 34px; font-weight: 800; color: #3F5B33; line-height: 1; }
 .gc-balance.gc-spent .gc-bal-num { color: #8A3B2E; }
 .gc-bal-label { font-size: 13px; font-weight: 700; color: #6E6A57; margin-top: 5px; }
+.handover-later { opacity: 0.78; border-style: dashed; }
 .fold-optional { font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
 text-transform: uppercase; color: #8A8674; background: #EDE9DA;
 border-radius: 999px; padding: 2px 7px; margin-left: 7px; vertical-align: 2px; }
@@ -2774,6 +2775,33 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p class="empty-note">The app records what you enter here. Nothing checks it against the customer, so enter what they actually spent.</p>
 </div>
 </section>
+<section id="screen-statements" class="screen">
+<div class="screen-head" id="head-statements"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">One statement a month for every vendor: what they were charged, what they paid or were credited, and where they stand on points and hours. Built from the market&rsquo;s records each time it is opened, so a correction anywhere corrects the statement too.</p>
+<div class="card desk-form">
+<label for="stmtMonth">Statement month</label>
+<select id="stmtMonth" onchange="renderStatements()"></select>
+<div id="stmtDueNote" class="empty-note" style="margin:8px 0 0;"></div>
+<div class="status-msg" id="stmtMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>The Month at a Glance</h2>
+<div id="stmtSummary" class="stat-row"></div>
+<div id="stmtBulk" style="margin-top:10px;"></div>
+</div>
+<div class="card desk-form">
+<label for="stmtFilter">Show</label>
+<select id="stmtFilter" onchange="renderStatements()">
+<option value="owing">Owing something</option>
+<option value="all">Everyone</option>
+<option value="unsent">Not sent yet</option>
+<option value="overdue">Past the due date and unpaid</option>
+<option value="credit">The market owes them</option>
+</select>
+<input type="text" id="stmtSearch" class="find-field" placeholder="Find a vendor by name" oninput="renderStatements()" autocomplete="off">
+</div>
+<div id="stmtList"></div>
+</section>
 <section id="screen-giftcerts" class="screen">
 <div class="screen-head" id="head-giftcerts"></div>
 <div class="card manager-only">
@@ -2856,6 +2884,18 @@ from last week if most of the same people came.</p>
 <button type="button" class="ghost-btn" onclick="wlCopyForSite()">Copy the list for the website</button>
 <button type="button" class="primary-btn" id="wlPublishBtn" onclick="wlPublish()">Publish it</button>
 <div class="status-msg" id="wlPubMsg"></div>
+<details id="wlBridgeBox" style="margin-top:12px;">
+<summary style="font-weight:700; cursor:pointer;">Connection to the website <span class="fold-optional">not switched on</span></summary>
+<p class="empty-note" style="margin:8px 0;"><b>The market has not decided to use this yet, and copying the list by hand is a perfectly good answer.</b> It is built and tested and does nothing until both boxes below are filled in. If the market does switch it on: install the IFM Website Bridge plugin on the website, take the address and shared word from its settings page, and put them here. Doing that commits the market to keeping a plugin updated and a shared word safe.</p>
+<label for="wlBridgeUrl">Address the app sends to</label>
+<input type="text" id="wlBridgeUrl" placeholder="https://ithacamarket.com/wp-json/ifm/v1/wednesday" autocomplete="off">
+<label for="wlBridgeSecret" style="margin-top:10px;">Shared word</label>
+<input type="text" id="wlBridgeSecret" placeholder="At least eight characters" autocomplete="off">
+<p class="empty-note" style="margin:6px 0 0;">This word is the only thing stopping anyone else writing to the page, so make it long and do not reuse a password from anywhere else.</p>
+<button type="button" class="primary-btn" onclick="wlSaveBridge()"><svg class="ico"><use href="#i-checkmark"></use></svg> Save the connection</button>
+<button type="button" class="ghost-btn" onclick="wlTestBridge()">Test it now</button>
+<div class="status-msg" id="wlBridgeMsg"></div>
+</details>
 <pre id="wlPreview" style="white-space:pre-wrap; font-size:12px; background:#FBFAF5; border:1px solid #C9C2A8; border-radius:8px; padding:10px; margin-top:10px; overflow-x:auto;"></pre>
 </div>
 </section>
@@ -7895,6 +7935,8 @@ await storageSet('ifm-photo-idx', ids);
 cache.promos = promos === STORAGE_MISSING ? [] : (promos || []);
 cache.checks = checks === STORAGE_MISSING ? [] : (checks || []);
 if (gcCache === null) gcCache = giftcerts === STORAGE_MISSING ? [] : (giftcerts || []);
+if (siteBridge === null) loadSiteBridge();
+if (stmtCache === null) loadStatements();
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -10015,6 +10057,21 @@ const HANDOVER = [
   why: 'The stickers already printed carry whatever address was current when they were ordered. Changing ' +
        'the app\u2019s address after a roll is printed makes those stickers open the wrong place.',
   hard: false },
+{ t: 'The website connection for the Wednesday vendor list',
+  who: 'Nobody yet \u2014 this is a decision for the market, not a job waiting to be done',
+  how: 'The app side is built and tested and does nothing until it is switched on. To switch it on: ' +
+       'install the IFM Website Bridge plugin (ifm-website-bridge.php, which travels with the app) ' +
+       'on the WordPress site, set a shared word on its settings page, put the shortcode ' +
+       '[ifm_wednesday_list] on the Wednesday Market page, then copy the address and the same shared ' +
+       'word into Who Is Here Today \u2192 Connection to the website and press Test it now. Leaving ' +
+       'all of that undone is a perfectly good answer.',
+  why: 'Today the office copies the list and pastes it into the page, which works. Connecting the two ' +
+       'saves a step on a market morning and costs the market a plugin to keep updated and a shared ' +
+       'word to look after \u2014 a small standing obligation in exchange for a small daily saving. ' +
+       'That trade is the market\u2019s to make, and it was left unmade on purpose. The plugin cannot ' +
+       'edit pages: it fills one block wherever the shortcode sits, so a leaked shared word can put a ' +
+       'wrong vendor list on one page and nothing worse.',
+  hard: false, later: true },
 { t: 'Photographs for the kiosk information screen',
   who: 'The Market Manager or staff',
   how: 'Upload them in Information Screen Subjects on the staff desk. They are stored in the market\u2019s ' +
@@ -10038,10 +10095,11 @@ if (!wrap) return;
 wrap.innerHTML = '';
 HANDOVER.forEach(item => {
 const box = document.createElement('div');
-box.className = 'card' + (item.hard ? ' not-yours' : '');
+box.className = 'card' + (item.hard ? ' not-yours' : '') + (item.later ? ' handover-later' : '');
 box.style.marginTop = '10px';
 box.innerHTML = '<h2 style="font-size:16px;">' + esc(item.t) +
-(item.hard ? ' <span class="season-tag">Create new \u2014 do not transfer</span>' : '') + '</h2>' +
+(item.hard ? ' <span class="season-tag">Create new \u2014 do not transfer</span>' : '') +
+(item.later ? ' <span class="season-tag">Not switched on \u2014 nobody is behind</span>' : '') + '</h2>' +
 '<p class="empty-note" style="margin:0 0 6px;"><b>Who does it</b> \u00b7 ' + esc(item.who) + '</p>' +
 '<p class="empty-note" style="margin:0 0 6px;"><b>How</b> \u00b7 ' + esc(item.how) + '</p>' +
 '<p class="empty-note" style="margin:0;"><b>Why it matters</b> \u00b7 ' + esc(item.why) + '</p>';
@@ -12688,6 +12746,331 @@ else if (!payCache) payCache = [];
 return payCache;
 }
 function squareConnected() { return ((payCache || []).length > 0); }
+const STMT_KEY = 'ifm-statements';
+let stmtCache = null;
+async function loadStatements() {
+const v = await storageGet(STMT_KEY);
+stmtCache = (v !== STORAGE_MISSING && v) ? v : {};
+return stmtCache;
+}
+async function saveStatements() { await storageSet(STMT_KEY, stmtCache || {}); }
+function stmtId(vendorId, ym) { return vendorId + ':' + ym; }
+function stmtRecord(vendorId, ym) { return (stmtCache || {})[stmtId(vendorId, ym)] || {}; }
+function ymOf(dateISO) { return String(dateISO || '').slice(0, 7); }
+function ymLabel(ym) {
+const [y, m] = ym.split('-').map(Number);
+return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+// Due on the Nth market weekend of the following month. Market weekends are
+// Saturdays, so this counts Saturdays -- a date the vendor is standing in the
+// pavilion anyway, which is friendlier than a number on a calendar.
+function stmtDueDate(ym) {
+const [y, m] = ym.split('-').map(Number);
+const want = Math.max(1, ruleNum('stmtDueWeekend') || 2);
+let d = new Date(y, m, 1);          // first of the FOLLOWING month
+let seen = 0;
+for (let i = 0; i < 40; i++) {
+if (d.getDay() === 6) { seen++; if (seen === want) break; }
+d.setDate(d.getDate() + 1);
+}
+return d.toISOString().slice(0, 10);
+}
+function stmtIsOverdue(ym) {
+const rec = stmtRecord('x', ym);
+return todayISO() > stmtDueDate(ym);
+}
+// Everything the vendor owes or is owed for one month, from every source the
+// account screen knows about, plus points and hours for context.
+function statementFor(vendorId, ym) {
+const year = ym.slice(0, 4);
+const a = accountData(vendorId, year);
+const inMonth = rows => rows.filter(r => ymOf(r.date) === ym);
+const charged = inMonth(a.charged);
+const received = inMonth(a.received);
+const sum = rows => Math.round(rows.reduce((t, r) => t + Number(r.amount || 0), 0) * 100) / 100;
+const rec = stmtRecord(vendorId, ym);
+// A late fee is charged only once the office marks the statement late, so
+// nobody is fined by the mere passing of a date while a cheque is in the post.
+const lateFee = rec.lateCharged ? Number(rec.lateCharged) : 0;
+const owed = Math.round((sum(charged) + lateFee - sum(received)) * 100) / 100;
+const carry = ruleNum('stmtCarryUnder') || 0;
+return {
+vendorId: vendorId, ym: ym, vendor: (cache.vendors || []).find(v => v.vendorId === vendorId),
+charged: charged, received: received,
+chargedTotal: sum(charged), receivedTotal: sum(received),
+lateFee: lateFee, owed: owed,
+due: stmtDueDate(ym),
+paid: Number(rec.paid || 0),
+outstanding: Math.round((owed - Number(rec.paid || 0)) * 100) / 100,
+sentAt: rec.sentAt || null, settledAt: rec.settledAt || null,
+// Under the carry line there is nothing worth a stamp or a chase.
+carried: Math.abs(owed) > 0 && Math.abs(owed) < carry,
+points: vendorPoints(vendorId),
+hours: buildHoursLedger(vendorId, year)
+};
+}
+// The email body. Plain text on purpose: it has to survive every mail client
+// a vendor might use, and a vendor reading it on a phone in a truck should be
+// able to see what they owe in the first three lines.
+function stmtEmailBody(s) {
+const money = n => '$' + fmtMoney(Math.abs(n));
+const L = [];
+L.push('IFM statement for ' + ymLabel(s.ym));
+L.push(s.vendor ? s.vendor.businessName : s.vendorId);
+L.push('');
+if (s.outstanding > 0) {
+L.push('AMOUNT DUE: ' + money(s.outstanding));
+L.push('Due by ' + formatDisplayDate(s.due) + ' \u2014 the ' +
+ordinal(ruleNum('stmtDueWeekend')) + ' market Saturday of ' +
+ymLabel(ymOf(s.due)).split(' ')[0] + '.');
+const fee = ruleNum('stmtLateFee');
+if (fee > 0) L.push('A late fee of ' + money(fee) + ' applies after that date.');
+} else if (s.outstanding < 0) {
+L.push('THE MARKET OWES YOU: ' + money(s.outstanding));
+L.push('This will come off what you owe next month, or the office can pay it out.');
+} else {
+L.push('NOTHING DUE. This month is settled \u2014 no action needed.');
+}
+L.push('');
+if (s.charged.length) {
+L.push('CHARGES');
+s.charged.forEach(r => L.push('  ' + formatDisplayDate(r.date) + '  ' +
+money(r.amount).padStart(9) + '  ' + r.what));
+if (s.lateFee) L.push('  ' + ''.padStart(12) + money(s.lateFee).padStart(9) + '  Late fee');
+L.push('  Total charges: ' + money(s.chargedTotal + s.lateFee));
+L.push('');
+}
+if (s.received.length) {
+L.push('PAYMENTS AND CREDITS');
+s.received.forEach(r => L.push('  ' + formatDisplayDate(r.date) + '  ' +
+money(r.amount).padStart(9) + '  ' + r.what));
+L.push('  Total credits: ' + money(s.receivedTotal));
+L.push('');
+}
+if (s.paid) { L.push('Already paid against this statement: ' + money(s.paid)); L.push(''); }
+L.push('WHERE YOU STAND');
+L.push('  Points: ' + (s.points == null ? 'not recorded' : s.points));
+if (s.hours) L.push('  Work hours: ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
+(s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' still owed this season' : ''));
+L.push('');
+L.push('This statement is built from the market\u2019s records. If a line looks wrong,');
+L.push('tell the office \u2014 correcting the record corrects the statement.');
+L.push('');
+L.push('Ithaca Farmers Market');
+return L.join('\n');
+}
+function ordinal(n) {
+return n === 1 ? 'first' : n === 2 ? 'second' : n === 3 ? 'third' : n === 4 ? 'fourth' : n + 'th';
+}
+// ---- actions: what the office does with a statement ----
+async function stmtMarkSent(vendorId, ym, how) {
+if (!requireManager('stmtMsg')) return;
+const id = stmtId(vendorId, ym);
+stmtCache[id] = Object.assign({}, stmtCache[id] || {},
+{ sentAt: Date.now(), sentBy: currentRole, sentHow: how || 'email' });
+actAs('Statement sent \u2014 ' + ymLabel(ym), { kind: 'money', weight: 'routine', vendorId: vendorId });
+await saveStatements();
+renderStatements();
+}
+async function stmtRecordPayment(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const el = document.getElementById('stmtPayAmt');
+const amt = Math.round(Number((el && el.value) || 0) * 100) / 100;
+if (!(amt > 0)) { showMsg('stmtMsg', 'err', 'Enter the amount received.'); return; }
+const id = stmtId(vendorId, ym);
+const rec = stmtCache[id] || {};
+const payments = (rec.payments || []).concat([{ at: Date.now(), on: todayISO(),
+amount: amt, by: currentRole,
+how: (document.getElementById('stmtPayHow') || {}).value || 'not recorded' }]);
+const paid = Math.round(payments.reduce((t, p) => t + p.amount, 0) * 100) / 100;
+stmtCache[id] = Object.assign({}, rec, { payments: payments, paid: paid });
+const s = statementFor(vendorId, ym);
+if (s.outstanding <= 0) stmtCache[id].settledAt = todayISO();
+actAs('Statement payment recorded \u2014 $' + fmtMoney(amt) + ' for ' + ymLabel(ym),
+{ kind: 'money', weight: 'notable', vendorId: vendorId });
+await saveStatements();
+if (el) el.value = '';
+renderStatements();
+showMsg('stmtMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
+' recorded against ' + esc(ymLabel(ym)) + '.');
+}
+// The late fee is applied by a person, never by the clock alone. A cheque in
+// the post, a vendor who rang, an office that was shut -- the date passing is
+// a prompt to look, not a reason to charge.
+async function stmtChargeLate(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const fee = ruleNum('stmtLateFee');
+if (!(fee > 0)) { showMsg('stmtMsg', 'err', 'The Board has set the late fee to zero.'); return; }
+const id = stmtId(vendorId, ym);
+if ((stmtCache[id] || {}).lateCharged) { showMsg('stmtMsg', 'err', 'A late fee is already on this statement.'); return; }
+stmtCache[id] = Object.assign({}, stmtCache[id] || {}, { lateCharged: fee, lateAt: todayISO() });
+actAs('Late fee added to statement \u2014 $' + fmtMoney(fee) + ' for ' + ymLabel(ym),
+{ kind: 'money', weight: 'notable', vendorId: vendorId });
+await saveStatements();
+renderStatements();
+showMsg('stmtMsg', 'ok', 'Late fee of $' + fmtMoney(fee) + ' added. The vendor will see it on this statement.');
+}
+async function stmtUndoLate(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const id = stmtId(vendorId, ym);
+if (!(stmtCache[id] || {}).lateCharged) return;
+delete stmtCache[id].lateCharged; delete stmtCache[id].lateAt;
+actAs('Late fee taken off statement \u2014 ' + ymLabel(ym), { kind: 'money', weight: 'notable', vendorId: vendorId });
+await saveStatements();
+renderStatements();
+}
+function stmtMonthOptions() {
+const out = [];
+const now = new Date();
+for (let i = 1; i <= 14; i++) {
+const d = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+out.push(d.toISOString().slice(0, 7));
+}
+return out;
+}
+function initStatementsScreen() {
+const sel = document.getElementById('stmtMonth');
+if (sel && !sel.options.length) {
+sel.innerHTML = stmtMonthOptions().map(ym =>
+'<option value="' + ym + '">' + esc(ymLabel(ym)) + '</option>').join('');
+}
+renderStatements();
+}
+function renderStatements() {
+const sel = document.getElementById('stmtMonth');
+const list = document.getElementById('stmtList');
+if (!sel || !list) return;
+const ym = sel.value || stmtMonthOptions()[0];
+const due = stmtDueDate(ym);
+const overdue = todayISO() > due;
+const note = document.getElementById('stmtDueNote');
+if (note) note.innerHTML = 'Due <b>' + esc(formatDisplayDate(due)) + '</b> \u2014 the ' +
+esc(ordinal(ruleNum('stmtDueWeekend'))) + ' market Saturday of ' +
+esc(ymLabel(ymOf(due)).split(' ')[0]) + '. Late fee $' + fmtMoney(ruleNum('stmtLateFee')) +
+'. <span class="empty-note">Both are set by the Board in Market Rules.</span>' +
+(overdue ? ' <b style="color:#8A3B2E;">That date has passed.</b>' : '');
+
+const all = (cache.vendors || []).map(v => statementFor(v.vendorId, ym));
+const active = all.filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
+const owing = active.filter(s => s.outstanding > 0);
+const credit = active.filter(s => s.outstanding < 0);
+const unsent = active.filter(s => !s.sentAt);
+const owedTotal = Math.round(owing.reduce((t, s) => t + s.outstanding, 0) * 100) / 100;
+const creditTotal = Math.round(credit.reduce((t, s) => t + Math.abs(s.outstanding), 0) * 100) / 100;
+
+const sum = document.getElementById('stmtSummary');
+if (sum) sum.innerHTML =
+'<div class="stat"><div class="stat-num">' + active.length + '</div><div class="stat-label">Statements</div></div>' +
+'<div class="stat"><div class="stat-num">$' + fmtMoney(owedTotal) + '</div><div class="stat-label">Owed to the market \u00b7 ' + owing.length + '</div></div>' +
+'<div class="stat"><div class="stat-num">$' + fmtMoney(creditTotal) + '</div><div class="stat-label">Owed to vendors \u00b7 ' + credit.length + '</div></div>' +
+'<div class="stat"><div class="stat-num">' + unsent.length + '</div><div class="stat-label">Not sent yet</div></div>';
+
+const bulk = document.getElementById('stmtBulk');
+if (bulk) bulk.innerHTML = !active.length ? '' :
+'<button type="button" class="ghost-btn" onclick="stmtCopyAll()">Copy every statement as text</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtExportCSV()">Export the month as a spreadsheet</button>' +
+'<p class="empty-note" style="margin:6px 2px 0;">Sending is one vendor at a time on purpose: each opens in your own mail program, addressed and written, for you to read before it goes. Nothing is sent by the app itself.</p>';
+
+const filt = (document.getElementById('stmtFilter') || {}).value || 'owing';
+const q = ((document.getElementById('stmtSearch') || {}).value || '').trim().toLowerCase();
+let shown = filt === 'all' ? active
+: filt === 'owing' ? owing
+: filt === 'unsent' ? unsent
+: filt === 'credit' ? credit
+: active.filter(s => s.outstanding > 0 && overdue);
+if (q) shown = shown.filter(s => String(s.vendor && s.vendor.businessName || '').toLowerCase().includes(q));
+shown.sort((a, b) => b.outstanding - a.outstanding);
+
+if (!shown.length) {
+list.innerHTML = '<p class="empty-note">Nothing to show for ' + esc(ymLabel(ym)) + ' under that filter.</p>';
+return;
+}
+list.innerHTML = shown.map(s => stmtCardHTML(s, overdue)).join('');
+}
+function stmtCardHTML(s, overdue) {
+const rec = stmtRecord(s.vendorId, s.ym);
+const name = esc(s.vendor ? s.vendor.businessName : s.vendorId);
+const state = s.outstanding > 0
+? (overdue ? '<span class="stamp late">Owing \u00b7 past due</span>' : '<span class="stamp in">Owing</span>')
+: s.outstanding < 0 ? '<span class="stamp out">Market owes them</span>'
+: '<span class="stamp in">Settled</span>';
+let body = '<div class="card" style="margin-top:10px;"><h2 style="font-size:16px;">' + name + ' ' + state + '</h2>';
+body += '<div class="gc-balance' + (s.outstanding > 0 ? '' : ' gc-spent') + '" style="margin-top:6px;">' +
+'<div class="gc-bal-num">$' + fmtMoney(Math.abs(s.outstanding)) + '</div>' +
+'<div class="gc-bal-label">' + (s.outstanding > 0 ? 'due from them' :
+s.outstanding < 0 ? 'owed to them' : 'settled') + '</div></div>';
+if (s.carried) body += '<p class="empty-note" style="margin:6px 2px 0;">Under the $' +
+fmtMoney(ruleNum('stmtCarryUnder')) + ' line the Board set \u2014 this can roll to next month rather than be chased.</p>';
+const rows = s.charged.map(r => ['charge', r]).concat(s.received.map(r => ['credit', r]));
+if (rows.length) {
+body += '<p class="empty-note" style="margin:10px 2px 4px;"><b>' + rows.length + ' line' + (rows.length === 1 ? '' : 's') + ' this month</b></p>';
+rows.sort((a, b) => String(a[1].date).localeCompare(String(b[1].date))).forEach(([k, r]) => {
+body += '<div class="req-row"><div class="req-row-main"><div class="req-name">' +
+(k === 'charge' ? '' : '\u2212 ') + '$' + fmtMoney(r.amount) + '</div>' +
+'<div class="req-meta">' + esc(formatDisplayDate(r.date)) + ' \u00b7 ' + esc(r.what) + '</div></div></div>';
+});
+}
+if (s.lateFee) body += '<p class="empty-note" style="color:#8A3B2E; margin:6px 2px 0;">Late fee of $' +
+fmtMoney(s.lateFee) + ' added ' + esc(formatDisplayDate(rec.lateAt)) +
+' \u00b7 <button type="button" class="link-btn" onclick="stmtUndoLate(\'' + s.vendorId + '\',\'' + s.ym + '\')">take it off</button></p>';
+if (s.paid) body += '<p class="empty-note" style="margin:6px 2px 0;"><b>$' + fmtMoney(s.paid) + ' paid</b> against this statement' +
+((rec.payments || []).length ? ' \u00b7 ' + rec.payments.map(p => formatDisplayDate(p.on) + ' $' + fmtMoney(p.amount)).join(', ') : '') + '</p>';
+body += '<p class="empty-note" style="margin:8px 2px 6px;">' +
+(s.sentAt ? 'Sent ' + esc(formatDisplayDate(new Date(s.sentAt).toISOString().slice(0, 10))) : '<b>Not sent yet</b>') +
+' \u00b7 points ' + (s.points == null ? '\u2014' : esc(s.points)) +
+(s.hours ? ' \u00b7 hours ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
+(s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' owed' : '') : '') + '</p>';
+const email = (s.vendor || {}).email || '';
+body += '<a class="ghost-btn" style="display:inline-block;" href="' + stmtMailto(s) + '" ' +
+'onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'email\')">' +
+(email ? 'Open the email' : 'No email on file \u2014 open anyway') + '</a>' +
+'<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy the text</button>';
+if (s.outstanding > 0 && overdue && !s.lateFee)
+body += '<button type="button" class="ghost-btn" onclick="stmtChargeLate(\'' + s.vendorId + '\',\'' + s.ym + '\')">Add the $' +
+fmtMoney(ruleNum('stmtLateFee')) + ' late fee</button>';
+if (s.outstanding > 0) {
+body += '<div class="desk-form" style="margin-top:8px;">' +
+'<label for="stmtPayAmt">Record a payment</label>' +
+'<div class="mr-unit-row"><input type="number" id="stmtPayAmt" step="0.01" min="0.01" placeholder="' + fmtMoney(s.outstanding) + '"><span class="mr-unit">dollars</span></div>' +
+'<select id="stmtPayHow"><option>Card \u00b7 Square</option><option>Cash at the office</option><option>Check</option><option>Not recorded</option></select>' +
+'<button type="button" class="primary-btn" onclick="stmtRecordPayment(\'' + s.vendorId + '\',\'' + s.ym + '\')">Record it</button></div>';
+}
+return body + '</div>';
+}
+function stmtMailto(s) {
+const email = (s.vendor || {}).email || '';
+return 'mailto:' + encodeURIComponent(email) +
+'?subject=' + encodeURIComponent('Ithaca Farmers Market \u2014 statement for ' + ymLabel(s.ym)) +
+'&body=' + encodeURIComponent(stmtEmailBody(s));
+}
+function stmtCopyOne(vendorId, ym) {
+const s = statementFor(vendorId, ym);
+try { navigator.clipboard.writeText(stmtEmailBody(s));
+showMsg('stmtMsg', 'ok', 'Copied \u2014 paste it wherever you send from.'); }
+catch (e) { showMsg('stmtMsg', 'err', 'Could not reach the clipboard.'); }
+}
+function stmtCopyAll() {
+const ym = document.getElementById('stmtMonth').value;
+const all = (cache.vendors || []).map(v => statementFor(v.vendorId, ym))
+.filter(s => s.chargedTotal || s.receivedTotal || s.paid);
+const text = all.map(s => stmtEmailBody(s)).join('\n\n' + '-'.repeat(52) + '\n\n');
+try { navigator.clipboard.writeText(text);
+showMsg('stmtMsg', 'ok', all.length + ' statements copied as text.'); }
+catch (e) { showMsg('stmtMsg', 'err', 'Could not reach the clipboard.'); }
+}
+function stmtExportCSV() {
+const ym = document.getElementById('stmtMonth').value;
+const rows = (cache.vendors || []).map(v => statementFor(v.vendorId, ym))
+.filter(s => s.chargedTotal || s.receivedTotal || s.paid)
+.map(s => [s.vendor ? s.vendor.businessName : s.vendorId, s.ym,
+s.chargedTotal, s.lateFee, s.receivedTotal, s.owed, s.paid, s.outstanding,
+s.due, s.sentAt ? new Date(s.sentAt).toISOString().slice(0, 10) : '',
+s.settledAt || '', s.points == null ? '' : s.points,
+s.hours ? Number(s.hours.done || 0).toFixed(1) : '']);
+downloadCSV('statements-' + ym + '.csv',
+['Vendor', 'Month', 'Charges', 'Late fee', 'Credits', 'Owed', 'Paid', 'Outstanding',
+'Due', 'Sent', 'Settled', 'Points', 'Hours done'], rows);
+}
 function accountData(vendorId, year) {
 const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
 const inYear = d => String(d || '').slice(0, 4) === String(year);
@@ -13304,8 +13687,57 @@ function wlSitePlain(date) {
 return wlSiteHeading(date) + '\n' + wlSiteLines(date).map(n => '\u2022 ' + n).join('\n');
 }
 // ---- the bridge, dormant until the backend can speak to WordPress ----
+let siteBridge = null;
+async function loadSiteBridge() {
+const v = await storageGet('ifm-site-bridge');
+siteBridge = (v !== STORAGE_MISSING && v) ? v : { url: '', secret: '' };
+return siteBridge;
+}
+function bridgeCfg() { return siteBridge || { url: '', secret: '' }; }
 function wlPublishReady() {
-return typeof IFM_SITE_BRIDGE_URL === 'string' && IFM_SITE_BRIDGE_URL.length > 0;
+const c = bridgeCfg();
+return !!(c.url && c.url.length > 8 && c.secret && c.secret.length >= 8);
+}
+async function wlSaveBridge() {
+if (!requireManager('wlBridgeMsg')) return;
+const url = (document.getElementById('wlBridgeUrl').value || '').trim();
+const secret = (document.getElementById('wlBridgeSecret').value || '').trim();
+if (url && !/^https:\/\//i.test(url)) {
+showMsg('wlBridgeMsg', 'err', 'The address must start with https:// \u2014 the shared word travels with it.');
+return;
+}
+if (url && secret.length < 8) {
+showMsg('wlBridgeMsg', 'err', 'The shared word needs at least eight characters.');
+return;
+}
+siteBridge = { url: url, secret: secret };
+await storageSet('ifm-site-bridge', siteBridge);
+actAs('Website connection changed', { kind: 'day', weight: 'notable' });
+renderWedList();
+showMsg('wlBridgeMsg', 'ok', url
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> Saved. Test it before a market day, not on one.'
+: 'Cleared. Publishing is off; the office copies the list by hand.');
+}
+// Asks the site to say who it is, without changing the page. Worth having:
+// finding out the connection is wrong at 8am on a Wednesday is the bad way.
+async function wlTestBridge() {
+if (!requireManager('wlBridgeMsg')) return;
+const url = (document.getElementById('wlBridgeUrl').value || '').trim();
+const secret = (document.getElementById('wlBridgeSecret').value || '').trim();
+if (!url || !secret) { showMsg('wlBridgeMsg', 'err', 'Fill in both boxes first.'); return; }
+showMsg('wlBridgeMsg', 'ok', 'Asking the website\u2026');
+try {
+const res = await ifmFetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
+body: JSON.stringify({ action: 'ping', secret: secret }) }, 15000);
+const out = await res.json();
+if (!out.ok) throw new Error(out.error || 'refused');
+showMsg('wlBridgeMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> The website answered' +
+(out.page ? ' \u2014 it will update <b>' + esc(out.page) + '</b>' : '') +
+'. Nothing was changed by this test.');
+} catch (e) {
+showMsg('wlBridgeMsg', 'err', 'No answer the app could use: ' + esc(String(e.message || e)) +
+'. Check the address is the one on the plugin\u2019s settings page and that the shared word matches.');
+}
 }
 async function wlPublish() {
 const date = wlPickedDate();
@@ -13320,10 +13752,13 @@ showMsg('wlPubMsg', 'err', 'Not connected to the website yet. Use \u201cCopy the
 return;
 }
 try {
-const res = await ifmFetch(IFM_SITE_BRIDGE_URL, {
+const cfg = bridgeCfg();
+// text/plain avoids a CORS preflight the site would have to answer.
+const res = await ifmFetch(cfg.url, {
 method: 'POST', headers: { 'Content-Type': 'text/plain' },
-body: JSON.stringify({ action: 'wednesday-list', date: date,
-heading: wlSiteHeading(date), html: wlSiteHtml(date) })
+body: JSON.stringify({ action: 'wednesday-list', secret: cfg.secret, date: date,
+heading: wlSiteHeading(date), html: wlSiteHtml(date),
+count: wlEntries(date).length })
 }, 20000);
 const out = await res.json();
 if (!out.ok) throw new Error(out.error || 'refused');
@@ -13379,6 +13814,10 @@ host.appendChild(b);
 });
 }
 function renderWedList() {
+const bu = document.getElementById('wlBridgeUrl');
+const bs = document.getElementById('wlBridgeSecret');
+if (bu && document.activeElement !== bu) bu.value = bridgeCfg().url || '';
+if (bs && document.activeElement !== bs) bs.value = bridgeCfg().secret || '';
 const date = wlPickedDate();
 const host = document.getElementById('wlHere');
 const pre = document.getElementById('wlPreview');
@@ -13474,6 +13913,7 @@ if (name === 'winterpaperwork') initWinterPaperwork();
 if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
+if (name === 'statements') initStatementsScreen();
 if (name === 'pavrentals') initPavRentalsScreen();
 if (name === 'account') initAccountScreen();
 if (name === 'homescreen') initHomeScreenScreen();
@@ -13621,6 +14061,7 @@ winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
 giftcerts:         { title: 'Gift Certificates' },
+statements:        { title: 'Monthly Statements' },
 gcvendor:          { title: 'Take a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
@@ -16900,7 +17341,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-60';
+const BUILD_ID = '16-64';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24053,6 +24494,13 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF45', kind: 'question', cat: 'Board', src: 'Vendor Guide p.9 Daily Fee Payment against the coming online payments',
+t: 'When online payment replaces the office window, how often must a vendor settle up \u2014 daily, monthly, quarterly, or annually?',
+d: 'Raised 28 Aug 2026, while planning online payments. Today the deadline enforces itself physically: the Guide says daily fees are paid at the office before the market begins, so nobody sells without settling, and the work-hours buyout settles once at year end. Online payment removes the window and with it the built-in deadline \u2014 one must be chosen, and nothing in the Guide chooses it. ' +
+'WHAT OTHER ORGANIZATIONS DO: Flint Farmers\u2019 Market invoices monthly \u2014 sent the 1st, due the 5th, $50 late fee after. The Food Trust\u2019s Philadelphia markets invoice per market date, due within 60 days, paid through an online portal. Whistler invoices per season block, due in 10 days. The Virginia market-managers\u2019 guide treats daily-at-the-gate and monthly-flat as the industry\u2019s two standard shapes. Artist co-op galleries \u2014 the closest match, because money flows both ways as it now does here with gift certificate credits \u2014 settle monthly, by the 15th of the following month, and roll balances under $20 forward rather than chase them (three months at most). ' +
+'THE CASE FOR MONTHLY: it is where both the market world and the co-op world independently landed. Daily settlement rebuilds the office queue inside a phone, prompts a vendor a hundred times a season, and maximizes the card processor\u2019s fixed per-transaction fees, which bite hardest on small amounts. Quarterly lets a regular vendor\u2019s balance reach several hundred dollars before the first prompt. Annually makes the market a lender and stacks every hard conversation into one month. ' +
+'A SHAPE TO CONSIDER, NOT A RECOMMENDATION TO RUBBER-STAMP: statement closes with the month; due by the second market Saturday following, a day the vendor is standing in the pavilion anyway; the statement nets both directions so certificate credits and SNAP reimbursements reduce what is owed first; balances under about $20 roll forward; paying day-of stays possible for whoever prefers it; the year-end work-hours settlement stays where it is. What happens when the deadline passes \u2014 a fine, the existing ladder, or something gentler \u2014 is its own Board question and is deliberately not answered here. ' +
+'WHAT THE APP DOES MEANWHILE: My Account shows every vendor their position all year, and nothing prompts anybody to pay by any date, because no such date exists yet. The deadline should be written down as a rule before the app starts prompting people toward it \u2014 not the reverse.' },
 { id: 'BF44', kind: 'question', cat: 'Board', src: 'Ag Guidelines p.5 against the Random Farm Inspections tool',
 t: 'Should a farm inspected at random one year be excluded from the next year\u2019s draw?',
 d: 'Raised 26 Aug 2026, when the draw was built. The Guidelines say the Agriculture Committee "may annually select up to 4 vendors to inspect at random", and say nothing at all about what happens the following year. So the tool draws from every Ag vendor every time, and the same farm can be drawn two or three years running. ' +
@@ -24490,6 +24938,9 @@ const RULE_DEFS = [
 { g: 'Clocks and warnings', id: 'planDays', l: 'Days to submit a correction plan after notice', u: 'days', d: 60, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'safetyYears', l: 'Years between booth safety updates', u: 'years', d: 2, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'lookbackYears', l: 'Years before an unsold juried product may be reclaimed', u: 'years', d: 3, src: 'Food Committee Guidelines' },
+{ g: 'Monthly statements', id: 'stmtDueWeekend', l: 'Statements due by this market weekend of the following month', u: 'weekOfMonth', d: 2, src: 'BF45 \u2014 no rule existed; set when statements were built' },
+{ g: 'Monthly statements', id: 'stmtLateFee', l: 'Late fee when a statement is not settled by the due date', u: '$', d: 25, src: 'BF45 \u2014 no rule existed; set when statements were built' },
+{ g: 'Monthly statements', id: 'stmtCarryUnder', l: 'Balances under this roll to next month instead of being chased', u: '$', d: 20, src: 'Common co-op practice \u2014 not in the Guide' },
 { g: 'Board meetings', id: 'boardWeek', l: 'Which week of the month the Board meets', u: 'weekOfMonth', d: 2, src: 'Guide, Board of Directors' },
 { g: 'Board meetings', id: 'boardDay', l: 'The day of the week the Board meets', u: 'weekday', d: 3, src: 'Guide, Board of Directors' },
 { g: 'Board meetings', id: 'snrWeek', l: 'Exception Requests due by this meeting-day of December', u: 'weekOfMonth', d: 1, src: 'Guide, Fee Deadlines, Penalties, and Requests for Exceptions' },
@@ -25354,7 +25805,8 @@ d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held f
 sub: 'Money taken and what happened, market day by market day',
 tiles: [
 { s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
-{ s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a sticker to sell, scan it again when it comes back' },
+{ s: 'statements', i: 'i-columns', t: 'Monthly Statements', d: 'What each vendor owes for a month \u2014 built, sent, and tracked to payment' },
+{ s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a certificate to sell, scan it again when it comes back' },
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
@@ -36418,6 +36870,7 @@ tiles: [
 { s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Track status of proposals' },
 { s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
+{ s: 'boardflags', i: 'i-scale', t: 'To Discuss with the Board', d: 'Questions only the Board can settle \u2014 raised by builds, waiting for a meeting' },
 ] },
 { key: 'prescommittees', title: 'Committees', icon: 'i-columns',
 sub: 'Who serves and who chairs \u2014 the President appoints the chairs (Bylaws VI \u00a72)',
