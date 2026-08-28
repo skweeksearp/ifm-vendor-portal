@@ -2692,6 +2692,11 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 </div>
 <div class="empty-note" id="acctSquareState" style="margin:0 0 12px;"></div>
 <div id="acctBody"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Your Monthly Statements</h2>
+<p class="empty-note" style="margin-top:0;">One for each month, the same statement the office sends you. Built from the market&rsquo;s records &mdash; if a line looks wrong, tell the office and correcting the record corrects this too.</p>
+<div id="myStatements"></div>
+</div>
 <div id="acctPayHalf">
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>How You Can Pay<button type="button" class="help-dot" onclick="showHelp(79)" aria-label="What are the ways to pay?">?</button></h2>
@@ -13071,6 +13076,39 @@ downloadCSV('statements-' + ym + '.csv',
 ['Vendor', 'Month', 'Charges', 'Late fee', 'Credits', 'Owed', 'Paid', 'Outstanding',
 'Due', 'Sent', 'Settled', 'Points', 'Hours done'], rows);
 }
+function renderMyStatements() {
+const host = document.getElementById('myStatements');
+if (!host || !currentVendorId) return;
+const months = stmtMonthOptions().slice(0, 6)
+.map(ym => statementFor(currentVendorId, ym))
+.filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
+if (!months.length) {
+host.innerHTML = '<p class="empty-note">No statements yet. One appears here for each month you owed or were credited anything.</p>';
+return;
+}
+host.innerHTML = months.map(s => {
+const state = s.outstanding > 0
+? '<span class="stamp late">$' + fmtMoney(s.outstanding) + ' due</span>'
+: s.outstanding < 0 ? '<span class="stamp in">$' + fmtMoney(Math.abs(s.outstanding)) + ' in your favour</span>'
+: '<span class="stamp in">Settled</span>';
+return '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(ymLabel(s.ym)) + ' ' + state + '</div>' +
+'<div class="req-meta">' +
+(s.outstanding > 0 ? 'Due ' + esc(formatDisplayDate(s.due)) +
+(todayISO() > s.due ? ' \u2014 that date has passed' : '') + ' \u00b7 ' : '') +
+esc(s.charged.length + s.received.length) + ' line' + (s.charged.length + s.received.length === 1 ? '' : 's') +
+(s.paid ? ' \u00b7 $' + fmtMoney(s.paid) + ' paid' : '') + '</div>' +
+'<button type="button" class="ghost-btn" style="margin-top:6px;" onclick="showMyStatement(\'' + s.ym + '\')">Read it</button>' +
+'</div></div>';
+}).join('') + '<pre id="myStmtText" style="display:none; white-space:pre-wrap; font-size:12px; background:#FBFAF5; border:1px solid #E4DFCB; border-radius:10px; padding:10px; margin-top:10px;"></pre>';
+}
+function showMyStatement(ym) {
+const pre = document.getElementById('myStmtText');
+if (!pre) return;
+pre.textContent = stmtEmailBody(statementFor(currentVendorId, ym));
+pre.style.display = 'block';
+pre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 function accountData(vendorId, year) {
 const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
 const inYear = d => String(d || '').slice(0, 4) === String(year);
@@ -13915,7 +13953,7 @@ if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
 if (name === 'statements') initStatementsScreen();
 if (name === 'pavrentals') initPavRentalsScreen();
-if (name === 'account') initAccountScreen();
+if (name === 'account') { initAccountScreen(); renderMyStatements(); }
 if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
@@ -17341,7 +17379,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-64';
+const BUILD_ID = '16-65';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25805,7 +25843,6 @@ d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held f
 sub: 'Money taken and what happened, market day by market day',
 tiles: [
 { s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
-{ s: 'statements', i: 'i-columns', t: 'Monthly Statements', d: 'What each vendor owes for a month \u2014 built, sent, and tracked to payment' },
 { s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a certificate to sell, scan it again when it comes back' },
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
@@ -25831,6 +25868,7 @@ tiles: [
 sub: 'What a vendor owes and has paid, and the year totalled up',
 tiles: [
 { s: 'account', i: 'i-basket', t: 'Vendor Accounts', d: 'One vendor\u2019s whole balance \u2014 fees, fines, share, hours owed' },
+{ s: 'statements', i: 'i-columns', t: 'Monthly Statements', d: 'What each vendor owes for a month \u2014 built, sent, and tracked to payment' },
 ] },
 { key: 'hours', title: 'Work Hours', icon: 'i-clock',
 sub: 'What is owed, worked, and billed',
