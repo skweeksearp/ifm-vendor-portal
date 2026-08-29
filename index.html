@@ -158,6 +158,12 @@ background: #EFF3EA; border: 1.5px solid #C9D6BC; border-radius: 14px; }
 .gc-balance.gc-spent .gc-bal-num { color: #8A3B2E; }
 .gc-bal-label { font-size: 13px; font-weight: 700; color: #6E6A57; margin-top: 5px; }
 .handover-later { opacity: 0.78; border-style: dashed; }
+.tone-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.tone-btn { display: flex; align-items: center; justify-content: center; gap: 7px;
+width: 100%; margin: 0; padding: 14px 8px; font-size: 15px; font-weight: 700;
+background: #fff; color: #3A382C; border: 2px solid #D8D2BC; border-radius: 12px; }
+.tone-btn.on { border-color: #3F5B33; background: #F3F6EF; color: #2F4A26; }
+.tone-thumb { font-size: 18px; line-height: 1; }
 /* The statement document. Deliberately plainer and squarer than the rest of
    the app: this is the one screen a vendor may print and hand to an
    accountant, and it should look like paperwork, not like an app. */
@@ -2658,6 +2664,14 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
+<div class="dash-fold" data-fold="fComplaint">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'complaint')">
+<span class="fold-title">Compliments &amp; Complaints</span>
+<span class="fold-sub">Something that went well, or something that needs looking into</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="fMerch" id="merchTile" style="display:none;">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'merch')">
 <span class="fold-title">Merch Mansion Stock &amp; Till</span>
@@ -2864,6 +2878,68 @@ Recording it here puts that notice in front of every vendor when they open the a
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Before Handing the App to the Market</h2>
 <p class="empty-note" style="margin-top:0;">Press <b>Wipe</b>. The Beta Reset tool clears these too, but Wipe is the one that says what it does. Once wiped, the statement tool shows only what the market actually recorded.</p>
+</div>
+</section>
+<section id="screen-complaint" class="screen">
+<div class="screen-head" id="head-complaint"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Say what happened and the app works out who should see it. A compliment is passed on; a complaint is looked into. The Board President sees both.</p>
+<div class="card desk-form">
+<label for="cpTone">Is this a compliment or a complaint</label>
+<div class="tone-switch">
+<button type="button" class="tone-btn" id="cpToneUp" onclick="setFeedbackTone('up')"><span class="tone-thumb">&#128077;</span> A compliment</button>
+<button type="button" class="tone-btn on" id="cpToneDown" onclick="setFeedbackTone('down')"><span class="tone-thumb">&#128078;</span> A complaint</button>
+</div>
+<select id="cpTone" data-no-find="1" style="display:none;"><option value="down" selected>down</option><option value="up">up</option></select>
+<p class="empty-note" style="margin:8px 0 0;" id="cpToneNote"></p>
+</div>
+<div class="card desk-form" id="cpBehalfCard" style="display:none;">
+<label for="cpBehalf">Who is this for</label>
+<select id="cpBehalf" onchange="renderComplaintForm()">
+<option value="self">Me &mdash; I am raising it myself</option>
+<option value="vendor">A vendor</option>
+<option value="staff">A member of market staff</option>
+<option value="public">A member of the public</option>
+</select>
+<div id="cpBehalfVendorWrap" style="display:none; margin-top:10px;">
+<label for="cpBehalfVendor">Which vendor</label>
+<select id="cpBehalfVendor"></select>
+</div>
+<div id="cpBehalfNameWrap" style="display:none; margin-top:10px;">
+<label for="cpBehalfName">Their name</label>
+<input type="text" id="cpBehalfName" autocomplete="off" placeholder="Who told you, so it can be followed up">
+</div>
+<p class="empty-note" style="margin:8px 0 0;" id="cpBehalfNote"></p>
+</div>
+<div class="card desk-form">
+<label for="cpKind">What is it about</label>
+<select id="cpKind" onchange="renderComplaintForm()">
+<option value="">&mdash; choose &mdash;</option>
+</select>
+<div id="cpSubWrap" style="display:none; margin-top:12px;">
+<label for="cpSub">Which kind</label>
+<select id="cpSub" onchange="renderComplaintForm()"></select>
+</div>
+</div>
+<div id="cpRoute"></div>
+<div id="cpRest" style="display:none;">
+<div class="card desk-form">
+<label for="cpWhat">What happened</label>
+<textarea id="cpWhat" rows="5" placeholder="What happened, in your own words."></textarea>
+<label for="cpWhen" style="margin-top:10px;">When (optional)</label>
+<input type="text" id="cpWhen" autocomplete="off" placeholder="e.g. Saturday 23 August, mid-morning">
+<label for="cpWho" style="margin-top:10px;">Who was involved (optional)</label>
+<input type="text" id="cpWho" autocomplete="off" placeholder="Names, booth numbers, or leave blank">
+<label style="margin-top:12px;">
+<input type="checkbox" id="cpAnon"> File without my name on it
+</label>
+<p class="empty-note" style="margin:4px 0 0;">The committee still sees the complaint, but not who sent it. Two things follow: nobody can come back to you with a question, and <b>it will not appear in your own list below</b> &mdash; the app cannot show it to you without knowing it was yours. Write the reference number down if you want to ask about it later.</p>
+<button type="button" class="primary-btn" onclick="submitComplaint()"><svg class="ico"><use href="#i-checkmark"></use></svg> File it</button>
+<div class="status-msg" id="cpMsg"></div>
+</div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span><span id="cpListTitle">What Has Been Filed</span></h2>
+<div id="cpList"></div>
 </div>
 </section>
 <section id="screen-merch" class="screen">
@@ -11414,6 +11490,8 @@ document.getElementById('volRoleCard').innerHTML =
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
 'fMerch', 'account', 'fGiftCert', 'snaptokens', 'mydocs',
+// Raising something that needs looking into sits with reaching the office.
+'fComplaint',
 // Your part in the market: the committees you sit on, and how to reach the office.
 'mycommittees', 'communicate',
 // Things you look up rather than do.
@@ -12368,6 +12446,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-statements', t: 'Monthly statements \u2014 sent marks and payments recorded', v: () => ({}) },
 { g: 'traffic', k: 'ifm-demo-statements', t: 'Demo statement records \u2014 the invented months', v: () => ({ on: false, rows: [] }) },
 { g: 'traffic', k: 'ifm-merch', t: 'Merch Mansion stock, intake and sales', v: () => ({ items: [], intake: [], sales: [] }) },
+{ g: 'traffic', k: 'ifm-complaints', t: 'Complaints filed', v: () => [] },
 { g: 'config', k: 'ifm-merch-square', t: 'Merch Mansion Square Application ID', v: () => ({ appId: '', locationId: '' }) },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
 { g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
@@ -14434,6 +14513,13 @@ if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
 paintBackHands(document.getElementById('screen-' + name));
+if (name === 'complaint') {
+setFeedbackTone(feedbackTone());
+const t = document.getElementById('cpListTitle');
+if (t) t.textContent = currentRole === 'vendor' ? 'What You Have Sent' : 'What Has Been Sent';
+if (!complaintCache) loadComplaints().then(renderComplaintList); else renderComplaintList();
+renderComplaintForm();
+}
 if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
 if (name === 'merch') { if (!merchCache || !merchSq) Promise.all([loadMerch(), loadMerchSquare()]).then(renderMerch); else renderMerch(); }
 if (name === 'demostmt') renderDemoStatements();
@@ -14588,6 +14674,7 @@ wedlist:           { title: 'Who Is Here Today' },
 giftcerts:         { title: 'Gift Certificates' },
 statements:        { title: 'Monthly Statements' },
 merch:             { title: 'Merch Mansion Stock and Till' },
+complaint:         { title: 'Compliments and Complaints' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Take a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
@@ -17873,7 +17960,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-76';
+const BUILD_ID = '16-79';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26050,6 +26137,319 @@ if (why === null) return;
 if (!why.trim()) { showMsg('agDrawMsg', 'err', 'A redraw needs a reason.'); return; }
 await drawInspectionFarms(why.trim());
 }
+// FILING A COMPLAINT.
+//
+// Two menus: what it is about, then which kind. The second decides where it
+// goes, so nobody has to know the committee structure to be heard.
+//
+// ONE ROUTE IS DELIBERATELY NOT A COMMITTEE. The Sexual Harassment Policy
+// says complaints go to the market manager or a board officer -- president,
+// vice president, secretary or treasurer -- who must open a prompt and
+// confidential investigation. Filing that into a committee queue would be
+// wrong on the policy and wrong on the confidentiality, so that choice does
+// not offer a committee at all: it names the people, says retaliation is
+// prohibited, and says that unwanted touching or coerced acts may be a crime
+// and the police can be called. The app must not put a form between somebody
+// and that fact.
+const COMPLAINT_KEY = 'ifm-complaints';
+let complaintCache = null;
+async function loadComplaints() {
+const v = await storageGet(COMPLAINT_KEY);
+complaintCache = (v !== STORAGE_MISSING && v) ? v : [];
+return complaintCache;
+}
+function complaintBehalf() {
+const sel = document.getElementById('cpBehalf');
+if (!sel || currentRole === 'vendor') return { who: 'self' };
+const who = sel.value || 'self';
+const out = { who: who };
+if (who === 'vendor') {
+const v = document.getElementById('cpBehalfVendor');
+out.vendorId = v ? v.value : '';
+out.name = out.vendorId ? (boothVendorName(out.vendorId) || out.vendorId) : '';
+} else if (who === 'staff' || who === 'public') {
+const n = document.getElementById('cpBehalfName');
+out.name = n ? (n.value || '').trim() : '';
+}
+return out;
+}
+function renderComplaintBehalf() {
+const card = document.getElementById('cpBehalfCard');
+if (!card) return;
+const office = currentRole !== 'vendor';
+card.style.display = office ? 'block' : 'none';
+if (!office) return;
+const vsel = document.getElementById('cpBehalfVendor');
+if (vsel && vsel.options.length < 2) {
+vsel.innerHTML = '<option value="">\u2014 choose \u2014</option>' +
+(cache.vendors || []).slice().sort(byBusinessName)
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+sweepVendorFinders(card);
+}
+const b = complaintBehalf();
+const vw = document.getElementById('cpBehalfVendorWrap');
+const nw = document.getElementById('cpBehalfNameWrap');
+if (vw) vw.style.display = b.who === 'vendor' ? 'block' : 'none';
+if (nw) nw.style.display = (b.who === 'staff' || b.who === 'public') ? 'block' : 'none';
+const note = document.getElementById('cpBehalfNote');
+if (note) note.textContent = b.who === 'self'
+? 'Filed in your own name, the same as anyone else filing.'
+: b.who === 'public'
+? 'A member of the public cannot sign in, so the office files for them. Their name matters: a complaint nobody can be asked about is much harder to act on.'
+: 'Logged as theirs, not yours \u2014 the committee sees who raised it and can come back to them.';
+}
+function setFeedbackTone(t) {
+const sel = document.getElementById('cpTone');
+if (sel) sel.value = t;
+// A change of tone changes what the menus mean, so old picks are dropped
+// rather than silently reinterpreted against a different list.
+const k = document.getElementById('cpKind'); if (k) k.value = '';
+const s = document.getElementById('cpSub'); if (s) s.value = '';
+const kinds = feedbackKinds();
+if (k) k.innerHTML = '<option value="">\u2014 choose \u2014</option>' +
+kinds.map(x => '<option value="' + x.k + '">' + esc(x.label) + '</option>').join('');
+['cpToneUp', 'cpToneDown'].forEach(id => {
+const b = document.getElementById(id);
+if (b) b.className = 'tone-btn' + ((id === 'cpToneUp') === (t === 'up') ? ' on' : '');
+});
+showMsg('cpMsg', '', '');
+renderComplaintForm();
+}
+function renderComplaintForm() {
+renderComplaintBehalf();
+const up = feedbackTone() === 'up';
+const tn = document.getElementById('cpToneNote');
+if (tn) tn.textContent = up
+? 'Passed to the person it is about and to the office. Nobody has to act on it \u2014 it is worth recording that something went right.'
+: 'Looked into by whoever it concerns. The Board President sees it either way.';
+const kindLbl = document.querySelector('label[for="cpKind"]');
+if (kindLbl) kindLbl.textContent = up ? 'What is it about' : 'What is it about';
+const whatLbl = document.querySelector('label[for="cpWhat"]');
+if (whatLbl) whatLbl.textContent = up ? 'What happened' : 'What happened';
+const whatBox = document.getElementById('cpWhat');
+if (whatBox) whatBox.placeholder = up
+? 'What they did, in your own words.' : 'What happened, in your own words.';
+const btn = document.querySelector('#cpRest .primary-btn');
+if (btn) btn.innerHTML = '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+(up ? 'Send it' : 'File it');
+const k = (document.getElementById('cpKind') || {}).value || '';
+const subWrap = document.getElementById('cpSubWrap');
+const subSel = document.getElementById('cpSub');
+const kk = feedbackKind(k);
+if (subWrap) subWrap.style.display = kk ? 'block' : 'none';
+if (subSel && kk) {
+const cur = subSel.value;
+subSel.innerHTML = '<option value="">\u2014 choose \u2014</option>' +
+kk.subs.map(s => '<option value="' + s.k + '"' + (s.k === cur ? ' selected' : '') + '>' +
+esc(s.label) + '</option>').join('');
+}
+const s = (subSel || {}).value || '';
+const route = feedbackRoute(k, s);
+const box = document.getElementById('cpRoute');
+const rest = document.getElementById('cpRest');
+if (rest) rest.style.display = route ? 'block' : 'none';
+if (!box) return;
+if (!route) { box.innerHTML = ''; return; }
+if (feedbackSub(k, s).to === 'officers') {
+box.innerHTML = '<div class="card" style="border-color:#C2703D; background:#FDF6EE;">' +
+'<h2 style="font-size:16px;"><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>This one does not go to a committee</h2>' +
+'<p class="empty-note" style="margin-top:0;">Under the market\u2019s Sexual Harassment Policy this goes straight to the <b>Market Manager or a Board officer</b> \u2014 president, vice president, secretary or treasurer \u2014 who must open a prompt investigation and keep it confidential so far as they can. <b>Retaliation against anyone who reports is prohibited</b> and is itself grounds for discipline.</p>' +
+'<p class="empty-note"><b>If there was unwanted physical touching, confinement, or coerced sexual contact, that may be a crime.</b> You can call the local police, and you can do that instead of or as well as this form. You may also file with a government agency or in court \u2014 using this form does not give any of that up.</p>' +
+'<p class="empty-note" style="margin-bottom:0;">You can send it here, but you do not have to use the app at all: telling the Market Manager or any board officer in person carries exactly the same weight.</p></div>';
+} else {
+box.innerHTML = '<div class="card" style="background:#F3F6EF;">' +
+'<p class="empty-note" style="margin:0;"><b>This goes to: ' + esc(route.name) + '.</b> ' +
+esc(route.why) + ' The Board President sees everything sent here either way.</p></div>';
+}
+}
+async function submitComplaint() {
+if (!canFileComplaint()) { showMsg('cpMsg', 'err', 'Sign in to file a complaint.'); return; }
+const k = document.getElementById('cpKind').value;
+const s = document.getElementById('cpSub').value;
+const tone = feedbackTone();
+const route = feedbackRoute(k, s);
+if (!route) { showMsg('cpMsg', 'err', 'Choose what it is about first.'); return; }
+const what = (document.getElementById('cpWhat').value || '').trim();
+if (what.length < 10) { showMsg('cpMsg', 'err', tone === 'up'
+? 'Say what they did \u2014 a line or two is enough, but a bare thumbs up tells them nothing.'
+: 'Say what happened \u2014 a line or two is enough, but the committee needs something to act on.'); return; }
+const anon = document.getElementById('cpAnon').checked;
+const behalf = complaintBehalf();
+if (behalf.who === 'vendor' && !behalf.vendorId) {
+showMsg('cpMsg', 'err', 'Choose which vendor this is for.'); return;
+}
+if ((behalf.who === 'staff' || behalf.who === 'public') && !behalf.name) {
+showMsg('cpMsg', 'err', 'Put their name in, so the committee can come back to them.'); return;
+}
+await loadComplaints();
+const rec = {
+id: 'C' + Date.now().toString(36).toUpperCase(),
+tone: tone, kind: k, sub: s, to: feedbackSub(k, s).to,
+what: what,
+when: (document.getElementById('cpWhen').value || '').trim(),
+who: (document.getElementById('cpWho').value || '').trim(),
+filedOn: todayISO(), filedAt: Date.now(),
+byRole: currentRole,
+byVendorId: anon ? null : (currentRole === 'vendor' ? currentVendorId
+: (behalf.who === 'vendor' ? behalf.vendorId : null)),
+onBehalf: behalf.who === 'self' ? null : behalf.who,
+onBehalfName: behalf.who === 'self' ? null : (behalf.name || null),
+loggedBy: currentRole === 'vendor' ? null : currentRole,
+anon: anon,
+status: tone === 'up' ? 'sent' : 'filed'
+};
+complaintCache.push(rec);
+await storageSet(COMPLAINT_KEY, complaintCache);
+actAs((tone === 'up' ? 'Compliment sent \u2014 ' : 'Complaint filed \u2014 ') + feedbackKind(k).label.toLowerCase(),
+{ kind: 'day', weight: tone === 'up' ? 'routine' : 'notable' });
+['cpWhat', 'cpWhen', 'cpWho'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+document.getElementById('cpAnon').checked = false;
+renderComplaintList();
+showMsg('cpMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+(tone === 'up' ? 'Sent' : 'Filed') +
+(behalf.who === 'self' ? '' : ' for ' + esc(behalf.name || behalf.who)) + '. ' +
+'It goes to ' + esc(route.name) + ', and the Board President can see it' +
+(anon ? ', and no name is on it' : '') + '. Reference <b>' + esc(rec.id) + '</b>.' +
+(behalf.who === 'self' ? '' : ' Give them that reference \u2014 it is how they ask about it later.'));
+}
+function renderComplaintList() {
+const host = document.getElementById('cpList');
+if (!host) return;
+const all = (complaintCache || []).slice().reverse();
+const mine = currentRole === 'vendor'
+? all.filter(c => c.byVendorId === currentVendorId)
+: all;
+if (!mine.length) {
+host.innerHTML = '<p class="empty-note">' + (currentRole === 'vendor'
+? 'You have not filed anything.' : 'Nothing has been filed.') + '</p>';
+return;
+}
+host.innerHTML = mine.map(c => {
+const up = c.tone === 'up';
+const list = up ? COMPLIMENT_KINDS : COMPLAINT_KINDS;
+const kk = list.find(x => x.k === c.kind);
+const sub = kk ? kk.subs.find(x => x.k === c.sub) : null;
+const route = COMPLAINT_ROUTES[c.to] || { name: 'the office' };
+return '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name"><span class="tone-thumb">' + (up ? '\uD83D\uDC4D' : '\uD83D\uDC4E') + '</span> ' +
+esc(kk ? kk.label : c.kind) + ' \u2014 ' + esc(sub ? sub.label : c.sub) +
+' <span class="stamp ' + (c.status === 'closed' ? 'out' : 'in') + '">' + esc(c.status) + '</span></div>' +
+'<div class="req-meta">' + esc(c.id) + ' \u00b7 ' + esc(formatDisplayDate(c.filedOn)) +
+' \u00b7 to ' + esc(route.name) +
+(currentRole !== 'vendor'
+? ' \u00b7 from ' + (c.anon ? 'someone who asked not to be named'
+: c.onBehalf ? esc(c.onBehalfName || c.onBehalf) +
+' (' + (c.onBehalf === 'public' ? 'a member of the public'
+: c.onBehalf === 'staff' ? 'staff' : 'a vendor') +
+'), logged by the ' + esc(c.loggedBy === 'president' ? 'Board President' : 'office')
+: esc(c.byVendorId ? (boothVendorName(c.byVendorId) || c.byVendorId) : c.byRole))
+: '') + '</div>' +
+'<div class="req-meta" style="margin-top:4px;">' + esc(c.what.slice(0, 160)) +
+(c.what.length > 160 ? '\u2026' : '') + '</div>' +
+'</div></div>';
+}).join('');
+}
+// COMPLIMENTS USE THE SAME TOOL, DELIBERATELY.
+// A market that only ever collects grievances learns only what went wrong.
+// The thumb sits above everything else because it changes what the rest of
+// the form is for: praise is not routed to a committee to be adjudicated,
+// it is passed to the person it is about and to the office. None of the
+// complaint machinery -- the grievance route, the harassment panel -- has
+// any business on a compliment, so it does not appear.
+const COMPLIMENT_KINDS = [
+{ k: 'person', label: 'Somebody who helped', subs: [
+{ k: 'vendor', label: 'A vendor', to: 'praise' },
+{ k: 'staff', label: 'A member of market staff', to: 'praise' },
+{ k: 'volunteer', label: 'A volunteer or a committee member', to: 'praise' },
+{ k: 'lead', label: 'Whoever runs a programme \u2014 merch, garbage, dishes', to: 'praise' },
+] },
+{ k: 'product', label: 'Something being sold', subs: [
+{ k: 'quality', label: 'Something particularly good', to: 'praise' },
+{ k: 'new', label: 'Something new worth the market knowing about', to: 'office' },
+] },
+{ k: 'place', label: 'The pavilion or the grounds', subs: [
+{ k: 'looks', label: 'The place looked or worked well', to: 'bg' },
+{ k: 'fixed', label: 'Something got fixed properly', to: 'bg' },
+] },
+{ k: 'run', label: 'How the market was run', subs: [
+{ k: 'day', label: 'A market day that went well', to: 'office' },
+{ k: 'handled', label: 'Something handled well by the office', to: 'office' },
+{ k: 'rule', label: 'A rule or decision that worked', to: 'board' },
+] },
+];
+function feedbackTone() {
+const el = document.getElementById('cpTone');
+return el && el.value === 'up' ? 'up' : 'down';
+}
+function feedbackKinds() { return feedbackTone() === 'up' ? COMPLIMENT_KINDS : COMPLAINT_KINDS; }
+function feedbackKind(k) { return feedbackKinds().find(x => x.k === k) || null; }
+function feedbackSub(k, s) {
+const kk = feedbackKind(k);
+return kk ? (kk.subs.find(x => x.k === s) || null) : null;
+}
+function feedbackRoute(k, s) {
+const sub = feedbackSub(k, s);
+return sub ? COMPLAINT_ROUTES[sub.to] : null;
+}
+const COMPLAINT_KINDS = [
+{ k: 'conduct', label: 'How somebody behaved', subs: [
+{ k: 'vendor', label: 'A vendor, towards me or someone else', to: 'grievance' },
+{ k: 'staff', label: 'A member of market staff', to: 'grievance' },
+{ k: 'customer', label: 'A customer or member of the public', to: 'office' },
+{ k: 'altercation', label: 'An argument or altercation at market', to: 'grievance' },
+{ k: 'harassment', label: 'Harassment, discrimination or unwanted touching', to: 'officers' },
+] },
+{ k: 'product', label: 'Something being sold', subs: [
+{ k: 'ag', label: 'An agricultural product \u2014 produce, meat, dairy, plants', to: 'ag' },
+{ k: 'artisan', label: 'A craft or artisan product', to: 'artisan' },
+{ k: 'food', label: 'Prepared food or drink', to: 'food' },
+{ k: 'resale', label: 'Something that may not be theirs to sell', to: 'office' },
+] },
+{ k: 'place', label: 'The pavilion, a booth or the grounds', subs: [
+{ k: 'repair', label: 'Something broken or unsafe', to: 'bg' },
+{ k: 'booth', label: 'A booth space or its condition', to: 'bg' },
+{ k: 'clean', label: 'Rubbish, dishes or cleanliness', to: 'bg' },
+{ k: 'parking', label: 'Parking or vehicles', to: 'office' },
+] },
+{ k: 'money', label: 'A fee, a fine or a charge', subs: [
+{ k: 'fine', label: 'A fine I think is wrong', to: 'office' },
+{ k: 'fee', label: 'A fee or charge on my account', to: 'office' },
+{ k: 'statement', label: 'Something on my statement', to: 'office' },
+] },
+{ k: 'policy', label: 'A market rule or how it is applied', subs: [
+{ k: 'rule', label: 'A rule I think is wrong or unfair', to: 'board' },
+{ k: 'applied', label: 'A rule applied unevenly', to: 'grievance' },
+{ k: 'decision', label: 'A decision the office made', to: 'board' },
+] },
+{ k: 'employment', label: 'Employment of market staff', subs: [
+{ k: 'personnel', label: 'A staff employment matter', to: 'personnel' },
+] },
+];
+const COMPLAINT_ROUTES = {
+grievance: { name: 'Grievance Committee',
+why: 'The Guide sends complaints against another vendor or a staff member here. The committee reviews the form with you and decides what happens next.' },
+ag: { name: 'Agriculture Committee', why: 'It juries agricultural products and runs farm inspections.' },
+artisan: { name: 'Artisan Committee', why: 'It juries craft products against the Artisan Guidelines.' },
+food: { name: 'Food Committee', why: 'It juries prepared food and drink.' },
+bg: { name: 'Building & Grounds Committee', why: 'The pavilion itself is theirs.' },
+personnel: { name: 'Personnel Committee', why: 'Employment matters. Confidential by nature.' },
+office: { name: 'The Market Manager', why: 'Day-to-day running of the market, and anything on your account.' },
+board: { name: 'The Board', why: 'Rules and decisions are the Board\u2019s to change. This reaches the President.' },
+officers: { name: 'The Market Manager or a Board officer', why: 'Not a committee \u2014 see below.' },
+praise: { name: 'The person it is about, and the office', why: 'Passed on rather than investigated. Nobody has to do anything with it except be told.' },
+};
+function complaintKind(k) { return COMPLAINT_KINDS.find(x => x.k === k) || null; }
+function complaintSub(k, s) {
+const kk = complaintKind(k);
+return kk ? (kk.subs.find(x => x.k === s) || null) : null;
+}
+function complaintRoute(k, s) {
+const sub = complaintSub(k, s);
+return sub ? COMPLAINT_ROUTES[sub.to] : null;
+}
+function canFileComplaint() {
+return ['vendor', 'staff', 'manager', 'president'].indexOf(currentRole) !== -1;
+}
 const COMMITTEES = [
 { key: 'ag', name: 'Agriculture',
 note: 'Juries agricultural products and runs farm inspections \u2014 up to four random inspections a year.' },
@@ -26771,6 +27171,7 @@ tiles: [
 { key: 'programs', title: 'What the Market Runs', icon: 'i-toolbox',
 sub: 'The market\u2019s own operations \u2014 who heads each one, and the shifts that earn work hours',
 tiles: [
+{ s: 'complaint', i: 'i-scale', t: 'Compliments & Complaints', d: 'What has been sent or filed, and who it went to' },
 { s: 'merchmansion', i: 'i-toolbox', t: 'Programs & Leads', d: 'Merch Mansion, garbage, dish recycling and the morning jobs \u2014 who runs each, and posting shifts' },
 { s: 'merch', i: 'i-gem', t: 'Merch Mansion Stock & Till', d: 'What is in stock, what sold, and closing out a market day' },
 ] },
@@ -37768,6 +38169,7 @@ tiles: [
 { s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'One line a month \u2014 rules changed since the Guide printed' },
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
 { s: 'boardflags', i: 'i-scale', t: 'To Discuss with the Board', d: 'Questions only the Board can settle \u2014 raised by builds, waiting for a meeting' },
+{ s: 'complaint', i: 'i-scale', t: 'Compliments & Complaints', d: 'Everything sent or filed, whichever way it went' },
 ] },
 { key: 'prescommittees', title: 'Committees', icon: 'i-columns',
 sub: 'Who serves and who chairs \u2014 the President appoints the chairs (Bylaws VI \u00a72)',
