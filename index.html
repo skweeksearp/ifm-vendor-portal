@@ -164,6 +164,18 @@ width: 100%; margin: 0; padding: 14px 8px; font-size: 15px; font-weight: 700;
 background: #fff; color: #3A382C; border: 2px solid #D8D2BC; border-radius: 12px; }
 .tone-btn.on { border-color: #3F5B33; background: #F3F6EF; color: #2F4A26; }
 .tone-thumb { font-size: 18px; line-height: 1; }
+/* Nothing may exceed the width of the phone. Applied broadly rather than
+   patched per element, because every one of these was found by a sweep and
+   the next one would not be. The kiosk map is deliberately excluded: it is
+   larger than the viewport by design and is dragged rather than read. */
+.card, .req-row, .tracker-row, .dash-fold, .fold-bar, .stmt-doc, .comm-item {
+max-width: 100%; overflow-wrap: anywhere; }
+.fold-title, .fold-sub, .req-name, .req-meta, .stat-label, .stat-num,
+.t-title, .t-sub, .empty-note, .status-msg, label, h1, h2, h3,
+.req-row-main, .req-tally, .req-row, .comm-title, .comm-desc, summary {
+min-width: 0; overflow-wrap: anywhere; }
+table.log, table.stmt-table { width: 100%; table-layout: auto; }
+table.log td, table.stmt-table td { overflow-wrap: anywhere; }
 /* The statement document. Deliberately plainer and squarer than the rest of
    the app: this is the one screen a vendor may print and hand to an
    accountant, and it should look like paperwork, not like an app. */
@@ -310,8 +322,10 @@ box-shadow: 0 3px 8px rgba(35,42,32,0.08);
 }
 .card h2 { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; font-size: 17px; margin: 0 0 12px; color: var(--ink); letter-spacing: -0.01em; }
 .card h2 .emoji { font-size: 19px; margin-right: 4px; }
-.stat-row { display: flex; gap: 12px; }
-.stat { flex: 1; text-align: center; border: 1px solid var(--sunflower); border-radius: 10px; padding: 12px 6px; background: #E7EEDF; }
+.stat-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.stat { flex: 1 1 calc(50% - 12px); min-width: 0; text-align: center;
+border: 1px solid var(--sunflower); border-radius: 10px; padding: 12px 6px;
+background: #E7EEDF; overflow-wrap: anywhere; }
 .stat .emoji { font-size: 24px; display: block; margin-bottom: 2px; }
 .stat .num { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; font-size: 32px; line-height: 1; color: var(--ink); }
 .stat .label { font-size: 15px; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; opacity: 0.75; }
@@ -588,7 +602,7 @@ opacity: 0.75; line-height: 1.35;
 flex: 1 0 100%; width: 100%; margin: 10px 0 0;
 font-size: 16px; padding: 9px 12px;
 }
-.req-row-main { flex: 1; min-width: 0; }
+.req-row-main { flex: 1 1 14rem; min-width: min(100%, 14rem); }
 .req-name { font-weight: 700; font-size: 16px; line-height: 1.25; }
 .req-meta { font-size: 14px; opacity: 0.65; line-height: 1.35; margin-top: 2px; }
 .req-state {
@@ -1030,7 +1044,7 @@ body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 4
   font-size: 11px; font-weight: 800; letter-spacing: .04em;
   text-transform: uppercase; color: #8A8268;
   border: 1px solid #C9C2A8; border-radius: 4px; padding: 1px 5px;
-  white-space: nowrap;
+  display: inline-block; max-width: 100%; white-space: normal;
 }
 .venue-note { font-size: 13.5px; color: var(--ink-dim, #8A8A86); line-height: 1.5;
   margin: -4px 0 12px; }
@@ -2774,11 +2788,7 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Earlier Statements</h2>
 <div id="myStatements"></div>
 </div>
-<details class="card" id="acctOlderTools">
-<summary style="font-weight:800; cursor:pointer;">Other ways to settle up <span class="fold-optional">still here if you use them</span></summary>
-<p class="empty-note" style="margin:8px 0 0;">These came before monthly statements and still work. The basket is for telling the office about a payment it has not recorded yet; the year&rsquo;s record is the one to print at tax time.</p>
-<div id="acctOlderBody"></div>
-</details>
+
 <div id="acctPayHalf">
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>How You Can Pay<button type="button" class="help-dot" onclick="showHelp(79)" aria-label="What are the ways to pay?">?</button></h2>
@@ -2788,20 +2798,6 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <p class="empty-note">However you pay, <b>the office recording it is what settles the balance above.</b> Anything you tell the app is a report until then.</p>
 </div>
 </div>
-<div id="acctOlderStash" style="display:none;"><div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Fees On Your Record</h2>
-<p class="empty-note" style="margin-top:0;">Everything the app can work out that you owe. Add any of them to the
-basket below, then tell the office in one go once you have paid &mdash; cash, check or card, whichever you used.</p>
-<div id="vpLines"></div>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Payment Basket</h2>
-<p class="empty-note" style="margin-top:0;">Add fees from wherever you find them — work hours from the Work Hours drawer, day fees from Booth Request / Absence, renewal fees above — then report them together once you have paid.</p>
-<div id="vpCartList"></div>
-<div class="empty-note" id="vpCartEmpty">Nothing in the basket yet.</div>
-<div id="vpCartTotalRow" style="display:none; font-weight:800; font-size:18px; margin:8px 0;">Total: $<span id="vpCartTotal">0</span></div>
-<button type="button" class="primary-btn" id="vpCartPayBtn" style="display:none;" onclick="payFeeCart()">Tell the office I have paid these</button>
-</div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-document"></use></svg></span>Year&rsquo;s Record of Fees<button type="button" class="help-dot" onclick="showHelp(HELP_FEE_STATEMENT)" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" style="margin-top:0;">Everything this app has recorded you paying the market in one year, on one printable page. Useful at tax time &mdash; but read the note on it: it is the app&rsquo;s record, not the office&rsquo;s receipt.</p>
@@ -2809,13 +2805,7 @@ basket below, then tell the office in one go once you have paid &mdash; cash, ch
 <select id="fsYear" onchange="renderFeeStatement()"></select>
 <button type="button" class="primary-btn" style="margin-top:10px;" onclick="openFeeStatement()">View printable page</button>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Reported Payments</h2>
-<p class="empty-note" style="margin-top:0;">Whatever way you paid &mdash; cash, check or card &mdash; the app cannot see it happen, so anything here is a report, not a receipt. The office confirms it against the money itself. <b>Reported money is never counted in the balance above</b>; it counts when the office records it.</p>
-<div id="vpList"></div>
-<div class="empty-note" id="vpEmpty">Nothing reported yet.</div>
-</div>
-</div>
+
 </div>
 </section>
 <section id="screen-pavrentals" class="screen">
@@ -2998,8 +2988,18 @@ oninput="gcLookup(this.value)" style="text-transform:uppercase;">
 <div class="empty-note" id="gcOutOfStickers" style="display:none; color:#8A3B2E;"></div>
 <p class="empty-note" style="margin-top:0;">Set the amount, then scan the certificate. Keep scanning to sell more at the same amount.</p>
 <div class="form-row"><label>Amount</label>
-<select id="gcAmount"><option value="5">$5</option><option value="10">$10</option>
-<option value="20" selected>$20</option><option value="25">$25</option><option value="50">$50</option></select></div>
+<div class="pref-grid" id="gcQuickPicks"></div>
+<div class="mr-unit-row" style="margin-top:8px;">
+<input type="number" id="gcAmount" step="0.01" min="0.01" value="20" oninput="renderGcQuickPicks()"><span class="mr-unit">dollars</span></div>
+<label style="margin-top:12px;">How they are paying</label>
+<div class="tone-switch">
+<button type="button" class="tone-btn on" id="gcTenderCard" onclick="gcSetTender('card')">Card</button>
+<button type="button" class="tone-btn" id="gcTenderCash" onclick="gcSetTender('cash')">Cash or check</button>
+</div>
+<select id="gcTender" data-no-find="1" style="display:none;"><option value="card" selected>card</option><option value="cash">cash</option></select>
+<div id="gcTakeLine"></div>
+<p class="empty-note" style="margin:6px 0 0;">Tap a usual amount or type any other. A certificate is loaded with whatever the customer asks for &mdash; there is no ceiling in the app, and nothing in the Guide sets one.</p>
+</div>
 <div id="gcSellScanRow"></div>
 <div id="gcSellScanBox" style="display:none;" class="card gcv-scanbox">
 <div class="gcv-frame"><video id="gcSellVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
@@ -4134,6 +4134,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Plain Words</div><div class="comm-desc">If the market&rsquo;s vocabulary moved, the ledger records it &mdash; old word kept in quotation marks as the bridge.</div></div>
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Every debt and credit reaches a statement</div><div class="comm-desc">There are eleven ways money can land on a vendor&rsquo;s account: fines entered by hand, fines the ladder derives, booth-check fines, booth fees for each of the four venues, the statement&rsquo;s own late fee, the membership share, work hours not worked, and the late renewal surcharge on the debit side; SNAP tokens turned in, gift certificates taken at a stall, booth fees paid at the window, checks, cash, card at the desk and Square on the credit side. A new one must be added to <code>accountData</code> or it silently never bills. An audit of this list found four holes at once: Wednesday and Winter fees charged nothing because the season calendar only makes Saturdays and Sundays, SNAP had no route at all, and the January renewal surcharge was filed as due the following December.</div></div>
+<div class="comm-item"><div class="comm-title">Nothing may run off the side of the phone</div><div class="comm-desc">Cards, rows and text carry <code>max-width:100%</code> and <code>overflow-wrap:anywhere</code>; a flex text column carries a floor (<code>min-width: min(100%, 14rem)</code>) so a sibling input cannot squeeze it to one letter a line. Test with <code>t24-overflow.js</code>, which walks every screen in every role at 390px and 320px and reports anything past the edge. It found 98 at first pass. The kiosk booth map is excluded on purpose: it is wider than the phone by design and is dragged, not read.</div></div>
 <div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. A new one only needs <code>class="back-link" data-backhand="1"</code> \u2014 the hand is drawn on screen open. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
@@ -10950,22 +10951,6 @@ note: fmtHrs(led.owed) + ' hrs \u00d7 $' + workHourRate(new Date().getFullYear()
 return lines;
 }
 async function initFeePayScreen() {
-await loadVp();
-const vendor = currentVendor();
-const wrap = document.getElementById('vpLines');
-wrap.innerHTML = '';
-if (!vendor) { wrap.innerHTML = '<p class="empty-note">Log in as a vendor to see your fees.</p>'; renderVpList(); return; }
-vpFeeLines(vendor).forEach(l => {
-const row = document.createElement('div');
-row.className = 'tracker-row';
-row.innerHTML = '<div class="t-title">' + l.label + '</div>' +
-'<div class="t-note">$' + fmtMoney(l.amount) + ' \u00b7 ' + l.note + '</div>' +
-'<button type="button" class="ghost-btn" style="margin-top:8px;" onclick="addFeeToCart(\'' + l.key + '\', \'' + l.label.replace(/'/g, '') + '\', ' + l.amount + ')">Add to payment</button>';
-wrap.appendChild(row);
-});
-await loadFeeCart();
-renderFeeCart();
-updatePaySub();
 const ys = document.getElementById('fsYear');
 if (ys) {
 const chosen = ys.value;
@@ -10977,7 +10962,6 @@ ys.appendChild(o);
 });
 if (chosen && [...ys.options].some(o => o.value === chosen)) ys.value = chosen;
 }
-renderVpList();
 }
 
 // The office's side of the phone call. The record is the vendor's own \u2014 the
@@ -13549,23 +13533,14 @@ downloadCSV('statements-' + ym + '.csv',
 // rather than by rewriting the markup keeps every id and handler they already
 // depend on intact -- these are working tools, not decoration.
 function stashOlderAccountTools() {
-const stash = document.getElementById('acctOlderStash');
-const host = document.getElementById('acctOlderBody');
-if (!stash || !host || host.children.length) return;
-while (stash.firstElementChild) host.appendChild(stash.firstElementChild);
-stash.remove();
-// The year-long breakdown answers the same question the statements answer,
-// a year at a time, so it belongs with the older tools rather than above
-// the month a vendor actually has to settle.
-const body = document.getElementById('acctBody');
-if (body) host.insertBefore(body, host.firstElementChild);
-// How to pay belongs immediately after the statement it applies to, not
-// below the fold that hides everything else.
+// How to pay belongs immediately after the statement it applies to.
 const scr = document.getElementById('screen-account');
 const pay = document.getElementById('acctPayHalf');
 const earlier = document.getElementById('myStatements');
 const earlierCard = earlier ? earlier.closest('.card') : null;
-if (scr && pay && earlierCard) scr.insertBefore(pay, earlierCard);
+if (scr && pay && earlierCard && pay.nextElementSibling !== earlierCard) {
+scr.insertBefore(pay, earlierCard);
+}
 }
 function renderMyStatementCurrent() {
 const host = document.getElementById('myStmtCurrent');
@@ -14657,7 +14632,7 @@ if (name === 'tuning') initTuningScreen();
 if (name === 'winterpaperwork') initWinterPaperwork();
 if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
-if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
+if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); gcSetTender(gcTender()); stopQrScan(); }
 paintBackHands(document.getElementById('screen-' + name));
 if (name === 'complaint') {
 setFeedbackTone(feedbackTone());
@@ -18170,7 +18145,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-83';
+const BUILD_ID = '16-87';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25716,6 +25691,14 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF47', kind: 'question', cat: 'Board', src: 'Raised by the market administrator while building gift certificate sales',
+t: 'Should the market charge $1 to issue a gift certificate?',
+d: 'Raised 28 Aug 2026. A gift certificate is not a sale: the market takes money at the window and hands the same money to a vendor later, keeping nothing. It does cost something to run \u2014 the printed roll of coded stickers, the card charge when somebody pays by card, and the office time to sell one and settle it. ' +
+'WHAT IS ALREADY DECIDED AND BUILT: Square\u2019s charge is added at the window on card sales only, so the market passes it on at cost and the vendor still gets full face value. Cash costs the market nothing and is charged nothing. ' +
+'WHAT IS NOT DECIDED: whether to add a flat $1 issuance fee on top, on every certificate however it is paid for. It would cover the sticker and a fair share of the office time, and on a $20 certificate it is five per cent, which is not nothing to a customer buying a small gift. ' +
+'FOR: the cost is real and currently falls on the market, which means it falls on vendors. AGAINST: a gift certificate brings a customer to the market who then spends it at a stall, so the market is arguably buying something for that dollar; and a fee on a gift is the sort of thing people remember. ' +
+'WORTH KNOWING BEFORE DECIDING: New York law prohibits fees on gift cards broadly \u2014 activation, dormancy, service, redemption, handling and reloading are all named in the 2022 amendment. Whether a stated issuance charge collected at the point of sale falls inside that prohibition is a question for the market\u2019s own lawyer, not for this app, and it should be asked before the Board votes rather than after. ' +
+'WHAT THE APP DOES MEANWHILE: no issuance fee is charged. Adding one is a small change once the Board has decided and the legal question is answered.' },
 { id: 'BF46', kind: 'conflict', cat: 'Board', src: 'Vendor Guide, Annual Fees and Certificate of Membership, against the monthly statement rule',
 t: 'Year-end fees are due December 31, but the monthly statement rule would put them in January \u2014 which date governs?',
 d: 'Raised 28 Aug 2026, when year-end items first appeared on a monthly statement. The Guide is explicit and repeated: renewal must be postmarked no later than December 31, with a $100 surcharge on anything postmarked January 1 to 15; the $100 share installment is due by December 31 along with other annual fees; work hour documentation is due to the Market Managers by December 31 or a $50 fine follows. ' +
@@ -26166,6 +26149,8 @@ const RULE_DEFS = [
 { g: 'Clocks and warnings', id: 'planDays', l: 'Days to submit a correction plan after notice', u: 'days', d: 60, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'safetyYears', l: 'Years between booth safety updates', u: 'years', d: 2, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'lookbackYears', l: 'Years before an unsold juried product may be reclaimed', u: 'years', d: 3, src: 'Food Committee Guidelines' },
+{ g: 'Card payments', id: 'sqPct', l: 'Square\u2019s percentage on a card payment', u: '%', d: 2.6, src: 'Square\u2019s published in-person rate \u2014 confirm against the market\u2019s own contract' },
+{ g: 'Card payments', id: 'sqFixed', l: 'Square\u2019s fixed charge per card payment', u: '\u00a2', d: 15, src: 'Square\u2019s published in-person rate \u2014 confirm against the market\u2019s own contract' },
 { g: 'Monthly statements', id: 'stmtDueWeekend', l: 'Statements due by this market weekend of the following month', u: 'weekOfMonth', d: 2, src: 'BF45 \u2014 no rule existed; set when statements were built' },
 { g: 'Monthly statements', id: 'stmtLateFee', l: 'Late fee when a statement is not settled by the due date', u: '$', d: 25, src: 'BF45 \u2014 no rule existed; set when statements were built' },
 { g: 'Monthly statements', id: 'stmtCarryUnder', l: 'Balances under this roll to next month instead of being chased', u: '$', d: 20, src: 'Common co-op practice \u2014 not in the Guide' },
@@ -27539,17 +27524,27 @@ return;
 const already = (gcCache || []).find(c => c.id === code);
 if (already) {
 showMsg('gcSellMsg', 'err', code + ' was already sold on ' + formatDisplayDate(already.issued) +
-' for $' + already.amount + (already.status === 'redeemed' ? ' and has been redeemed.' : '.') +
+' for $' + fmtMoney(already.amount) + (already.status === 'redeemed' ? ' and has been redeemed.' : '.') +
 ' Use a fresh sticker.');
 return;
 }
-const amount = Number(document.getElementById('gcAmount').value);
+const amount = Math.round(Number(document.getElementById('gcAmount').value || 0) * 100) / 100;
+if (!(amount > 0)) {
+showMsg('gcSellMsg', 'err', 'Put in what the customer is paying before scanning the certificate.');
+return;
+}
+const tender = gcTender();
+const fee = tender === 'card' ? squareFeeOn(amount) : 0;
 const rec = { id: code, amount: amount, issued: todayISO(), status: 'issued',
+tender: tender, fee: fee, taken: Math.round((amount + fee) * 100) / 100,
 redeemed: null, batch: document.getElementById('gcBatch').value.trim(), roll: roll.label };
 gcCache.push(rec);
 await saveGiftCerts();
 gcSoldThisSession.unshift(rec);
-showMsg('gcSellMsg', 'ok', code + ' \u00b7 $' + amount + ' \u00b7 sold. Stick it on the certificate.');
+showMsg('gcSellMsg', 'ok', code + ' \u00b7 worth $' + fmtMoney(amount) +
+(fee > 0 ? ' \u00b7 take $' + fmtMoney(amount + fee) + ' (includes $' + fmtMoney(fee) + ' card charge)'
+: ' \u00b7 take $' + fmtMoney(amount)) +
+'. Stick it on the certificate.');
 renderGcSession();
 renderGcBook();
 el.focus();
@@ -27562,7 +27557,7 @@ const total = gcSoldThisSession.reduce((s, c) => s + c.amount, 0);
 host.innerHTML = '<p class="empty-note" style="margin:10px 0 4px;"><b>This sitting:</b> ' +
 gcSoldThisSession.length + ' sold \u00b7 $' + total + '</p>' +
 gcSoldThisSession.slice(0, 8).map(c =>
-'<div class="tracker-row"><div class="t-title">' + esc(c.id) + ' \u00b7 $' + c.amount + '</div></div>').join('');
+'<div class="tracker-row"><div class="t-title">' + esc(c.id) + ' \u00b7 $' + fmtMoney(c.amount) + '</div></div>').join('');
 }
 async function gcLookup(raw) {
 await loadGiftCerts();
@@ -37951,6 +37946,63 @@ if (el) el.value = code;
 await gcSellScan();
 } });
 }
+const GC_QUICK = [5, 10, 20, 25, 50, 100];
+// Square takes a percentage plus a fixed charge on every card payment. On a
+// gift certificate the market is not selling anything -- it is holding money
+// on the customer's behalf -- so absorbing the fee would mean the market
+// hands a vendor the full face value later out of less than face value now.
+// The fee is added at the window instead, and only for a card: cash costs
+// the market nothing and is charged nothing.
+function squareFeeOn(amount) {
+const pct = (ruleNum('sqPct') || 0) / 100;
+const fixed = (ruleNum('sqFixed') || 0) / 100;
+const amt = Number(amount || 0);
+if (!(amt > 0)) return 0;
+return Math.round((amt * pct + fixed) * 100) / 100;
+}
+function gcTender() {
+const el = document.getElementById('gcTender');
+return el && el.value === 'cash' ? 'cash' : 'card';
+}
+function gcSetTender(t) {
+const el = document.getElementById('gcTender');
+if (el) el.value = t;
+['gcTenderCard', 'gcTenderCash'].forEach(id => {
+const b = document.getElementById(id);
+if (b) b.className = 'tone-btn' + ((id === 'gcTenderCash') === (t === 'cash') ? ' on' : '');
+});
+renderGcQuickPicks();
+}
+function renderGcQuickPicks() {
+const wrap = document.getElementById('gcQuickPicks');
+const box = document.getElementById('gcAmount');
+if (!wrap || !box) return;
+const cur = Math.round(Number(box.value || 0) * 100) / 100;
+wrap.innerHTML = GC_QUICK.map(n =>
+'<button type="button" class="tone-btn' + (n === cur ? ' on' : '') +
+'" style="padding:10px 6px; font-size:15px;" onclick="gcSetAmount(' + n + ')">$' + n + '</button>').join('');
+const take = document.getElementById('gcTakeLine');
+if (!take) return;
+if (!(cur > 0)) { take.innerHTML = ''; return; }
+const card = gcTender() === 'card';
+const fee = card ? squareFeeOn(cur) : 0;
+take.innerHTML = '<div class="gc-balance" style="margin-top:10px;">' +
+'<div class="gc-bal-num">$' + fmtMoney(cur + fee) + '</div>' +
+'<div class="gc-bal-label">to take from the customer</div></div>' +
+'<p class="empty-note" style="margin:6px 2px 0;">' +
+(card
+? (fee > 0
+? 'The certificate is worth <b>$' + fmtMoney(cur) + '</b>. The extra <b>$' + fmtMoney(fee) +
+'</b> is Square\u2019s charge on this payment, passed on at cost so the market keeps the full face value for the vendor who takes it.'
+: '<b>Square\u2019s rate is set to zero in Market Rules</b>, so nothing is being added. Put the real rate in before selling by card, or the market pays the fee itself.')
+: 'Cash costs the market nothing, so nothing is added. The certificate is worth <b>$' +
+fmtMoney(cur) + '</b>.') + '</p>';
+}
+function gcSetAmount(n) {
+const box = document.getElementById('gcAmount');
+if (box) box.value = n;
+renderGcQuickPicks();
+}
 function renderGcOfficeScanRows() {
 const rows = [['gcLookScanRow', 'gcLookStartScan()', 'Scan the certificate'],
 ['gcSellScanRow', 'gcSellStartScan()', 'Scan the certificate you are selling']];
@@ -38071,6 +38123,8 @@ if (!host) return;
 const all = gcCache || [];
 const outstanding = all.filter(c => c.status !== 'void' && gcBalance(c) > 0);
 const owed = Math.round(outstanding.reduce((t, c) => t + gcBalance(c), 0) * 100) / 100;
+const fees = Math.round(all.filter(c => c.status !== 'void')
+.reduce((t, c) => t + Number(c.fee || 0), 0) * 100) / 100;
 const back = Math.round(all.filter(c => c.status !== 'void')
 .reduce((t, c) => t + gcDrawnTotal(c) + (c.status === 'redeemed' && !gcDraws(c).length ? Number(c.amount || 0) : 0), 0) * 100) / 100;
 const partly = outstanding.filter(c => gcDrawnTotal(c) > 0).length;
@@ -38082,7 +38136,9 @@ let html = '<div class="stat-row">' +
 '<div class="stat"><div class="stat-num">$' + fmtMoney(back) + '</div><div class="stat-label">Spent so far</div></div>' +
 '</div>' +
 (partly ? '<p class="empty-note" style="margin:6px 2px 0;">' + partly + ' certificate' + (partly === 1 ? ' is' : 's are') +
-' part-spent and still carrying a balance.</p>' : '');
+' part-spent and still carrying a balance.</p>' : '') +
+(fees > 0 ? '<p class="empty-note" style="margin:6px 2px 0;">$' + fmtMoney(fees) +
+' of card charges was collected on top of face value and paid to Square. The market kept none of it.</p>' : '');
 {
 let loose = 0, looseN = 0;
 all.forEach(c => gcDraws(c).forEach(d => { if (!d.vendorId) { loose += Number(d.amount || 0); looseN++; } }));
@@ -38107,7 +38163,7 @@ html += '<div class="tracker-row"><div class="t-title">Roll \u201c' + esc(r.labe
 used + ' of ' + r.codes.length + ' used</div></div>';
 });
 all.slice(-8).reverse().forEach(c => {
-html += '<div class="tracker-row"><div class="t-title">' + esc(c.id) + ' \u00b7 $' + c.amount +
+html += '<div class="tracker-row"><div class="t-title">' + esc(c.id) + ' \u00b7 $' + fmtMoney(c.amount) +
 ' \u00b7 ' + esc(c.status) + (c.redeemed ? ' ' + esc(formatDisplayDate(c.redeemed)) : '') + '</div></div>';
 });
 if (!all.length) html += '<p class="empty-note">Nothing issued from this screen yet.</p>';
