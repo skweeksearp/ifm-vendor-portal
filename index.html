@@ -2658,6 +2658,14 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
+<div class="dash-fold" data-fold="fMerch" id="merchTile" style="display:none;">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'merch')">
+<span class="fold-title">Merch Mansion Stock &amp; Till</span>
+<span class="fold-sub" id="merchSub">Ring up the market&rsquo;s own stand, and close out the day</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="fGiftCert">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'gcvendor')">
 <span class="fold-title">Take a Gift Certificate</span>
@@ -2857,6 +2865,12 @@ Recording it here puts that notice in front of every vendor when they open the a
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Before Handing the App to the Market</h2>
 <p class="empty-note" style="margin-top:0;">Press <b>Wipe</b>. The Beta Reset tool clears these too, but Wipe is the one that says what it does. Once wiped, the statement tool shows only what the market actually recorded.</p>
 </div>
+</section>
+<section id="screen-merch" class="screen">
+<div class="screen-head" id="head-merch"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">The Merch Mansion&rsquo;s stock book and till. Ring items up through the market day, then close out once &mdash; the day goes to the market&rsquo;s records in a single go, so a busy stand never slows the app down for everyone else.</p>
+<div class="status-msg" id="merchMsg"></div>
+<div id="merchBody"></div>
 </section>
 <section id="screen-statements" class="screen">
 <div class="screen-head" id="head-statements"></div>
@@ -8030,6 +8044,7 @@ if (gcCache === null) gcCache = giftcerts === STORAGE_MISSING ? [] : (giftcerts 
 if (siteBridge === null) loadSiteBridge();
 if (stmtCache === null) loadStatements();
 if (demoStmt === null) loadDemoStatements();
+if (merchCache === null) loadMerch();
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -12348,6 +12363,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-promos', t: 'Deals vendors posted', v: () => [] },
 { g: 'traffic', k: 'ifm-statements', t: 'Monthly statements \u2014 sent marks and payments recorded', v: () => ({}) },
 { g: 'traffic', k: 'ifm-demo-statements', t: 'Demo statement records \u2014 the invented months', v: () => ({ on: false, rows: [] }) },
+{ g: 'traffic', k: 'ifm-merch', t: 'Merch Mansion stock, intake and sales', v: () => ({ items: [], intake: [], sales: [] }) },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
 { g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-feecart', t: 'Fee baskets', v: () => ({ items: [] }) },
@@ -13767,6 +13783,9 @@ renderAccount();
 function renderAll() {
 paintHeaderBadge();
 updatePaySub();
+const mt = document.getElementById('merchTile');
+if (mt) mt.style.display = (currentRole === 'vendor' && currentVendorId &&
+currentVendorId === (cache.ops || {}).merchLead) ? '' : 'none';
 renderChairAlertBar();
 maybeShowPavNotice();
 const vendor = currentVendor();
@@ -14399,6 +14418,7 @@ if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
 if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
+if (name === 'merch') { if (!merchCache) loadMerch().then(renderMerch); else renderMerch(); }
 if (name === 'demostmt') renderDemoStatements();
 if (name === 'pavrentals') initPavRentalsScreen();
 if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); renderMyStatements(); updatePaySub(); }
@@ -14550,6 +14570,7 @@ wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
 giftcerts:         { title: 'Gift Certificates' },
 statements:        { title: 'Monthly Statements' },
+merch:             { title: 'Merch Mansion Stock and Till' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Take a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
@@ -17830,7 +17851,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-71';
+const BUILD_ID = '16-72';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24247,6 +24268,192 @@ if (r) r(value);
 }
 // The Merch Mansion's lead lives in ops beside the committees -- same shape of
 // record, different kind of thing.
+// THE MERCH MANSION STOCK BOOK AND TILL.
+//
+// Merch Mansion is the market's own stand, so this is market money rather
+// than a vendor's private trade -- which is why it belongs in this app at all.
+//
+// THE CONSTRAINT THAT SHAPED IT: writes are batched. A till posting a row per
+// sale would put a request into the market's Apps Script for every keyring
+// sold, on the Saturday morning seventy vendors have the portal open. Apps
+// Script caps simultaneous executions per script, and that failure would look
+// like the whole portal breaking rather than like a busy merch stand. So a
+// market day is held on the device and posted ONCE, at close.
+//
+// Stock on hand is DERIVED -- what came in, less what went out. A stored count
+// and a list of movements can disagree, and then nobody can say which lies.
+// Adding to the till does NOT write anything: it changes a list on this
+// device. That is the whole design. The only write is at close.
+async function merchAddItem() {
+if (!merchCanRun()) { showMsg('merchMsg', 'err', 'Only the office or the Merch Mansion lead can change the stock book.'); return; }
+const name = (document.getElementById('merchName').value || '').trim();
+const price = Math.round(Number(document.getElementById('merchPrice').value || 0) * 100) / 100;
+if (!name) { showMsg('merchMsg', 'err', 'Give the item a name.'); return; }
+if (!(price > 0)) { showMsg('merchMsg', 'err', 'Give the item a price.'); return; }
+merchCache.items.push({ id: 'M' + Date.now().toString(36).toUpperCase(), name: name, price: price });
+actAs('Merch item added \u2014 ' + name, { kind: 'money', weight: 'routine' });
+await saveMerch();
+document.getElementById('merchName').value = '';
+document.getElementById('merchPrice').value = '';
+renderMerch();
+showMsg('merchMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(name) + ' added at $' + fmtMoney(price) + '.');
+}
+async function merchReceive(id) {
+if (!merchCanRun()) return;
+const el = document.getElementById('merchIn-' + id);
+const qty = Math.round(Number((el && el.value) || 0));
+if (!qty) { showMsg('merchMsg', 'err', 'How many came in?'); return; }
+merchCache.intake.push({ itemId: id, qty: qty, on: todayISO(), by: currentRole });
+actAs('Merch stock received \u2014 ' + qty + ' \u00d7 ' + (merchItem(id) || {}).name,
+{ kind: 'money', weight: 'routine' });
+await saveMerch();
+if (el) el.value = '';
+renderMerch();
+}
+function merchTillAdd(id, n) {
+const it = merchItem(id);
+if (!it) return;
+const day = todayISO();
+if (merchTill.date !== day) merchTill = { date: day, lines: [] };
+const left = merchOnHand(id, true);
+if (n > 0 && left <= 0) {
+showMsg('merchMsg', 'err', 'The book says none of those are left. Sell it anyway if the book is wrong, then tell the office to correct the count.');
+}
+const line = merchTill.lines.find(l => l.itemId === id);
+if (line) { line.qty += n; if (line.qty <= 0) merchTill.lines = merchTill.lines.filter(l => l !== line); }
+else if (n > 0) merchTill.lines.push({ itemId: id, qty: n, price: it.price });
+renderMerch();
+}
+async function merchCloseOut() {
+if (!merchCanRun()) return;
+if (!merchTill.lines.length) { showMsg('merchMsg', 'err', 'Nothing in the till to post.'); return; }
+const day = merchTill.date || todayISO();
+const total = merchTillTotal();
+const count = merchTill.lines.reduce((t, l) => t + l.qty, 0);
+merchTill.lines.forEach(l => {
+merchCache.sales.push({ itemId: l.itemId, qty: l.qty, price: l.price,
+on: day, at: Date.now(), by: currentRole === 'vendor' ? currentVendorId : currentRole });
+});
+actAs('Merch Mansion close-out \u2014 ' + count + ' items, $' + fmtMoney(total) + ' on ' + day,
+{ kind: 'money', weight: 'notable' });
+await saveMerch();
+merchTill = { date: null, lines: [] };
+renderMerch();
+showMsg('merchMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Posted: ' + count +
+' item' + (count === 1 ? '' : 's') + ', <b>$' + fmtMoney(total) + '</b> for ' + esc(formatDisplayDate(day)) +
+'. That was the only write all day.');
+}
+function merchClearTill() {
+merchTill = { date: null, lines: [] };
+renderMerch();
+showMsg('merchMsg', 'ok', 'Till cleared. Nothing had been posted, so nothing was undone.');
+}
+function renderMerch() {
+const host = document.getElementById('merchBody');
+if (!host || !merchCache) return;
+if (!merchCanRun()) {
+host.innerHTML = '<p class="empty-note">The stock book is kept by the office and whoever runs the Merch Mansion.</p>';
+return;
+}
+const day = todayISO();
+if (merchTill.date && merchTill.date !== day) merchTill = { date: null, lines: [] };
+let out = '';
+const tillCount = merchTill.lines.reduce((t, l) => t + l.qty, 0);
+out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Today&rsquo;s Till</h2>';
+if (!tillCount) {
+out += '<p class="empty-note" style="margin-top:0;">Nothing rung up yet. Tap an item below as it sells.</p>';
+} else {
+out += '<div class="gc-balance"><div class="gc-bal-num">$' + fmtMoney(merchTillTotal()) + '</div>' +
+'<div class="gc-bal-label">' + tillCount + ' item' + (tillCount === 1 ? '' : 's') + ', not yet posted</div></div>';
+merchTill.lines.forEach(l => {
+const it = merchItem(l.itemId) || { name: l.itemId };
+out += '<div class="req-row"><div class="req-row-main"><div class="req-name">' +
+l.qty + ' \u00d7 ' + esc(it.name) + '</div><div class="req-meta">$' + fmtMoney(l.qty * l.price) + '</div></div>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="merchTillAdd(\'' + l.itemId + '\', -1)">Take one off</button></div>';
+});
+out += '<button type="button" class="primary-btn" onclick="merchCloseOut()">' +
+'<svg class="ico"><use href="#i-checkmark"></use></svg> Close out the market</button>' +
+'<button type="button" class="ghost-btn" onclick="merchClearTill()">Clear the till</button>' +
+'<p class="empty-note" style="margin:6px 2px 0;">Nothing has been sent to the market&rsquo;s records yet. Closing out posts the whole day in one go \u2014 that is deliberate, so a busy stand cannot slow the app down for every other vendor.</p>';
+}
+out += '</div>';
+out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-toolbox"></use></svg></span>Stock</h2>';
+if (!merchCache.items.length) {
+out += '<p class="empty-note" style="margin-top:0;">No items yet. Add the first one below.</p>';
+} else {
+merchCache.items.forEach(it => {
+const left = merchOnHand(it.id, true);
+out += '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(it.name) + ' \u00b7 $' + fmtMoney(it.price) +
+(left <= 0 ? ' <span class="stamp late">none left</span>' :
+left <= 3 ? ' <span class="stamp late">' + left + ' left</span>' :
+' <span class="stamp in">' + left + ' left</span>') + '</div>' +
+'<div class="req-meta">' + merchInFor(it.id) + ' received \u00b7 ' + merchSoldFor(it.id, true) + ' sold</div>' +
+'<div style="margin-top:6px;">' +
+'<button type="button" class="ghost-btn cio-undo" onclick="merchTillAdd(\'' + it.id + '\', 1)">Sell one</button>' +
+'<span class="mr-unit-row" style="display:inline-flex; margin-left:6px;">' +
+'<input type="number" id="merchIn-' + it.id + '" placeholder="0" style="width:70px;">' +
+'<button type="button" class="ghost-btn cio-undo" onclick="merchReceive(\'' + it.id + '\')">Received</button></span>' +
+'</div></div></div>';
+});
+}
+out += '<div class="desk-form" style="margin-top:10px;">' +
+'<label for="merchName">Add an item</label>' +
+'<input type="text" id="merchName" placeholder="e.g. Market tote bag" autocomplete="off">' +
+'<div class="mr-unit-row"><input type="number" id="merchPrice" step="0.01" min="0.01" placeholder="0.00"><span class="mr-unit">dollars</span></div>' +
+'<button type="button" class="ghost-btn" onclick="merchAddItem()">Add it to the book</button></div>';
+out += '</div>';
+const days = {};
+(merchCache.sales || []).forEach(s => { days[s.on] = (days[s.on] || 0) + s.qty * s.price; });
+const dayKeys = Object.keys(days).sort().reverse().slice(0, 8);
+out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Market Days Posted</h2>';
+if (!dayKeys.length) out += '<p class="empty-note" style="margin-top:0;">Nothing posted yet.</p>';
+else {
+const total = Object.keys(days).reduce((t, k) => t + days[k], 0);
+out += '<div class="stat-row"><div class="stat"><div class="stat-num">$' + fmtMoney(total) +
+'</div><div class="stat-label">Taken, all time</div></div>' +
+'<div class="stat"><div class="stat-num">' + Object.keys(days).length +
+'</div><div class="stat-label">Market days</div></div></div>';
+dayKeys.forEach(k => {
+out += '<div class="req-row"><div class="req-row-main"><div class="req-name">$' + fmtMoney(days[k]) +
+'</div><div class="req-meta">' + esc(formatDisplayDate(k)) + '</div></div></div>';
+});
+}
+out += '</div>';
+host.innerHTML = out;
+}
+const MERCH_KEY = 'ifm-merch';
+let merchCache = null;
+let merchTill = { date: null, lines: [] };
+async function loadMerch() {
+const v = await storageGet(MERCH_KEY);
+merchCache = (v !== STORAGE_MISSING && v) ? v : { items: [], intake: [], sales: [] };
+merchCache.items = merchCache.items || [];
+merchCache.intake = merchCache.intake || [];
+merchCache.sales = merchCache.sales || [];
+return merchCache;
+}
+async function saveMerch() { await storageSet(MERCH_KEY, merchCache || { items: [], intake: [], sales: [] }); }
+function merchInFor(id) {
+return (merchCache.intake || []).filter(r => r.itemId === id)
+.reduce((t, r) => t + Number(r.qty || 0), 0);
+}
+function merchSoldFor(id, includeTill) {
+let n = (merchCache.sales || []).filter(r => r.itemId === id)
+.reduce((t, r) => t + Number(r.qty || 0), 0);
+if (includeTill) n += merchTill.lines.filter(l => l.itemId === id)
+.reduce((t, l) => t + Number(l.qty || 0), 0);
+return n;
+}
+function merchOnHand(id, includeTill) { return merchInFor(id) - merchSoldFor(id, includeTill); }
+function merchItem(id) { return (merchCache.items || []).find(i => i.id === id) || null; }
+function merchTillTotal() {
+return Math.round(merchTill.lines.reduce((t, l) => t + l.qty * l.price, 0) * 100) / 100;
+}
+function merchCanRun() {
+return isDeskAdmin() || (currentRole === 'vendor' && currentVendorId &&
+currentVendorId === (cache.ops || {}).merchLead);
+}
 const MARKET_PROGRAMS = [
 { key: 'merch', name: 'Merch Mansion', icon: 'i-gem',
 sub: 'The market\u2019s own stand on the Waterfront Trail line',
@@ -26372,6 +26579,7 @@ tiles: [
 sub: 'The market\u2019s own operations \u2014 who heads each one, and the shifts that earn work hours',
 tiles: [
 { s: 'merchmansion', i: 'i-toolbox', t: 'Programs & Leads', d: 'Merch Mansion, garbage, dish recycling and the morning jobs \u2014 who runs each, and posting shifts' },
+{ s: 'merch', i: 'i-gem', t: 'Merch Mansion Stock & Till', d: 'What is in stock, what sold, and closing out a market day' },
 ] },
 { key: 'board', title: 'Board & Committees', icon: 'i-columns',
 sub: 'What is in front of the board, and who serves',
