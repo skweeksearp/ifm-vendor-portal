@@ -4133,6 +4133,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Explainers behind cones</div><div class="comm-desc">Planned-tool text that names other tools, desks, or old vocabulary &mdash; including the footer state when a cone comes off.</div></div>
 <div class="comm-item"><div class="comm-title">Plain Words</div><div class="comm-desc">If the market&rsquo;s vocabulary moved, the ledger records it &mdash; old word kept in quotation marks as the bridge.</div></div>
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
+<div class="comm-item"><div class="comm-title">Every debt and credit reaches a statement</div><div class="comm-desc">There are eleven ways money can land on a vendor&rsquo;s account: fines entered by hand, fines the ladder derives, booth-check fines, booth fees for each of the four venues, the statement&rsquo;s own late fee, the membership share, work hours not worked, and the late renewal surcharge on the debit side; SNAP tokens turned in, gift certificates taken at a stall, booth fees paid at the window, checks, cash, card at the desk and Square on the credit side. A new one must be added to <code>accountData</code> or it silently never bills. An audit of this list found four holes at once: Wednesday and Winter fees charged nothing because the season calendar only makes Saturdays and Sundays, SNAP had no route at all, and the January renewal surcharge was filed as due the following December.</div></div>
 <div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. A new one only needs <code>class="back-link" data-backhand="1"</code> \u2014 the hand is drawn on screen open. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
@@ -12998,9 +12999,8 @@ return todayISO() > stmtDueDate(ym);
 const YEAR_END_PATTERNS = [
 /work hours? not worked/i,
 /membership share installment/i,
-/late renewal surcharge/i,
 /annual (vendor )?fee/i,
-/renewal/i
+/^renewal/i
 ];
 function isYearEndLine(r) {
 return YEAR_END_PATTERNS.some(p => p.test(String(r.what || '')));
@@ -13039,6 +13039,50 @@ note: 'Nothing owed \u2014 ' + Number(hl.done || 0).toFixed(1) + ' hours done th
 }
 return out;
 }
+// WHAT WAS LEFT OVER LAST MONTH.
+//
+// Each month's statement showed only that month, so a vendor who paid
+// nothing in June saw a clean-looking July and no sign of the debt. The
+// balance brought forward is DERIVED by walking the earlier months, not
+// stored: correcting a June fine changes July's opening line too.
+//
+// It deliberately walks back twelve months, so January carries December's
+// unpaid balance across the year boundary rather than quietly forgiving it.
+// Year-end items are not swept in -- they carry the Guide's own December 31
+// deadline and are shown in their own block, and adding them here would
+// double-count them the moment they fell due.
+function stmtMonthOwn(vendorId, ym) {
+const year = Number(ym.slice(0, 4));
+const a = accountData(vendorId, year);
+const inMonth = rows => rows.filter(r => ymOf(r.date) === ym);
+const demo = demoRowsFor(vendorId, ym);
+const allCharged = inMonth(a.charged).concat(demo.filter(r => r.kind === 'charge'));
+const received = inMonth(a.received).concat(demo.filter(r => r.kind === 'credit'));
+const charged = allCharged.filter(r => !isYearEndLine(r));
+const sum = rows => Math.round(rows.reduce((t, r) => t + Number(r.amount || 0), 0) * 100) / 100;
+const rec = stmtRecord(vendorId, ym);
+const lateFee = rec.lateCharged ? Number(rec.lateCharged) : 0;
+const owed = Math.round((sum(charged) + lateFee - sum(received)) * 100) / 100;
+return { owed: owed, paid: Number(rec.paid || 0),
+left: Math.round((owed - Number(rec.paid || 0)) * 100) / 100 };
+}
+function stmtPrevYm(ym, back) {
+const [y, m] = ym.split('-').map(Number);
+const d = new Date(y, m - 1 - back, 1);
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function stmtBroughtForward(vendorId, ym) {
+let total = 0;
+const months = [];
+for (let i = 1; i <= 12; i++) {
+const p = stmtPrevYm(ym, i);
+const own = stmtMonthOwn(vendorId, p);
+if (Math.abs(own.left) < 0.005) continue;
+total += own.left;
+months.push({ ym: p, left: own.left });
+}
+return { total: Math.round(total * 100) / 100, months: months.reverse() };
+}
 function statementFor(vendorId, ym) {
 const year = ym.slice(0, 4);
 const a = accountData(vendorId, year);
@@ -13061,6 +13105,7 @@ const rec = stmtRecord(vendorId, ym);
 const lateFee = rec.lateCharged ? Number(rec.lateCharged) : 0;
 const owed = Math.round((sum(charged) + lateFee - sum(received)) * 100) / 100;
 const yearEndTotal = sum(yearEnd);
+const bf = stmtBroughtForward(vendorId, ym);
 // On every statement, so a vendor is never nine months into a year without
 // having seen what falls due at the end of it.
 const forecast = yearEnd.length ? [] : yearEndForecast(vendorId, Number(ym.slice(0, 4)));
@@ -13072,7 +13117,9 @@ chargedTotal: sum(charged), receivedTotal: sum(received),
 lateFee: lateFee, owed: owed,
 due: stmtDueDate(ym),
 paid: Number(rec.paid || 0),
-outstanding: Math.round((owed - Number(rec.paid || 0)) * 100) / 100,
+thisMonth: Math.round((owed - Number(rec.paid || 0)) * 100) / 100,
+brought: bf.total, broughtMonths: bf.months,
+outstanding: Math.round((bf.total + owed - Number(rec.paid || 0)) * 100) / 100,
 yearEnd: yearEnd, yearEndTotal: yearEndTotal,
 yearEndDue: yearEndDueDate(ym.slice(0, 4)),
 forecast: forecast,
@@ -13129,6 +13176,14 @@ if (rows.length || s.lateFee) {
 body += '<table class="stmt-table"><thead><tr>' +
 '<th>Date</th><th>Description</th><th class="num">Charges</th><th class="num">Credits</th>' +
 '</tr></thead><tbody>';
+if (s.brought) {
+body += '<tr><td class="nw">&mdash;</td><td><b>Balance brought forward</b>' +
+'<div class="stmt-sub">' + (s.broughtMonths || []).map(m => ymLabel(m.ym) +
+' ' + (m.left < 0 ? '\u2212' : '') + '$' + fmtMoney(Math.abs(m.left))).join(' \u00b7 ') +
+'</div></td>' +
+'<td class="num">' + (s.brought > 0 ? money(s.brought) : '') + '</td>' +
+'<td class="num">' + (s.brought < 0 ? money(s.brought) : '') + '</td></tr>';
+}
 rows.forEach(r => {
 body += '<tr><td class="nw">' + esc(stmtShortDate(r.date)) + '</td>' +
 '<td>' + esc(r.what) + (r.demo ? ' <span class="season-tag">demo</span>' : '') + '</td>' +
@@ -13138,8 +13193,11 @@ body += '<tr><td class="nw">' + esc(stmtShortDate(r.date)) + '</td>' +
 if (s.lateFee) body += '<tr><td class="nw">' + esc(stmtShortDate(s.due)) + '</td><td>Late fee</td>' +
 '<td class="num">' + money(s.lateFee) + '</td><td class="num"></td></tr>';
 body += '</tbody><tfoot>' +
-'<tr><td colspan="2">Totals</td><td class="num">' + money(s.chargedTotal + s.lateFee) +
-'</td><td class="num">' + money(s.receivedTotal) + '</td></tr>';
+'<tr><td colspan="2">Totals</td><td class="num">' +
+money(s.chargedTotal + s.lateFee + Math.max(0, s.brought)) +
+'</td><td class="num">' + money(s.receivedTotal + Math.max(0, -s.brought)) + '</td></tr>' +
+(s.brought ? '<tr><td colspan="3">This month alone</td><td class="num">' +
+money(s.thisMonth) + '</td></tr>' : '');
 if (s.paid) body += '<tr><td colspan="3">Paid against this statement</td>' +
 '<td class="num">' + money(s.paid) + '</td></tr>';
 body += '<tr class="stmt-total"><td colspan="3">' + stateWord + '</td>' +
@@ -13225,6 +13283,12 @@ L.push('This will come off what you owe next month, or the office can pay it out
 L.push('NOTHING DUE. This month is settled \u2014 no action needed.');
 }
 L.push('');
+if (s.brought) {
+L.push((s.brought > 0 ? 'BALANCE BROUGHT FORWARD: ' : 'CREDIT BROUGHT FORWARD: ') + money(s.brought));
+(s.broughtMonths || []).forEach(m => L.push('  ' + ymLabel(m.ym) + ': ' +
+(m.left < 0 ? '-' : '') + money(m.left)));
+L.push('');
+}
 if (s.charged.length) {
 L.push('CHARGES');
 s.charged.forEach(r => L.push('  ' + formatDisplayDate(r.date) + '  ' +
@@ -13690,8 +13754,38 @@ function boothFeeLinesFor(vendorId, year) {
 year = Number(year);
 const out = [];
 const paidOn = (cache.ops || {}).dayfees || {};
+const seen = {};
+// Wednesday Market at East Hill: the office ticks who is there on the day,
+// and that list is the attendance record.
+Object.keys(wlCache || {}).forEach(date => {
+if (String(date).slice(0, 4) !== String(year)) return;
+if (date > todayISO()) return;
+const there = ((wlCache[date] || {}).vendors || []).some(e =>
+(e && (e.vendorId === vendorId)) || e === vendorId);
+if (!there) return;
+const amt = dayFeeFor('Wednesday');
+if (!(amt > 0)) return;
+seen[date] = true;
+out.push({ date: date, day: 'Wednesday', booth: null, amount: amt,
+paid: (paidOn[date] || []).indexOf(vendorId) !== -1 });
+});
+// Winter Market: a reservation for a winter date is the booking, and the
+// booking is what is charged.
+Object.keys(cache.winterReservations || {}).forEach(key => {
+const rec = cache.winterReservations[key] || {};
+const date = rec.date || key;
+if (String(date).slice(0, 4) !== String(year)) return;
+if (date > todayISO() || seen[date]) return;
+const who = rec.vendorId || rec.reservedBy;
+if (who !== vendorId) return;
+const amt = dayFeeFor('Winter');
+if (!(amt > 0)) return;
+seen[date] = true;
+out.push({ date: date, day: 'Winter Market', booth: rec.space || rec.booth || null,
+amount: amt, paid: (paidOn[date] || []).indexOf(vendorId) !== -1 });
+});
 attendedMarketDates(vendorId, year).forEach(a => {
-if (a.date > todayISO()) return;
+if (a.date > todayISO() || seen[a.date]) return;
 const amount = dayFeeFor(a.day);
 if (!(amount > 0)) return;
 let boothNum = null;
@@ -13775,6 +13869,19 @@ received.push({ date: d.on || new Date(d.at).toISOString().slice(0, 10),
 what: 'Gift certificate ' + c.id + ' spent at your stall',
 amount: Number(d.amount || 0) });
 });
+});
+
+// SNAP tokens taken at the stall. The customer paid in tokens; the market
+// redeems them, so this is money owed to the vendor and it comes off what
+// they owe. Valued at the Board's own token rate.
+(snapCache && snapCache.entries ? snapCache.entries : [])
+.filter(e => e.vendorId === vendorId && inYear(e.date))
+.forEach(e => {
+const amt = snapMoney(Number(e.tokens || 0));
+if (!(amt > 0)) return;
+received.push({ date: e.date,
+what: e.tokens + ' SNAP token' + (e.tokens === 1 ? '' : 's') + ' turned in',
+amount: amt });
 });
 
 // Checks the office recorded at the desk or from the mail. Dated by when
@@ -18063,7 +18170,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-81';
+const BUILD_ID = '16-83';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
