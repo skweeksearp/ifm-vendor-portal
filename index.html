@@ -8047,6 +8047,7 @@ if (siteBridge === null) loadSiteBridge();
 if (stmtCache === null) loadStatements();
 if (demoStmt === null) loadDemoStatements();
 if (merchCache === null) loadMerch();
+if (merchSq === null) loadMerchSquare();
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -11411,7 +11412,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'account', 'fGiftCert', 'snaptokens', 'mydocs',
+'fMerch', 'account', 'fGiftCert', 'snaptokens', 'mydocs',
 // Your part in the market: the committees you sit on, and how to reach the office.
 'mycommittees', 'communicate',
 // Things you look up rather than do.
@@ -12366,6 +12367,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-statements', t: 'Monthly statements \u2014 sent marks and payments recorded', v: () => ({}) },
 { g: 'traffic', k: 'ifm-demo-statements', t: 'Demo statement records \u2014 the invented months', v: () => ({ on: false, rows: [] }) },
 { g: 'traffic', k: 'ifm-merch', t: 'Merch Mansion stock, intake and sales', v: () => ({ items: [], intake: [], sales: [] }) },
+{ g: 'config', k: 'ifm-merch-square', t: 'Merch Mansion Square Application ID', v: () => ({ appId: '', locationId: '' }) },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
 { g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
 { g: 'traffic', k: 'ifm-feecart', t: 'Fee baskets', v: () => ({ items: [] }) },
@@ -13786,8 +13788,19 @@ function renderAll() {
 paintHeaderBadge();
 updatePaySub();
 const mt = document.getElementById('merchTile');
-if (mt) mt.style.display = (currentRole === 'vendor' && currentVendorId &&
-currentVendorId === (cache.ops || {}).merchLead) ? '' : 'none';
+if (mt) {
+const isLead = currentRole === 'vendor' && currentVendorId &&
+currentVendorId === (cache.ops || {}).merchLead;
+mt.style.display = isLead ? '' : 'none';
+const ms = document.getElementById('merchSub');
+if (ms && isLead && merchCache) {
+const n = merchTill.lines.reduce((t, l) => t + l.qty, 0);
+const low = (merchCache.items || []).filter(i => !i.retired && merchOnHand(i.id, true) <= 3).length;
+ms.textContent = n ? '$' + fmtMoney(merchTillTotal()) + ' in the till, not yet posted'
+: low ? low + ' item' + (low === 1 ? '' : 's') + ' running low'
+: 'Stock, prices and the till for the market\u2019s own stand';
+}
+}
 renderChairAlertBar();
 maybeShowPavNotice();
 const vendor = currentVendor();
@@ -14420,7 +14433,7 @@ if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
 if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
-if (name === 'merch') { if (!merchCache) loadMerch().then(renderMerch); else renderMerch(); }
+if (name === 'merch') { if (!merchCache || !merchSq) Promise.all([loadMerch(), loadMerchSquare()]).then(renderMerch); else renderMerch(); }
 if (name === 'demostmt') renderDemoStatements();
 if (name === 'pavrentals') initPavRentalsScreen();
 if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); renderMyStatements(); updatePaySub(); }
@@ -17853,7 +17866,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-73';
+const BUILD_ID = '16-74';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24300,6 +24313,36 @@ document.getElementById('merchPrice').value = '';
 renderMerch();
 showMsg('merchMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(name) + ' added at $' + fmtMoney(price) + '.');
 }
+async function merchEditItem(id) {
+if (!merchCanRun()) return;
+const it = merchItem(id);
+if (!it) return;
+const name = (document.getElementById('merchEdName-' + id).value || '').trim();
+const price = Math.round(Number(document.getElementById('merchEdPrice-' + id).value || 0) * 100) / 100;
+if (!name) { showMsg('merchMsg', 'err', 'An item needs a name.'); return; }
+if (!(price > 0)) { showMsg('merchMsg', 'err', 'An item needs a price.'); return; }
+const was = it.name, wasP = it.price;
+it.name = name; it.price = price;
+actAs('Merch item changed \u2014 ' + was + ' \u2192 ' + name + ', $' + fmtMoney(wasP) + ' \u2192 $' + fmtMoney(price),
+{ kind: 'money', weight: 'routine' });
+await saveMerch();
+renderMerch();
+showMsg('merchMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Saved. ' +
+'Sales already posted keep the price they were sold at.');
+}
+async function merchRetireItem(id) {
+if (!merchCanRun()) return;
+const it = merchItem(id);
+if (!it) return;
+it.retired = !it.retired;
+actAs('Merch item ' + (it.retired ? 'retired' : 'brought back') + ' \u2014 ' + it.name,
+{ kind: 'money', weight: 'routine' });
+await saveMerch();
+renderMerch();
+showMsg('merchMsg', 'ok', it.retired
+? esc(it.name) + ' is off the till. Its record stays, so past sales still add up.'
+: esc(it.name) + ' is back on the till.');
+}
 async function merchReceive(id) {
 if (!merchCanRun()) return;
 const el = document.getElementById('merchIn-' + id);
@@ -24326,14 +24369,16 @@ if (line) { line.qty += n; if (line.qty <= 0) merchTill.lines = merchTill.lines.
 else if (n > 0) merchTill.lines.push({ itemId: id, qty: n, price: it.price });
 renderMerch();
 }
-async function merchCloseOut() {
+async function merchCloseOut(tender) {
 if (!merchCanRun()) return;
 if (!merchTill.lines.length) { showMsg('merchMsg', 'err', 'Nothing in the till to post.'); return; }
+const how = tender || merchPendingTender || 'not recorded';
+merchPendingTender = null;
 const day = merchTill.date || todayISO();
 const total = merchTillTotal();
 const count = merchTill.lines.reduce((t, l) => t + l.qty, 0);
 merchTill.lines.forEach(l => {
-merchCache.sales.push({ itemId: l.itemId, qty: l.qty, price: l.price,
+merchCache.sales.push({ itemId: l.itemId, qty: l.qty, price: l.price, tender: how,
 on: day, at: Date.now(), by: currentRole === 'vendor' ? currentVendorId : currentRole });
 });
 actAs('Merch Mansion close-out \u2014 ' + count + ' items, $' + fmtMoney(total) + ' on ' + day,
@@ -24342,7 +24387,8 @@ await saveMerch();
 merchTill = { date: null, lines: [] };
 renderMerch();
 showMsg('merchMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Posted: ' + count +
-' item' + (count === 1 ? '' : 's') + ', <b>$' + fmtMoney(total) + '</b> for ' + esc(formatDisplayDate(day)) +
+' item' + (count === 1 ? '' : 's') + ', <b>$' + fmtMoney(total) + '</b> ' +
+(how === 'not recorded' ? '' : 'taken by ' + esc(how) + ' ') + 'for ' + esc(formatDisplayDate(day)) +
 '. That was the only write all day.');
 }
 function merchClearTill() {
@@ -24373,30 +24419,48 @@ out += '<div class="req-row"><div class="req-row-main"><div class="req-name">' +
 l.qty + ' \u00d7 ' + esc(it.name) + '</div><div class="req-meta">$' + fmtMoney(l.qty * l.price) + '</div></div>' +
 '<button type="button" class="ghost-btn cio-undo" onclick="merchTillAdd(\'' + l.itemId + '\', -1)">Take one off</button></div>';
 });
-out += '<button type="button" class="primary-btn" onclick="merchCloseOut()">' +
-'<svg class="ico"><use href="#i-checkmark"></use></svg> Close out the market</button>' +
+if (merchSqReady()) {
+out += '<button type="button" class="primary-btn" onclick="merchChargeSquare()">' +
+'<svg class="ico"><use href="#i-basket"></use></svg> Charge $' + fmtMoney(merchTillTotal()) + ' with Square</button>' +
+'<p class="empty-note" style="margin:6px 2px 8px;">Opens the Square app on this phone with the total already in it. Come back here afterwards and say how it was paid.</p>';
+}
+out += '<div class="pref-grid" style="margin-top:6px;">' +
+'<button type="button" class="ghost-btn cio-undo" onclick="merchCloseOut(\'card\')">Paid by card</button>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="merchCloseOut(\'cash\')">Paid in cash</button>' +
+'</div>' +
 '<button type="button" class="ghost-btn" onclick="merchClearTill()">Clear the till</button>' +
-'<p class="empty-note" style="margin:6px 2px 0;">Nothing has been sent to the market&rsquo;s records yet. Closing out posts the whole day in one go \u2014 that is deliberate, so a busy stand cannot slow the app down for every other vendor.</p>';
+'<p class="empty-note" style="margin:6px 2px 0;">Saying how it was paid posts the day. Nothing has gone to the market&rsquo;s records until then \u2014 the whole day goes in one write, deliberately, so a busy stand cannot slow the app down for every other vendor.</p>';
 }
 out += '</div>';
 out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-toolbox"></use></svg></span>Stock</h2>';
 if (!merchCache.items.length) {
 out += '<p class="empty-note" style="margin-top:0;">No items yet. Add the first one below.</p>';
 } else {
-merchCache.items.forEach(it => {
+merchCache.items.slice().sort((a, b) => (a.retired ? 1 : 0) - (b.retired ? 1 : 0)).forEach(it => {
 const left = merchOnHand(it.id, true);
-out += '<div class="req-row"><div class="req-row-main">' +
+out += '<div class="req-row"' + (it.retired ? ' style="opacity:.55;"' : '') + '><div class="req-row-main">' +
 '<div class="req-name">' + esc(it.name) + ' \u00b7 $' + fmtMoney(it.price) +
-(left <= 0 ? ' <span class="stamp late">none left</span>' :
+(it.retired ? ' <span class="season-tag">retired</span>' :
+left <= 0 ? ' <span class="stamp late">none left</span>' :
 left <= 3 ? ' <span class="stamp late">' + left + ' left</span>' :
 ' <span class="stamp in">' + left + ' left</span>') + '</div>' +
 '<div class="req-meta">' + merchInFor(it.id) + ' received \u00b7 ' + merchSoldFor(it.id, true) + ' sold</div>' +
+(it.retired ? '' :
 '<div style="margin-top:6px;">' +
 '<button type="button" class="ghost-btn cio-undo" onclick="merchTillAdd(\'' + it.id + '\', 1)">Sell one</button>' +
 '<span class="mr-unit-row" style="display:inline-flex; margin-left:6px;">' +
 '<input type="number" id="merchIn-' + it.id + '" placeholder="0" style="width:70px;">' +
 '<button type="button" class="ghost-btn cio-undo" onclick="merchReceive(\'' + it.id + '\')">Received</button></span>' +
-'</div></div></div>';
+'</div>') +
+'<details style="margin-top:6px;"><summary style="font-size:13px; font-weight:700; cursor:pointer;">Change name or price</summary>' +
+'<div class="desk-form" style="margin-top:6px;">' +
+'<input type="text" id="merchEdName-' + it.id + '" value="' + esc(it.name) + '">' +
+'<div class="mr-unit-row"><input type="number" id="merchEdPrice-' + it.id + '" step="0.01" min="0.01" value="' + it.price + '"><span class="mr-unit">dollars</span></div>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="merchEditItem(\'' + it.id + '\')">Save</button>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="merchRetireItem(\'' + it.id + '\')">' +
+(it.retired ? 'Put it back on the till' : 'Take it off the till') + '</button>' +
+'</div></details>' +
+'</div></div>';
 });
 }
 out += '<div class="desk-form" style="margin-top:10px;">' +
@@ -24405,6 +24469,18 @@ out += '<div class="desk-form" style="margin-top:10px;">' +
 '<div class="mr-unit-row"><input type="number" id="merchPrice" step="0.01" min="0.01" placeholder="0.00"><span class="mr-unit">dollars</span></div>' +
 '<button type="button" class="ghost-btn" onclick="merchAddItem()">Add it to the book</button></div>';
 out += '</div>';
+out += '<details class="card" id="merchSqBox"><summary style="font-weight:800; cursor:pointer;">Card payments through Square' +
+(merchSqReady() ? '' : ' <span class="fold-optional">not connected</span>') + '</summary>' +
+'<p class="empty-note" style="margin:8px 0;">The app does not take the card itself. It hands the total to the <b>Square Point of Sale app</b> on this phone, which takes the payment on the market&rsquo;s own account and reader. Paste the market&rsquo;s <b>Application ID</b> from the Square developer console below.</p>' +
+'<div class="desk-form">' +
+'<label for="merchSqApp">Square Application ID</label>' +
+'<input type="text" id="merchSqApp" autocomplete="off" placeholder="sq0idp-..." value="' + esc((merchSq || {}).appId || '') + '">' +
+'<label for="merchSqLoc" style="margin-top:8px;">Location ID (optional)</label>' +
+'<input type="text" id="merchSqLoc" autocomplete="off" placeholder="Leave blank unless Square asks for it" value="' + esc((merchSq || {}).locationId || '') + '">' +
+'<button type="button" class="ghost-btn" onclick="saveMerchSquare()">Save it</button>' +
+'</div>' +
+'<p class="empty-note" style="margin:8px 0 0;"><b>What this cannot do.</b> Square sends its confirmation back to a web address that has to be able to receive it, and this app is served from static hosting that cannot. So the last step is you: Square takes the money, you come back and tap how it was paid. The money is real either way \u2014 Square has it \u2014 but the app is recording what you told it, not what it checked.</p>' +
+'</details>';
 const days = {};
 (merchCache.sales || []).forEach(s => { days[s.on] = (days[s.on] || 0) + s.qty * s.price; });
 const dayKeys = Object.keys(days).sort().reverse().slice(0, 8);
@@ -24412,10 +24488,18 @@ out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i
 if (!dayKeys.length) out += '<p class="empty-note" style="margin-top:0;">Nothing posted yet.</p>';
 else {
 const total = Object.keys(days).reduce((t, k) => t + days[k], 0);
+const byTender = {};
+(merchCache.sales || []).forEach(s => {
+const k = s.tender || 'not recorded';
+byTender[k] = (byTender[k] || 0) + s.qty * s.price;
+});
 out += '<div class="stat-row"><div class="stat"><div class="stat-num">$' + fmtMoney(total) +
 '</div><div class="stat-label">Taken, all time</div></div>' +
 '<div class="stat"><div class="stat-num">' + Object.keys(days).length +
-'</div><div class="stat-label">Market days</div></div></div>';
+'</div><div class="stat-label">Market days</div></div></div>' +
+'<p class="empty-note" style="margin:6px 2px 0;">' +
+Object.keys(byTender).sort().map(k => '<b>$' + fmtMoney(byTender[k]) + '</b> ' + esc(k)).join(' \u00b7 ') +
+'</p>';
 dayKeys.forEach(k => {
 out += '<div class="req-row"><div class="req-row-main"><div class="req-name">$' + fmtMoney(days[k]) +
 '</div><div class="req-meta">' + esc(formatDisplayDate(k)) + '</div></div></div>';
@@ -24424,6 +24508,77 @@ out += '<div class="req-row"><div class="req-row-main"><div class="req-name">$' 
 out += '</div>';
 host.innerHTML = out;
 }
+// SQUARE HANDOFF FOR THE MERCH STAND.
+//
+// The app does not take the card itself. It hands the total to the Square
+// Point of Sale app already installed on the phone, which takes the payment
+// on the market's own Square account and its own reader. That needs one
+// value from Square's developer console -- an Application ID -- which is
+// settable here rather than baked in, because it belongs to the market.
+//
+// WHAT THIS CANNOT DO, and the screen says so: Square returns its result by
+// POSTing to a callback URL, and this app is served from static hosting that
+// cannot receive a POST. So the return trip is a person: Square takes the
+// money, the lead comes back and taps which way it was paid. The money is
+// real either way -- Square has it -- but the app is recording what it was
+// told, not what it verified, and it should not pretend otherwise.
+const MERCH_SQ_KEY = 'ifm-merch-square';
+let merchSq = null;
+async function loadMerchSquare() {
+const v = await storageGet(MERCH_SQ_KEY);
+merchSq = (v !== STORAGE_MISSING && v) ? v : { appId: '', locationId: '' };
+return merchSq;
+}
+function merchSqReady() { return !!(merchSq && merchSq.appId && merchSq.appId.length > 8); }
+function squarePosLink(cents, note) {
+if (!merchSqReady()) return null;
+const back = location.origin + location.pathname;
+const data = {
+amount_money: { amount: String(Math.round(cents)), currency_code: 'USD' },
+callback_url: back,
+client_id: merchSq.appId,
+version: '1.3',
+notes: note || 'Merch Mansion',
+options: { supported_tender_types: ['CREDIT_CARD', 'CASH', 'OTHER'] }
+};
+if (merchSq.locationId) data.location_id = merchSq.locationId;
+const isAndroid = /Android/i.test(navigator.userAgent);
+if (isAndroid) {
+return 'intent:#Intent;action=com.squareup.pos.action.CHARGE;package=com.squareup;' +
+'S.com.squareup.pos.WEB_CALLBACK_URI=' + encodeURIComponent(back) + ';' +
+'S.com.squareup.pos.CLIENT_ID=' + encodeURIComponent(merchSq.appId) + ';' +
+'S.com.squareup.pos.API_VERSION=v2.0;' +
+'i.com.squareup.pos.TOTAL_AMOUNT=' + Math.round(cents) + ';' +
+'S.com.squareup.pos.CURRENCY_CODE=USD;' +
+'S.com.squareup.pos.TENDER_TYPES=com.squareup.pos.TENDER_CARD,com.squareup.pos.TENDER_CASH;end';
+}
+return 'square-commerce-v1://payment/create?data=' + encodeURIComponent(JSON.stringify(data));
+}
+async function saveMerchSquare() {
+if (!merchCanRun()) { showMsg('merchMsg', 'err', 'Only the office or the Merch Mansion lead can change this.'); return; }
+const appId = (document.getElementById('merchSqApp').value || '').trim();
+const loc = (document.getElementById('merchSqLoc').value || '').trim();
+merchSq = { appId: appId, locationId: loc };
+await storageSet(MERCH_SQ_KEY, merchSq);
+actAs('Merch Mansion Square link changed', { kind: 'money', weight: 'notable' });
+renderMerch();
+showMsg('merchMsg', 'ok', appId
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> Saved. The till can now hand a total to the Square app.'
+: 'Cleared. The till will only record cash and takings entered by hand.');
+}
+function merchChargeSquare() {
+const cents = Math.round(merchTillTotal() * 100);
+if (!cents) { showMsg('merchMsg', 'err', 'Nothing in the till to charge.'); return; }
+const link = squarePosLink(cents, 'Merch Mansion \u00b7 ' + merchTill.lines.reduce((t, l) => t + l.qty, 0) + ' items');
+if (!link) { showMsg('merchMsg', 'err', 'No Square Application ID saved yet.'); return; }
+merchPendingTender = 'card';
+window.location.href = link;
+setTimeout(() => {
+showMsg('merchMsg', 'ok', 'If Square did not open, its app may not be installed on this phone. ' +
+'Take the payment however you can and record it below \u2014 the till is still here.');
+}, 2500);
+}
+let merchPendingTender = null;
 const MERCH_KEY = 'ifm-merch';
 let merchCache = null;
 let merchTill = { date: null, lines: [] };
