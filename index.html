@@ -2437,7 +2437,7 @@ I sell food (prepared food or produce)
 <textarea id="profProducts" placeholder="e.g. Carved and painted original artwork, prints, magnets." style="width:100%; min-height:80px; padding:12px; border:1px solid var(--paper-dim); border-radius:10px; font-family:inherit; font-size:16px; color:var(--ink); background:#fff;"></textarea>
 <div style="display:flex; gap:10px; margin-top:14px;">
 <button class="primary-btn" style="margin:0;" onclick="saveProfile()"><svg class="ico"><use href="#i-checkmark"></use></svg> Save</button>
-<button class="ghost-btn" style="margin:0;" onclick="toggleProfileEdit(false)">Cancel</button>
+<button class="back-link" data-backhand="1" style="margin:0;" onclick="toggleProfileEdit(false)">Cancel</button>
 </div>
 <div class="status-msg" id="profileStatusMsg"></div>
 </div>
@@ -3327,7 +3327,7 @@ announces any change.</p>
 <input type="text" id="abPermit" placeholder="Permission not yet obtained: &hellip;">
 <div class="btn-row">
 <button type="button" class="primary-btn" onclick="abSaveEdit()">Save subject</button>
-<button type="button" class="ghost-btn" onclick="abCloseEdit()">Cancel</button>
+<button type="button" class="back-link" data-backhand="1" onclick="abCloseEdit()">Cancel</button>
 </div>
 <div class="status-msg" id="abEditMsg"></div>
 </div>
@@ -4139,7 +4139,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Every debt and credit reaches a statement</div><div class="comm-desc">There are eleven ways money can land on a vendor&rsquo;s account: fines entered by hand, fines the ladder derives, booth-check fines, booth fees for each of the four venues, the statement&rsquo;s own late fee, the membership share, work hours not worked, and the late renewal surcharge on the debit side; SNAP tokens turned in, gift certificates taken at a stall, booth fees paid at the window, checks, cash, card at the desk and Square on the credit side. A new one must be added to <code>accountData</code> or it silently never bills. An audit of this list found four holes at once: Wednesday and Winter fees charged nothing because the season calendar only makes Saturdays and Sundays, SNAP had no route at all, and the January renewal surcharge was filed as due the following December.</div></div>
 <div class="comm-item"><div class="comm-title">Nothing may run off the side of the phone</div><div class="comm-desc">Cards, rows and text carry <code>max-width:100%</code> and <code>overflow-wrap:anywhere</code>; a flex text column carries a floor (<code>min-width: min(100%, 14rem)</code>) so a sibling input cannot squeeze it to one letter a line. Use <code>overflow-wrap: break-word</code>, never <code>anywhere</code>, on anything holding a title: <code>anywhere</code> lets the browser count a single character as an element&rsquo;s minimum width, so a flex row squeezed &ldquo;My Account&rdquo; into &ldquo;My Accou / nt&rdquo;. <code>anywhere</code> is reserved for the few places a single unbroken string can genuinely exceed the phone &mdash; a certificate code, a run-together vendor name in a report row. Test with <code>t24-overflow.js</code>, which walks every screen in every role at 390px and 320px and reports anything past the edge, and with <code>t25-titles.js</code>, which checks no drawer title is narrower than its own longest word. It found 98 at first pass. The kiosk booth map is excluded on purpose: it is wider than the phone by design and is dragged, not read.</div></div>
-<div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. A new one only needs <code>class="back-link" data-backhand="1"</code> \u2014 the hand is drawn on screen open. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
+<div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. Build one with <code>makeBackButton(label, onclick)</code>, or mark it <code>class="back-link" data-backhand="1"</code> and the hand is drawn on screen open. Test with <code>t26-backhand.js</code>. Three controls deliberately do NOT wear it, because the hand means <em>go back</em> and they are actions: <b>Close the selection</b> ends a Booth Selection, <b>Put everything back to the Guide</b> resets the rules, and <b>&lsaquo; Prev</b> steps a calendar to the previous month. A left chevron paired with Next is a stepper, not a way back. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first — that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
@@ -5106,7 +5106,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div id="reqRoster" style="margin-top:10px;"></div>
 <div class="empty-note" id="reqRosterEmpty" style="display:none;"></div>
 <div class="status-msg" id="reqRosterMsg"></div>
-<button class="ghost-btn" onclick="closeRequirementRoster()">Close</button>
+<button class="back-link" data-backhand="1" onclick="closeRequirementRoster()">Close</button>
 </div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Add a Requirement<button type="button" class="help-dot" onclick="showHelp(61)" aria-label="What are the rules here?">?</button></h2>
@@ -15093,6 +15093,16 @@ const src = document.getElementById('ifmLogoSource');
 const dest = document.getElementById('landingLogo');
 if (src && dest && !dest.getAttribute('src')) dest.src = src.getAttribute('src') || src.src;
 }
+function backHandHTML(label) { return BACK_HAND_IMG + esc(label || 'Back'); }
+function makeBackButton(label, onclick, extraClass) {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'back-link' + (extraClass ? ' ' + extraClass : '');
+b.dataset.backhand = '1';
+b.innerHTML = backHandHTML(label);
+if (onclick) b.onclick = onclick;
+return b;
+}
 function paintBackHands(root) {
 (root || document).querySelectorAll('[data-backhand="1"]').forEach(b => {
 if (b.innerHTML.indexOf('back-hand') < 0) b.innerHTML = BACK_HAND_IMG + b.innerHTML;
@@ -18149,7 +18159,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-88';
+const BUILD_ID = '16-89';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -38560,11 +38570,8 @@ const openF = mgrOpenFolder
 ? ordered.find(f => (f.key || f.s) === mgrOpenFolder)
 : null;
 if (openF) {
-const back = document.createElement('button');
-back.type = 'button';
-back.className = 'ghost-btn mgr-back';
-back.innerHTML = '\u2039 All drawers';
-back.onclick = () => { mgrOpenFolder = null; renderManagerFolders(); };
+const back = makeBackButton('All drawers',
+() => { mgrOpenFolder = null; renderManagerFolders(); }, 'mgr-back');
 grid.appendChild(back);
 const head = document.createElement('div');
 head.className = 'mgr-drawer-head';
