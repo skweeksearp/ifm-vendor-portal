@@ -4000,17 +4000,19 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-envelope"></use></svg></span>On Their List</h2>
 <p class="empty-note" style="margin-top:0;">What the office has put to whoever heads this. Sent from Board &amp; Committees &rarr; Send to a Committee or Program.</p>
+<input type="text" id="mmItemSearch" class="find-field" autocomplete="off" placeholder="Narrow this list" oninput="renderProgramItems()">
 <div id="mmItemList"></div>
 <div class="empty-note" id="mmItemEmpty" style="display:none;">Nothing has been sent to them.</div>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Shifts Posted</h2>
+<input type="text" id="mmShiftSearch" class="find-field" autocomplete="off" placeholder="Narrow by title, date or who claimed it" oninput="renderMerchShifts()">
 <div id="mmShiftList"></div>
 <div class="empty-note" id="mmShiftEmpty" style="display:none;">No shifts posted yet.</div>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This Does Not Do Yet</h2>
-<p class="empty-note" style="margin-top:0;">This posts shifts and books the hours. It does not track stock, takings or equipment. The Merch Mansion&rsquo;s sales go through the market&rsquo;s own till and are not counted here; the garbage and dish programmes have running costs nobody logs; the fire extinguishers have inspection dates this app does not watch. Each of those is a piece of work in its own right and should be asked for plainly rather than bolted on.</p>
+<p class="empty-note" style="margin-top:0;">This posts shifts and books the hours. The Merch Mansion&rsquo;s stock and takings now have their own tool &mdash; <b>Merch Mansion Stock and Till</b> &mdash; but the other programmes have nothing of the kind: the garbage and dish programmes have running costs nobody logs, and the fire extinguishers have inspection dates this app does not watch. Each of those is a piece of work in its own right and should be asked for plainly rather than bolted on.</p>
 </div>
 </section>
 <section id="screen-voicemail" class="screen">
@@ -17851,7 +17853,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-72';
+const BUILD_ID = '16-73';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24544,8 +24546,18 @@ const wrap = document.getElementById('mmItemList');
 const empty = document.getElementById('mmItemEmpty');
 if (!wrap) return;
 wrap.innerHTML = '';
-const items = programItems(mmProgram) || [];
-if (empty) empty.style.display = items.length ? 'none' : 'block';
+const all = programItems(mmProgram) || [];
+const q = ((document.getElementById('mmItemSearch') || {}).value || '').trim().toLowerCase();
+const items = all.filter(it => !q ||
+[it.text, it.kind === 'agenda' ? 'to take up' : 'something to do',
+it.date, formatDisplayDate(it.date), it.fromOffice ? 'from the office' : '']
+.some(x => String(x || '').toLowerCase().includes(q)));
+if (empty) {
+empty.style.display = items.length ? 'none' : 'block';
+if (!items.length && all.length) empty.textContent =
+'Nothing on this list matches \u201c' + q + '\u201d. ' + all.length + ' item' +
+(all.length === 1 ? '' : 's') + ' in all.';
+}
 items.forEach(it => {
 const row = document.createElement('div');
 row.className = 'req-row';
@@ -24558,6 +24570,10 @@ wrap.appendChild(row);
 }
 function switchProgram() {
 mmProgram = document.getElementById('mmProgram').value;
+['mmItemSearch', 'mmShiftSearch'].forEach(id => {
+const el = document.getElementById(id);
+if (el) el.value = '';
+});
 const sel = document.getElementById('mmLead');
 if (sel) sel.value = programLead(mmProgram);
 showMsg('mmLeadMsg', '', '');
@@ -24630,13 +24646,23 @@ const wrap = document.getElementById('mmShiftList');
 const empty = document.getElementById('mmShiftEmpty');
 if (!wrap) return;
 wrap.innerHTML = '';
+const q = ((document.getElementById('mmShiftSearch') || {}).value || '').trim().toLowerCase();
+const hit = t => !q || [t.title, t.desc, t.date, t.category,
+formatDisplayDate(t.date),
+...((t.claims || []).map(c => vendorNameFor(c.vendorId)))]
+.some(x => String(x || '').toLowerCase().includes(q));
 const keys = (currentRole === 'manager' && document.getElementById('mmProgram'))
 ? [mmProgram] : programsIRun().map(p => p.key);
 const shifts = (cache.tasks || []).filter(t =>
 t.program ? keys.indexOf(t.program) !== -1
 : (t.category === 'Merch Mansion' && keys.indexOf('merch') !== -1)).slice().reverse();
-if (empty) empty.style.display = shifts.length ? 'none' : 'block';
-shifts.forEach(t => {
+const shown = shifts.filter(hit);
+if (empty) {
+empty.style.display = shown.length ? 'none' : 'block';
+if (!shown.length && shifts.length) empty.textContent =
+'No shift matches \u201c' + q + '\u201d. ' + shifts.length + ' posted in all.';
+}
+shown.forEach(t => {
 const taken = (t.claims || []).length;
 const row = document.createElement('div');
 row.className = 'req-row';
