@@ -2317,6 +2317,7 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <div class="chair-bar-text"><b id="chairAlertCount"></b><span id="chairAlertWho"></span></div>
 <span class="chair-bar-go">Review &rsaquo;</span>
 </div>
+<div class="card" id="lottoNotice" style="display:none;"></div>
 <div class="card" id="vendorAttn" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Needs Attention</h2>
 <p class="empty-note" id="vendorAttnSub" style="margin-top:0;"></p>
@@ -3416,6 +3417,9 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <div class="card">
 <p class="empty-note" id="satTiebreakNote" style="margin-bottom:0;"></p>
 <button type="button" class="ghost-btn" onclick="lottoRunPrefs('saturday')">Place everyone whose preference is open</button>
+<button type="button" class="ghost-btn" onclick="lottoClose('saturday')" id="satCloseBtn">Close the selection</button>
+<p class="empty-note" style="margin:6px 2px 0;">Closing tells everyone still in the pool that there was nothing left, on their own desk. Until you close it they see that selection is still running, so nobody rings in to ask.</p>
+<div class="status-msg" id="lottoCloseMsg"></div>
 <p class="empty-note" style="margin:6px 2px 0;">Walks the line in its existing order. A vendor who asked in advance for a booth that is open now gets it without a call; the first vendor whose wish is not available stops the pass, and you carry on by phone from there.</p>
 <div id="satPrefOut" style="margin-top:8px;"></div>
 </div>
@@ -13669,6 +13673,37 @@ banner.innerHTML = demoOn()
 'Turn them off in Developer \u2192 Demo Statement Records.</p>' : '';
 }
 }
+// BOOTH FEES ON THE ACCOUNT.
+//
+// Until now no booth fee was ever charged. Attendance produced nothing, and
+// a fee collected at the window was recorded as a credit with nothing to set
+// it against -- so paying your fee made the market appear to owe you money,
+// and not paying it cost nothing at all.
+//
+// The charge is DERIVED from who actually stood in which booth on the day,
+// through boothOccupant, so it cannot drift from the booth records. A fee the
+// office marked collected on site is credited against it and the two cancel;
+// anything not collected stays on the statement and is billed monthly.
+// The booth number rides on every line, because 'Booth fee, Saturday' three
+// times in a month tells a vendor nothing they can check.
+function boothFeeLinesFor(vendorId, year) {
+year = Number(year);
+const out = [];
+const paidOn = (cache.ops || {}).dayfees || {};
+attendedMarketDates(vendorId, year).forEach(a => {
+if (a.date > todayISO()) return;
+const amount = dayFeeFor(a.day);
+if (!(amount > 0)) return;
+let boothNum = null;
+(cache.booths || []).forEach(b => {
+if (boothNum) return;
+if (boothOccupant(b, a.date) === vendorId) boothNum = b.num;
+});
+const paid = (paidOn[a.date] || []).indexOf(vendorId) !== -1;
+out.push({ date: a.date, day: a.day, booth: boothNum, amount: amount, paid: paid });
+});
+return out;
+}
 function accountData(vendorId, year) {
 const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
 const inYear = d => String(d || '').slice(0, 4) === String(year);
@@ -13716,13 +13751,17 @@ else unseen.push(Number(hl.owed).toFixed(1) + ' work hours are still owed this s
 ' if the season closed today \u2014 not a charge yet, and avoidable by working them.');
 }
 
-// Day fees the office recorded as collected on site.
-Object.keys((cache.ops || {}).dayfees || {}).forEach(d => {
-if (!inYear(d)) return;
-if (((cache.ops.dayfees[d] || []).indexOf(vendorId)) === -1) return;
-const md = allMarketDatesInSeason(year).find(m => m.date === d);
-received.push({ date: d, what: 'Day fee collected on site' + (md ? ' (' + md.day + ')' : ''),
-amount: dayFeeFor(md ? md.day : 'Saturday') });
+// The booth fee for every market this vendor actually stood at, and the
+// matching credit where the office took the money at the window. Unpaid
+// fees simply stay charged, which is what puts them on the monthly bill.
+boothFeeLinesFor(vendorId, year).forEach(f => {
+if (!inYear(f.date)) return;
+const where = f.booth ? 'booth ' + f.booth : 'booth not recorded';
+charged.push({ date: f.date, kind: 'Booth fee',
+what: 'Booth fee \u2014 ' + where + ', ' + f.day, amount: f.amount });
+if (f.paid) received.push({ date: f.date,
+what: 'Booth fee paid at the office \u2014 ' + where + ', ' + f.day,
+amount: f.amount });
 });
 
 // Gift certificates spent at this vendor's stall. The market was paid at the
@@ -16054,6 +16093,62 @@ if (el) el.textContent = satLottoStage === 'phone'
 };
 function lottoEl(kind, key) { return document.getElementById(LOTTO_KINDS[kind].ids[key]); }
 function lottoDateOf(kind) { return lottoEl(kind, 'date').value; }
+// WHAT THE LOTTERY TOLD YOU.
+//
+// A vendor in the pool currently learns their result by being telephoned, or
+// by turning up. These two notices put the same answer on their desk as the
+// office works: assigned a booth, or the selection closed without one.
+//
+// Both are DERIVED from the selection record rather than stored as messages.
+// A message sent and then contradicted by a correction is worse than no
+// message; this way, if the office moves somebody, what the vendor sees moves
+// with it. The cost is that there is no history of what they were told -- and
+// that is the right trade for a thing that changes during the hour it matters.
+function lottoNoticeFor(vendorId) {
+const out = [];
+const today = todayISO();
+Object.keys(cache.lottery || {}).forEach(date => {
+if (date < today) return;
+const rec = cache.lottery[date] || {};
+const asg = rec.assignments || {};
+const day = new Date(date + 'T12:00:00').getDay() === 0 ? 'Sunday' : 'Saturday';
+const inPool = (cache.callinout || []).some(r =>
+r.vendorId === vendorId && r.marketDate === date && r.status === 'In');
+if (!inPool && !asg[vendorId]) return;
+if (asg[vendorId]) {
+out.push({ kind: 'got', date: date, day: day, booth: asg[vendorId] });
+} else if (rec.closedAt) {
+out.push({ kind: 'none', date: date, day: day, closedAt: rec.closedAt });
+} else {
+out.push({ kind: 'waiting', date: date, day: day,
+placed: Object.keys(asg).length });
+}
+});
+return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+async function lottoClose(kind) {
+if (!requireMarketRole('lottoCloseMsg')) return;
+const date = lottoDateOf(kind) || LOTTO_KINDS[kind].defaultDate();
+const rec = cache.lottery[date];
+if (!rec) { showMsg('lottoCloseMsg', 'err', 'Nothing to close for that day.'); return; }
+if (rec.closedAt) {
+delete rec.closedAt;
+await storageSet('ifm-lottery', cache.lottery);
+lottoRenderBooths(kind);
+showMsg('lottoCloseMsg', 'ok', 'Reopened. Vendors without a booth are back to waiting rather than turned away.');
+return;
+}
+const pool = lottoPool(kind, date);
+const without = pool.filter(v => !(rec.assignments || {})[v]);
+rec.closedAt = Date.now();
+actAs('Booth Selection closed for ' + date + ' \u2014 ' + without.length + ' left without a booth',
+{ kind: 'day', weight: 'notable' });
+await storageSet('ifm-lottery', cache.lottery);
+lottoRenderBooths(kind);
+showMsg('lottoCloseMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Closed. ' +
+Object.keys(rec.assignments || {}).length + ' placed; <b>' + without.length +
+'</b> told there was nothing left. They can see it on their own desk now.');
+}
 function lottoRec(kind) {
 const date = lottoDateOf(kind);
 if (!cache.lottery[date]) cache.lottery[date] = { openBooths: '', assignments: {}, manualCheck: {} };
@@ -16115,7 +16210,15 @@ if (kind === 'sunday') renderShareReview();
 //
 // `openBooths` stays in the stored record so that nothing already written to
 // the sheet is destroyed; it is simply no longer read or written.
+function lottoRenderCloseBtn(kind) {
+const btn = document.getElementById(kind === 'saturday' ? 'satCloseBtn' : 'sunCloseBtn');
+if (!btn) return;
+const date = lottoDateOf(kind) || LOTTO_KINDS[kind].defaultDate();
+const rec = (cache.lottery || {})[date];
+btn.textContent = (rec && rec.closedAt) ? 'Reopen the selection' : 'Close the selection';
+}
 function lottoRenderBooths(kind) {
+lottoRenderCloseBtn(kind);
 const k = LOTTO_KINDS[kind];
 const date = lottoDateOf(kind);
 const rec = lottoRec(kind);
@@ -17960,7 +18063,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-79';
+const BUILD_ID = '16-81';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25201,7 +25304,42 @@ m: r.status + (r.meeting ? ' \u00b7 ' + formatDisplayDate(r.meeting) : '') + (r.
 });
 return out;
 }
+function renderLottoNotice() {
+const card = document.getElementById('lottoNotice');
+if (!card) return;
+if (!currentVendorId || currentRole !== 'vendor') { card.style.display = 'none'; return; }
+const notes = lottoNoticeFor(currentVendorId);
+if (!notes.length) { card.style.display = 'none'; return; }
+card.style.display = 'block';
+card.innerHTML = notes.map(n => {
+if (n.kind === 'got') {
+return '<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>' +
+'You have booth ' + esc(n.booth) + '</h2>' +
+'<p class="empty-note" style="margin-top:0;">For ' + esc(n.day) + ', ' +
+esc(formatDisplayDate(n.date)) + '. Assigned in the Booth Selection. ' +
+'If you cannot come after all, tell the office \u2014 the booth goes back to the next vendor in line.</p>' +
+'<button type="button" class="ghost-btn" onclick="showScreen(\'callinout\')">Tell the office you will be away</button>';
+}
+if (n.kind === 'none') {
+return '<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>' +
+'No booth for ' + esc(n.day) + '</h2>' +
+'<p class="empty-note" style="margin-top:0;">Booth Selection for ' +
+esc(formatDisplayDate(n.date)) + ' has finished and there was nothing left when your turn came. ' +
+'Nothing is owed for a day you did not get, and your place in line is not affected next time. ' +
+'If somebody drops out the office may still call \u2014 it is worth keeping your phone to hand.</p>';
+}
+return '<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>' +
+'Booth Selection is running</h2>' +
+'<p class="empty-note" style="margin-top:0;">You are in the pool for ' + esc(n.day) + ', ' +
+esc(formatDisplayDate(n.date)) + '. ' +
+(n.placed === 0 ? 'Nobody has been placed yet.'
+: n.placed === 1 ? 'One vendor has been placed so far.'
+: n.placed + ' vendors have been placed so far.') + ' ' +
+'This page updates as the office works, so you do not have to ring in.</p>';
+}).join('<hr style="border:none; border-top:1px solid #EFEADA; margin:12px 0;">');
+}
 function renderVendorAttn() {
+renderLottoNotice();
 const card = document.getElementById('vendorAttn');
 const wrap = document.getElementById('vendorAttnList');
 if (!card || !wrap) return;
