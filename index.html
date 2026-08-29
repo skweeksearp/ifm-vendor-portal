@@ -169,13 +169,17 @@ background: #fff; color: #3A382C; border: 2px solid #D8D2BC; border-radius: 12px
    the next one would not be. The kiosk map is deliberately excluded: it is
    larger than the viewport by design and is dragged rather than read. */
 .card, .req-row, .tracker-row, .dash-fold, .fold-bar, .stmt-doc, .comm-item {
-max-width: 100%; overflow-wrap: anywhere; }
+max-width: 100%; overflow-wrap: break-word; }
 .fold-title, .fold-sub, .req-name, .req-meta, .stat-label, .stat-num,
 .t-title, .t-sub, .empty-note, .status-msg, label, h1, h2, h3,
 .req-row-main, .req-tally, .req-row, .comm-title, .comm-desc, summary {
-min-width: 0; overflow-wrap: anywhere; }
+overflow-wrap: break-word; }
+/* Only where a single unbroken string can genuinely be longer than the
+   phone: a certificate code, a pasted address. Nothing with a title in it. */
+.stmt-table td, table.log td, .gcv-status, #gcvOut, #gcLookupOut,
+.report-row, .report-row * {
+overflow-wrap: anywhere; }
 table.log, table.stmt-table { width: 100%; table-layout: auto; }
-table.log td, table.stmt-table td { overflow-wrap: anywhere; }
 /* The statement document. Deliberately plainer and squarer than the rest of
    the app: this is the one screen a vendor may print and hand to an
    accountant, and it should look like paperwork, not like an app. */
@@ -4134,7 +4138,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Plain Words</div><div class="comm-desc">If the market&rsquo;s vocabulary moved, the ledger records it &mdash; old word kept in quotation marks as the bridge.</div></div>
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
 <div class="comm-item"><div class="comm-title">Every debt and credit reaches a statement</div><div class="comm-desc">There are eleven ways money can land on a vendor&rsquo;s account: fines entered by hand, fines the ladder derives, booth-check fines, booth fees for each of the four venues, the statement&rsquo;s own late fee, the membership share, work hours not worked, and the late renewal surcharge on the debit side; SNAP tokens turned in, gift certificates taken at a stall, booth fees paid at the window, checks, cash, card at the desk and Square on the credit side. A new one must be added to <code>accountData</code> or it silently never bills. An audit of this list found four holes at once: Wednesday and Winter fees charged nothing because the season calendar only makes Saturdays and Sundays, SNAP had no route at all, and the January renewal surcharge was filed as due the following December.</div></div>
-<div class="comm-item"><div class="comm-title">Nothing may run off the side of the phone</div><div class="comm-desc">Cards, rows and text carry <code>max-width:100%</code> and <code>overflow-wrap:anywhere</code>; a flex text column carries a floor (<code>min-width: min(100%, 14rem)</code>) so a sibling input cannot squeeze it to one letter a line. Test with <code>t24-overflow.js</code>, which walks every screen in every role at 390px and 320px and reports anything past the edge. It found 98 at first pass. The kiosk booth map is excluded on purpose: it is wider than the phone by design and is dragged, not read.</div></div>
+<div class="comm-item"><div class="comm-title">Nothing may run off the side of the phone</div><div class="comm-desc">Cards, rows and text carry <code>max-width:100%</code> and <code>overflow-wrap:anywhere</code>; a flex text column carries a floor (<code>min-width: min(100%, 14rem)</code>) so a sibling input cannot squeeze it to one letter a line. Use <code>overflow-wrap: break-word</code>, never <code>anywhere</code>, on anything holding a title: <code>anywhere</code> lets the browser count a single character as an element&rsquo;s minimum width, so a flex row squeezed &ldquo;My Account&rdquo; into &ldquo;My Accou / nt&rdquo;. <code>anywhere</code> is reserved for the few places a single unbroken string can genuinely exceed the phone &mdash; a certificate code, a run-together vendor name in a report row. Test with <code>t24-overflow.js</code>, which walks every screen in every role at 390px and 320px and reports anything past the edge, and with <code>t25-titles.js</code>, which checks no drawer title is narrower than its own longest word. It found 98 at first pass. The kiosk booth map is excluded on purpose: it is wider than the phone by design and is dragged, not read.</div></div>
 <div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. A new one only needs <code>class="back-link" data-backhand="1"</code> \u2014 the hand is drawn on screen open. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
@@ -18145,7 +18149,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-87';
+const BUILD_ID = '16-88';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
