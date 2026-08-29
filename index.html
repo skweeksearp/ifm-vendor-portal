@@ -3665,7 +3665,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 <div class="card" id="vrDetailCard" style="display:none;">
 <div id="vrDetail"></div>
-<button type="button" class="ghost-btn" onclick="closeVendorRecord()">Back to the List</button>
+<button type="button" class="back-link" onclick="closeVendorRecord()" data-backhand="1">Back to the List</button>
 </div>
 <div class="card" id="vrListCard">
 <div id="vrList"></div>
@@ -3977,13 +3977,13 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Who Runs <span id="mmProgHead">It</span></h2>
 <p class="empty-note" style="margin-top:0;">The vendor at the head of it. Shifts they post come back to them to sign off, the same way a committee chair&rsquo;s do. Naming them stays with the office — nobody appoints themselves.</p>
-<label for="mmLead">Responsible for the Merch Mansion</label>
+<label for="mmLead">Responsible for <span id="mmLeadLabel">it</span></label>
 <select id="mmLead" onchange="saveMerchLead()"></select>
 <div class="status-msg" id="mmLeadMsg"></div>
 </div>
 <div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Post a Shift</h2>
-<p class="empty-note" style="margin-top:0;">Goes on the work hours board like any other task, in the Merch Mansion&rsquo;s name. Standing the stand earns work hours.</p>
+<p class="empty-note" style="margin-top:0;">Goes on the work hours board like any other task, in <span id="mmShiftLabel">the programme</span>&rsquo;s name. The work earns work hours.</p>
 <label for="mmShiftTitle">What the shift is</label>
 <input type="text" id="mmShiftTitle" placeholder="e.g. Saturday morning, 9 to 1">
 <label for="mmShiftDesc" style="margin-top:10px;">Anything they need to know</label>
@@ -4053,6 +4053,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Explainers behind cones</div><div class="comm-desc">Planned-tool text that names other tools, desks, or old vocabulary &mdash; including the footer state when a cone comes off.</div></div>
 <div class="comm-item"><div class="comm-title">Plain Words</div><div class="comm-desc">If the market&rsquo;s vocabulary moved, the ledger records it &mdash; old word kept in quotation marks as the bridge.</div></div>
 <div class="comm-item"><div class="comm-title">App Glossary</div><div class="comm-desc">If the app&rsquo;s own vocabulary moved &mdash; a desk renamed, a new kind of part invented &mdash; the glossary follows.</div></div>
+<div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. A new one only needs <code>class="back-link" data-backhand="1"</code> \u2014 the hand is drawn on screen open. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
 <div class="comm-item"><div class="comm-title">Screens shared between desks</div><div class="comm-desc">A screen reachable from more than one desk carries every control it has to whoever opens it. Season-Long Booth Reservations sits on the vendor desk as well as the manager&rsquo;s, and shipped Assign &amp; Advance, Pass, and Release to vendors. Any control that writes the market&rsquo;s records — rather than the person&rsquo;s own — needs the <code>manager-only</code> class <em>and</em> a <code>requireManager()</code> check inside the function, because hiding a button does not withhold the power behind it. <b>The vendor desk has now been swept; staff, volunteer and kiosk have not. See BF15.</b> Two questions to ask of any card on a shared screen: does this person need it, and is it theirs to see? A card can pass the second and fail the first — that is how a manager&rsquo;s ledger of booth holdings ended up on a vendor&rsquo;s desk.</div></div>
@@ -14432,6 +14433,7 @@ if (name === 'winterpaperwork') initWinterPaperwork();
 if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); stopQrScan(); }
+paintBackHands(document.getElementById('screen-' + name));
 if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
 if (name === 'merch') { if (!merchCache || !merchSq) Promise.all([loadMerch(), loadMerchSquare()]).then(renderMerch); else renderMerch(); }
 if (name === 'demostmt') renderDemoStatements();
@@ -14878,6 +14880,11 @@ function paintLandingLogo() {
 const src = document.getElementById('ifmLogoSource');
 const dest = document.getElementById('landingLogo');
 if (src && dest && !dest.getAttribute('src')) dest.src = src.getAttribute('src') || src.src;
+}
+function paintBackHands(root) {
+(root || document).querySelectorAll('[data-backhand="1"]').forEach(b => {
+if (b.innerHTML.indexOf('back-hand') < 0) b.innerHTML = BACK_HAND_IMG + b.innerHTML;
+});
 }
 function paintPickerBackHand() {
 const b = document.getElementById('pickerBack');
@@ -17866,7 +17873,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-74';
+const BUILD_ID = '16-76';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24740,7 +24747,12 @@ renderMerchShifts();
 function renderProgramNote() {
 const p = programOf(mmProgram);
 const el = document.getElementById('mmProgNote');
-if (!el || !p) return;
+if (!p) return;
+const lead = document.getElementById('mmLeadLabel');
+if (lead) lead.textContent = p.name;
+const shift = document.getElementById('mmShiftLabel');
+if (shift) shift.textContent = p.name + '\u2019s';
+if (!el) return;
 el.innerHTML = esc(p.note) +
 (p.walkUp ? ' <b>Taken on the day by whoever is there</b>, so a shift posted here says how many are wanted rather than holding a name in advance.' : '');
 const h = document.getElementById('mmProgHead');
@@ -39771,8 +39783,10 @@ showMsg('hrsStatusMsg', 'err', e.message || String(e));
 }
 function showMsg(id, kind, text) {
 const el = document.getElementById(id);
-el.className = 'status-msg show ' + kind;
-el.innerHTML = text;
+if (!el) return;
+const empty = !text || !String(text).trim();
+el.className = 'status-msg' + (empty ? '' : ' show ') + (empty ? '' : kind);
+el.innerHTML = empty ? '' : text;
 }
 init();</script>
 
