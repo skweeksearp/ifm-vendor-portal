@@ -3339,9 +3339,14 @@ announces any change.</p>
 <div class="card desk-form" id="abEditCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-quill"></use></svg></span><span id="abEditTitle">Edit subject</span></h2>
 <img id="abPhotoPrev" alt="" style="display:none; width:100%; max-height:190px; object-fit:cover; border-radius:12px; border:1px solid var(--paper-dim); margin-bottom:10px;">
-<label class="field-label" for="abFile">Photograph</label>
+<label class="field-label" for="abDrive">Photograph &mdash; paste a Google Drive link</label>
+<input type="text" id="abDrive" placeholder="https://drive.google.com/file/d/&hellip;/view" autocomplete="off" oninput="abDriveTyped()">
+<p class="empty-note" style="margin-top:4px;"><b>The better way.</b> Put the photograph in the market&rsquo;s Drive folder, set it to <b>Anyone with the link can view</b>, and paste the link here. Full resolution, and the spreadsheet only holds the link. Landscape photographs suit the window best.</p>
+<details style="margin:8px 0 10px;">
+<summary style="font-weight:700; cursor:pointer;">Or upload a file instead</summary>
+<p class="empty-note" style="margin:8px 0 6px;">Stored inside the spreadsheet, so it is squeezed to about 32KB and will look soft on a large screen. Use this only if the photograph cannot go in Drive.</p>
 <input type="file" id="abFile" accept="image/*" onchange="abPickPhoto(this)">
-<p class="empty-note" style="margin-top:4px;">Shrunk automatically to fit the spreadsheet. Landscape photographs suit the window best.</p>
+</details>
 <label class="field-label" for="abTitle">Title</label>
 <input type="text" id="abTitle" placeholder="The Market&rsquo;s Story">
 <label class="field-label" for="abSub">One-line subtitle</label>
@@ -18267,7 +18272,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-105';
+const BUILD_ID = '16-107';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -19066,6 +19071,9 @@ document.getElementById('abBody').value = String(p.body || '')
 .replace(/<\/p>\s*<p>/g, '\n').replace(/<\/?p>/g, '').trim();
 document.getElementById('abCredit').value = p.credit || '';
 document.getElementById('abPermit').value = p.permit || '';
+const drive = document.getElementById('abDrive');
+if (drive) drive.value = (p.photo && p.photo.indexOf('drive:') === 0)
+? 'https://drive.google.com/file/d/' + p.photo.slice(6) + '/view' : '';
 const prev = document.getElementById('abPhotoPrev');
 const photo = p.id ? aboutPhoto(p) : '';   // resolves seed: to its file
 if (photo) { prev.src = photo; prev.style.display = ''; } else prev.style.display = 'none';
@@ -19077,6 +19085,30 @@ abEditing = null; abPendingPhoto = null;
 document.getElementById('abEditCard').style.display = 'none';
 const f = document.getElementById('abFile');
 if (f) f.value = '';
+}
+function abDriveTyped() {
+const box = document.getElementById('abDrive');
+const prev = document.getElementById('abPhotoPrev');
+const raw = (box && box.value || '').trim();
+if (!raw) { abPendingPhoto = null; if (prev) prev.style.display = 'none';
+showMsg('abEditMsg', '', ''); return; }
+const id = driveFileId(raw);
+if (!id) {
+abPendingPhoto = null;
+if (prev) prev.style.display = 'none';
+showMsg('abEditMsg', 'err', 'That does not look like a Drive link. Open the photograph in Drive, ' +
+'press Share, copy the link, and paste the whole thing here.');
+return;
+}
+abPendingPhoto = 'drive:' + id;
+if (prev) {
+prev.onerror = () => { prev.style.display = 'none';
+showMsg('abEditMsg', 'err', 'Drive would not send that photograph. It is almost always sharing: ' +
+'open it in Drive, press Share, and set it to <b>Anyone with the link can view</b>.'); };
+prev.onload = () => { showMsg('abEditMsg', 'ok', 'Photograph found. Save the subject to publish it.'); };
+prev.src = drivePhotoUrl(id);
+prev.style.display = '';
+}
 }
 async function abPickPhoto(input) {
 const file = input.files && input.files[0];
@@ -19128,14 +19160,70 @@ function aboutPages() {
 const list = (cache.about && cache.about.length) ? cache.about : ABOUT_SEED;
 return list.filter(p => !p.hidden);
 }
+// Photographs live under their own storage key, fetched separately from the
+// page that names them. Whichever view happened to draw before those
+// arrived showed a heading and no picture, and nothing ever went back to
+// look again -- which is why a photo could appear when a topic was opened
+// and be missing from the card behind it. A miss now fetches the file and
+// redraws once it lands.
+const aboutPhotoWanted = new Set();
+function aboutPhotoFetch(key) {
+if (!key || key.indexOf('ifm-about-photo-') !== 0) return;
+if (aboutPhotoWanted.has(key)) return;
+if (cache.aboutPhotos && cache.aboutPhotos[key]) return;
+aboutPhotoWanted.add(key);
+storageGet(key).then(data => {
+aboutPhotoWanted.delete(key);
+if (data === STORAGE_MISSING || !data) return;
+cache.aboutPhotos = cache.aboutPhotos || {};
+cache.aboutPhotos[key] = data;
+if (typeof renderAboutWindow === 'function') renderAboutWindow();
+if (typeof renderKioskLearn === 'function' && kioskLearnOpen) renderKioskLearn();
+}).catch(() => { aboutPhotoWanted.delete(key); });
+}
+// PHOTOGRAPHS FROM DRIVE.
+//
+// A Google Sheets cell holds about 50,000 characters, so a photo stored in
+// the sheet can only be about 32KB of actual image -- which is why they look
+// soft. A Drive link costs the sheet sixty characters and the picture can be
+// any size at all.
+//
+// What is stored is the FILE ID, not a finished URL. Google has already
+// broken one embedding form -- uc?export=view now returns 403 -- and will
+// break another. Keeping the id means the day that happens is a one-line fix
+// here rather than every photograph being re-entered by hand.
+function driveFileId(text) {
+const s = String(text || '').trim();
+if (!s) return '';
+let m = s.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/);      // .../file/d/ID/view
+if (m) return m[1];
+m = s.match(/[?&]id=([A-Za-z0-9_-]{10,})/);              // ...?id=ID
+if (m) return m[1];
+m = s.match(/googleusercontent\.com\/d\/([A-Za-z0-9_-]{10,})/);
+if (m) return m[1];
+if (/^[A-Za-z0-9_-]{20,}$/.test(s)) return s;            // a bare id
+return '';
+}
+// The form that works today. thumbnail can rate-limit when a page carries
+// dozens of images; the information window shows a handful, so it is safe
+// here. If it ever fails, lh3.googleusercontent.com/d/<id>=w1600 is the
+// alternative and only this line needs changing.
+function drivePhotoUrl(id, width) {
+return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) +
+'&sz=w' + (width || 1600);
+}
 function aboutPhoto(p) {
 if (!p || !p.photo) return '';
 if (p.photo.indexOf('seed:') === 0) {
 const k = p.photo.slice(5);
 return ABOUT_SEED_PHOTOS[k] || ABOUT_SEED_FILES[k] || '';
 }
+if (p.photo.indexOf('drive:') === 0) return drivePhotoUrl(p.photo.slice(6));
+if (p.photo.indexOf('http') === 0) return p.photo;
 if (p.photo.indexOf('data:') === 0) return p.photo;
-return (cache.aboutPhotos && cache.aboutPhotos[p.photo]) || '';
+const have = (cache.aboutPhotos && cache.aboutPhotos[p.photo]) || '';
+if (!have) aboutPhotoFetch(p.photo);
+return have;
 }
 let kioskLearnOpen = false, kioskLearnPage = null;
 let kawIndex = 0, kawTimer = null;
