@@ -2799,9 +2799,8 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div class="screen-head" id="head-account"></div>
 <div class="card manager-only" id="acctPickCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Whose account</h2>
-<select id="acctVendor" onchange="renderAccount()"></select>
+<select id="acctVendor" onchange="renderAccount(); renderMyStatementCurrent(); renderMyStatements();"></select>
 </div>
-<div id="acctBody"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span><span id="myStmtCurrentTitle">Recent Activity</span></h2>
 <div id="myStmtCurrent"></div>
@@ -13713,10 +13712,12 @@ scr.insertBefore(pay, earlierCard);
 }
 function renderMyStatementCurrent() {
 const host = document.getElementById('myStmtCurrent');
-if (!host || !currentVendorId) return;
+const who = acctViewVendorId();
+if (!host) return;
+if (!who) { host.innerHTML = '<p class="empty-note">Choose a vendor above.</p>'; return; }
 // The month just gone is the one with a deadline attached.
 const ym = stmtMonthOptions()[0];
-const s = statementFor(currentVendorId, ym);
+const s = statementFor(who, ym);
 const head = document.getElementById('myStmtCurrentTitle');
 if (head) head.textContent = stmtIsOpen(ym) ? 'Recent Activity' : ymLabel(ym) + ' Statement';
 if (stmtIsOpen(ym)) { host.innerHTML = stmtActivityHTML(s); return; }
@@ -13732,9 +13733,11 @@ host.innerHTML =
 }
 function renderMyStatements() {
 const host = document.getElementById('myStatements');
-if (!host || !currentVendorId) return;
+const who = acctViewVendorId();
+if (!host) return;
+if (!who) { host.innerHTML = ''; return; }
 const months = stmtMonthOptions().slice(1, 7)
-.map(ym => statementFor(currentVendorId, ym))
+.map(ym => statementFor(who, ym))
 .filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
 if (!months.length) {
 host.innerHTML = '<p class="empty-note">Nothing earlier than this month yet.</p>';
@@ -14067,9 +14070,14 @@ reported: reported, unseen: unseen,
 chargedTotal: sum(charged), receivedTotal: sum(received), reportedTotal: sum(reported),
 balance: Math.round((sum(charged) - sum(received)) * 100) / 100 };
 }
+function acctViewVendorId() {
+const pick = document.getElementById('acctVendor');
+if (currentRole !== 'vendor' && pick && pick.value) return pick.value;
+return currentVendorId;
+}
 function renderAccount() {
 const host = document.getElementById('acctBody');
-if (!host) return;
+if (!host) return;   // the season columns it drew were superseded by Recent Activity
 const pick = document.getElementById('acctVendor');
 const vid = (currentRole === 'manager' && pick && pick.value) ? pick.value : currentVendorId;
 if (!vid) { host.innerHTML = ''; return; }
@@ -14081,27 +14089,8 @@ const rows = list => list.length
 (r.kind ? ' \u00b7 ' + esc(r.kind) : '') + '</div></div>').join('')
 : '<p class="empty-note" style="margin:0;">Nothing on record.</p>';
 
-let html = '<div class="card"><div class="stat-row">' +
-'<div class="stat"><div class="stat-num">' + money(d.chargedTotal) + '</div><div class="stat-label">Charged</div></div>' +
-'<div class="stat"><div class="stat-num">' + money(d.receivedTotal) + '</div><div class="stat-label">Received</div></div>' +
-'<div class="stat"><div class="stat-num">' + money(d.balance) + '</div><div class="stat-label">Balance shown</div></div>' +
-'</div><p class="empty-note" style="margin:8px 0 0;">' + esc(d.vendor ? d.vendor.businessName : '') +
-' \u00b7 season ' + d.year + '. <b>The balance is only as complete as the received column</b> \u2014 ' +
-'read what this page cannot see, below, before treating it as what is owed.</p></div>';
+host.innerHTML = '';
 
-html += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>' +
-'Charged</h2><p class="empty-note" style="margin-top:0;">Computed from the rules the Guide sets. ' +
-'Change the record behind one and it recomputes.</p>' + rows(d.charged) + '</div>';
-
-html += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>' +
-'Received by the market</h2><p class="empty-note" style="margin-top:0;">Only money the office actually ' +
-'recorded. Never what somebody says they sent.</p>' + rows(d.received) + '</div>';
-
-html += '<div class="card not-yours"><h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>' +
-'What this page cannot see</h2>' +
-d.unseen.map(u => '<p class="empty-note" style="margin:0 0 6px;">\u2022 ' + esc(u) + '</p>').join('') +
-'</div>';
-host.innerHTML = html;
 }
 // Both sets of steps are always on the page -- a market couple shares one
 // phone and a vendor helps a neighbour, so hiding the other half helps
@@ -18327,7 +18316,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-108';
+const BUILD_ID = '16-109';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
