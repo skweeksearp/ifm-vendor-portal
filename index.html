@@ -18171,7 +18171,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-100';
+const BUILD_ID = '16-101';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27682,9 +27682,10 @@ body += '<div class="card desk-form" style="margin-top:10px;">' +
 '<div class="mr-unit-row"><input type="number" id="gcDrawAmt" min="0.01" step="0.01" ' +
 'max="' + left + '" placeholder="0.00"><span class="mr-unit">dollars</span></div>' +
 '<label for="gcDrawVendor" style="margin-top:10px;">Which vendor is being paid</label>' +
-'<select id="gcDrawVendor"><option value="">Not recorded</option>' +
+'<select id="gcDrawVendor"><option value="">\u2014 choose \u2014</option>' +
 (cache.vendors || []).slice().sort(byBusinessName).map(v =>
-'<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('') + '</select>' +
+'<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('') +
+'<option value="__none">Nobody \u2014 do not put this on a vendor\u2019s account</option></select>' +
 '<button type="button" class="primary-btn" onclick="gcDraw(\'' + c.id + '\')">' +
 '<svg class="ico"><use href="#i-checkmark"></use></svg> Take this off the certificate</button>' +
 '<button type="button" class="ghost-btn" onclick="gcDrawAll(\'' + c.id + '\')">Spend the whole $' + fmtMoney(left) + '</button>' +
@@ -27727,7 +27728,14 @@ showMsg('gcLookupMsg', 'err', 'That certificate has $' + fmtMoney(left) + ' left
 return;
 }
 const vsel = document.getElementById('gcDrawVendor');
-const vid = vsel ? vsel.value : '';
+const picked = vsel ? vsel.value : '';
+if (!picked) {
+showMsg('gcLookupMsg', 'err', 'Choose which vendor is being paid. If this is not for a vendor \u2014 ' +
+'a day fee, or a cash-out \u2014 pick <b>Nobody</b> at the foot of the list, and the money will ' +
+'reach no account.');
+return;
+}
+const vid = picked === '__none' ? '' : picked;
 c.draws = gcDraws(c).concat([{ at: Date.now(), on: todayISO(), amount: amt,
 vendorId: vid || null, by: currentRole === 'president' ? 'the Board President' : 'the office' }]);
 const nowLeft = gcBalance(c);
