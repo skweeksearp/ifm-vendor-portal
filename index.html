@@ -3019,13 +3019,19 @@ style="text-transform:uppercase;" onkeydown="if (event.key === 'Enter') { event.
 </div>
 <div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Load a Roll of Certificate Codes<button type="button" class="help-dot" onclick="showHelp(77)" aria-label="How do rolls work?">?</button></h2>
-<p class="empty-note" style="margin-top:0;">Before a roll can be sold from, its codes go in here &mdash; paste the list
-the printer supplied, one code or one URL per line. A code the app has never seen cannot be sold
-or redeemed, which is what makes a forged one useless.</p>
-<label for="gcRollLabel">Name this roll</label>
+<p class="empty-note" style="margin-top:0;">Before a batch can be sold from, its codes go in here. A code the app has never seen cannot be sold or redeemed, which is what makes a forged one useless.</p>
+<p class="empty-note"><b>Two ways to get the codes in.</b> If the printer sent a list, paste it. If they did not &mdash; and many do not &mdash; scan the stickers in with the camera, one after another; the camera stays open so you can work through a sheet.</p>
+<label for="gcRollLabel">Name this batch</label>
 <input type="text" id="gcRollLabel" placeholder="e.g. Roll 1, ordered Aug 2026" autocomplete="off">
-<label for="gcRollCodes" style="margin-top:10px;">The codes</label>
-<textarea id="gcRollCodes" rows="4" placeholder="GC-A7K3M&#10;GC-Q2XPD&#10;GC-M9WRT"></textarea>
+<p class="empty-note" style="margin:4px 0 0;">Whatever you want to call it. Nothing is printed on the stickers &mdash; this is just so the office can tell one batch from another later.</p>
+<div id="gcRollScanRow" style="margin-top:12px;"></div>
+<div id="gcRollScanBox" style="display:none;" class="card gcv-scanbox">
+<div class="gcv-frame"><video id="gcRollVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
+<p id="gcRollScanStatus" class="gcv-status"></p>
+<button type="button" class="ghost-btn" onclick="stopQrScan()">Done scanning</button>
+</div>
+<label for="gcRollCodes" style="margin-top:10px;">The codes <span id="gcRollCount" class="season-tag"></span></label>
+<textarea id="gcRollCodes" rows="4" oninput="renderGcRollCount()" placeholder="GC-A7K3M&#10;GC-Q2XPD&#10;GC-M9WRT"></textarea>
 <button type="button" class="primary-btn" onclick="gcLoadRoll()"><svg class="ico"><use href="#i-checkmark"></use></svg> Load the roll</button>
 <div id="gcRollMsg" class="status-msg"></div>
 </div>
@@ -5934,12 +5940,12 @@ const BOOTH_SEED = [
 { num: 'P2', section: 'Pavilion Floor', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood', note: 'Pavilion floor space \u2014 offered at the circle end only when booth demand exceeds availability, to the next vendor in line.' },
 { num: 'WT1', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space. Reserved in advance through the weekly Booth Selection.' },
 { num: 'WT2', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space. Reserved in advance through the weekly Booth Selection.' },
-{ num: 'WT3', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space, third of three on the July 19 2026 map. Reserved in advance through the weekly Booth Selection.' },
+{ num: 'WT3', section: 'Waterfront Trail', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'Waterfront Trail space. On the far side of the Merch Mansion from the other two \u2014 moved there on the 19 July 2026 map. Reserved in advance through the weekly Booth Selection.' },
 { num: '1', section: 'Front Row', corner: true, propane: false, reservedBy: 'V033', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '2', section: 'Front Row', corner: false, propane: false, reservedBy: 'V044', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '3', section: 'Front Row', corner: false, propane: false, reservedBy: 'V078', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: true, w: false, floor: 'wood' },
-{ num: '4', section: 'Front Row', corner: false, propane: false, reservedBy: 'V115', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
-{ num: '5', section: 'Front Row', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: true, nf: false, w: false, floor: 'wood' },
+{ num: '4', section: 'Front Row', corner: false, propane: false, reservedBy: 'V115', sundaySeasonalBy: null, np: true, cp: false, u: false, nf: false, w: false, floor: 'wood' },
+{ num: '5', section: 'Front Row', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: true, cp: false, u: true, nf: false, w: false, floor: 'wood' },
 { num: '6', section: 'Front Row', corner: false, propane: false, reservedBy: 'V093', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '7', section: 'Front Row', corner: false, propane: false, reservedBy: 'V060', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '8', section: 'Front Row', corner: false, propane: false, reservedBy: 'V023', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
@@ -5950,7 +5956,7 @@ const BOOTH_SEED = [
 { num: '13', section: 'Front Row', corner: true, propane: false, reservedBy: 'V048', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '14', section: 'Row B', corner: true, propane: false, reservedBy: 'V054', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '15', section: 'Row B', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: 'V161', np: true, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
-{ num: '16', section: 'Row B', corner: false, propane: false, reservedBy: 'V096', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
+{ num: '16', section: 'Row B', corner: false, propane: false, reservedBy: 'V096', sundaySeasonalBy: null, np: true, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '17', section: 'Row B', corner: false, propane: false, reservedBy: 'V105', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '18', section: 'Row B', corner: false, propane: false, reservedBy: 'V106', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '19', section: 'Row B', corner: false, propane: false, reservedBy: 'V113', sundaySeasonalBy: null, np: true, cp: false, u: true, nf: false, w: false, floor: 'wood' },
@@ -6004,8 +6010,8 @@ const BOOTH_SEED = [
 { num: '66', section: 'Circle Row', corner: false, propane: false, reservedBy: 'V055', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '67', section: 'Circle Row', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: 'V128', np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '68', section: 'Circle Row', corner: false, propane: false, reservedBy: 'V091', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
-{ num: '69', section: 'Circle End Curve', corner: false, propane: false, reservedBy: 'V041', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
-{ num: '70', section: 'Circle End Curve', corner: false, propane: false, reservedBy: 'V062', sundaySeasonalBy: null, np: true, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
+{ num: '69', section: 'Circle End Curve', corner: false, propane: false, reservedBy: 'V041', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: true, floor: 'dirt' },
+{ num: '70', section: 'Circle End Curve', corner: false, propane: false, reservedBy: 'V062', sundaySeasonalBy: null, np: true, cp: false, u: false, nf: false, w: true, floor: 'dirt' },
 { num: '71', section: 'Circle End Curve', corner: false, propane: false, reservedBy: 'V092', sundaySeasonalBy: null, np: true, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '72', section: 'Circle End Curve', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: 'V124', np: true, cp: false, u: true, nf: false, w: false, floor: 'dirt' },
 { num: '73', section: 'Circle End Curve', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: 'V151', np: true, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
@@ -6014,7 +6020,7 @@ const BOOTH_SEED = [
 { num: '76', section: 'Circle End Curve', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: true, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '77', section: 'Circle End Curve', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: true, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '78', section: 'Circle End Curve', corner: false, propane: false, reservedBy: 'V021', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt', note: 'No roof over this booth \u2014 bring your own cover.' },
-{ num: '79', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V094', sundaySeasonalBy: null, np: false, cp: false, u: true, nf: false, w: false, floor: 'wood' },
+{ num: '79', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V094', sundaySeasonalBy: null, np: true, cp: false, u: true, nf: false, w: false, floor: 'wood' },
 { num: '80', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V011', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 { num: '81', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V050', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '82', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V014', sundaySeasonalBy: null, np: false, cp: false, u: true, nf: false, w: false, floor: 'wood' },
@@ -6022,7 +6028,7 @@ const BOOTH_SEED = [
 { num: '84', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V086', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: true, w: false, floor: 'wood' },
 { num: '85', section: 'Bottom Row', corner: false, propane: false, reservedBy: null, sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
 { num: '86', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V039', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'wood' },
-{ num: '87', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V118', sundaySeasonalBy: null, np: false, cp: false, u: true, nf: false, w: false, floor: 'wood' },
+{ num: '87', section: 'Bottom Row', corner: false, propane: false, reservedBy: 'V118', sundaySeasonalBy: null, np: true, cp: false, u: true, nf: false, w: false, floor: 'wood' },
 { num: '88', section: 'Bottom Row', corner: true, propane: false, reservedBy: 'V057', sundaySeasonalBy: null, np: false, cp: false, u: false, nf: false, w: false, floor: 'dirt' },
 ];
 // Footprints measured off the Oct 3 2025 booth map and scaled against the booth
@@ -6046,7 +6052,7 @@ search: ['restroom', 'rest room', 'bathroom', 'toilet', 'wc', 'ada'],
 blurb: 'ADA accessible. Mid-hall, between booths 33 and 34.' },
 { x: 541, y: 111, w: 38, h: 38, text: 'Merch Mansion', key: 'merch', dark: true,
 search: ['merch mansion', 'mansion', 'merch', 'merchandise', 'shirt', 't-shirt', 'tshirt', 'hat', 'tote', 'souvenir', 'gift', 'market merch', 'ifm merch'],
-blurb: 'The Merch Mansion \u2014 the market\u2019s own goods: shirts, hats, totes. A permanent structure on the Waterfront Trail line, just past the three tent spaces.' },
+blurb: 'The Merch Mansion \u2014 the market\u2019s own goods: shirts, hats, totes. A permanent structure on the Waterfront Trail line, with two tent spaces on one side of it and the third on the other.' },
 { x: 513, y: 281, w: 38, h: 39, text: 'Office', fs: 8, key: 'office',
 search: ['office', 'market office', 'manager', 'staff', 'help', 'information'],
 blurb: 'The market office \u2014 staff and questions. Mid-hall, next to the Restrooms.' },
@@ -6723,7 +6729,7 @@ const BOOTH_COORDS = {
 'P2': { x: 1530, y: 394 },
 'WT1': { x: 427, y: 130 },
 'WT2': { x: 471, y: 130 },
-'WT3': { x: 515, y: 130 },
+'WT3': { x: 590, y: 130 },
 '24': { x: 40, y: 300 },
 '25': { x: 80, y: 300 },
 '26': { x: 120, y: 300 },
@@ -18157,7 +18163,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-91';
+const BUILD_ID = '16-94';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -37893,8 +37899,24 @@ const det = typeof BarcodeDetector !== 'undefined'
 ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
+// Stopping and reopening the camera between every sticker is slow on a
+// phone and fragile. Continuous mode keeps it running and reports each new
+// code as it appears, ignoring the one just read so a sticker held in view
+// is not added over and over.
+let lastSeen = null, lastAt = 0;
 const finish = async (raw) => {
 const code = gcCodeFromScan(raw);
+if (opt.continuous) {
+const now = Date.now();
+if (code === lastSeen && now - lastAt < 2500) { qrScan.timer = setTimeout(tick, 220); return; }
+lastSeen = code; lastAt = now;
+qrSetStatus(opt.statusId, 'Got it \u2014 ' + code, false, true);
+try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+await opt.onCode(code);
+setTimeout(() => qrSetStatus(opt.statusId, opt.looking || 'Point it at the next one\u2026', true), 600);
+qrScan.timer = setTimeout(tick, 400);
+return;
+}
 // Say so before tearing the camera down, so the moment of capture is
 // visible rather than the picture simply vanishing.
 qrSetStatus(opt.statusId, 'Got it \u2014 ' + code, false, true);
@@ -38024,9 +38046,38 @@ const box = document.getElementById('gcAmount');
 if (box) box.value = n;
 renderGcQuickPicks();
 }
+function gcRollCodesNow() {
+const box = document.getElementById('gcRollCodes');
+return String((box && box.value) || '').split(/[\r\n,;\t]+/)
+.map(x => gcCodeFromScan(x)).filter(Boolean);
+}
+function renderGcRollCount() {
+const tag = document.getElementById('gcRollCount');
+if (!tag) return;
+const n = gcRollCodesNow().length;
+tag.textContent = n ? n + ' so far' : '';
+}
+function gcRollStartScan() {
+return startQrScan({ boxId: 'gcRollScanBox', videoId: 'gcRollVideo',
+statusId: 'gcRollScanStatus', msgId: 'gcRollMsg',
+looking: 'Point it at the next sticker\u2026', continuous: true,
+onCode: async (code) => {
+const box = document.getElementById('gcRollCodes');
+if (!box) return;
+const have = gcRollCodesNow();
+if (have.indexOf(code) !== -1) {
+showMsg('gcRollMsg', 'err', esc(code) + ' is already in the list \u2014 skipped.');
+} else {
+box.value = (box.value.trim() ? box.value.replace(/\s*$/, '') + '\n' : '') + code;
+showMsg('gcRollMsg', 'ok', esc(code) + ' added \u00b7 ' + (have.length + 1) + ' in the list.');
+}
+renderGcRollCount();
+} });
+}
 function renderGcOfficeScanRows() {
 const rows = [['gcLookScanRow', 'gcLookStartScan()', 'Scan the certificate'],
-['gcSellScanRow', 'gcSellStartScan()', 'Scan the certificate you are selling']];
+['gcSellScanRow', 'gcSellStartScan()', 'Scan the certificate you are selling'],
+['gcRollScanRow', 'gcRollStartScan()', 'Scan the stickers in, one after another']];
 rows.forEach(([id, fn, label]) => {
 const el = document.getElementById(id);
 if (!el) return;
