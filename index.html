@@ -18164,7 +18164,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-96';
+const BUILD_ID = '16-97';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -37993,6 +37993,15 @@ msgId: 'gcLookupMsg', onCode: async (code) => {
 const el = document.getElementById('gcSerial');
 if (el) el.value = code;
 await gcLookup(code);
+const out = document.getElementById('gcLookupOut');
+if (out) {
+out.scrollIntoView({ behavior: 'smooth', block: 'center' });
+const c = (gcCache || []).find(x => x.id.toUpperCase() === code);
+showMsg('gcLookupMsg', 'ok', c
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(code) +
+' \u2014 $' + fmtMoney(gcBalance(c)) + ' on it. What you can do with it is below.'
+: '<svg class="ico"><use href="#i-checkmark"></use></svg> Read ' + esc(code) + '. See below.');
+}
 } });
 }
 function gcSellStartScan() {
@@ -38002,6 +38011,8 @@ onCode: async (code) => {
 const el = document.getElementById('gcScan');
 if (el) el.value = code;
 await gcSellScan();
+const msg = document.getElementById('gcSellMsg');
+if (msg) msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
 } });
 }
 const GC_QUICK = [5, 10, 20, 25, 50, 100];
