@@ -2472,8 +2472,8 @@ I sell food (prepared food or produce)
 <div class="fold-body">
 <div class="dash-fold" data-fold="accountmoney">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
-<span class="fold-title">Monthly Statements</span>
-<span class="fold-sub" id="menuPaySub">What you owe for the month, and how to pay it</span>
+<span class="fold-title">My Account</span>
+<span class="fold-sub" id="menuPaySub">What has landed this month, what you owe, and how to pay it</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -11752,15 +11752,23 @@ return (feeCart && feeCart.items || []).reduce((s, x) => s + x.amount, 0);
 function updatePaySub() {
 const el = document.getElementById('menuPaySub');
 if (!el) return;
-if (feeCart && feeCart.items && feeCart.items.length) {
-el.textContent = feeCart.items.length + ' in the basket \u00b7 $' + fmtMoney(cartTotal());
-return;
-}
 if (currentRole !== 'vendor' || !currentVendorId || stmtCache === null) {
-el.textContent = 'What you owe for the month, and how to pay it';
+el.textContent = 'What has landed this month, what you owe, and how to pay it';
 return;
 }
-const s = statementFor(currentVendorId, stmtMonthOptions()[0]);
+const ym = stmtMonthOptions()[0];
+const s = statementFor(currentVendorId, ym);
+if (stmtIsOpen(ym)) {
+const net = Math.round((s.chargedTotal - s.receivedTotal) * 100) / 100;
+const parts = [];
+if (net > 0) parts.push('$' + fmtMoney(net) + ' so far this month');
+else if (net < 0) parts.push('$' + fmtMoney(-net) + ' in your favour so far');
+else parts.push('Nothing yet this month');
+if (s.brought > 0) parts.push('$' + fmtMoney(s.brought) + ' still owed from before');
+else if (s.brought < 0) parts.push('$' + fmtMoney(-s.brought) + ' carried in your favour');
+el.textContent = parts.join(' \u00b7 ');
+return;
+}
 el.textContent = s.outstanding > 0
 ? '$' + fmtMoney(s.outstanding) + ' due by ' + formatDisplayDate(s.due) +
 (todayISO() > s.due ? ' \u2014 that date has passed' : '')
@@ -18316,7 +18324,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-109';
+const BUILD_ID = '16-110';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
