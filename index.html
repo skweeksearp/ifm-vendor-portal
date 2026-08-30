@@ -3011,9 +3011,10 @@ oninput="gcLookup(this.value)" style="text-transform:uppercase;">
 </div>
 <label for="gcScan">Or type the code on the certificate</label>
 <input type="text" id="gcScan" class="find-field" placeholder="The code on the certificate" autocomplete="off"
-style="text-transform:uppercase;" onkeydown="if (event.key === 'Enter') { event.preventDefault(); gcSellScan(); }">
+style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (event.key === 'Enter') { event.preventDefault(); gcSellScan(); }">
 <div class="form-row"><label>Batch note</label>
 <input type="text" id="gcBatch" placeholder="e.g. sold at the office window" autocomplete="off"></div>
+<button type="button" class="primary-btn" id="gcSellBtn" onclick="gcSellScan()"><svg class="ico"><use href="#i-checkmark"></use></svg> <span id="gcSellBtnLabel">Sell this certificate</span></button>
 <div id="gcSellMsg" class="status-msg"></div>
 <div id="gcSession" class="desk-transient"></div>
 </div>
@@ -18163,7 +18164,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-95';
+const BUILD_ID = '16-96';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27491,6 +27492,15 @@ const m = /[?&]gc=([^&\s]+)/.exec(s);
 if (m) s = m[1];
 return s.toUpperCase();
 }
+// The shortest code the market has actually loaded, so the app never refuses
+// to look at a code that is real. Four is a floor, not a rule: without any
+// rolls loaded there is nothing to measure against.
+function gcMinCodeLen() {
+let min = Infinity;
+(gcRolls || []).forEach(r => (r.codes || []).forEach(c => { if (c.length < min) min = c.length; }));
+(gcCache || []).forEach(c => { if (c.id && c.id.length < min) min = c.id.length; });
+return min === Infinity ? 4 : Math.max(3, min);
+}
 function gcAllRollCodes() {
 const set = new Set();
 (gcRolls || []).forEach(r => (r.codes || []).forEach(c => set.add(c)));
@@ -27591,8 +27601,13 @@ await loadGiftCerts();
 const out = document.getElementById('gcLookupOut');
 const q = String(raw || '').trim().toUpperCase();
 if (!out) return;
-if (q.length < 7) { out.innerHTML = ''; return; }
 await loadGcRolls();
+if (!q) { out.innerHTML = ''; return; }
+if (q.length < gcMinCodeLen()) {
+out.innerHTML = '<p class="empty-note">Keep typing \u2014 the shortest code the market has loaded is ' +
+gcMinCodeLen() + ' characters.</p>';
+return;
+}
 const c = (gcCache || []).find(x => x.id.toUpperCase() === q);
 if (!c) {
 const roll = gcRollOf(q);
@@ -38024,6 +38039,20 @@ const cur = Math.round(Number(box.value || 0) * 100) / 100;
 wrap.innerHTML = GC_QUICK.map(n =>
 '<button type="button" class="tone-btn' + (n === cur ? ' on' : '') +
 '" style="padding:10px 6px; font-size:15px;" onclick="gcSetAmount(' + n + ')">$' + n + '</button>').join('');
+const btn = document.getElementById('gcSellBtn');
+const lbl = document.getElementById('gcSellBtnLabel');
+if (btn && lbl) {
+const code = gcCodeFromScan((document.getElementById('gcScan') || {}).value || '');
+const cardNow = gcTender() === 'card';
+const feeNow = cardNow ? squareFeeOn(cur) : 0;
+const ready = cur > 0 && code.length >= gcMinCodeLen();
+btn.disabled = !ready;
+btn.style.opacity = ready ? '' : '0.55';
+lbl.textContent = !(cur > 0) ? 'Set the amount first'
+: !code ? 'Scan or type the code'
+: code.length < gcMinCodeLen() ? 'Finish the code'
+: 'Sell ' + code + ' \u2014 take $' + fmtMoney(cur + feeNow);
+}
 const take = document.getElementById('gcTakeLine');
 if (!take) return;
 if (!(cur > 0)) { take.innerHTML = ''; return; }
@@ -38091,8 +38120,13 @@ async function gcVendorLookup(raw) {
 const out = document.getElementById('gcvOut');
 if (!out) return;
 const q = gcCodeFromScan(raw);
-if (q.length < 7) { out.innerHTML = ''; return; }
 await loadGiftCerts(); await loadGcRolls();
+if (!q) { out.innerHTML = ''; return; }
+if (q.length < gcMinCodeLen()) {
+out.innerHTML = '<p class="empty-note">Keep typing \u2014 the shortest code the market has loaded is ' +
+gcMinCodeLen() + ' characters.</p>';
+return;
+}
 const c = (gcCache || []).find(x => x.id.toUpperCase() === q);
 if (!c) {
 out.innerHTML = '<p class="empty-note"><b>That code is not a gift certificate this market sold.</b> ' +
