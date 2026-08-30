@@ -158,6 +158,19 @@ background: #EFF3EA; border: 1.5px solid #C9D6BC; border-radius: 14px; }
 .gc-balance.gc-spent .gc-bal-num { color: #8A3B2E; }
 .gc-bal-label { font-size: 13px; font-weight: 700; color: #6E6A57; margin-top: 5px; }
 .handover-later { opacity: 0.78; border-style: dashed; }
+.vfind-hidden { display: none !important; }
+.vfind-list { margin-top: 6px; }
+.vfind-row { display: flex; align-items: baseline; gap: 8px; width: 100%;
+margin: 0 0 6px; padding: 12px 12px; text-align: left;
+background: #fff; border: 1.5px solid #E4DFCB; border-radius: 12px;
+font-size: 16px; font-weight: 700; color: var(--ink); }
+.vfind-row.on { border-color: #3F5B33; background: #F3F6EF; }
+.vfind-row.vfind-extra { font-weight: 600; color: #6E6A57; font-style: italic; }
+.vfind-name { flex: 1 1 auto; min-width: 0; }
+.vfind-meta { font-size: 13px; font-weight: 600; color: #8A8674; white-space: nowrap; }
+.vfind-chosen { display: flex; align-items: center; justify-content: space-between;
+gap: 10px; padding: 11px 12px; margin: 0 0 8px;
+background: #F3F6EF; border: 2px solid #3F5B33; border-radius: 12px; font-size: 16px; }
 .tone-switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
 gap: 8px; margin-top: 6px; }
 .tone-btn { display: flex; align-items: center; justify-content: center; gap: 7px;
@@ -4154,6 +4167,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Every debt and credit reaches a statement</div><div class="comm-desc">There are eleven ways money can land on a vendor&rsquo;s account: fines entered by hand, fines the ladder derives, booth-check fines, booth fees for each of the four venues, the statement&rsquo;s own late fee, the membership share, work hours not worked, and the late renewal surcharge on the debit side; SNAP tokens turned in, gift certificates taken at a stall, booth fees paid at the window, checks, cash, card at the desk and Square on the credit side. A new one must be added to <code>accountData</code> or it silently never bills. An audit of this list found four holes at once: Wednesday and Winter fees charged nothing because the season calendar only makes Saturdays and Sundays, SNAP had no route at all, and the January renewal surcharge was filed as due the following December.</div></div>
 <div class="comm-item"><div class="comm-title">One stray &lt;/div&gt; can wreck half the app silently</div><div class="comm-desc">Every screen must sit inside <code>&lt;main&gt;</code>, which carries the page&rsquo;s side padding. A single extra closing tag ends <code>&lt;main&gt;</code> early and every screen defined <em>after</em> it renders flush to the edge of the phone &mdash; while everything before it looks perfect, so the app appears fine on the desk you happen to be testing. Build 16-86 did exactly this when a wrapper was removed by scanning for its matching tag, and it broke the whole manager and president desk while the vendor desk was untouched. Never delete a wrapper by counting tags in a script; and run <code>t27-structure.js</code>, which checks div balance across the file and that no screen has escaped <code>&lt;main&gt;</code>.</div></div>
 <div class="comm-item"><div class="comm-title">Nothing may run off the side of the phone</div><div class="comm-desc">Cards, rows and text carry <code>max-width:100%</code> and <code>overflow-wrap:anywhere</code>; a flex text column carries a floor (<code>min-width: min(100%, 14rem)</code>) so a sibling input cannot squeeze it to one letter a line. Use <code>overflow-wrap: break-word</code>, never <code>anywhere</code>, on anything holding a title: <code>anywhere</code> lets the browser count a single character as an element&rsquo;s minimum width, so a flex row squeezed &ldquo;My Account&rdquo; into &ldquo;My Accou / nt&rdquo;. <code>anywhere</code> is reserved for the few places a single unbroken string can genuinely exceed the phone &mdash; a certificate code, a run-together vendor name in a report row. Test with <code>t24-overflow.js</code>, which walks every screen in every role at 390px and 320px and reports anything past the edge, and with <code>t25-titles.js</code>, which checks no drawer title is narrower than its own longest word. It found 98 at first pass. The kiosk booth map is excluded on purpose: it is wider than the phone by design and is dragged, not read.</div></div>
+<div class="comm-item"><div class="comm-title">One way to choose a vendor</div><div class="comm-desc">Any <code>&lt;select&gt;</code> holding the vendor list is fitted automatically with a search box and a list of tappable matches; the dropdown itself is hidden but stays in the page holding the value, so anything reading <code>sel.value</code> or listening for <code>change</code> keeps working. A tool needs to do nothing to get this. Options that are not vendors &mdash; &ldquo;choose&rdquo;, &ldquo;Nobody&rdquo; &mdash; are kept and offered as their own rows, since those are real choices. Never build a second search box beside a vendor list by hand.</div></div>
 <div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. Build one with <code>makeBackButton(label, onclick)</code>, or mark it <code>class="back-link" data-backhand="1"</code> and the hand is drawn on screen open. Test with <code>t26-backhand.js</code>. Three controls deliberately do NOT wear it, because the hand means <em>go back</em> and they are actions: <b>Close the selection</b> ends a Booth Selection, <b>Put everything back to the Guide</b> resets the rules, and <b>&lsaquo; Prev</b> steps a calendar to the previous month. A left chevron paired with Next is a stepper, not a way back. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
@@ -11058,6 +11072,72 @@ st.note.textContent = matches.length === 0
 ? 'One match: ' + matches[0].businessName + '.'
 : matches.length + ' of ' + cache.vendors.length + ' shown.';
 }
+// ONE CONTROL, NOT TWO.
+// Every vendor list used to be a search box sitting above a native dropdown:
+// type, then open the dropdown, then pick. The demo-vendor picker on the
+// front door did it better -- type and the matches appear as rows you tap --
+// and that is now the pattern everywhere a vendor is chosen.
+//
+// The <select> stays in the page, hidden. Every tool that reads sel.value or
+// listens for change keeps working untouched; only what the person sees
+// changed. A placeholder the tool defined -- 'choose', 'Nobody' -- is kept
+// and offered as its own row, because those are real choices.
+function vfindNonVendorOptions(sel) {
+return Array.from(sel.options)
+.filter(o => !(cache.vendors || []).some(v => v.vendorId === o.value))
+.map(o => ({ value: o.value, label: o.textContent }));
+}
+function vfindRenderList(sel) {
+const st = vfindState.get(sel);
+if (!st) return;
+const q = st.input.value.trim();
+const matches = vfindMatches(q);
+const chosen = sel.value;
+const extras = st.extras || [];
+let html = '';
+if (chosen) {
+const v = (cache.vendors || []).find(x => x.vendorId === chosen);
+const ex = extras.find(x => x.value === chosen);
+if (v || ex) html += '<div class="vfind-chosen"><b>' +
+esc(v ? v.businessName : ex.label) + '</b>' +
+'<button type="button" class="link-btn" onclick="vfindClear(this)">change</button></div>';
+}
+const cap = q ? 12 : 8;
+const rows = matches.slice(0, cap).map(v =>
+'<button type="button" class="vfind-row' + (v.vendorId === chosen ? ' on' : '') +
+'" data-vid="' + esc(v.vendorId) + '">' +
+'<span class="vfind-name">' + esc(v.businessName) + '</span>' +
+(v.lastName ? '<span class="vfind-meta">' + esc(v.lastName) + '</span>' : '') +
+'</button>').join('');
+const extraRows = extras.filter(x => !q).map(x =>
+'<button type="button" class="vfind-row vfind-extra' + (x.value === chosen ? ' on' : '') +
+'" data-vid="' + esc(x.value) + '">' + esc(x.label) + '</button>').join('');
+html += rows + extraRows;
+if (!matches.length) html += '<p class="empty-note" style="margin:6px 2px;">No vendor matches \u201c' +
+esc(q) + '\u201d.</p>';
+else if (matches.length > cap) html += '<p class="empty-note" style="margin:6px 2px;">' +
+(matches.length - cap) + ' more \u2014 type a little more to narrow it.</p>';
+st.list.innerHTML = html;
+}
+function vfindClear(btn) {
+const wrap = btn.closest('.vfind');
+if (!wrap) return;
+const sel = wrap.nextElementSibling;
+if (!sel || sel.tagName !== 'SELECT') return;
+sel.value = '';
+sel.dispatchEvent(new Event('change', { bubbles: true }));
+const st = vfindState.get(sel);
+if (st) { st.input.value = ''; st.input.focus(); }
+vfindRenderList(sel);
+}
+function vfindPick(sel, value) {
+const was = sel.value;
+sel.value = value;
+if (sel.value !== was) sel.dispatchEvent(new Event('change', { bubbles: true }));
+const st = vfindState.get(sel);
+if (st) st.input.value = '';
+vfindRenderList(sel);
+}
 function mountVendorFinder(sel) {
 if (!isVendorSelect(sel)) return;
 let st = vfindState.get(sel);
@@ -11067,10 +11147,11 @@ if (!st && sel.options.length && !sel.options[0].value) {
 sel.dataset.leadOption = sel.options[0].textContent;
 }
 if (st) {
-// Already fitted. If the screen repopulated the list behind us, put the
-// filter back over the top of it rather than leaving a stale box.
-if (st.sig !== sig && st.input.value.trim()) applyVendorFilter(sel);
-else st.sig = sig;
+if (st.sig !== sig) {
+st.sig = sig;
+st.extras = vfindNonVendorOptions(sel);
+vfindRenderList(sel);
+}
 return;
 }
 const wrap = document.createElement('div');
@@ -11084,12 +11165,25 @@ input.placeholder = 'Type a few letters \u2014 business or last name';
 const note = document.createElement('div');
 note.className = 'vfind-note';
 note.style.display = 'none';
+const list = document.createElement('div');
+list.className = 'vfind-list';
 wrap.appendChild(input);
+wrap.appendChild(list);
 wrap.appendChild(note);
 sel.parentNode.insertBefore(wrap, sel);
-st = { input, note, sig };
+// The dropdown stays in the page and keeps holding the value; only the way
+// a person chooses has changed.
+sel.classList.add('vfind-hidden');
+st = { input, note, list, sig, extras: vfindNonVendorOptions(sel) };
 vfindState.set(sel, st);
-input.addEventListener('input', () => applyVendorFilter(sel));
+input.addEventListener('input', () => vfindRenderList(sel));
+list.addEventListener('click', (e) => {
+const row = e.target.closest('.vfind-row');
+if (!row) return;
+e.preventDefault();
+vfindPick(sel, row.dataset.vid);
+});
+vfindRenderList(sel);
 }
 // Every select on screen, checked. Cheap: a handful of selects, one pass.
 function sweepVendorFinders(root) {
@@ -18171,7 +18265,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-102';
+const BUILD_ID = '16-103';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
