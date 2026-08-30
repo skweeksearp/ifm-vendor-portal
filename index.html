@@ -18171,7 +18171,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-101';
+const BUILD_ID = '16-102';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27630,6 +27630,11 @@ gcSoldThisSession.length + ' sold \u00b7 $' + total + '</p>' +
 gcSoldThisSession.slice(0, 8).map(c =>
 '<div class="tracker-row"><div class="t-title">' + esc(c.id) + ' \u00b7 $' + fmtMoney(c.amount) + '</div></div>').join('');
 }
+function gcJumpTo(code) {
+const el = document.getElementById('gcSerial');
+if (el) el.value = code;
+gcLookup(code);
+}
 async function gcLookup(raw) {
 await loadGiftCerts();
 const out = document.getElementById('gcLookupOut');
@@ -27646,12 +27651,24 @@ return;
 const c = (gcCache || []).find(x => x.id.toUpperCase() === q);
 if (!c) {
 const roll = gcRollOf(q);
-out.innerHTML = roll
+const sold = (gcCache || []).slice()
+.sort((a, b) => String(b.issued || '').localeCompare(String(a.issued || '')));
+const nearby = sold.slice(0, 8).map(x =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(x.id) + ' \u00b7 $' + fmtMoney(gcBalance(x)) + ' left</div>' +
+'<div class="req-meta">sold ' + esc(formatDisplayDate(x.issued)) + ' for $' + fmtMoney(x.amount) +
+' \u00b7 <button type="button" class="link-btn" onclick="gcJumpTo(\'' + esc(x.id) + '\')">open it</button></div>' +
+'</div></div>').join('');
+const listBlock = sold.length
+? '<p class="empty-note" style="margin:12px 2px 4px;"><b>Certificates this office has sold</b>, newest first. ' +
+'If the one in your hand is here, its code differs from what you scanned:</p>' + nearby
+: '<p class="empty-note" style="margin:12px 2px 0;"><b>No certificate has been sold from this device yet.</b> ' +
+'If one was sold on another phone, or before the market\u2019s records were last reachable, it will not be here.</p>';
+out.innerHTML = (roll
 ? '<p class="empty-note"><b>That sticker has never been sold.</b> It is on the roll \u201c' + esc(roll.label) +
-'\u201d but no certificate was issued against it, so there is nothing to redeem. If somebody is holding it ' +
-'as a gift certificate, it did not come from this office.</p>'
+'\u201d but no certificate was issued against it, so there is nothing to redeem.</p>'
 : '<p class="empty-note"><b>Not in the book.</b> That code is not on any roll the office has loaded. ' +
-'If it is one of the old handwritten certificates, it stays with the paper system.</p>';
+'If it is one of the old handwritten certificates, it stays with the paper system.</p>') + listBlock;
 return;
 }
 const left = gcBalance(c);
