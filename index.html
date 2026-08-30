@@ -4649,17 +4649,15 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <div class="screen-head" id="head-communicate"></div>
 <div class="card">
 <div class="comm-item">
-<div class="comm-title">Grievance Form</div>
-<div class="comm-desc">For a complaint against another vendor or staff member. Give to the Grievance Committee or a Market Manager — 48-hour response.</div>
-<a class="comm-btn" href="https://ithacamarket.com/business-directory/member-resources/" target="_blank" rel="noopener"><svg class="ico"><use href="#i-document"></use></svg> Open Form on the IFM Site</a>
-<a class="comm-btn ghost" href="mailto:grievance@ithacamarket.com"><svg class="ico"><use href="#i-envelope"></use></svg> Email the Committee</a>
+<div class="comm-title">A complaint about another vendor or a staff member</div>
+<div class="comm-desc"><b>Use Compliments &amp; Complaints</b> on your desk. It works out which committee should see it, records it with a reference number you can ask about later, and the Board President sees it whichever way it goes. The paper Grievance Form still exists if you would rather use it — both reach the Grievance Committee, and the committee answers within 48 hours either way.</div>
+<button type="button" class="comm-btn" onclick="showScreen('complaint')"><svg class="ico"><use href="#i-scale"></use></svg> Open Compliments &amp; Complaints</button>
+<a class="comm-btn ghost" href="https://ithacamarket.com/business-directory/member-resources/" target="_blank" rel="noopener"><svg class="ico"><use href="#i-document"></use></svg> The paper form instead</a>
 </div>
 <div class="comm-item">
-<div class="comm-title">Sexual Harassment Complaint</div>
-<div class="comm-desc">Confidential complaint form per the IFM Sexual Harassment Policy.</div>
-<a class="comm-btn" href="https://ithacamarket.com/business-directory/member-resources/" target="_blank" rel="noopener"><svg class="ico"><use href="#i-document"></use></svg> Open Form on the IFM Site</a>
-<a class="comm-btn ghost" href="mailto:manager@ithacamarket.com?subject=CONFIDENTIAL%20-%20Sexual%20Harassment%20Complaint&body=This%20goes%20directly%20to%20the%20Market%20Manager%27s%20email.%20It%20is%20never%20stored%20in%20this%20app%20or%20visible%20to%20any%20other%20vendor.%0A%0AYour%20name%20(optional)%3A%0ADate(s)%20of%20incident%3A%0AWhat%20happened%3A%0A"><svg class="ico"><use href="#i-envelope"></use></svg> Email the Market Manager Directly</a>
-<div class="comm-desc" style="margin-top:6px;">This opens your own email app addressed straight to the Market Manager — nothing is saved in the vendor portal. <strong>Staff note:</strong> replace the placeholder address above with the market's actual confidential contact before this goes live.</div>
+<div class="comm-title">Harassment, discrimination or unwanted touching</div>
+<div class="comm-desc">Handled in one place, under the IFM Sexual Harassment Policy: it goes to the Market Manager or a board officer, who must investigate promptly and keep it confidential. <b>It is not stored in this app</b> — not in the complaints list, not anywhere. Open it for the market’s form, a direct confidential email, and what the policy says about retaliation and going to the police.</div>
+<button type="button" class="comm-btn" onclick="showScreen('complaint'); setTimeout(function(){ var k=document.getElementById('cpKind'); if(k){ setFeedbackTone('down'); k.value='conduct'; renderComplaintForm(); var s=document.getElementById('cpSub'); if(s){ s.value='harassment'; renderComplaintForm(); } } }, 220);"><svg class="ico"><use href="#i-warning"></use></svg> How to report it</button>
 </div>
 </div>
 <div class="card">
@@ -18159,7 +18157,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-90';
+const BUILD_ID = '16-91';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26489,17 +26487,22 @@ esc(s.label) + '</option>').join('');
 }
 const s = (subSel || {}).value || '';
 const route = feedbackRoute(k, s);
+const sub = feedbackSub(k, s);
+const noForm = !!(sub && sub.to === 'officers');
 const box = document.getElementById('cpRoute');
 const rest = document.getElementById('cpRest');
-if (rest) rest.style.display = route ? 'block' : 'none';
+if (rest) rest.style.display = (route && !noForm) ? 'block' : 'none';
 if (!box) return;
 if (!route) { box.innerHTML = ''; return; }
-if (feedbackSub(k, s).to === 'officers') {
+if (noForm) {
 box.innerHTML = '<div class="card" style="border-color:#C2703D; background:#FDF6EE;">' +
 '<h2 style="font-size:16px;"><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>This one does not go to a committee</h2>' +
 '<p class="empty-note" style="margin-top:0;">Under the market\u2019s Sexual Harassment Policy this goes straight to the <b>Market Manager or a Board officer</b> \u2014 president, vice president, secretary or treasurer \u2014 who must open a prompt investigation and keep it confidential so far as they can. <b>Retaliation against anyone who reports is prohibited</b> and is itself grounds for discipline.</p>' +
 '<p class="empty-note"><b>If there was unwanted physical touching, confinement, or coerced sexual contact, that may be a crime.</b> You can call the local police, and you can do that instead of or as well as this form. You may also file with a government agency or in court \u2014 using this form does not give any of that up.</p>' +
-'<p class="empty-note" style="margin-bottom:0;">You can send it here, but you do not have to use the app at all: telling the Market Manager or any board officer in person carries exactly the same weight.</p></div>';
+'<p class="empty-note"><b>This does not go through the form below, on purpose.</b> Everything else filed here is kept in the market\u2019s records where the office and the Board President can read it. A report of this kind should not sit in a list, and once filed you could not take it back \u2014 so the app does not store it. Use one of these instead; neither leaves anything in the app.</p>' +
+'<a class="comm-btn" href="https://ithacamarket.com/business-directory/member-resources/" target="_blank" rel="noopener"><svg class="ico"><use href="#i-document"></use></svg> The market\u2019s complaint form</a>' +
+'<a class="comm-btn ghost" href="mailto:manager@ithacamarket.com?subject=CONFIDENTIAL%20\u2014%20Harassment%20Complaint&body=This%20goes%20straight%20to%20the%20Market%20Manager.%20Nothing%20is%20stored%20in%20the%20vendor%20portal.%0A%0AYour%20name%20(optional)%3A%0ADate(s)%3A%0AWhat%20happened%3A%0A"><svg class="ico"><use href="#i-envelope"></use></svg> Email the Market Manager directly</a>' +
+'<p class="empty-note" style="margin-bottom:0;">That opens your own email app. You do not have to use the app at all \u2014 telling the Market Manager or any board officer in person carries exactly the same weight, and you may go to the police or a government agency instead of or as well as any of this.</p></div>';
 } else {
 box.innerHTML = '<div class="card" style="background:#F3F6EF;">' +
 '<p class="empty-note" style="margin:0;"><b>This goes to: ' + esc(route.name) + '.</b> ' +
@@ -26513,6 +26516,11 @@ const s = document.getElementById('cpSub').value;
 const tone = feedbackTone();
 const route = feedbackRoute(k, s);
 if (!route) { showMsg('cpMsg', 'err', 'Choose what it is about first.'); return; }
+const subPick = feedbackSub(k, s);
+if (subPick && subPick.to === 'officers') {
+showMsg('cpMsg', 'err', 'That kind of report is not stored in the app. Use the market\u2019s form or email the Market Manager directly \u2014 both are above.');
+return;
+}
 const what = (document.getElementById('cpWhat').value || '').trim();
 if (what.length < 10) { showMsg('cpMsg', 'err', tone === 'up'
 ? 'Say what they did \u2014 a line or two is enough, but a bare thumbs up tells them nothing.'
@@ -27405,7 +27413,6 @@ sub: 'East Hill Plaza \u2014 Wednesdays, May to October, 3 to 6 PM',
 tiles: [
 { s: 'wednesday', i: 'i-tent', t: 'How Wednesday Runs', d: 'No lottery, no assigned spaces, arrival order &middot; the $20 fee collected on site' },
 { s: 'wedlist', i: 'i-list', t: 'Who Is Here Today', d: 'Tick off who turned up, then publish the list to the website' },
-{ s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
 ] },
 { key: 'popups', title: 'PopUp Markets', icon: 'i-tent',
 sub: 'One-off markets away from Steamboat Landing',
@@ -38500,8 +38507,8 @@ tiles: [
 { s: 'marketrules', i: 'i-scale', t: 'Market Wide Rate Adjustments',
 d: 'The written rule, enforced or not \u2014 fees, fines, deadlines, minimums' },
 { s: 'whrate', i: 'i-gem', t: 'Work Hour Rate', d: 'Dollar value of an hour owed' },
-{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'Enforce These or Not?',
-d: 'Rules nobody is enforcing, and what you decided to do about it' },
+{ soon: 'boardflags', s: 'boardflags', i: 'i-scale', t: 'For Consideration',
+d: 'Questions and rule gaps waiting on a Board decision' },
 ] },
 { key: 'presconduct', title: 'Conduct & Discipline', icon: 'i-gavel',
 sub: 'What the Board has decided about a member \u2014 the office applies it, the Board owns it',
