@@ -6073,7 +6073,7 @@ blurb: 'More restrooms, in the trailer beside the mid-hall service block.' },
 { x: 474, y: 281, w: 39, h: 39, text: 'Restrooms', sub: 'ADA', fs: 7.5, key: 'restrooms',
 search: ['restroom', 'rest room', 'bathroom', 'toilet', 'wc', 'ada'],
 blurb: 'ADA accessible. Mid-hall, between booths 33 and 34.' },
-{ x: 541, y: 111, w: 38, h: 38, text: 'Merch Mansion', key: 'merch', dark: true,
+{ x: 522, y: 92, w: 38, h: 38, text: 'Merch Mansion', key: 'merch', dark: true,
 search: ['merch mansion', 'mansion', 'merch', 'merchandise', 'shirt', 't-shirt', 'tshirt', 'hat', 'tote', 'souvenir', 'gift', 'market merch', 'ifm merch'],
 blurb: 'The Merch Mansion \u2014 the market\u2019s own goods: shirts, hats, totes. A permanent structure on the Waterfront Trail line, with two tent spaces on one side of it and the third on the other.' },
 { x: 513, y: 281, w: 38, h: 39, text: 'Office', fs: 8, key: 'office',
@@ -6752,7 +6752,7 @@ const BOOTH_COORDS = {
 'P2': { x: 1530, y: 394 },
 'WT1': { x: 433, y: 111 },
 'WT2': { x: 487, y: 111 },
-'WT3': { x: 599, y: 111 },
+'WT3': { x: 595, y: 111 },
 '24': { x: 40, y: 300 },
 '25': { x: 80, y: 300 },
 '26': { x: 120, y: 300 },
@@ -11102,8 +11102,8 @@ if (v || ex) html += '<div class="vfind-chosen"><b>' +
 esc(v ? v.businessName : ex.label) + '</b>' +
 '<button type="button" class="link-btn" onclick="vfindClear(this)">change</button></div>';
 }
-const cap = q ? 12 : 8;
-const rows = matches.slice(0, cap).map(v =>
+const cap = 12;
+const rows = (q ? matches : []).slice(0, cap).map(v =>
 '<button type="button" class="vfind-row' + (v.vendorId === chosen ? ' on' : '') +
 '" data-vid="' + esc(v.vendorId) + '">' +
 '<span class="vfind-name">' + esc(v.businessName) + '</span>' +
@@ -11113,7 +11113,9 @@ const extraRows = extras.filter(x => !q).map(x =>
 '<button type="button" class="vfind-row vfind-extra' + (x.value === chosen ? ' on' : '') +
 '" data-vid="' + esc(x.value) + '">' + esc(x.label) + '</button>').join('');
 html += rows + extraRows;
-if (!matches.length) html += '<p class="empty-note" style="margin:6px 2px;">No vendor matches \u201c' +
+if (!q) {
+if (!chosen) html += '<p class="empty-note" style="margin:6px 2px;">Type a few letters to find a vendor.</p>';
+} else if (!matches.length) html += '<p class="empty-note" style="margin:6px 2px;">No vendor matches \u201c' +
 esc(q) + '\u201d.</p>';
 else if (matches.length > cap) html += '<p class="empty-note" style="margin:6px 2px;">' +
 (matches.length - cap) + ' more \u2014 type a little more to narrow it.</p>';
@@ -18265,7 +18267,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-103';
+const BUILD_ID = '16-105';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -19714,7 +19716,8 @@ const w = wrap.clientWidth || 0, h = wrap.clientHeight || 0;
 const cb = kioskContent();
 const shownW = cb.w * kioskBaseScale * kioskZoom;
 const shownH = cb.h * kioskBaseScale * kioskZoom;
-const roomX = w * 0.42, roomY = h * 0.42;
+const zoomedIn = kioskZoom > KIOSK_ZOOM_MIN + 0.001;
+const roomX = zoomedIn ? w * 0.42 : 0, roomY = zoomedIn ? h * 0.42 : 0;
 const slackX = Math.max(0, (shownW - w) / 2) + roomX;
 const slackY = Math.max(0, (shownH - h) / 2) + roomY;
 kioskPanX = Math.max(-slackX, Math.min(slackX, kioskPanX));
@@ -27823,7 +27826,38 @@ if (!c || c.status === 'void') return 0;
 if (c.status === 'redeemed' && !gcDraws(c).length) return 0;
 return Math.round((Number(c.amount || 0) - gcDrawnTotal(c)) * 100) / 100;
 }
+// A confirmation nobody can see is not a confirmation. The message line sits
+// at the top of the card and the button at the foot of a long panel, so
+// after a draw the answer appeared off-screen and the obvious thing to do
+// was press again. It is scrolled to, and the button is barred while the
+// write is in flight so a second press cannot take the money twice.
+let gcBusy = false;
+function gcSetBusy(on, label) {
+gcBusy = on;
+document.querySelectorAll('#gcLookupOut button, #gcvOut button').forEach(b => {
+b.disabled = on;
+b.style.opacity = on ? '0.55' : '';
+});
+if (on && label) {
+const t = document.querySelector('#gcLookupOut .primary-btn, #gcvOut .primary-btn');
+if (t) t.dataset.wasLabel = t.innerHTML, t.innerHTML = esc(label);
+}
+}
+function gcShowResult(msgId, kind, html) {
+showMsg(msgId, kind, html);
+const el = document.getElementById(msgId);
+if (!el) return;
+// After the panel redraws, land on the answer rather than wherever the
+// button used to be.
+requestAnimationFrame(() => el.scrollIntoView({ block: 'center' }));
+}
 async function gcDraw(id) {
+if (gcBusy) return;
+gcBusy = true;
+gcSetBusy(true, 'Recording\u2026');
+try { await gcDrawInner(id); } finally { gcBusy = false; gcSetBusy(false); }
+}
+async function gcDrawInner(id) {
 if (!requireManager('gcLookupMsg')) return;
 await loadGiftCerts();
 const c = (gcCache || []).find(x => x.id === id);
@@ -27832,16 +27866,16 @@ const left = gcBalance(c);
 if (left <= 0) { gcLookup(id); return; }
 const input = document.getElementById('gcDrawAmt');
 const amt = Math.round(Number((input && input.value) || 0) * 100) / 100;
-if (!(amt > 0)) { showMsg('gcLookupMsg', 'err', 'Enter how much of the certificate is being spent.'); return; }
+if (!(amt > 0)) { gcShowResult('gcLookupMsg', 'err', 'Enter how much of the certificate is being spent.'); return; }
 if (amt > left) {
-showMsg('gcLookupMsg', 'err', 'That certificate has $' + fmtMoney(left) + ' left on it \u2014 ' +
+gcShowResult('gcLookupMsg', 'err', 'That certificate has $' + fmtMoney(left) + ' left on it \u2014 ' +
 'it cannot cover $' + fmtMoney(amt) + '. Take the rest another way.');
 return;
 }
 const vsel = document.getElementById('gcDrawVendor');
 const picked = vsel ? vsel.value : '';
 if (!picked) {
-showMsg('gcLookupMsg', 'err', 'Choose which vendor is being paid. If this is not for a vendor \u2014 ' +
+gcShowResult('gcLookupMsg', 'err', 'Choose which vendor is being paid. If this is not for a vendor \u2014 ' +
 'a day fee, or a cash-out \u2014 pick <b>Nobody</b> at the foot of the list, and the money will ' +
 'reach no account.');
 return;
@@ -27857,7 +27891,7 @@ await saveGiftCerts();
 if (input) input.value = '';
 await gcLookup(id);
 renderGcBook();
-showMsg('gcLookupMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
+gcShowResult('gcLookupMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
 ' taken off ' + esc(id) + (vid ? ' for ' + esc(boothVendorName(vid) || vid) : '') + '. ' +
 (nowLeft > 0 ? 'It still carries <b>$' + fmtMoney(nowLeft) + '</b> \u2014 the customer keeps the sticker.'
 : 'That empties it; the sticker is spent.'));
@@ -38337,6 +38371,12 @@ body += '<div class="req-row"><div class="req-row-main"><div class="req-name">$'
 out.innerHTML = body;
 }
 async function gcVendorDraw(id) {
+if (gcBusy) return;
+gcBusy = true;
+gcSetBusy(true, 'Recording\u2026');
+try { await gcVendorDrawInner(id); } finally { gcBusy = false; gcSetBusy(false); }
+}
+async function gcVendorDrawInner(id) {
 if (currentRole !== 'vendor' || !currentVendorId) return;
 await loadGiftCerts();
 const c = (gcCache || []).find(x => x.id === id);
@@ -38344,9 +38384,9 @@ if (!c || c.status === 'void') return;
 const left = gcBalance(c);
 const input = document.getElementById('gcvAmt');
 const amt = Math.round(Number((input && input.value) || 0) * 100) / 100;
-if (!(amt > 0)) { showMsg('gcvMsg', 'err', 'Enter how much of the certificate you are taking.'); return; }
+if (!(amt > 0)) { gcShowResult('gcvMsg', 'err', 'Enter how much of the certificate you are taking.'); return; }
 if (amt > left) {
-showMsg('gcvMsg', 'err', 'There is only $' + fmtMoney(left) + ' left on this certificate. ' +
+gcShowResult('gcvMsg', 'err', 'There is only $' + fmtMoney(left) + ' left on this certificate. ' +
 'Take that much and the rest another way.');
 return;
 }
@@ -38359,7 +38399,7 @@ actAs('Gift certificate drawn at a stall \u2014 $' + fmtMoney(amt) + ' of ' + id
 await saveGiftCerts();
 if (input) input.value = '';
 await gcVendorLookup(id);
-showMsg('gcvMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
+gcShowResult('gcvMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
 ' is on your account with the market. ' +
 (nowLeft > 0 ? 'Give the certificate back \u2014 it still carries <b>$' + fmtMoney(nowLeft) + '</b>.'
 : 'That empties the certificate; there is nothing left on it.'));
