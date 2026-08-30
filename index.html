@@ -2973,8 +2973,16 @@ Recording it here puts that notice in front of every vendor when they open the a
 <section id="screen-giftcerts" class="screen">
 <div class="screen-head" id="head-giftcerts"></div>
 <div class="card manager-only">
-<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>A Certificate Came Back<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does redeeming work?">?</button></h2>
-<p class="empty-note" style="margin-top:0;">Scan the certificate with the camera, or type its code. A phone camera pointed at the code also opens this screen with it filled in.</p>
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Look Up a Certificate<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does redeeming work?">?</button></h2>
+<p class="empty-note" style="margin-top:0;"><b>Not for ordinary redemptions.</b> A certificate is not meant to come back here: the customer keeps it until it is empty, and a vendor takes what they are owed at their own stall with their own phone. This is for the cases that need the office:</p>
+<ul class="empty-note" style="margin:6px 0 10px 18px; padding:0;">
+<li>a vendor who cannot scan &mdash; no phone, flat battery, no signal &mdash; who brings it to the window</li>
+<li>a customer paying a daily stall fee with it</li>
+<li>somebody asking what is left on one</li>
+<li>voiding one that is lost, stolen or sold in error</li>
+<li>cashing out the last few dollars, which New York requires under $5 on request</li>
+</ul>
+<p class="empty-note">Scan it, or type the code printed on it.</p>
 <div id="gcLookScanRow"></div>
 <div id="gcLookScanBox" style="display:none;" class="card gcv-scanbox">
 <div class="gcv-frame"><video id="gcLookVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
@@ -18164,7 +18172,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-97';
+const BUILD_ID = '16-98';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -37994,14 +38002,16 @@ const el = document.getElementById('gcSerial');
 if (el) el.value = code;
 await gcLookup(code);
 const out = document.getElementById('gcLookupOut');
-if (out) {
-out.scrollIntoView({ behavior: 'smooth', block: 'center' });
 const c = (gcCache || []).find(x => x.id.toUpperCase() === code);
-showMsg('gcLookupMsg', 'ok', c
-? '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(code) +
-' \u2014 $' + fmtMoney(gcBalance(c)) + ' on it. What you can do with it is below.'
-: '<svg class="ico"><use href="#i-checkmark"></use></svg> Read ' + esc(code) + '. See below.');
-}
+const roll = typeof gcRollOf === 'function' ? gcRollOf(code) : null;
+showMsg('gcLookupMsg', c ? 'ok' : 'err', c
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> <b>' + esc(code) + '</b> \u2014 $' +
+fmtMoney(gcBalance(c)) + ' left on it' + (c.status === 'void' ? ', and it has been voided' : '') + '.'
+: roll
+? '<b>' + esc(code) + '</b> is on the roll \u201c' + esc(roll.label) +
+'\u201d but was never sold, so there is nothing on it.'
+: '<b>' + esc(code) + '</b> is not on any roll this office has loaded.');
+if (out) out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 } });
 }
 function gcSellStartScan() {
