@@ -6727,9 +6727,9 @@ sizeKioskParkLayer();
 const BOOTH_COORDS = {
 'P1': { x: 1530, y: 348 },
 'P2': { x: 1530, y: 394 },
-'WT1': { x: 427, y: 130 },
-'WT2': { x: 471, y: 130 },
-'WT3': { x: 590, y: 130 },
+'WT1': { x: 433, y: 111 },
+'WT2': { x: 487, y: 111 },
+'WT3': { x: 599, y: 111 },
 '24': { x: 40, y: 300 },
 '25': { x: 80, y: 300 },
 '26': { x: 120, y: 300 },
@@ -18163,7 +18163,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-94';
+const BUILD_ID = '16-95';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
