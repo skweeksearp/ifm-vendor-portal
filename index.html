@@ -158,6 +158,10 @@ background: #EFF3EA; border: 1.5px solid #C9D6BC; border-radius: 14px; }
 .gc-balance.gc-spent .gc-bal-num { color: #8A3B2E; }
 .gc-bal-label { font-size: 13px; font-weight: 700; color: #6E6A57; margin-top: 5px; }
 .handover-later { opacity: 0.78; border-style: dashed; }
+.stmt-running { display: flex; align-items: baseline; justify-content: space-between;
+gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--ink);
+font-size: 17px; }
+.stmt-running b { font-size: 20px; }
 .vfind-hidden { display: none !important; }
 .vfind-list { margin-top: 6px; }
 .vfind-row { display: flex; align-items: baseline; gap: 8px; width: 100%;
@@ -2799,7 +2803,7 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 </div>
 <div id="acctBody"></div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>This Month&rsquo;s Statement</h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span><span id="myStmtCurrentTitle">Recent Activity</span></h2>
 <div id="myStmtCurrent"></div>
 </div>
 <div class="card">
@@ -13184,6 +13188,44 @@ months.push({ ym: p, left: own.left });
 }
 return { total: Math.round(total * 100) / 100, months: months.reverse() };
 }
+// A MONTH STILL RUNNING IS NOT A STATEMENT.
+// The current month was being drawn as a finished business document with an
+// amount due and a deadline, while market days were still being added to it.
+// That invites a vendor to pay a figure that is about to change. Until the
+// month closes it is shown as Recent Activity: the same lines, running, with
+// no total demanded and the date it will become a statement stated plainly.
+function stmtIsOpen(ym) { return ym === todayISO().slice(0, 7); }
+function stmtActivityHTML(s) {
+const rows = s.charged.map(r => ({ r: r, credit: false }))
+.concat(s.received.map(r => ({ r: r, credit: true })))
+.sort((a, b) => String(a.r.date).localeCompare(String(b.r.date)));
+const body = rows.length
+? rows.map(x =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + (x.credit ? '\u2212' : '') + '$' + fmtMoney(x.r.amount) +
+' \u00b7 ' + esc(x.r.what) + '</div>' +
+'<div class="req-meta">' + esc(formatDisplayDate(x.r.date)) +
+' \u00b7 ' + (x.credit ? 'in your favour' : 'charged') + '</div>' +
+'</div></div>').join('')
+: '<p class="empty-note">Nothing yet this month.</p>';
+const net = Math.round((s.chargedTotal - s.receivedTotal) * 100) / 100;
+const closes = ymLabel(s.ym);
+return '<div class="stmt-activity">' +
+'<p class="empty-note" style="margin:0 0 10px;"><b>' + esc(closes) + ' is still running.</b> ' +
+'These are the charges and credits so far. Nothing is due yet \u2014 when the month closes this ' +
+'becomes a statement, payable by <b>' + esc(formatDisplayDate(s.due)) + '</b>.</p>' +
+(s.brought ? '<div class="stat-row" style="margin-bottom:10px;"><div class="stat">' +
+'<div class="stat-num">' + (s.brought < 0 ? '\u2212' : '') + '$' + fmtMoney(Math.abs(s.brought)) + '</div>' +
+'<div class="stat-label">' + (s.brought < 0 ? 'in your favour, brought forward' : 'still owed from before') +
+'</div></div></div>' : '') +
+body +
+'<div class="stmt-running"><span>So far this month</span><b>' +
+(net < 0 ? '\u2212' : '') + '$' + fmtMoney(Math.abs(net)) + '</b></div>' +
+(s.forecast && s.forecast.length
+? '<p class="empty-note" style="margin:10px 2px 0;">Year-end items are listed on any statement and are ' +
+'not part of this month.</p>' : '') +
+'</div>';
+}
 function statementFor(vendorId, ym) {
 const year = ym.slice(0, 4);
 const a = accountData(vendorId, year);
@@ -13213,6 +13255,7 @@ const forecast = yearEnd.length ? [] : yearEndForecast(vendorId, Number(ym.slice
 const carry = ruleNum('stmtCarryUnder') || 0;
 return {
 vendorId: vendorId, ym: ym, vendor: (cache.vendors || []).find(v => v.vendorId === vendorId),
+ym: ym,
 charged: charged, received: received,
 chargedTotal: sum(charged), receivedTotal: sum(received),
 lateFee: lateFee, owed: owed,
@@ -13518,11 +13561,17 @@ const ym = sel.value || stmtMonthOptions()[0];
 const due = stmtDueDate(ym);
 const overdue = todayISO() > due;
 const note = document.getElementById('stmtDueNote');
-if (note) note.innerHTML = 'Due <b>' + esc(formatDisplayDate(due)) + '</b> \u2014 the ' +
+const open = stmtIsOpen(ym);
+if (note) note.innerHTML = (open
+? '<b>' + esc(ymLabel(ym)) + ' is still running.</b> This is recent activity, not a statement: ' +
+'market days are still being added to it. It becomes a statement when the month closes, payable by <b>' +
+esc(formatDisplayDate(due)) + '</b>. '
+: 'Due <b>' + esc(formatDisplayDate(due)) + '</b> \u2014 the ' +
 esc(ordinal(ruleNum('stmtDueWeekend'))) + ' market Saturday of ' +
-esc(ymLabel(ymOf(due)).split(' ')[0]) + '. Late fee $' + fmtMoney(ruleNum('stmtLateFee')) +
+esc(ymLabel(ymOf(due)).split(' ')[0]) + '. ') +
+'Late fee $' + fmtMoney(ruleNum('stmtLateFee')) +
 '. <span class="empty-note">Both are set by the Board in Market Rules.</span>' +
-(overdue ? ' <b style="color:#8A3B2E;">That date has passed.</b>' : '');
+(!open && overdue ? ' <b style="color:#8A3B2E;">That date has passed.</b>' : '');
 
 const all = (cache.vendors || []).map(v => statementFor(v.vendorId, ym));
 const active = all.filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
@@ -13591,16 +13640,19 @@ fmtMoney(s.lateFee) + ' added ' + esc(formatDisplayDate(rec.lateAt)) +
 if (s.paid) body += '<p class="empty-note" style="margin:6px 2px 0;"><b>$' + fmtMoney(s.paid) + ' paid</b> against this statement' +
 ((rec.payments || []).length ? ' \u00b7 ' + rec.payments.map(p => formatDisplayDate(p.on) + ' $' + fmtMoney(p.amount)).join(', ') : '') + '</p>';
 body += '<p class="empty-note" style="margin:8px 2px 6px;">' +
-(s.sentAt ? 'Sent ' + esc(formatDisplayDate(new Date(s.sentAt).toISOString().slice(0, 10))) : '<b>Not sent yet</b>') +
+(open ? '<b>Still running</b>'
+: s.sentAt ? 'Sent ' + esc(formatDisplayDate(new Date(s.sentAt).toISOString().slice(0, 10))) : '<b>Not sent yet</b>') +
 ' \u00b7 points ' + (s.points == null ? '\u2014' : esc(s.points)) +
 (s.hours ? ' \u00b7 hours ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
 (s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' owed' : '') : '') + '</p>';
 const email = (s.vendor || {}).email || '';
+if (!open) {
 body += '<a class="ghost-btn" style="display:inline-block;" href="' + stmtMailto(s) + '" ' +
 'onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'email\')">' +
 (email ? 'Open the email' : 'No email on file \u2014 open anyway') + '</a>' +
 '<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy the text</button>';
-if (s.outstanding > 0 && overdue && !s.lateFee)
+}
+if (!open && s.outstanding > 0 && overdue && !s.lateFee)
 body += '<button type="button" class="ghost-btn" onclick="stmtChargeLate(\'' + s.vendorId + '\',\'' + s.ym + '\')">Add the $' +
 fmtMoney(ruleNum('stmtLateFee')) + ' late fee</button>';
 if (s.outstanding > 0) {
@@ -13665,6 +13717,9 @@ if (!host || !currentVendorId) return;
 // The month just gone is the one with a deadline attached.
 const ym = stmtMonthOptions()[0];
 const s = statementFor(currentVendorId, ym);
+const head = document.getElementById('myStmtCurrentTitle');
+if (head) head.textContent = stmtIsOpen(ym) ? 'Recent Activity' : ymLabel(ym) + ' Statement';
+if (stmtIsOpen(ym)) { host.innerHTML = stmtActivityHTML(s); return; }
 const overdue = s.outstanding > 0 && todayISO() > s.due;
 host.innerHTML =
 '<div class="stmt-doc-wrap">' + stmtDocHTML(s) + '</div>' +
@@ -13672,7 +13727,7 @@ host.innerHTML =
 (s.outstanding > 0
 ? '<p class="empty-note" style="margin:6px 2px 0;">' +
 (overdue ? '<b style="color:#8A3B2E;">The due date has passed.</b> ' : '') +
-'Paid already? Tell the office under <b>Other ways to settle up</b> below, so it can be matched to the money.</p>'
+'Paid already? Tell the office under <b>How You Can Pay</b> above, so it can be matched to the money.</p>'
 : '');
 }
 function renderMyStatements() {
@@ -18272,7 +18327,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-107';
+const BUILD_ID = '16-108';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
