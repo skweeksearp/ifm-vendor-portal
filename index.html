@@ -2470,9 +2470,10 @@ I sell food (prepared food or produce)
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body">
+<div class="card" id="acctRecent" style="margin-bottom:12px;"></div>
 <div class="dash-fold" data-fold="accountmoney">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
-<span class="fold-title">My Account</span>
+<span class="fold-title">Money</span>
 <span class="fold-sub" id="menuPaySub">What has landed this month, what you owe, and how to pay it</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
@@ -18324,7 +18325,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-110';
+const BUILD_ID = '16-111';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25683,8 +25684,55 @@ esc(formatDisplayDate(n.date)) + '. ' +
 'This page updates as the office works, so you do not have to ring in.</p>';
 }).join('<hr style="border:none; border-top:1px solid #EFEADA; margin:12px 0;">');
 }
+// A vendor's standing in one card, before any drawer is opened: money for
+// the month running, hours against the season's requirement, and points.
+// Each line is derived from the same source its own drawer uses, so the
+// summary cannot drift from the tool it summarises.
+function renderAccountRecent() {
+const host = document.getElementById('acctRecent');
+if (!host) return;
+if (currentRole !== 'vendor' || !currentVendorId) { host.style.display = 'none'; return; }
+host.style.display = '';
+const year = seasonYear();
+const ym = stmtMonthOptions()[0];
+const s = statementFor(currentVendorId, ym);
+const hl = buildHoursLedger(currentVendorId, year);
+const pts = vendorPoints(currentVendorId);
+const net = Math.round((s.chargedTotal - s.receivedTotal) * 100) / 100;
+
+const moneyLine = stmtIsOpen(ym)
+? (net > 0 ? '<b>$' + fmtMoney(net) + '</b> charged so far this month'
+: net < 0 ? '<b>$' + fmtMoney(-net) + '</b> in your favour so far this month'
+: 'Nothing charged yet this month')
+: (s.outstanding > 0 ? '<b>$' + fmtMoney(s.outstanding) + '</b> due by ' + esc(formatDisplayDate(s.due))
+: s.outstanding < 0 ? '<b>$' + fmtMoney(-s.outstanding) + '</b> in your favour'
+: 'Settled \u2014 nothing due');
+const carried = s.brought > 0
+? '<div class="req-meta">$' + fmtMoney(s.brought) + ' still owed from before</div>'
+: s.brought < 0 ? '<div class="req-meta">$' + fmtMoney(-s.brought) + ' carried in your favour</div>' : '';
+
+const owed = hl ? Number(hl.owed || 0) : 0;
+const done = hl ? Number(hl.done || 0) : 0;
+const hoursLine = !hl ? 'No hours recorded'
+: owed > 0 ? '<b>' + done.toFixed(1) + '</b> worked \u00b7 <b>' + owed.toFixed(1) + '</b> still owed'
+: '<b>' + done.toFixed(1) + '</b> worked \u2014 the season\u2019s hours are covered';
+
+const row = (label, body, screen, extra) =>
+'<button type="button" class="req-row" style="width:100%; text-align:left; background:none; border:none; padding:10px 0; margin:0;" ' +
+'onclick="showScreen(\'' + screen + '\')">' +
+'<div class="req-row-main"><div class="req-name">' + esc(label) + '</div>' +
+'<div class="req-meta">' + body + '</div>' + (extra || '') + '</div></button>';
+
+host.innerHTML =
+'<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Recent Activity</h2>' +
+'<p class="empty-note" style="margin-top:0;">Where you stand right now. Tap any line for the detail.</p>' +
+row('Money', moneyLine, 'account', carried) +
+row('Work Hours', hoursLine, 'hours') +
+row('Points', '<b>' + (pts == null ? '\u2014' : pts) + '</b> points this season', 'points');
+}
 function renderVendorAttn() {
 renderLottoNotice();
+renderAccountRecent();
 const card = document.getElementById('vendorAttn');
 const wrap = document.getElementById('vendorAttnList');
 if (!card || !wrap) return;
