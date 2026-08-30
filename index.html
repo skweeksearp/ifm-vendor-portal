@@ -18172,7 +18172,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-98';
+const BUILD_ID = '16-99';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27478,16 +27478,43 @@ d: 'What this app calls things, and what the Guide calls them' },
 let gcCache = null;
 let gcRolls = null;
 let gcSoldThisSession = [];
+// A read must never destroy a certificate. loadGiftCerts replaced the local
+// list with whatever storage returned, so an older or empty answer -- which
+// is what arrives whenever the market's records are unreachable and the app
+// falls back -- made every certificate vanish from that device. A code that
+// had just been sold for $99 would report itself as never sold.
+//
+// The two lists are merged instead of one replacing the other. Draws only
+// ever accumulate, so for a certificate in both copies the one with more
+// draws is the later one; nothing is ever dropped.
+function gcMergeLists(local, remote) {
+const byId = {};
+(Array.isArray(remote) ? remote : []).forEach(c => { if (c && c.id) byId[c.id] = c; });
+(Array.isArray(local) ? local : []).forEach(c => {
+if (!c || !c.id) return;
+const other = byId[c.id];
+if (!other) { byId[c.id] = c; return; }
+const mine = (c.draws || []).length, theirs = (other.draws || []).length;
+if (mine > theirs) byId[c.id] = c;
+else if (mine === theirs && c.status === 'void' && other.status !== 'void') byId[c.id] = c;
+});
+return Object.keys(byId).map(k => byId[k]);
+}
 async function loadGiftCerts() {
 const list = await storageGet('ifm-giftcerts');
-if (list !== STORAGE_MISSING) gcCache = list;
-else if (!gcCache) gcCache = [];
+if (list === STORAGE_MISSING) { if (!gcCache) gcCache = []; return gcCache; }
+gcCache = gcMergeLists(gcCache, list);
 return gcCache;
 }
 async function saveGiftCerts() { await storageSet('ifm-giftcerts', gcCache || []); }
 async function loadGcRolls() {
 const list = await storageGet('ifm-gcrolls');
-if (list !== STORAGE_MISSING && list) gcRolls = list;
+if (list !== STORAGE_MISSING && Array.isArray(list)) {
+const seen = {};
+(list || []).forEach(r => { if (r && r.id) seen[r.id] = r; });
+(gcRolls || []).forEach(r => { if (r && r.id && !seen[r.id]) seen[r.id] = r; });
+gcRolls = Object.keys(seen).map(k => seen[k]);
+}
 else if (!gcRolls) gcRolls = [];
 return gcRolls;
 }
