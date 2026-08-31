@@ -2549,7 +2549,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="communicate">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'communicate')">
 <span class="fold-title">Communicate with the Market</span>
-<span class="fold-sub">Forms, complaints, requests &amp; proposals</span>
+<span class="fold-sub">Forms, requests, proposals and good ideas</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
@@ -4203,6 +4203,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">Every debt and credit reaches a statement</div><div class="comm-desc">There are eleven ways money can land on a vendor&rsquo;s account: fines entered by hand, fines the ladder derives, booth-check fines, booth fees for each of the four venues, the statement&rsquo;s own late fee, the membership share, work hours not worked, and the late renewal surcharge on the debit side; SNAP tokens turned in, gift certificates taken at a stall, booth fees paid at the window, checks, cash, card at the desk and Square on the credit side. A new one must be added to <code>accountData</code> or it silently never bills. An audit of this list found four holes at once: Wednesday and Winter fees charged nothing because the season calendar only makes Saturdays and Sundays, SNAP had no route at all, and the January renewal surcharge was filed as due the following December.</div></div>
 <div class="comm-item"><div class="comm-title">One stray &lt;/div&gt; can wreck half the app silently</div><div class="comm-desc">Every screen must sit inside <code>&lt;main&gt;</code>, which carries the page&rsquo;s side padding. A single extra closing tag ends <code>&lt;main&gt;</code> early and every screen defined <em>after</em> it renders flush to the edge of the phone &mdash; while everything before it looks perfect, so the app appears fine on the desk you happen to be testing. Build 16-86 did exactly this when a wrapper was removed by scanning for its matching tag, and it broke the whole manager and president desk while the vendor desk was untouched. Never delete a wrapper by counting tags in a script; and run <code>t27-structure.js</code>, which checks div balance across the file and that no screen has escaped <code>&lt;main&gt;</code>.</div></div>
 <div class="comm-item"><div class="comm-title">Nothing may run off the side of the phone</div><div class="comm-desc">Cards, rows and text carry <code>max-width:100%</code> and <code>overflow-wrap:anywhere</code>; a flex text column carries a floor (<code>min-width: min(100%, 14rem)</code>) so a sibling input cannot squeeze it to one letter a line. Use <code>overflow-wrap: break-word</code>, never <code>anywhere</code>, on anything holding a title: <code>anywhere</code> lets the browser count a single character as an element&rsquo;s minimum width, so a flex row squeezed &ldquo;My Account&rdquo; into &ldquo;My Accou / nt&rdquo;. <code>anywhere</code> is reserved for the few places a single unbroken string can genuinely exceed the phone &mdash; a certificate code, a run-together vendor name in a report row. Test with <code>t24-overflow.js</code>, which walks every screen in every role at 390px and 320px and reports anything past the edge, and with <code>t25-titles.js</code>, which checks no drawer title is narrower than its own longest word. It found 98 at first pass. The kiosk booth map is excluded on purpose: it is wider than the phone by design and is dragged, not read.</div></div>
+<div class="comm-item"><div class="comm-title">Removing the last item leaves the box</div><div class="comm-desc">Take the only entries out of a card and the card remains, rendering as a blank white box on the screen. Nothing throws and no other test notices. <code>t29-emptycards.js</code> walks every screen in every role and reports any card with no text and no control in it. A card filled by a renderer that only runs for some roles should start hidden and be revealed by that renderer, rather than sitting empty for everyone else.</div></div>
 <div class="comm-item"><div class="comm-title">A superseded tool leaves its door behind</div><div class="comm-desc">When a new tool replaces an old one, the old way in usually survives &mdash; a tile in a folder, a drawer on a desk, a button in a card. Each is correct on its own and nothing throws, so only a person noticing catches it. <code>t28-duplicates.js</code> is that person: it walks every desk in every role and reports two doors onto one screen, one name opening two tools, and screens nothing opens. A second door that is deliberate goes in its <code>ALLOWED</code> list <em>with the reason</em>, so intentional repetition is declared rather than argued about again later. Run it after removing or replacing any tool.</div></div>
 <div class="comm-item"><div class="comm-title">One way to choose a vendor</div><div class="comm-desc">Any <code>&lt;select&gt;</code> holding the vendor list is fitted automatically with a search box and a list of tappable matches; the dropdown itself is hidden but stays in the page holding the value, so anything reading <code>sel.value</code> or listening for <code>change</code> keeps working. A tool needs to do nothing to get this. Options that are not vendors &mdash; &ldquo;choose&rdquo;, &ldquo;Nobody&rdquo; &mdash; are kept and offered as their own rows, since those are real choices. Never build a second search box beside a vendor list by hand.</div></div>
 <div class="comm-item"><div class="comm-title">A screen opens at the top of itself</div><div class="comm-desc">Changing screen resets the scroll, and so does entering a desk &mdash; otherwise a desk reached from halfway down a long tool opens halfway down. Drawers are deliberately exempt: <code>toggleToolFold</code> anchors the scroll to the drawer being opened so it does not jump under the finger. If a new container ever scrolls instead of the window, add it to <code>scrollAppToTop</code>.</div></div>
@@ -4251,7 +4252,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <label for="snapDate">Market day</label>
 <select id="snapDate" onchange="renderSnapDay()"></select>
 </div>
-<div class="card" id="snapBalanceCard"></div>
+<div class="card" id="snapBalanceCard" style="display:none;"></div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Tokens Handed Out<button type="button" class="help-dot" onclick="showHelp(78)" aria-label="How does this work?">?</button></h2>
 <p class="empty-note" style="margin-top:0;">After each swipe on the EBT terminal, record how many tokens went
@@ -4714,9 +4715,6 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </section>
 <section id="screen-communicate" class="screen">
 <div class="screen-head" id="head-communicate"></div>
-<div class="card">
-
-</div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-ruler"></use></svg></span>Booth Improvements</h2>
 <div class="comm-item">
@@ -10937,6 +10935,7 @@ host.appendChild(row);
 function renderSnapBalance(dateISO) {
 const card = document.getElementById('snapBalanceCard');
 if (!card) return;
+card.style.display = '';
 const year = seasonYear();
 const outDay = snapIssuedTotal(snapIssues(dateISO));
 const inDay = snapTotal((snapCache ? snapCache.entries : []).filter(e => e.date === dateISO));
@@ -18627,7 +18626,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-119';
+const BUILD_ID = '16-120';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
