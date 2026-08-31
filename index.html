@@ -2739,6 +2739,14 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="fcchecks" id="menuFreshConnect">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'fcchecks')">
+<span class="fold-title">FreshConnect Checks</span>
+<span class="fold-sub" id="foldSubFC">Whether you take them, and what you have turned in</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="winter">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
 <span class="fold-title">Winter Market</span>
@@ -2823,6 +2831,15 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div class="tracker-row"><div class="t-title">Check</div><div class="t-sub">Made out to Ithaca Farmers Market. <b>What counts is the postmark, not the day it arrives</b> &mdash; that is what the Guide&rsquo;s deadlines turn on.</div></div>
 <div class="tracker-row"><div class="t-title">Credit or debit card</div><div class="t-sub" id="acctCardLine"></div></div>
 <p class="empty-note">However you pay, <b>the office recording it is what settles the balance above.</b> Anything you tell the app is a report until then.</p>
+</div>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Pay Now<button type="button" class="help-dot" onclick="showHelp(HELP_PAY_NOW)" aria-label="What are the rules here?">?</button></h2>
+<div class="tone-switch">
+<button type="button" class="tone-btn on" id="payModeStmt" onclick="paySetMode('statement')">What I owe</button>
+<button type="button" class="tone-btn" id="payModeAhead" onclick="paySetMode('ahead')">Pay ahead</button>
+</div>
+<div id="payBody"></div>
+<div class="status-msg" id="payMsg"></div>
 </div>
 </div>
 <div class="card">
@@ -3015,7 +3032,6 @@ Recording it here puts that notice in front of every vendor when they open the a
 <option value="owing">Owing something</option>
 <option value="all">Everyone</option>
 <option value="unsent">Not sent yet</option>
-<option value="overdue">Past the due date and unpaid</option>
 <option value="credit">The market owes them</option>
 </select>
 <input type="text" id="stmtSearch" class="find-field" placeholder="Find a vendor by name" oninput="renderStatements()" autocomplete="off">
@@ -3853,6 +3869,11 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Checked Off This Year</h2>
 <div id="qwDone"></div>
 </div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Membership Equity to Settle</h2>
+<p class="empty-note" id="eqNote" style="margin-top:0;"></p>
+<div id="eqList"></div>
+</div>
 </section>
 <section id="screen-winterbooths" class="screen">
 <div class="screen-head" id="head-winterbooths"></div>
@@ -4291,6 +4312,58 @@ this side of it.</p>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
 <div id="snapSeason"></div>
+</div>
+</section>
+<section id="screen-fcchecks" class="screen">
+<div class="screen-head" id="head-fcchecks"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Do You Accept FreshConnect Checks?<button type="button" class="help-dot" onclick="showHelp(HELP_FC_VENDOR)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" id="fcWhoNote" style="margin-top:0;"></p>
+<div class="row" id="fcToggleRow" style="display:flex; gap:8px;">
+<button type="button" class="primary-btn" id="fcYes" onclick="setFcAccepts(true)">I accept FreshConnect</button>
+<button type="button" class="ghost-btn" id="fcNo" onclick="setFcAccepts(false)">I do not accept them</button>
+</div>
+<div class="status-msg" id="fcVendorMsg"></div>
+</div>
+<div class="card" id="fcVendorSeasonCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
+<div id="fcVendorSeason"></div>
+</div>
+<div class="card" id="fcVendorLogCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Every Time You Turned Checks In</h2>
+<p class="empty-note" style="margin-top:0;">The office records each one. If a line is wrong, or one is missing, tell the office &mdash; their count is the one that pays out.</p>
+<div id="fcVendorLog" class="drawer-list"></div>
+</div>
+</section>
+<section id="screen-fclog" class="screen">
+<div class="screen-head" id="head-fclog"></div>
+<div class="card desk-form">
+<label for="fcDate">Market day</label>
+<select id="fcDate" onchange="renderFcDay()"></select>
+</div>
+<div class="card desk-form">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Checks Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_FC_MGR)" aria-label="What are the rules here?">?</button></h2>
+<p class="empty-note" style="margin-top:0;">New York State issues FreshConnect Checks, not the market, so there is nothing to hand out and nothing to reconcile against. This is the one half that exists: a vendor brings checks back and the market pays them out.</p>
+<label for="fcVendor">Vendor</label>
+<select id="fcVendor"></select>
+<label for="fcAmount">Total face value of the checks</label>
+<div class="mr-unit-row">
+<input type="number" id="fcAmount" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00">
+<span class="mr-unit">dollars</span>
+</div>
+<label for="fcCount" style="margin-top:10px;">How many checks (optional)</label>
+<input type="number" id="fcCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 6">
+<div class="status-msg" id="fcMsg"></div>
+<button type="button" class="primary-btn" onclick="recordFc()">Record and tell the vendor</button>
+<p class="empty-note" id="fcValueNote" style="margin-top:8px;"></p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Turned In On This Day</h2>
+<div id="fcDayList" class="drawer-list"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
+<div id="fcSeason"></div>
 </div>
 </section>
 <section id="screen-yearend" class="screen">
@@ -7544,6 +7617,8 @@ const ACT_KEYS = {
 'ifm-dayfees':         { t: 'Day-fee collection', k: 'money', w: 'notable' },
 'ifm-giftcerts':       { t: 'Gift certificates', k: 'money', w: 'notable' },
 'ifm-snap':            { t: 'SNAP tokens', k: 'money', w: 'notable' },
+'ifm-freshconnect':    { t: 'FreshConnect Checks', k: 'money', w: 'notable' },
+'ifm-prepay':          { t: 'Money paid in advance', k: 'money', w: 'notable' },
 'ifm-hours':           { t: 'Work hours', k: 'records' },
 'ifm-tasks':           { t: 'Work-hour tasks', k: 'records' },
 'ifm-attendance':      { t: 'Attendance', k: 'day' },
@@ -8218,6 +8293,8 @@ cache.requirements.reqs = cache.requirements.reqs || [];
 cache.requirements.status = cache.requirements.status || {};
 cache.ops = ops === STORAGE_MISSING ? { noshow: {}, fines: [], waived: {} } : (ops || {});
 try { await loadSnap(); } catch (e) { snapCache = snapCache || { accepts: {}, entries: [] }; }
+try { await loadFc(); } catch (e) { fcCache = fcCache || { accepts: {}, entries: [] }; }
+try { await loadPrepay(); } catch (e) { prepayCache = prepayCache || []; }
 cache.ops.fines = cache.ops.fines || [];
 cache.ops.noshow = cache.ops.noshow || {};
 cache.ops.fines = cache.ops.fines || [];
@@ -10968,6 +11045,472 @@ card.innerHTML =
 (outstanding < 0 ? ' <b>A negative figure is worth a look</b> \u2014 more has come back than ever ' +
 'went out, which usually means a swipe was never recorded here.' : '') + '</p>';
 }
+// ---- paying from the app -------------------------------------------------
+// One card, two questions. "What I owe" settles the balance the account
+// already shows. "Pay ahead" puts money on the account before the fees land,
+// which is how a number of vendors have always preferred to handle a season.
+// Both end as a credit in accountData; the difference is only which number
+// the box starts with.
+let payMode = 'statement';
+function paySetMode(m) {
+payMode = (m === 'ahead') ? 'ahead' : 'statement';
+['payModeStmt', 'payModeAhead'].forEach(id => {
+const b = document.getElementById(id);
+if (b) b.className = 'tone-btn' + ((id === 'payModeAhead') === (payMode === 'ahead') ? ' on' : '');
+});
+renderPayNow();
+}
+// Square's charge falls on the payer, every time.
+//
+// The market is not selling anything here -- it is collecting money it is
+// already owed. If it absorbed the card fee it would receive less than the
+// amount that clears the vendor's balance, and the difference would come out
+// of the market for the convenience of one vendor paying one way. So the fee
+// is added, at cost, and the market keeps none of it.
+//
+// The full card total is shown before anything is tapped. That is also what
+// New York requires of a card surcharge: the posted price must be the total
+// including it, and the surcharge may not exceed what the processor charges.
+// Cash and checks cost the amount owed and nothing more.
+function payCardTotal(amount) {
+const amt = Math.round(Number(amount || 0) * 100) / 100;
+const fee = squareFeeOn(amt);
+return { amount: amt, fee: fee, total: Math.round((amt + fee) * 100) / 100 };
+}
+function payDefaultAmount() {
+const vid = currentVendorId;
+if (!vid) return 0;
+if (payMode === 'ahead') return 0;
+const ym = stmtMonthOptions()[0];
+const s = statementFor(vid, ym);
+return Math.max(0, s.outstanding);
+}
+function renderPayNow() {
+const host = document.getElementById('payBody');
+if (!host || !currentVendorId) return;
+const ahead = payMode === 'ahead';
+const owed = payDefaultAmount();
+const year = seasonYear();
+const left = prepayLeft(currentVendorId, year);
+const put = prepayTotal(currentVendorId, year);
+
+let out = '';
+if (ahead) {
+out += '<p class="empty-note" style="margin-top:0;">Put money on your account before the fees land. ' +
+'Every booth fee charged afterwards comes off it until it runs out. <b>Nothing is lost by paying ' +
+'ahead</b> \u2014 anything still on your account at the end of the year stays there, and the office ' +
+'can pay it back out.</p>';
+if (put > 0) {
+out += '<div class="tracker-row"><div class="t-title">Put on account in ' + year + '</div>' +
+'<div class="t-note"><b>$' + fmtMoney(put) + '</b></div></div>' +
+'<div class="tracker-row"><div class="t-title">Still unspent</div>' +
+'<div class="t-note"><b>$' + fmtMoney(left) + '</b></div></div>';
+}
+} else if (owed > 0) {
+out += '<p class="empty-note" style="margin-top:0;">Your balance is <b>$' + fmtMoney(owed) +
+'</b>. Pay all of it or part of it \u2014 the rest simply stays on the account.</p>';
+} else {
+out += '<p class="empty-note" style="margin-top:0;"><b>You owe nothing right now.</b> ' +
+'If you want to put money on the account for the fees still to come, use <b>Pay ahead</b>.</p>';
+}
+
+out += '<label for="payAmt">How much</label>' +
+'<div class="mr-unit-row"><input type="number" id="payAmt" step="0.01" min="1" inputmode="decimal" ' +
+'placeholder="' + (owed > 0 && !ahead ? fmtMoney(owed) : '0.00') + '" ' +
+'value="' + (owed > 0 && !ahead ? fmtMoney(owed) : '') + '" oninput="renderPayTotals()"></div>' +
+'<div id="payTotals"></div>' +
+'<button type="button" class="primary-btn" id="payCardBtn" onclick="payByCard()">Pay by card</button>' +
+'<button type="button" class="ghost-btn" onclick="payTellOffice()">I paid by cash or check \u2014 tell the office</button>';
+host.innerHTML = out;
+renderPayTotals();
+}
+function renderPayTotals() {
+const box = document.getElementById('payAmt');
+const el = document.getElementById('payTotals');
+const btn = document.getElementById('payCardBtn');
+if (!el) return;
+const t = payCardTotal((box || {}).value);
+const ready = typeof merchSqReady === 'function' && merchSqReady();
+el.innerHTML = t.amount > 0
+? '<div class="tracker-row"><div class="t-title">On your account</div><div class="t-note">$' + fmtMoney(t.amount) + '</div></div>' +
+'<div class="tracker-row"><div class="t-title">Square\u2019s charge for this payment</div>' +
+'<div class="t-note">$' + fmtMoney(t.fee) + '</div></div>' +
+'<div class="tracker-row"><div class="t-title"><b>Card total</b></div>' +
+'<div class="t-note"><b>$' + fmtMoney(t.total) + '</b></div></div>' +
+'<p class="empty-note" style="margin:6px 2px 0;">The market passes Square\u2019s charge on at cost and ' +
+'keeps none of it. <b>Cash or a check costs $' + fmtMoney(t.amount) + ' and nothing more.</b></p>'
+: '';
+// Never hide, always grey: the button stays where it is and says why.
+if (btn) {
+btn.disabled = !(t.amount > 0) || !ready;
+btn.style.opacity = btn.disabled ? '0.45' : '';
+btn.textContent = !ready ? 'Paying by card is not switched on yet'
+: t.amount > 0 ? 'Pay $' + fmtMoney(t.total) + ' by card' : 'Pay by card';
+}
+}
+function payByCard() {
+const t = payCardTotal((document.getElementById('payAmt') || {}).value);
+if (!(t.amount > 0)) { showMsg('payMsg', 'err', 'Enter an amount first.'); return; }
+const link = squarePosLink(Math.round(t.total * 100),
+'IFM \u00b7 ' + (payMode === 'ahead' ? 'paid ahead' : 'account payment'));
+if (!link) {
+showMsg('payMsg', 'err', 'Paying by card from the app is built but not switched on yet \u2014 the ' +
+'market\u2019s Square Application ID has not been saved. Pay at the office window and it will be ' +
+'recorded the same way.');
+return;
+}
+window.location.href = link;
+setTimeout(() => {
+showMsg('payMsg', 'ok', 'If Square did not open, its app may not be on this phone. Pay however you ' +
+'can and tell the office below \u2014 nothing here is lost.');
+}, 2500);
+}
+// A vendor saying they paid is a REPORT, not a settlement. The office
+// recording it is what moves the balance, and the wording says so rather
+// than letting a vendor leave believing the matter is closed.
+async function payTellOffice() {
+const vendor = currentVendor();
+const t = payCardTotal((document.getElementById('payAmt') || {}).value);
+if (!vendor) return;
+if (!(t.amount > 0)) { showMsg('payMsg', 'err', 'Enter an amount first.'); return; }
+const label = payMode === 'ahead' ? 'Paid ahead onto the account' : 'Payment on account';
+await loadVp();
+vpCache.items.unshift({ id: 'vp' + Date.now(), vendorId: vendor.vendorId,
+date: todayISO(), label: label, amount: t.amount,
+note: 'IFM \u00b7 ' + vendor.vendorId + ' \u00b7 ' + label + ' \u00b7 $' + fmtMoney(t.amount),
+status: 'reported' });
+await storageSet('ifm-feepays', vpCache);
+updatePaySub();
+renderVpList();
+showMsg('payMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Told the office: $' +
+fmtMoney(t.amount) + '. <b>It is a report until they match it to the money</b> \u2014 your balance ' +
+'moves when they do.');
+renderPayNow();
+}
+
+// ---- money paid in advance ----------------------------------------------
+// Some vendors have always settled the season's booth fees in one go at the
+// start of the year rather than day by day, and the Guide does not forbid it:
+// it says when a fee is due at the latest, not that it cannot be met early.
+// Paying early is the vendor being ahead of the market, never behind it.
+//
+// Mechanically this is not a special kind of money. It is a credit on the
+// account dated when it was paid, exactly like a check or a card payment. The
+// balance goes negative and each booth fee charged afterwards eats into it,
+// with no separate pot to reconcile and nothing that can drift out of step
+// with the account. What makes it worth naming at all is the vendor's
+// question -- "how much of what I put in is left?" -- which is answered by
+// reading the account, not by keeping a second ledger.
+const PREPAY_KEY = 'ifm-prepay';
+let prepayCache = null;
+async function loadPrepay() {
+const v = await storageGet(PREPAY_KEY);
+prepayCache = (v !== STORAGE_MISSING && Array.isArray(v)) ? v : [];
+return prepayCache;
+}
+async function savePrepay() { await storageSet(PREPAY_KEY, prepayCache || []); }
+function prepayFor(vendorId, year) {
+return (prepayCache || [])
+.filter(p => p.vendorId === vendorId && (!year || String(p.date).slice(0, 4) === String(year)))
+.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+function prepayTotal(vendorId, year) {
+return Math.round(prepayFor(vendorId, year)
+.reduce((s, p) => s + Number(p.amount || 0), 0) * 100) / 100;
+}
+// What is left of it. Derived from the account, never stored -- a stored
+// remainder is a number that can disagree with the ledger, and then two
+// screens tell a vendor two different things.
+function prepayLeft(vendorId, year) {
+const put = prepayTotal(vendorId, year);
+if (!(put > 0)) return 0;
+const a = accountData(vendorId, year);
+const owed = Math.round((a.chargedTotal - (a.receivedTotal - put)) * 100) / 100;
+return Math.max(0, Math.round((put - Math.max(0, owed)) * 100) / 100);
+}
+async function recordPrepay(vendorId, amount, method, note) {
+await loadPrepay();
+const amt = Math.round(Number(amount || 0) * 100) / 100;
+if (!(amt > 0)) return null;
+const rec = { id: 'PP' + Date.now(), vendorId: vendorId, amount: amt,
+date: todayISO(), method: method || 'office', note: note || '',
+recordedAt: new Date().toISOString(), recordedBy: currentRole };
+prepayCache.push(rec);
+await savePrepay();
+actAs('Paid on account in advance \u2014 $' + fmtMoney(amt),
+{ kind: 'money', weight: 'notable', vendorId: vendorId });
+return rec;
+}
+
+// ---- FreshConnect Checks -------------------------------------------------
+// SNAP's near-twin, with the issuing half removed and the value fixed.
+//
+// The market issues SNAP tokens, so that log has two sides and a difference
+// worth watching. New York State issues FreshConnect Checks; the market never
+// hands one out, so there is only the turning in.
+//
+// And where a SNAP token is worth what the Board says, a FreshConnect Check
+// carries a face value the State printed on it. So this log stores DOLLARS,
+// not a count times a rule. The count is kept too, but only as a note for
+// counting the stack back -- the money is the amount, always.
+let fcCache = null;
+function fcDefaultAccepts(v) {
+// The same guess SNAP makes, and the same admission that it is a poor one:
+// FreshConnect buys food, and plenty of food vendors are not Ag vendors.
+// The vendor's own answer overrides it the moment they give one.
+return !!v && /^Ag\b/.test(String(v.category || ''));
+}
+function fcAccepts(vendorId) {
+const v = cache.vendors.find(x => x.vendorId === vendorId);
+const set = (fcCache && fcCache.accepts) || {};
+if (Object.prototype.hasOwnProperty.call(set, vendorId)) return !!set[vendorId];
+return fcDefaultAccepts(v);
+}
+function fcIsChosen(vendorId) {
+const set = (fcCache && fcCache.accepts) || {};
+return Object.prototype.hasOwnProperty.call(set, vendorId);
+}
+async function loadFc() {
+const v = await storageGet('ifm-freshconnect');
+if (v !== STORAGE_MISSING && v) fcCache = v;
+if (!fcCache) fcCache = { accepts: {}, entries: [] };
+fcCache.accepts = fcCache.accepts || {};
+fcCache.entries = fcCache.entries || [];
+return fcCache;
+}
+async function saveFc() { await storageSet('ifm-freshconnect', fcCache); }
+function fcEntriesFor(vendorId, year) {
+return (fcCache ? fcCache.entries : [])
+.filter(e => e.vendorId === vendorId && (!year || String(e.date).slice(0, 4) === String(year)))
+.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+function fcMoney(list) {
+return Math.round(list.reduce((s, e) => s + Number(e.amount || 0), 0) * 100) / 100;
+}
+function fcChecks(list) { return list.reduce((s, e) => s + Number(e.checks || 0), 0); }
+
+// ---- the vendor's half ---------------------------------------------------
+function initFcVendorScreen() {
+if (!fcCache) fcCache = { accepts: {}, entries: [] };
+renderFcVendor();
+loadFc().then(renderFcVendor).catch(() => {});
+}
+function renderFcVendor() {
+const v = currentVendor();
+if (!v) return;
+const on = fcAccepts(v.vendorId);
+const chosen = fcIsChosen(v.vendorId);
+
+const yes = document.getElementById('fcYes'), no = document.getElementById('fcNo');
+if (yes && no) {
+yes.className = on ? 'primary-btn' : 'ghost-btn';
+no.className = on ? 'ghost-btn' : 'primary-btn';
+}
+const note = document.getElementById('fcWhoNote');
+if (note) {
+const why = ' <em>Nobody has set this yet, so the app has guessed from your membership class (' +
+esc(v.category) + '). It does not know what you actually sell \u2014 if the guess is wrong, ' +
+'the two buttons below are yours to change it.</em>';
+note.innerHTML = on
+? 'FreshConnect Checks are issued by New York State to shoppers, not by the market. ' +
+'You take them like cash for food, bring them back to the office, and the market pays you out ' +
+'at the value printed on the check. <b>You decide whether you take them, and you can change ' +
+'your mind whenever you like.</b>' + (chosen ? '' : why)
+: 'You are down as <b>not</b> accepting FreshConnect Checks. <b>This is yours to change ' +
+'whenever you like.</b>' + (chosen ? '' : why);
+}
+setDeskRelevance('fcVendorSeasonCard', on,
+'Nothing to total while you are down as not accepting FreshConnect Checks. Switch to ' +
+'<b>I accept FreshConnect</b> above and this fills in as you turn checks in at the office.');
+setDeskRelevance('fcVendorLogCard', on,
+'Nothing to list while you are down as not accepting FreshConnect Checks. If you have taken ' +
+'some anyway \u2014 a shopper handed one over and you took it \u2014 the office can still ' +
+'redeem them for you; switching above will show them here.');
+
+const year = seasonYear();
+const mine = fcEntriesFor(v.vendorId, year);
+const money = fcMoney(mine);
+const season = document.getElementById('fcVendorSeason');
+if (season) {
+season.innerHTML =
+'<div class="tracker-row"><div class="t-title">Turned in, ' + year +
+'</div><div class="t-note"><b>$' + fmtMoney(money) + '</b></div></div>' +
+'<div class="tracker-row"><div class="t-title">Times you turned checks in</div>' +
+'<div class="t-note">' + mine.length + '</div></div>' +
+(mine.length ? '<div class="tracker-row"><div class="t-title">Most recent</div><div class="t-note">' +
+esc(formatDisplayDate(mine[0].date)) + '</div></div>' : '');
+}
+const log = document.getElementById('fcVendorLog');
+if (log) {
+log.innerHTML = '';
+if (!mine.length) {
+log.innerHTML = '<p class="empty-note">Nothing recorded yet this season.</p>';
+} else {
+mine.forEach(e => {
+const row = document.createElement('div');
+row.className = 'attn-item';
+row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div>';
+row.querySelector('.attn-t').textContent = formatDisplayDate(e.date);
+row.querySelector('.attn-m').textContent = '$' + fmtMoney(e.amount) +
+(e.checks ? ' \u00b7 ' + e.checks + ' check' + (e.checks === 1 ? '' : 's') : '') +
+' \u00b7 recorded by the office ' + shortDate(e.recordedAt);
+log.appendChild(row);
+});
+setTimeout(() => { fitListToRows(log, '.attn-item', 5.4); markListEnds(log); }, 0);
+}
+}
+renderFcDeskSub();
+}
+function renderFcDeskSub() {
+const sub = document.getElementById('foldSubFC');
+const v = currentVendor();
+if (!sub || !v) return;
+const on = fcAccepts(v.vendorId);
+const money = fcMoney(fcEntriesFor(v.vendorId, seasonYear()));
+sub.textContent = !on ? 'You do not take FreshConnect \u2014 tap to change'
+: (money ? '$' + fmtMoney(money) + ' turned in this season'
+: 'You take FreshConnect \u2014 nothing turned in yet this season');
+}
+async function setFcAccepts(yes) {
+const v = currentVendor();
+if (!v) return;
+await loadFc();
+fcCache.accepts[v.vendorId] = !!yes;
+await saveFc();
+renderFcVendor();
+showMsg('fcVendorMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+(yes ? 'Noted \u2014 you take FreshConnect Checks. The office sees it when they take checks in.'
+: 'Noted \u2014 you do not take FreshConnect Checks. Switch back any time.'));
+}
+
+// ---- the manager's half --------------------------------------------------
+// Draw first, fetch second, exactly as the SNAP log learned to.
+function initFcLogScreen() {
+if (!requireMarketRole()) return;
+if (!fcCache) fcCache = { accepts: {}, entries: [] };
+drawFcLogScreen();
+loadFc().then(drawFcLogScreen).catch(() => {});
+}
+function drawFcLogScreen() {
+const sel = document.getElementById('fcDate');
+if (!sel) return;
+const chosen = sel.value;
+sel.innerHTML = '';
+allMarketDatesInSeason(seasonYear())
+.filter(m => m.date <= todayISO()).slice(-24).reverse()
+.forEach(m => {
+const o = document.createElement('option');
+o.value = m.date;
+o.textContent = formatDisplayDate(m.date);
+sel.appendChild(o);
+});
+if (chosen && [...sel.options].some(o => o.value === chosen)) sel.value = chosen;
+const note = document.getElementById('fcValueNote');
+if (note) note.textContent = 'Record the face value printed on the checks. Unlike a SNAP token, ' +
+'the market does not set what a FreshConnect Check is worth \u2014 New York State does \u2014 ' +
+'so there is no rate here to change and no past line that could be re-valued.';
+renderFcVendorChoices();
+renderFcDay();
+renderFcSeason();
+}
+function renderFcVendorChoices() {
+const sel = document.getElementById('fcVendor');
+if (!sel) return;
+const chosen = sel.value;
+sel.innerHTML = '';
+// Everyone is listed. A craft vendor might have taken one by mistake and it
+// still has to be redeemed; they are simply marked in the list.
+const list = cache.vendors.slice().sort(byBusinessName);
+const add = (v, tail) => {
+const o = document.createElement('option');
+o.value = v.vendorId;
+o.textContent = v.businessName + (tail || '');
+sel.appendChild(o);
+};
+list.filter(v => fcAccepts(v.vendorId)).forEach(v => add(v));
+list.filter(v => !fcAccepts(v.vendorId)).forEach(v => add(v, ' \u2014 says they do not take FreshConnect'));
+if (chosen && [...sel.options].some(o => o.value === chosen)) sel.value = chosen;
+}
+async function recordFc() {
+if (!requireMarketRole()) return;
+showMsg('fcMsg', 'ok', 'Recording\u2026');
+await loadFc();
+const date = document.getElementById('fcDate').value;
+const vendorId = document.getElementById('fcVendor').value;
+const amount = Math.round(Number(document.getElementById('fcAmount').value || 0) * 100) / 100;
+const checks = Math.round(Number(document.getElementById('fcCount').value || 0));
+if (!date || !vendorId) { showMsg('fcMsg', 'err', 'Pick a market day and a vendor.'); return; }
+if (!(amount > 0)) { showMsg('fcMsg', 'err', 'Enter the face value of the checks \u2014 that is what the vendor is paid.'); return; }
+fcCache.entries.push({
+id: 'FC' + Date.now(),
+vendorId: vendorId, date: date, amount: amount,
+checks: checks > 0 ? checks : null,
+recordedAt: new Date().toISOString(),
+recordedBy: currentRole
+});
+await saveFc();
+actAs('FreshConnect Checks taken in \u2014 $' + fmtMoney(amount),
+{ kind: 'money', weight: 'notable', vendorId: vendorId });
+document.getElementById('fcAmount').value = '';
+document.getElementById('fcCount').value = '';
+const name = (cache.vendors.find(v => v.vendorId === vendorId) || {}).businessName || 'the vendor';
+showMsg('fcMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amount) +
+' recorded for ' + esc(name) + '. It is on their desk now.');
+renderFcDay();
+renderFcSeason();
+}
+async function undoFc(id) {
+if (!requireMarketRole()) return;
+await loadFc();
+fcCache.entries = fcCache.entries.filter(e => e.id !== id);
+await saveFc();
+renderFcDay(); renderFcSeason();
+showMsg('fcMsg', 'ok', 'Line removed. The vendor\u2019s desk will show the correction.');
+}
+function renderFcDay() {
+const wrap = document.getElementById('fcDayList');
+if (!wrap) return;
+const date = (document.getElementById('fcDate') || {}).value || todayISO();
+const rows = (fcCache ? fcCache.entries : []).filter(e => e.date === date)
+.slice().sort((a, b) => String(b.recordedAt).localeCompare(String(a.recordedAt)));
+wrap.innerHTML = '';
+if (!rows.length) {
+wrap.innerHTML = '<p class="empty-note">Nothing taken in on this day yet.</p>';
+return;
+}
+rows.forEach(e => {
+const row = document.createElement('div');
+row.className = 'attn-item';
+row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div>';
+row.querySelector('.attn-t').textContent = boothVendorName(e.vendorId) || e.vendorId;
+row.querySelector('.attn-m').textContent = '$' + fmtMoney(e.amount) +
+(e.checks ? ' \u00b7 ' + e.checks + ' check' + (e.checks === 1 ? '' : 's') : '');
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'ghost-btn cio-undo';
+b.textContent = 'Undo';
+b.onclick = () => undoFc(e.id);
+row.appendChild(b);
+wrap.appendChild(row);
+});
+setTimeout(() => { fitListToRows(wrap, '.attn-item', 5.4); markListEnds(wrap); }, 0);
+}
+function renderFcSeason() {
+const el = document.getElementById('fcSeason');
+if (!el) return;
+const year = seasonYear();
+const all = (fcCache ? fcCache.entries : []).filter(e => String(e.date).slice(0, 4) === String(year));
+const money = fcMoney(all);
+const who = new Set(all.map(e => e.vendorId)).size;
+el.innerHTML =
+'<div class="tracker-row"><div class="t-title">Taken in, ' + year +
+'</div><div class="t-note"><b>$' + fmtMoney(money) + '</b></div></div>' +
+'<div class="tracker-row"><div class="t-title">Vendors who turned any in</div>' +
+'<div class="t-note">' + who + '</div></div>' +
+(fcChecks(all) ? '<div class="tracker-row"><div class="t-title">Checks counted</div>' +
+'<div class="t-note">' + fcChecks(all) + '</div></div>' : '');
+}
+
 function renderSnapSeason() {
 const el = document.getElementById('snapSeason');
 if (!el) return;
@@ -11603,7 +12146,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'snaptokens', 'mydocs',
+'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'snaptokens', 'fcchecks', 'mydocs',
 // Raising something that needs looking into sits with reaching the office.
 'fComplaint',
 // Your part in the market: the committees you sit on, and how to reach the office.
@@ -11775,8 +12318,7 @@ el.textContent = parts.join(' \u00b7 ');
 return;
 }
 el.textContent = s.outstanding > 0
-? '$' + fmtMoney(s.outstanding) + ' due by ' + formatDisplayDate(s.due) +
-(todayISO() > s.due ? ' \u2014 that date has passed' : '')
+? '$' + fmtMoney(s.outstanding) + ' outstanding'
 : s.outstanding < 0
 ? '$' + fmtMoney(Math.abs(s.outstanding)) + ' in your favour this month'
 : 'This month is settled \u2014 nothing due';
@@ -11984,6 +12526,9 @@ const HELP_SNAP_VENDOR = 67;
 const HELP_PRETEND = 68;
 const HELP_TUNING = 69;
 const HELP_WINTER_PAPER = 70;
+const HELP_FC_MGR = 82;
+const HELP_FC_VENDOR = 83;
+const HELP_PAY_NOW = 84;
 const HELP_TEXTS = [
 {
 "title": "Sharing Someone’s Booth",
@@ -12312,6 +12857,18 @@ const HELP_TEXTS = [
 {
 "title": "Publish to the Website",
 "body": "<p>The market\u2019s Wednesday page tells shoppers the vendor list is updated by 4:15 PM each Wednesday. Today that means somebody retyping names into WordPress while standing in a field. This screen builds the list in the same shape the page already uses \u2014 dated heading, names in two columns, the EBT note \u2014 so what gets published is what shoppers are used to reading.</p><p><b>Publishing is built but not connected, and that is deliberate.</b> Writing to the website needs a WordPress application password. This app is a single public file: anyone can read its source, so a password in it would be a password given away. It belongs in the backend, exactly like the Square token \u2014 the app asks the backend to publish and is told yes or no, and never sees the credential.</p><p>Until that is set up, <b>Copy the list</b> puts it on the clipboard for pasting into the page. That is the same job the office does now, minus the retyping. When the backend endpoint exists, the button lights up and nothing else about this screen changes.</p>"
+},
+{
+"title": "FreshConnect Checks In",
+"body": "<p>A shopper is given FreshConnect Checks by <b>New York State</b>, not by the market. They spend them on food at a stall. The vendor brings them back and the market pays them out. This is the log of that last step \u2014 and it is the only step, which is why this screen has one half where SNAP has two.</p><p>There is nothing to hand out here and nothing to reconcile. The market never issues a FreshConnect Check, so there is no out side and no difference between out and in.</p><p>Record the market day, the vendor and the <b>total face value</b>. The check count is optional and is only there for counting the stack back \u2014 the money is the amount. Unlike a SNAP token, the market does not set what a FreshConnect Check is worth, so there is no rate in Market Rules and no past line that could be re-valued.</p><p><b>Every vendor is listed, not only the ones who take them.</b> A craft vendor might have taken one by mistake, and it still has to be redeemed; they are simply marked in the list.</p><p>The vendor is told on their own desk the moment you submit \u2014 they do not have to ask whether it was counted.</p>"
+},
+{
+"title": "FreshConnect Checks",
+"body": "<p>FreshConnect Checks are issued by <b>New York State</b> to shoppers. You take them like cash for food, bring them back to the office, and the market pays you out at the value printed on the check. The market does not set that value and cannot change it.</p><p>Until you set it, the app guesses: <b>on for Ag vendors, off for everyone else</b>. That guess is a poor one and the market knows it \u2014 a baker or a prepared-food vendor is not an Ag vendor but plainly sells food, and FreshConnect buys food. So if you have been put down as not taking them and that is wrong, it is the guess that is wrong, not you. <b>The switch is yours.</b> The moment you set it either way your choice is recorded, and the guess never overrides it again.</p><p>Saying no dims the rest of this drawer rather than hiding it, so you can see what you would be looking at if you said yes.</p><p>Every time the office takes checks in from you it appears here and on your account. <b>The office\u2019s record is the one that pays out</b> \u2014 if a line is wrong or one is missing, tell them.</p>"
+},
+{
+"title": "Pay Now",
+"body": "<p>Two things, one card. <b>What I owe</b> settles the balance your account already shows. <b>Pay ahead</b> puts money on the account before the fees land \u2014 the way a number of vendors have always preferred to handle a season \u2014 and every booth fee charged afterwards comes off it until it runs out.</p><p><b>Nothing is lost by paying ahead.</b> Anything still on your account at the end of the year stays there, and the office can pay it back out. It is your money sitting with the market, not a fee.</p><p><b>Paying by card costs more than paying by cash, and the market keeps none of the difference.</b> Square charges the market for every card payment. The market passes that charge on at cost rather than absorbing it \u2014 absorbing it would mean the market receiving less than the amount that clears your balance. You see the full card total before you tap anything. Cash or a check costs the amount owed and nothing more.</p><p>Telling the office you paid by cash or check is a <b>report</b>, not a settlement. Your balance moves when the office matches it to the money \u2014 the app says so rather than letting you leave thinking it is closed.</p><p>A monthly statement has <b>no deadline of its own</b>. It is a record of what is owed. Anything on it that does carry a deadline \u2014 the annual fees on 31 December, the work hour invoice on 28 February \u2014 shows that date on the line.</p>"
 }
 ];
 function showHelp(i) {
@@ -12614,6 +13171,8 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'config', k: 'ifm-pavrentals', t: 'Pavilion rented to a third party \u2014 vendors out by 4 PM', v: () => [] },
 { g: 'config', k: 'ifm-gcrolls', t: 'Gift certificate sticker rolls \u2014 which codes exist', v: () => [] },
 { g: 'traffic', k: 'ifm-payments', t: 'Payments confirmed by Square \u2014 empty until credentials are loaded', v: () => [] },
+{ g: 'traffic', k: 'ifm-freshconnect', t: 'FreshConnect Checks \u2014 who takes them, and what they turned in', v: () => ({ accepts: {}, entries: [] }) },
+{ g: 'traffic', k: 'ifm-prepay', t: 'Money a vendor put on account in advance', v: () => [] },
 { g: 'config', k: 'ifm-reset-log', t: 'When the beta reset was pressed, and from which phone', v: () => [] },
 { g: 'traffic', k: 'ifm-wedlist', t: 'Who was at the Wednesday market, week by week', v: () => ({}) },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
@@ -13136,24 +13695,25 @@ function ymLabel(ym) {
 const [y, m] = ym.split('-').map(Number);
 return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
-// Due on the Nth market weekend of the following month. Market weekends are
-// Saturdays, so this counts Saturdays -- a date the vendor is standing in the
-// pavilion anyway, which is friendlier than a number on a calendar.
-function stmtDueDate(ym) {
-const [y, m] = ym.split('-').map(Number);
-const want = Math.max(1, ruleNum('stmtDueWeekend') || 2);
-let d = new Date(y, m, 1);          // first of the FOLLOWING month
-let seen = 0;
-for (let i = 0; i < 40; i++) {
-if (d.getDay() === 6) { seen++; if (seen === want) break; }
-d.setDate(d.getDate() + 1);
-}
-return d.toISOString().slice(0, 10);
-}
-function stmtIsOverdue(ym) {
-const rec = stmtRecord('x', ym);
-return todayISO() > stmtDueDate(ym);
-}
+// A STATEMENT HAS NO DEADLINE OF ITS OWN.
+//
+// It used to. It fell due on the second market Saturday of the following
+// month and carried a $25 late fee, and neither of those was in the Guide --
+// the app invented both when statements were built, and both admitted it in
+// their own source line. An invented deadline with an invented penalty on the
+// end of it is the app making a rule, which is not the app's job.
+//
+// Every line on a statement already carries the Guide's own date. The annual
+// fee, the reserved stall fee and the membership share installment are due 31
+// December. The work hour invoice is due 28 February. A daily selling fee was
+// due at set-up on the day it was incurred. And two dates decide everything:
+// fines outstanding on 15 January, and anything at all outstanding before the
+// first market attended next season.
+//
+// So the statement reports. It does not demand. Those deadlines are shown
+// where they belong, on the lines that carry them, and this file no longer
+// has a function that answers "when is a statement due" -- because nothing
+// does.
 // Everything the vendor owes or is owed for one month, from every source the
 // account screen knows about, plus points and hours for context.
 // A charge is year-end if the Guide dates it to the close of the season
@@ -13224,8 +13784,7 @@ const received = inMonth(a.received).concat(demo.filter(r => r.kind === 'credit'
 const charged = allCharged.filter(r => !isYearEndLine(r));
 const sum = rows => Math.round(rows.reduce((t, r) => t + Number(r.amount || 0), 0) * 100) / 100;
 const rec = stmtRecord(vendorId, ym);
-const lateFee = rec.lateCharged ? Number(rec.lateCharged) : 0;
-const owed = Math.round((sum(charged) + lateFee - sum(received)) * 100) / 100;
+const owed = Math.round((sum(charged) - sum(received)) * 100) / 100;
 return { owed: owed, paid: Number(rec.paid || 0),
 left: Math.round((owed - Number(rec.paid || 0)) * 100) / 100 };
 }
@@ -13270,8 +13829,9 @@ const net = Math.round((s.chargedTotal - s.receivedTotal) * 100) / 100;
 const closes = ymLabel(s.ym);
 return '<div class="stmt-activity">' +
 '<p class="empty-note" style="margin:0 0 10px;"><b>' + esc(closes) + ' is still running.</b> ' +
-'These are the charges and credits so far. Nothing is due yet \u2014 when the month closes this ' +
-'becomes a statement, payable by <b>' + esc(formatDisplayDate(s.due)) + '</b>.</p>' +
+'These are the charges and credits so far. When the month closes this becomes a statement \u2014 ' +
+'a record of what is owed, not a bill with a date of its own. Each line keeps whatever deadline ' +
+'the Guide gives it.</p>' +
 (s.brought ? '<div class="stat-row" style="margin-bottom:10px;"><div class="stat">' +
 '<div class="stat-num">' + (s.brought < 0 ? '\u2212' : '') + '$' + fmtMoney(Math.abs(s.brought)) + '</div>' +
 '<div class="stat-label">' + (s.brought < 0 ? 'in your favour, brought forward' : 'still owed from before') +
@@ -13303,8 +13863,7 @@ const sum = rows => Math.round(rows.reduce((t, r) => t + Number(r.amount || 0), 
 const rec = stmtRecord(vendorId, ym);
 // A late fee is charged only once the office marks the statement late, so
 // nobody is fined by the mere passing of a date while a cheque is in the post.
-const lateFee = rec.lateCharged ? Number(rec.lateCharged) : 0;
-const owed = Math.round((sum(charged) + lateFee - sum(received)) * 100) / 100;
+const owed = Math.round((sum(charged) - sum(received)) * 100) / 100;
 const yearEndTotal = sum(yearEnd);
 const bf = stmtBroughtForward(vendorId, ym);
 // On every statement, so a vendor is never nine months into a year without
@@ -13316,8 +13875,7 @@ vendorId: vendorId, ym: ym, vendor: (cache.vendors || []).find(v => v.vendorId =
 ym: ym,
 charged: charged, received: received,
 chargedTotal: sum(charged), receivedTotal: sum(received),
-lateFee: lateFee, owed: owed,
-due: stmtDueDate(ym),
+owed: owed,
 paid: Number(rec.paid || 0),
 thisMonth: Math.round((owed - Number(rec.paid || 0)) * 100) / 100,
 brought: bf.total, broughtMonths: bf.months,
@@ -13362,19 +13920,19 @@ body += '<div class="stmt-meta">' +
 '</div>' +
 '<div><div class="stmt-lbl">Statement period</div>' +
 '<div class="stmt-val">' + esc(ymLabel(s.ym)) + '</div>' +
-'<div class="stmt-lbl" style="margin-top:8px;">Payment due</div>' +
-'<div class="stmt-val">' + esc(formatDisplayDate(s.due)) + '</div>' +
+'<div class="stmt-lbl" style="margin-top:8px;">Issued</div>' +
+'<div class="stmt-val">' + esc(formatDisplayDate(todayISO())) + '</div>' +
 '</div></div>';
 // The number that matters, in a box, near the top
 body += '<div class="stmt-due' + (s.outstanding > 0 ? '' : ' stmt-due-clear') + '">' +
 '<div class="stmt-due-lbl">' + stateWord + '</div>' +
 '<div class="stmt-due-num">' + money(s.outstanding) + '</div>' +
-(s.outstanding > 0 && ruleNum('stmtLateFee') > 0
-? '<div class="stmt-due-note">A late fee of ' + money(ruleNum('stmtLateFee')) +
-' applies after ' + esc(formatDisplayDate(s.due)) + '</div>' : '') +
+(s.outstanding > 0
+? '<div class="stmt-due-note">This statement carries no deadline of its own. ' +
+'Anything on it that has one is shown with its own date.</div>' : '') +
 '</div>';
 // The lines
-if (rows.length || s.lateFee) {
+if (rows.length) {
 body += '<table class="stmt-table"><thead><tr>' +
 '<th>Date</th><th>Description</th><th class="num">Charges</th><th class="num">Credits</th>' +
 '</tr></thead><tbody>';
@@ -13392,11 +13950,9 @@ body += '<tr><td class="nw">' + esc(stmtShortDate(r.date)) + '</td>' +
 '<td class="num">' + (r.k === 'charge' ? money(r.amount) : '') + '</td>' +
 '<td class="num">' + (r.k === 'credit' ? money(r.amount) : '') + '</td></tr>';
 });
-if (s.lateFee) body += '<tr><td class="nw">' + esc(stmtShortDate(s.due)) + '</td><td>Late fee</td>' +
-'<td class="num">' + money(s.lateFee) + '</td><td class="num"></td></tr>';
 body += '</tbody><tfoot>' +
 '<tr><td colspan="2">Totals</td><td class="num">' +
-money(s.chargedTotal + s.lateFee + Math.max(0, s.brought)) +
+money(s.chargedTotal + Math.max(0, s.brought)) +
 '</td><td class="num">' + money(s.receivedTotal + Math.max(0, -s.brought)) + '</td></tr>' +
 (s.brought ? '<tr><td colspan="3">This month alone</td><td class="num">' +
 money(s.thisMonth) + '</td></tr>' : '');
@@ -13472,12 +14028,9 @@ L.push('IFM statement for ' + ymLabel(s.ym));
 L.push(s.vendor ? s.vendor.businessName : s.vendorId);
 L.push('');
 if (s.outstanding > 0) {
-L.push('AMOUNT DUE: ' + money(s.outstanding));
-L.push('Due by ' + formatDisplayDate(s.due) + ' \u2014 the ' +
-ordinal(ruleNum('stmtDueWeekend')) + ' market Saturday of ' +
-ymLabel(ymOf(s.due)).split(' ')[0] + '.');
-const fee = ruleNum('stmtLateFee');
-if (fee > 0) L.push('A late fee of ' + money(fee) + ' applies after that date.');
+L.push('OUTSTANDING: ' + money(s.outstanding));
+L.push('This statement is a record, not a bill with a date of its own.');
+L.push('Anything on it that carries a deadline is listed with that date.');
 } else if (s.outstanding < 0) {
 L.push('THE MARKET OWES YOU: ' + money(s.outstanding));
 L.push('This will come off what you owe next month, or the office can pay it out.');
@@ -13495,8 +14048,7 @@ if (s.charged.length) {
 L.push('CHARGES');
 s.charged.forEach(r => L.push('  ' + formatDisplayDate(r.date) + '  ' +
 money(r.amount).padStart(9) + '  ' + r.what));
-if (s.lateFee) L.push('  ' + ''.padStart(12) + money(s.lateFee).padStart(9) + '  Late fee');
-L.push('  Total charges: ' + money(s.chargedTotal + s.lateFee));
+L.push('  Total charges: ' + money(s.chargedTotal));
 L.push('');
 }
 if (s.received.length) {
@@ -13569,31 +14121,6 @@ renderStatements();
 showMsg('stmtMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(amt) +
 ' recorded against ' + esc(ymLabel(ym)) + '.');
 }
-// The late fee is applied by a person, never by the clock alone. A cheque in
-// the post, a vendor who rang, an office that was shut -- the date passing is
-// a prompt to look, not a reason to charge.
-async function stmtChargeLate(vendorId, ym) {
-if (!requireManager('stmtMsg')) return;
-const fee = ruleNum('stmtLateFee');
-if (!(fee > 0)) { showMsg('stmtMsg', 'err', 'The Board has set the late fee to zero.'); return; }
-const id = stmtId(vendorId, ym);
-if ((stmtCache[id] || {}).lateCharged) { showMsg('stmtMsg', 'err', 'A late fee is already on this statement.'); return; }
-stmtCache[id] = Object.assign({}, stmtCache[id] || {}, { lateCharged: fee, lateAt: todayISO() });
-actAs('Late fee added to statement \u2014 $' + fmtMoney(fee) + ' for ' + ymLabel(ym),
-{ kind: 'money', weight: 'notable', vendorId: vendorId });
-await saveStatements();
-renderStatements();
-showMsg('stmtMsg', 'ok', 'Late fee of $' + fmtMoney(fee) + ' added. The vendor will see it on this statement.');
-}
-async function stmtUndoLate(vendorId, ym) {
-if (!requireManager('stmtMsg')) return;
-const id = stmtId(vendorId, ym);
-if (!(stmtCache[id] || {}).lateCharged) return;
-delete stmtCache[id].lateCharged; delete stmtCache[id].lateAt;
-actAs('Late fee taken off statement \u2014 ' + ymLabel(ym), { kind: 'money', weight: 'notable', vendorId: vendorId });
-await saveStatements();
-renderStatements();
-}
 function stmtMonthOptions() {
 const out = [];
 const now = new Date();
@@ -13616,20 +14143,15 @@ const sel = document.getElementById('stmtMonth');
 const list = document.getElementById('stmtList');
 if (!sel || !list) return;
 const ym = sel.value || stmtMonthOptions()[0];
-const due = stmtDueDate(ym);
-const overdue = todayISO() > due;
 const note = document.getElementById('stmtDueNote');
 const open = stmtIsOpen(ym);
-if (note) note.innerHTML = (open
+if (note) note.innerHTML = open
 ? '<b>' + esc(ymLabel(ym)) + ' is still running.</b> This is recent activity, not a statement: ' +
-'market days are still being added to it. It becomes a statement when the month closes, payable by <b>' +
-esc(formatDisplayDate(due)) + '</b>. '
-: 'Due <b>' + esc(formatDisplayDate(due)) + '</b> \u2014 the ' +
-esc(ordinal(ruleNum('stmtDueWeekend'))) + ' market Saturday of ' +
-esc(ymLabel(ymOf(due)).split(' ')[0]) + '. ') +
-'Late fee $' + fmtMoney(ruleNum('stmtLateFee')) +
-'. <span class="empty-note">Both are set by the Board in Market Rules.</span>' +
-(!open && overdue ? ' <b style="color:#8A3B2E;">That date has passed.</b>' : '');
+'market days are still being added to it. It becomes a statement when the month closes.'
+: '<b>' + esc(ymLabel(ym)) + ' is closed.</b> A statement is a record of what is owed, not a bill ' +
+'with a deadline of its own \u2014 the Guide sets no monthly due date and no monthly late fee, so ' +
+'neither does this app. <span class="empty-note">Lines that do carry a deadline \u2014 the annual ' +
+'fees on 31 December, the work hour invoice on 28 February \u2014 show it on the line.</span>';
 
 const all = (cache.vendors || []).map(v => statementFor(v.vendorId, ym));
 const active = all.filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
@@ -13658,7 +14180,7 @@ let shown = filt === 'all' ? active
 : filt === 'owing' ? owing
 : filt === 'unsent' ? unsent
 : filt === 'credit' ? credit
-: active.filter(s => s.outstanding > 0 && overdue);
+: owing;
 if (q) shown = shown.filter(s => String(s.vendor && s.vendor.businessName || '').toLowerCase().includes(q));
 shown.sort((a, b) => b.outstanding - a.outstanding);
 
@@ -13666,13 +14188,13 @@ if (!shown.length) {
 list.innerHTML = '<p class="empty-note">Nothing to show for ' + esc(ymLabel(ym)) + ' under that filter.</p>';
 return;
 }
-list.innerHTML = shown.map(s => stmtCardHTML(s, overdue)).join('');
+list.innerHTML = shown.map(s => stmtCardHTML(s)).join('');
 }
-function stmtCardHTML(s, overdue) {
+function stmtCardHTML(s) {
 const rec = stmtRecord(s.vendorId, s.ym);
 const name = esc(s.vendor ? s.vendor.businessName : s.vendorId);
 const state = s.outstanding > 0
-? (overdue ? '<span class="stamp late">Owing \u00b7 past due</span>' : '<span class="stamp in">Owing</span>')
+? '<span class="stamp in">Owing</span>'
 : s.outstanding < 0 ? '<span class="stamp out">Market owes them</span>'
 : '<span class="stamp in">Settled</span>';
 let body = '<div class="card" style="margin-top:10px;"><h2 style="font-size:16px;">' + name + ' ' + state + '</h2>';
@@ -13692,9 +14214,6 @@ body += '<div class="req-row"><div class="req-row-main"><div class="req-name">' 
 '<div class="req-meta">' + esc(formatDisplayDate(r.date)) + ' \u00b7 ' + esc(r.what) + '</div></div></div>';
 });
 }
-if (s.lateFee) body += '<p class="empty-note" style="color:#8A3B2E; margin:6px 2px 0;">Late fee of $' +
-fmtMoney(s.lateFee) + ' added ' + esc(formatDisplayDate(rec.lateAt)) +
-' \u00b7 <button type="button" class="link-btn" onclick="stmtUndoLate(\'' + s.vendorId + '\',\'' + s.ym + '\')">take it off</button></p>';
 if (s.paid) body += '<p class="empty-note" style="margin:6px 2px 0;"><b>$' + fmtMoney(s.paid) + ' paid</b> against this statement' +
 ((rec.payments || []).length ? ' \u00b7 ' + rec.payments.map(p => formatDisplayDate(p.on) + ' $' + fmtMoney(p.amount)).join(', ') : '') + '</p>';
 body += '<p class="empty-note" style="margin:8px 2px 6px;">' +
@@ -13710,14 +14229,14 @@ body += '<a class="ghost-btn" style="display:inline-block;" href="' + stmtMailto
 (email ? 'Open the email' : 'No email on file \u2014 open anyway') + '</a>' +
 '<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy the text</button>';
 }
-if (!open && s.outstanding > 0 && overdue && !s.lateFee)
-body += '<button type="button" class="ghost-btn" onclick="stmtChargeLate(\'' + s.vendorId + '\',\'' + s.ym + '\')">Add the $' +
-fmtMoney(ruleNum('stmtLateFee')) + ' late fee</button>';
 if (s.outstanding > 0) {
 body += '<div class="desk-form" style="margin-top:8px;">' +
 '<label for="stmtPayAmt">Record a payment</label>' +
 '<div class="mr-unit-row"><input type="number" id="stmtPayAmt" step="0.01" min="0.01" placeholder="' + fmtMoney(s.outstanding) + '"><span class="mr-unit">dollars</span></div>' +
 '<select id="stmtPayHow"><option>Card \u00b7 Square</option><option>Cash at the office</option><option>Check</option><option>Not recorded</option></select>' +
+'<p class="empty-note" style="margin:6px 2px 0;">To put money on account for fees <i>not yet charged</i>, ' +
+'use <b>Pay ahead</b> on the vendor\u2019s own account screen \u2014 it lands as a credit and every fee ' +
+'charged afterwards draws it down.</p>' +
 '<button type="button" class="primary-btn" onclick="stmtRecordPayment(\'' + s.vendorId + '\',\'' + s.ym + '\')">Record it</button></div>';
 }
 return body + '</div>';
@@ -13748,12 +14267,12 @@ const ym = document.getElementById('stmtMonth').value;
 const rows = (cache.vendors || []).map(v => statementFor(v.vendorId, ym))
 .filter(s => s.chargedTotal || s.receivedTotal || s.paid)
 .map(s => [s.vendor ? s.vendor.businessName : s.vendorId, s.ym,
-s.chargedTotal, s.lateFee, s.receivedTotal, s.owed, s.paid, s.outstanding,
-s.due, s.sentAt ? new Date(s.sentAt).toISOString().slice(0, 10) : '',
+s.chargedTotal, s.receivedTotal, s.owed, s.paid, s.outstanding,
+s.sentAt ? new Date(s.sentAt).toISOString().slice(0, 10) : '',
 s.settledAt || '', s.points == null ? '' : s.points,
 s.hours ? Number(s.hours.done || 0).toFixed(1) : '']);
 downloadCSV('statements-' + ym + '.csv',
-['Vendor', 'Month', 'Charges', 'Late fee', 'Credits', 'Owed', 'Paid', 'Outstanding',
+['Vendor', 'Month', 'Charges', 'Credits', 'Owed', 'Paid', 'Outstanding',
 'Due', 'Sent', 'Settled', 'Points', 'Hours done'], rows);
 }
 // Move the older tools inside the fold once, at render. Doing it in the DOM
@@ -13780,13 +14299,11 @@ const s = statementFor(who, ym);
 const head = document.getElementById('myStmtCurrentTitle');
 if (head) head.textContent = stmtIsOpen(ym) ? 'Recent Activity' : ymLabel(ym) + ' Statement';
 if (stmtIsOpen(ym)) { host.innerHTML = stmtActivityHTML(s); return; }
-const overdue = s.outstanding > 0 && todayISO() > s.due;
 host.innerHTML =
 '<div class="stmt-doc-wrap">' + stmtDocHTML(s) + '</div>' +
 '<button type="button" class="ghost-btn" onclick="window.print()">Print or save it</button>' +
 (s.outstanding > 0
 ? '<p class="empty-note" style="margin:6px 2px 0;">' +
-(overdue ? '<b style="color:#8A3B2E;">The due date has passed.</b> ' : '') +
 'Paid already? Tell the office under <b>How You Can Pay</b> above, so it can be matched to the money.</p>'
 : '');
 }
@@ -13810,8 +14327,7 @@ const state = s.outstanding > 0
 return '<div class="req-row"><div class="req-row-main">' +
 '<div class="req-name">' + esc(ymLabel(s.ym)) + ' ' + state + '</div>' +
 '<div class="req-meta">' +
-(s.outstanding > 0 ? 'Due ' + esc(formatDisplayDate(s.due)) +
-(todayISO() > s.due ? ' \u2014 that date has passed' : '') + ' \u00b7 ' : '') +
+(s.outstanding > 0 ? '$' + fmtMoney(s.outstanding) + ' outstanding \u00b7 ' : '') +
 esc(s.charged.length + s.received.length) + ' line' + (s.charged.length + s.received.length === 1 ? '' : 's') +
 (s.paid ? ' \u00b7 $' + fmtMoney(s.paid) + ' paid' : '') + '</div>' +
 '<button type="button" class="ghost-btn" style="margin-top:6px;" onclick="showMyStatement(\'' + s.ym + '\')">Read it</button>' +
@@ -14104,6 +14620,35 @@ what: e.tokens + ' SNAP token' + (e.tokens === 1 ? '' : 's') + ' turned in',
 amount: amt });
 });
 
+// Money put on the account in advance. Dated when it was paid, so a January
+// deposit sits in January and every fee charged after it draws it down as
+// the year runs. There is no separate pot: the balance is the answer.
+(prepayCache || [])
+.filter(p => p.vendorId === vendorId && inYear(p.date))
+.forEach(p => {
+const amt = Number(p.amount || 0);
+if (!(amt > 0)) return;
+received.push({ date: p.date,
+what: 'Paid in advance' + (p.note ? ' \u2014 ' + p.note : ''),
+amount: amt });
+});
+
+// FreshConnect Checks taken at the stall. New York State issued them to the
+// shopper; the vendor took them as payment for food and hands them back, so
+// the market owes the vendor their face value and it comes off what they owe.
+// The amount is the fact -- the State printed it on the check -- so unlike
+// SNAP there is no rate to apply.
+(fcCache && fcCache.entries ? fcCache.entries : [])
+.filter(e => e.vendorId === vendorId && inYear(e.date))
+.forEach(e => {
+const amt = Number(e.amount || 0);
+if (!(amt > 0)) return;
+received.push({ date: e.date,
+what: 'FreshConnect Checks turned in' +
+(e.checks ? ' (' + e.checks + ' check' + (e.checks === 1 ? '' : 's') + ')' : ''),
+amount: amt });
+});
+
 // Checks the office recorded at the desk or from the mail. Dated by when
 // they arrived, not by what is written on them.
 (cache.checks || []).filter(c => c.vendorId === vendorId && !c.voided &&
@@ -14204,7 +14749,7 @@ cardLine.innerHTML = squareConnected()
 'not switched on yet. When it is, the card total will include Square\u2019s fee for that transaction, ' +
 'passed on at cost \u2014 cash and checks cost the amount owed and nothing more.';
 }
-if (currentRole === 'vendor' && currentVendorId) await initFeePayScreen();
+if (currentRole === 'vendor' && currentVendorId) { await initFeePayScreen(); renderPayNow(); }
 const pick = document.getElementById('acctPickCard');
 const sel = document.getElementById('acctVendor');
 if (currentRole === 'manager' && pick && sel) {
@@ -14883,6 +15428,8 @@ if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'snaptokens') initSnapVendorScreen();
+if (name === 'fclog') initFcLogScreen();
+if (name === 'fcchecks') initFcVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
 if (name === 'directory') renderDirectory('');
 if (name === 'lottery') { initLotteryScreen(); centreLiveMap('lottoMapWrap'); }
@@ -15074,6 +15621,8 @@ appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
 snaplog:           { title: 'SNAP Tokens In & Out' },
 snaptokens:        { title: 'SNAP Tokens' },
+fclog:             { title: 'FreshConnect Checks In' },
+fcchecks:          { title: 'FreshConnect Checks' },
 yearend:           { title: 'Year-End Money Worksheet' },
 winterpaperwork:   { title: 'Triphammer Paperwork' },
 winterrules:       { title: 'How Winter Differs' },
@@ -15256,6 +15805,7 @@ setDeskRelevance('commAgOnly', isAg,
 'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
 renderSnapDeskSub();
+renderFcDeskSub();
 applyVenueToDesk();
 const cmTitle = document.getElementById('menuMyCommitteesTitle');
 const cmSub = document.getElementById('menuMyCommitteesSub');
@@ -15311,7 +15861,7 @@ note.textContent = 'This desk is filtered specifically for you \u2014 ' +
 note.style.display = '';
 }
 }
-const SCREEN_HELP = {"evacuation": 50, "stallimprove": 49, "dataexport": 46, "calloutpatterns": 45, "pointsmanager": 42, "winterbooths": 28, "standing": 25, "leaves": 24, "whrate": 23, "satlottery": 21, "popupsvendor": 8, "winter": 5, "yearend": 65, "snaptokens": 67, "snaplog": 66, "pretend": 68, "tuning": 69, "winterpaperwork": 70, "account": 64};
+const SCREEN_HELP = {"evacuation": 50, "stallimprove": 49, "dataexport": 46, "calloutpatterns": 45, "pointsmanager": 42, "winterbooths": 28, "standing": 25, "leaves": 24, "whrate": 23, "satlottery": 21, "popupsvendor": 8, "winter": 5, "yearend": 65, "snaptokens": 67, "snaplog": 66, "fcchecks": 83, "fclog": 82, "pretend": 68, "tuning": 69, "winterpaperwork": 70, "account": 64};
 function renderScreenHead(name) {
 const slot = document.getElementById('head-' + name);
 if (!slot) return;
@@ -16475,15 +17025,19 @@ await resSave(currentVendorId, resKind, r);
 renderSeasonRes();
 }
 async function resPayAhead() {
-const fee = resFeeFor(resKind);
+const look = resFeeOutlook(currentVendorId, resKind);
+const fee = look.exact;
 if (!(fee > 0)) {
-showMsg('resMsg', 'err', 'The Board has not set this fee yet, so there is nothing to pay in advance. ' +
+showMsg('resMsg', 'err', look.min > 0
+? 'The booths you have ranked are not all in one price band, so there is no single figure to ' +
+'settle yet. Once the round gives you a booth the exact fee is known and can be paid then.'
+: 'The Board has not set this fee yet, so there is nothing to pay in advance. ' +
 'Your choices are saved either way.');
 return;
 }
 const r = resFor(currentVendorId, resKind);
 if (r.paid >= fee) { showMsg('resMsg', 'ok', 'Already settled for this round.'); return; }
-if (!r.picks.length) {
+if (!look.renewing && !r.picks.length) {
 showMsg('resMsg', 'err', 'Choose at least one booth first \u2014 paying for a round you have not ' +
 'chosen in would leave the office holding money against nothing.');
 return;
@@ -16503,7 +17057,7 @@ const host = document.getElementById('resBody');
 if (!host || !currentVendorId) return;
 const kind = resKind;
 const elig = resVendorEligible(currentVendorId, kind);
-const fee = resFeeFor(kind);
+const look = resFeeOutlook(currentVendorId, kind);
 const r = resFor(currentVendorId, kind);
 const avail = resAvailableBooths(currentVendorId, kind);
 const picked = r.picks.filter(n => true);
@@ -16562,16 +17116,28 @@ out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i
 
 out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>' +
 'Pay in Advance</h2>' +
-(fee > 0
-? '<p class="empty-note" style="margin-top:0;">The reserved stall fee for this round is <b>$' + fmtMoney(fee) +
-'</b>. Settling it now means nothing has to be collected on the day.</p>' +
-(r.paid >= fee
+(look.exact > 0
+? '<p class="empty-note" style="margin-top:0;">' +
+(look.renewing
+? 'You hold booth ' + esc(look.booth) + ', so your fee is settled: <b>$' + fmtMoney(look.exact) +
+'</b> for the season.'
+: 'The reserved stall fee for this round is <b>$' + fmtMoney(look.exact) + '</b>.') +
+' Settling it now means nothing has to be collected on the day.</p>' +
+(r.paid >= look.exact
 ? '<p class="empty-note"><b>Paid.</b> $' + fmtMoney(r.paid) + ' recorded on ' +
 esc(formatDisplayDate(r.paidOn)) + '.</p>'
-: '<button type="button" class="primary-btn" onclick="resPayAhead()">Pay the $' + fmtMoney(fee) + ' now</button>')
-: '<p class="empty-note" style="margin-top:0;"><b>The Board has not set this fee yet.</b> The Guide names a ' +
-'Reserved Stall Fee but does not state the amount, so there is nothing to pay in advance until the ' +
-'Board enters it in Market Rules. Your choices above are saved regardless.</p>') +
+: '<button type="button" class="primary-btn" onclick="resPayAhead()">Pay the $' +
+fmtMoney(look.exact) + ' now</button>')
+: look.min > 0
+? '<p class="empty-note" style="margin-top:0;"><b>Between $' + fmtMoney(look.min) + ' and $' +
+fmtMoney(look.max) + ', depending which booth you get.</b> The Guide prices a Saturday ' +
+'reservation by booth, not by round \u2014 ' + esc(look.bands.join(', ')) +
+' among the ones you have ranked. There is no single figure to settle until the round gives ' +
+'you a booth, and the office will not take money against a fee nobody can name yet. ' +
+'Your list above is saved.</p>'
+: '<p class="empty-note" style="margin-top:0;"><b>Nothing to pay in advance yet.</b> ' +
+'Rank a booth above and the fee for it appears here. If it stays blank after that, the Board ' +
+'has not entered the figure in Market Rules.</p>') +
 '<div class="status-msg" id="resMsg"></div></div>';
 
 host.innerHTML = out;
@@ -16581,6 +17147,10 @@ function resBoothNote(num) {
 const b = (cache.booths || []).find(x => x.num === num);
 if (!b) return '';
 const bits = [];
+// The fee first: it is the thing that decides between two otherwise similar
+// booths, and burying it under 'wood floor' would be a strange order.
+const f = resFeeForBooth(num);
+if (f && f.min > 0) bits.push(resMoneyRange(f) + ' \u00b7 ' + f.label.toLowerCase());
 if (b.u) bits.push('upgraded electric');
 if (b.w) bits.push('water nearby');
 if (b.np) bits.push('no parking');
@@ -16680,7 +17250,84 @@ return resCache;
 async function saveReservations() { await storageSet(RES_KEY, resCache || {}); }
 function resRoundOf(kind) { return kind === 'sunday' ? 'sunday' : 'saturday'; }
 function resSeasonKey(kind) { return seasonYear() + ':' + resRoundOf(kind); }
-function resFeeFor(kind) { return ruleNum(kind === 'sunday' ? 'resSunFee' : 'resSatFee') || 0; }
+// Which of the Guide's three Saturday bands a booth sits in.
+//
+// Booths 1 and 33 are in two bands at once in the Guide -- swept up in a
+// "Most Stalls" range AND named individually in the Agricultural Corner list.
+// The named list wins: naming a booth is more specific than including it in a
+// span, and the app's booth records have marked exactly those seven as
+// corner: true all along. Logged as BF49.
+function resBandOf(boothNum) {
+const b = (cache.booths || []).find(x => x.num === String(boothNum));
+if (!b) return null;
+if (b.corner) return 'corner';
+if (b.section === 'Circle End Curve') return 'circle';
+return 'most';
+}
+// A band's price. `exact` is a number only where the Guide states one; where
+// the Guide gives a band, exact is null and min/max carry the range. Nothing
+// here invents a figure inside a band the Guide left open.
+function resBandFee(band) {
+if (band === 'most') {
+const v = ruleNum('resSatMost') || 0;
+return { band: 'most', label: 'Most stalls', exact: v, min: v, max: v };
+}
+if (band === 'circle') {
+const lo = ruleNum('resSatCircleMin') || 0, hi = ruleNum('resSatCircleMax') || 0;
+return { band: 'circle', label: 'Circle end', exact: (lo === hi ? lo : null), min: lo, max: hi };
+}
+if (band === 'corner') {
+const lo = ruleNum('resSatCornerMin') || 0, hi = ruleNum('resSatCornerMax') || 0;
+return { band: 'corner', label: 'Agricultural corner', exact: (lo === hi ? lo : null), min: lo, max: hi };
+}
+return null;
+}
+function resFeeForBooth(boothNum) {
+const band = resBandOf(boothNum);
+return band ? resBandFee(band) : null;
+}
+function resMoneyRange(f) {
+if (!f) return '';
+if (f.exact != null) return '$' + fmtMoney(f.exact);
+return '$' + fmtMoney(f.min) + '\u2013$' + fmtMoney(f.max);
+}
+// The fee for a round. Sunday is one figure for every booth, so it is
+// knowable in advance. Saturday is not: it depends which booth the round
+// gives you, and a vendor ranking eight booths across three bands genuinely
+// does not know yet. That is a fact about the Guide, not a gap in the app,
+// and the screen says so instead of quoting a number that might be wrong by
+// $370.
+function resFeeFor(kind, boothNum) {
+if (kind === 'sunday') return ruleNum('resSunFee') || 0;
+if (boothNum) {
+const f = resFeeForBooth(boothNum);
+return f && f.exact != null ? f.exact : 0;
+}
+return 0;
+}
+// What this vendor is looking at, given the booths they have ranked: one
+// figure if every pick lands in the same band and that band states an amount,
+// otherwise the spread across the picks.
+function resFeeOutlook(vendorId, kind) {
+if (kind === 'sunday') {
+const v = ruleNum('resSunFee') || 0;
+return { known: v > 0, exact: v, min: v, max: v, bands: ['Sunday-only'] };
+}
+const r = resFor(vendorId, kind);
+const picks = (r && r.picks) || [];
+const held = (cache.booths || []).find(b => b.reservedBy === vendorId);
+// A renewing holder keeps their own booth, so their band is settled.
+const nums = held ? [held.num] : picks;
+if (!nums.length) return { known: false, exact: null, min: 0, max: 0, bands: [] };
+const fees = nums.map(resFeeForBooth).filter(Boolean);
+if (!fees.length) return { known: false, exact: null, min: 0, max: 0, bands: [] };
+const min = Math.min.apply(null, fees.map(f => f.min));
+const max = Math.max.apply(null, fees.map(f => f.max));
+const bands = [];
+fees.forEach(f => { if (bands.indexOf(f.label) < 0) bands.push(f.label); });
+return { known: min > 0, exact: (min === max ? min : null), min: min, max: max,
+bands: bands, renewing: !!held, booth: held ? held.num : null };
+}
 function resVendorEligible(vendorId, kind) {
 const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
 if (!v) return { ok: false, why: 'No vendor record.' };
@@ -18784,7 +19431,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-3';
+const BUILD_ID = '17-6';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21373,6 +22020,54 @@ return ATTENDANCE_2025[vendorId];
 }
 return derived;
 }
+// ---- membership equity ---------------------------------------------------
+// What the market may owe a member who leaves.
+//
+// The Guide: the share costs $300, payable in up to three annual $100
+// installments, and "the completed certificate has an equity value of $100."
+// It also says a certificate "is not complete and valid for equity purposes
+// until the full $300 has been paid" -- and then says nothing at all about
+// what happens to a part-paid share when its holder leaves. That silence is
+// real and this function does not paper over it: a part-paid share is
+// reported as UNSETTLED rather than as zero, because zero would be a decision
+// the Board has not made. Logged as BF48.
+//
+// The only evidence the app holds is the certificate log on Vendor Records --
+// dated amounts, entered by the office. It is not the market's books and it
+// does not pretend to be, which is why every figure here says where it came
+// from and the screen says what it cannot see.
+function memberSharePaid(vendorId) {
+return Math.round(opRecords('certificate')
+.filter(r => r.subject === vendorId)
+.reduce((s, r) => s + Number((r.values || {}).amount || 0), 0) * 100) / 100;
+}
+function memberEquity(vendorId) {
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+const full = /full/i.test(String((v && v.membership) || '')) ||
+String((v && v.category) || '').endsWith('Full');
+const total = ruleNum('certTotal') || 300;
+const equity = ruleNum('certEquity') || 100;
+const paid = memberSharePaid(vendorId);
+if (!full) return { applies: false, paid: paid, total: total, equity: 0, state: 'not a Full Member' };
+if (paid >= total) return { applies: true, paid: paid, total: total, equity: equity, state: 'complete' };
+if (paid > 0) return { applies: true, paid: paid, total: total, equity: 0, state: 'part-paid' };
+return { applies: true, paid: 0, total: total, equity: 0, state: 'nothing recorded' };
+}
+function equityLine(vendorId) {
+const e = memberEquity(vendorId);
+if (!e.applies) return '';
+if (e.state === 'complete')
+return '<b>$' + fmtMoney(e.equity) + ' of equity is owed</b> if they ask for it in writing. ' +
+'Their share is recorded as complete \u2014 $' + fmtMoney(e.paid) + ' of $' + fmtMoney(e.total) + '.';
+if (e.state === 'part-paid')
+return '<b>Their share is part-paid</b> \u2014 $' + fmtMoney(e.paid) + ' of $' + fmtMoney(e.total) +
+' recorded. The Guide says a share carries no equity until the full amount is paid, and says ' +
+'nothing about what happens to the money already in. <b>Ask the Board before anything is ' +
+'refunded or written off</b> (BF48).';
+return 'No share payments are recorded against them. If they paid the office and it never ' +
+'reached the certificate log, the money is real and this figure is not.';
+}
+
 function quitWatchDismissed(vendorId, year) {
 const d = (cache.quitWatch || {})[vendorId];
 return !!(d && Number(d.year) === Number(year));
@@ -21417,14 +22112,78 @@ if (!done.length) {
 dwrap.innerHTML = '<p class="empty-note" style="margin:0;">Nothing checked off for ' + year + ' yet.</p>';
 }
 done.forEach(r => dwrap.appendChild(quitWatchRow(r, year)));
+renderEquityToSettle();
 }
+// Everyone the app has reason to think has stopped trading, and what their
+// share is worth. Three routes lead out of the market and the quit-watch only
+// sees one of them: the vendor who simply stops coming. A recorded Leave and
+// a renewal that never arrived are the other two, and a member who left that
+// way is owed exactly the same money.
+function equityToSettleList() {
+const year = new Date().getFullYear();
+const out = [];
+const seen = new Set();
+const add = (vendorId, why) => {
+if (seen.has(vendorId)) return;
+const eq = memberEquity(vendorId);
+if (!eq.applies) return;                    // not a Full Member: no share
+if (eq.state === 'nothing recorded') return; // nothing to settle and nothing known
+seen.add(vendorId);
+out.push({ vendorId: vendorId, why: why, eq: eq });
+};
+quitWatchList().forEach(r => add(r.v.vendorId, 'Has not attended since ' + (year - 2)));
+(cache.leaves || []).forEach(l => {
+if (Number(l.year) < year - 1) return;
+add(l.vendorId, 'Leave of Absence recorded for ' + l.year);
+});
+return out.sort((a, b) => b.eq.paid - a.eq.paid);
+}
+function renderEquityToSettle() {
+const wrap = document.getElementById('eqList');
+const note = document.getElementById('eqNote');
+if (!wrap) return;
+const rows = equityToSettleList();
+if (note) note.innerHTML = rows.length
+? '<b>' + rows.length + ' member' + (rows.length === 1 ? '' : 's') +
+' with a share on record</b> who may have left. Equity is refundable ' +
+'<b>on written request</b>, so nothing here is owed until they ask \u2014 but the market ' +
+'should know the figure before they do.'
+: 'Nobody with a share on record looks to have left. This fills in from the quit-watch above ' +
+'and from recorded Leaves.';
+wrap.innerHTML = '';
+if (!rows.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;">Nothing to settle.</p>';
+return;
+}
+rows.forEach(r => {
+const el = document.createElement('div');
+el.className = 'req-row';
+el.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + esc(boothVendorName(r.vendorId) || r.vendorId) +
+(r.eq.state === 'complete'
+? ' <span class="stamp late">$' + fmtMoney(r.eq.equity) + ' equity</span>'
+: ' <span class="stamp late">share part-paid</span>') + '</div>' +
+'<div class="req-meta">' + esc(r.why) + '</div>' +
+'<div class="req-meta" style="margin-top:4px;">' + equityLine(r.vendorId) + '</div>' +
+'</div>';
+wrap.appendChild(el);
+});
+}
+
 function quitWatchRow(r, year) {
 const row = document.createElement('div');
 row.className = 'lotto-row';
+const eq = memberEquity(r.v.vendorId);
 row.innerHTML =
-'<div class="lotto-name"><div class="lotto-biz">' + esc(r.v.businessName) + '</div>' +
+'<div class="lotto-name"><div class="lotto-biz">' + esc(r.v.businessName) +
+(eq.applies && eq.state === 'complete'
+? ' <span class="stamp late">$' + fmtMoney(eq.equity) + ' equity</span>'
+: eq.applies && eq.state === 'part-paid'
+? ' <span class="stamp late">share part-paid</span>' : '') + '</div>' +
 '<div class="lotto-pts">' + r.years + ' member year' + (r.years === 1 ? '' : 's') +
-' \u2022 ' + r.points + ' pts \u2022 last attended before ' + (year - 1) + '</div></div>';
+' \u2022 ' + r.points + ' pts \u2022 last attended before ' + (year - 1) + '</div>' +
+(eq.applies ? '<div class="lotto-pts" style="margin-top:4px;">' + equityLine(r.v.vendorId) + '</div>' : '') +
+'</div>';
 const btn = (text, fn) => {
 const b = document.createElement('button');
 b.type = 'button';
@@ -26224,7 +26983,7 @@ const moneyLine = stmtIsOpen(ym)
 ? (net > 0 ? '<b>$' + fmtMoney(net) + '</b> charged so far this month'
 : net < 0 ? '<b>$' + fmtMoney(-net) + '</b> in your favour so far this month'
 : 'Nothing charged yet this month')
-: (s.outstanding > 0 ? '<b>$' + fmtMoney(s.outstanding) + '</b> due by ' + esc(formatDisplayDate(s.due))
+: (s.outstanding > 0 ? '<b>$' + fmtMoney(s.outstanding) + '</b> outstanding'
 : s.outstanding < 0 ? '<b>$' + fmtMoney(-s.outstanding) + '</b> in your favour'
 : 'Settled \u2014 nothing due');
 const carried = s.brought > 0
@@ -26523,6 +27282,25 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF50', kind: 'question', cat: 'Board', src: 'Raised while removing the invented deadline from monthly statements',
+t: 'Should an unpaid daily selling fee be treated as an exception on the day, rather than a line on next month\u2019s statement?',
+d: 'The Guide is unambiguous about when a daily selling fee is paid: to the staff member on duty each selling day, before the market opens at Steamboat Landing, and collected on site during market at Wednesday and Winter. On that reading a booth fee outstanding on Monday is not a receivable at all \u2014 it is a vendor who sold without paying, which is an anomaly, not ordinary billing. ' +
+'WHAT THE APP DOES NOW, DELIBERATELY UNCHANGED: unpaid daily fees accumulate quietly and appear on the month\u2019s statement alongside everything else. Removing the statement\u2019s invented due date and late fee has made the document itself compliant \u2014 it now reports rather than demands \u2014 but it has not changed this. The statement was never the violation; it is the evidence of one, or the evidence that the office runs tabs, which may well be what actually happens. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: whether the office does in practice run tabs, and if so whether the Guide should say so. If it does not, the app should surface an unpaid daily fee the same day as an exception rather than letting it look like routine billing. That change is worth making either way, and it matters more than the deadline that was just removed.' },
+{ id: 'BF49', kind: 'question', cat: 'Board', src: 'Found while seeding the reserved stall fees from the Guide\u2019s own table',
+t: 'Booths 1 and 33 are in two price bands at once, and two bands are ranges with no rule for placing a booth inside them',
+d: 'Three separate things, all in the fee table on page 5 of the Guide. ' +
+'FIRST: booth 1 is inside \u201cMost Stalls (Booths 1 - 12 ...)\u201d at $275 and is also named in \u201cAgricultural Corner Stalls (Booths 1, 13, 14, 33, 44, 59, 88)\u201d at $370\u2013$485. Booth 33 is inside \u201c15 - 43\u201d and also named in the corner list. Those are differences of up to $210 a season resting on a typo. ' +
+'SECOND: Circle End is priced $115\u2013$160 and Agricultural Corner $370\u2013$485, and the Guide never says what places a booth within its band \u2014 presumably size or frontage, but it does not say, so no figure can be derived. ' +
+'THIRD: only Most Stalls ($275) and Sunday-only ($100) state an amount, so those two are the only bands the app can bill today. ' +
+'WHAT THE APP DOES MEANWHILE: booths 1 and 33 are treated as corner, because naming a booth is more specific than sweeping it into a range and the booth records have carried corner: true for exactly those seven since long before this. The two range bands are shown as ranges and refuse to be paid in advance; a vendor sees \u201cbetween $115 and $485 depending which booth you get\u201d rather than a number that could be wrong by $370. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: which band booths 1 and 33 belong to, and either the per-booth figures inside the two ranges or the rule that produces them.' },
+{ id: 'BF48', kind: 'question', cat: 'Board', src: 'Found while adding the equity flag to Vendor Standing',
+t: 'What happens to a part-paid membership share when its holder leaves?',
+d: 'The Guide is clear at both ends and silent in the middle. A completed $300 share carries $100 of equity, refundable on written request when a member leaves. A share is \u201cnot complete and valid for equity purposes until the full $300 has been paid.\u201d ' +
+'But a member who paid one or two $100 installments and then left has money with the market that is neither equity nor, on any reading of the Guide, the market\u2019s to keep. Nothing says whether it is refunded, forfeited, or held against a return. ' +
+'WHAT THE APP DOES MEANWHILE: Vendor Standing reports a part-paid share as unsettled rather than as zero, because zero would be a decision the Board has not made. It flags the figure and refuses to resolve it. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: refunded in full, forfeited, or held \u2014 and if held, for how long. The answer also settles what happens to a returning member, who under the Guide must buy a new share at the full amount.' },
 { id: 'BF47', kind: 'question', cat: 'Board', src: 'Raised by the market administrator while building gift certificate sales',
 t: 'Should the market charge $1 to issue a gift certificate?',
 d: 'Raised 28 Aug 2026. A gift certificate is not a sale: the market takes money at the window and hands the same money to a vendor later, keeping nothing. It does cost something to run \u2014 the printed roll of coded stickers, the card charge when somebody pays by card, and the office time to sell one and settle it. ' +
@@ -26975,18 +27753,21 @@ const RULE_DEFS = [
 { g: 'Membership', id: 'agShare', l: 'Least share that must be agriculture', u: '%', d: 60, src: 'Guide, 60/40 Membership Rule' },
 { g: 'Membership', id: 'certTotal', l: 'Membership share (Certificate of Membership), in full', u: '$', d: 300, src: 'Guide, Certificate of Membership' },
 { g: 'Membership', id: 'certInstal', l: 'Each annual installment', u: '$', d: 100, src: 'Guide, Certificate of Membership' },
+{ g: 'Membership', id: 'certEquity', l: 'Equity a completed membership share carries', u: '$', d: 100, src: 'Guide, Certificate of Membership \u2014 refundable on written request when a member leaves' },
 { g: 'Points', id: 'ptsYear', l: 'Points for each year at the market', u: 'pts', d: 5, src: 'Guide, Vendor Point System' },
 { g: 'Points', id: 'ptsDay', l: 'Points for each market day attended', u: 'pts', d: 1, src: 'Guide, Vendor Point System' },
 { g: 'Clocks and warnings', id: 'expiryWarn', l: 'Warn this many days before a document expires', u: 'days', d: 30, src: 'App convention \u2014 the Guide promises reminders but sets no number' },
 { g: 'Clocks and warnings', id: 'planDays', l: 'Days to submit a correction plan after notice', u: 'days', d: 60, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'safetyYears', l: 'Years between booth safety updates', u: 'years', d: 2, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'lookbackYears', l: 'Years before an unsold juried product may be reclaimed', u: 'years', d: 3, src: 'Food Committee Guidelines' },
-{ g: 'Reservations', id: 'resSatFee', l: 'Reserved Saturday stall fee, for the season', u: '$', d: 0, src: 'Vendor Guide names the Reserved Stall Fee but does not state the amount \u2014 the Board sets it' },
-{ g: 'Reservations', id: 'resSunFee', l: 'Reserved Sunday-only stall fee, for the season', u: '$', d: 0, src: 'Vendor Guide names the Reserved Stall Fee but does not state the amount \u2014 the Board sets it' },
+{ g: 'Reservations', id: 'resSatMost', l: 'Reserved Saturday stall \u2014 most stalls', u: '$', d: 275, src: 'Guide p.5, 2026 Annual Fees \u2014 booths 1\u201312, 15\u201343, 45\u201358, 60\u201368, 79\u201387' },
+{ g: 'Reservations', id: 'resSatCircleMin', l: 'Reserved Saturday stall \u2014 circle end, bottom of the band', u: '$', d: 115, src: 'Guide p.5 \u2014 booths 69\u201378 are priced $115\u2013$160; the Guide does not say what places a booth within the band' },
+{ g: 'Reservations', id: 'resSatCircleMax', l: 'Reserved Saturday stall \u2014 circle end, top of the band', u: '$', d: 160, src: 'Guide p.5 \u2014 booths 69\u201378' },
+{ g: 'Reservations', id: 'resSatCornerMin', l: 'Reserved Saturday stall \u2014 agricultural corner, bottom of the band', u: '$', d: 370, src: 'Guide p.5 \u2014 booths 1, 13, 14, 33, 44, 59, 88 are priced $370\u2013$485; the Guide does not say what places a booth within the band' },
+{ g: 'Reservations', id: 'resSatCornerMax', l: 'Reserved Saturday stall \u2014 agricultural corner, top of the band', u: '$', d: 485, src: 'Guide p.5 \u2014 booths 1, 13, 14, 33, 44, 59, 88' },
+{ g: 'Reservations', id: 'resSunFee', l: 'Reserved Sunday-only stall, for the season', u: '$', d: 100, src: 'Guide p.6 \u2014 set at the Seasonal Sunday Stall Auction; good only through the end of the year' },
 { g: 'Card payments', id: 'sqPct', l: 'Square\u2019s percentage on a card payment', u: '%', d: 2.6, src: 'Square\u2019s published in-person rate \u2014 confirm against the market\u2019s own contract' },
 { g: 'Card payments', id: 'sqFixed', l: 'Square\u2019s fixed charge per card payment', u: '\u00a2', d: 15, src: 'Square\u2019s published in-person rate \u2014 confirm against the market\u2019s own contract' },
-{ g: 'Monthly statements', id: 'stmtDueWeekend', l: 'Statements due by this market weekend of the following month', u: 'weekOfMonth', d: 2, src: 'BF45 \u2014 no rule existed; set when statements were built' },
-{ g: 'Monthly statements', id: 'stmtLateFee', l: 'Late fee when a statement is not settled by the due date', u: '$', d: 25, src: 'BF45 \u2014 no rule existed; set when statements were built' },
 { g: 'Monthly statements', id: 'stmtCarryUnder', l: 'Balances under this roll to next month instead of being chased', u: '$', d: 20, src: 'Common co-op practice \u2014 not in the Guide' },
 { g: 'Board meetings', id: 'boardWeek', l: 'Which week of the month the Board meets', u: 'weekOfMonth', d: 2, src: 'Guide, Board of Directors' },
 { g: 'Board meetings', id: 'boardDay', l: 'The day of the week the Board meets', u: 'weekday', d: 3, src: 'Guide, Board of Directors' },
@@ -28264,6 +29045,7 @@ tiles: [
 { s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
 { s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a certificate to sell, scan it again when it comes back' },
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
+{ s: 'fclog', i: 'i-gem', t: 'FreshConnect Checks In', d: 'Checks turned in by vendors \u2014 New York State issues them, so the market only takes them back' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
 ] },
