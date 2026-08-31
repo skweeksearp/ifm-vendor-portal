@@ -4173,6 +4173,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">One stray &lt;/div&gt; can wreck half the app silently</div><div class="comm-desc">Every screen must sit inside <code>&lt;main&gt;</code>, which carries the page&rsquo;s side padding. A single extra closing tag ends <code>&lt;main&gt;</code> early and every screen defined <em>after</em> it renders flush to the edge of the phone &mdash; while everything before it looks perfect, so the app appears fine on the desk you happen to be testing. Build 16-86 did exactly this when a wrapper was removed by scanning for its matching tag, and it broke the whole manager and president desk while the vendor desk was untouched. Never delete a wrapper by counting tags in a script; and run <code>t27-structure.js</code>, which checks div balance across the file and that no screen has escaped <code>&lt;main&gt;</code>.</div></div>
 <div class="comm-item"><div class="comm-title">Nothing may run off the side of the phone</div><div class="comm-desc">Cards, rows and text carry <code>max-width:100%</code> and <code>overflow-wrap:anywhere</code>; a flex text column carries a floor (<code>min-width: min(100%, 14rem)</code>) so a sibling input cannot squeeze it to one letter a line. Use <code>overflow-wrap: break-word</code>, never <code>anywhere</code>, on anything holding a title: <code>anywhere</code> lets the browser count a single character as an element&rsquo;s minimum width, so a flex row squeezed &ldquo;My Account&rdquo; into &ldquo;My Accou / nt&rdquo;. <code>anywhere</code> is reserved for the few places a single unbroken string can genuinely exceed the phone &mdash; a certificate code, a run-together vendor name in a report row. Test with <code>t24-overflow.js</code>, which walks every screen in every role at 390px and 320px and reports anything past the edge, and with <code>t25-titles.js</code>, which checks no drawer title is narrower than its own longest word. It found 98 at first pass. The kiosk booth map is excluded on purpose: it is wider than the phone by design and is dragged, not read.</div></div>
 <div class="comm-item"><div class="comm-title">One way to choose a vendor</div><div class="comm-desc">Any <code>&lt;select&gt;</code> holding the vendor list is fitted automatically with a search box and a list of tappable matches; the dropdown itself is hidden but stays in the page holding the value, so anything reading <code>sel.value</code> or listening for <code>change</code> keeps working. A tool needs to do nothing to get this. Options that are not vendors &mdash; &ldquo;choose&rdquo;, &ldquo;Nobody&rdquo; &mdash; are kept and offered as their own rows, since those are real choices. Never build a second search box beside a vendor list by hand.</div></div>
+<div class="comm-item"><div class="comm-title">A screen opens at the top of itself</div><div class="comm-desc">Changing screen resets the scroll, and so does entering a desk &mdash; otherwise a desk reached from halfway down a long tool opens halfway down. Drawers are deliberately exempt: <code>toggleToolFold</code> anchors the scroll to the drawer being opened so it does not jump under the finger. If a new container ever scrolls instead of the window, add it to <code>scrollAppToTop</code>.</div></div>
 <div class="comm-item"><div class="comm-title">One way back</div><div class="comm-desc">Every control that goes back a step wears the pointing hand: the crumb, the role picker, and any button inside a screen. Build one with <code>makeBackButton(label, onclick)</code>, or mark it <code>class="back-link" data-backhand="1"</code> and the hand is drawn on screen open. Test with <code>t26-backhand.js</code>. Three controls deliberately do NOT wear it, because the hand means <em>go back</em> and they are actions: <b>Close the selection</b> ends a Booth Selection, <b>Put everything back to the Guide</b> resets the rules, and <b>&lsaquo; Prev</b> steps a calendar to the previous month. A left chevron paired with Next is a stepper, not a way back. A back button without the hand makes "back" look like two different things depending where the person is standing.</div></div>
 <div class="comm-item"><div class="comm-title">Crumbs and desk homes</div><div class="comm-desc">A moved tool must crumb back to its new desk, and nothing should still say where it used to live.</div></div>
 <div class="comm-item"><div class="comm-title">Cross-references in other tools&rsquo; text</div><div class="comm-desc">Summaries, alerts, tile descriptions and Records Needed entries that name the changed thing by its old name.</div></div>
@@ -10115,6 +10116,7 @@ el.value = '';
 // is not a desk hand-over and must not wipe what somebody is in the middle of.
 let deskHandoverQuiet = false;
 function setRoleHeader(role) {
+scrollAppToTop();
 if (!deskHandoverQuiet) clearDeskState();
 ['vendor', 'manager', 'president', 'staff', 'volunteer', 'developer', 'kiosk'].forEach(r =>
 document.body.classList.toggle('role-' + r, role === r));
@@ -14929,6 +14931,7 @@ renderTaskManager();
 }
 let ifmCurrentScreen = 'dashboard';
 function showScreen(name) {
+const changed = ifmCurrentScreen !== name;
 ifmCurrentScreen = name;
 armBackGesture();
 const sec = document.getElementById('screen-' + name);
@@ -14940,6 +14943,19 @@ renderScreenHead(name);
 applyVendorVisibility();
 refreshAllDateChips();
 runScreenInit(name);
+if (changed) scrollAppToTop();
+}
+// The app scrolls the window on a phone and a panel on a wall display, so
+// both are reset rather than guessing which one is in use.
+function scrollAppToTop() {
+try { window.scrollTo(0, 0); } catch (e) {}
+['app', 'main'].forEach(id => {
+const el = document.getElementById(id);
+if (el && el.scrollTop) el.scrollTop = 0;
+});
+const m = document.querySelector('#main > main');
+if (m && m.scrollTop) m.scrollTop = 0;
+if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
 }
 const SCREEN_META = {
 dashboard:         { title: () => vendorClassLine(currentVendor()), home: true },
@@ -18312,7 +18328,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-112';
+const BUILD_ID = '16-113';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
