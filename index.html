@@ -2382,7 +2382,7 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 
 <div class="dash-fold" data-fold="homescreen">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'homescreen')">
-<span class="fold-title">Put It On Your Phone</span>
+<span class="fold-title">Put IFM App on Your Device</span>
 <span class="fold-sub">Add the market to your home screen &mdash; takes about twenty seconds</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
@@ -2894,6 +2894,14 @@ Recording it here puts that notice in front of every vendor when they open the a
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Before Handing the App to the Market</h2>
 <p class="empty-note" style="margin-top:0;">Press <b>Wipe</b>. The Beta Reset tool clears these too, but Wipe is the one that says what it does. Once wiped, the statement tool shows only what the market actually recorded.</p>
+</div>
+</section>
+<section id="screen-ptssignoff" class="screen">
+<div class="screen-head" id="head-ptssignoff"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Points decide the order vendors are called in for a booth, so a point added or taken away changes who gets which stall. The office enters them &mdash; it knows who worked a PopUp &mdash; and they wait here. <b>Until you sign one off it counts for nothing.</b></p>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>Waiting on You</h2>
+<div id="ptsSignList"></div>
 </div>
 </section>
 <section id="screen-idea" class="screen">
@@ -5075,8 +5083,9 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <input type="number" id="pmPoints" step="1">
 <label for="pmNote" style="margin-top:10px;">Note (optional)</label>
 <input type="text" id="pmNote">
-<button class="primary-btn" onclick="submitPointsEntry()"><svg class="ico"><use href="#i-checkmark"></use></svg> Save Entry</button>
+<button class="primary-btn" onclick="submitPointsEntry()"><svg class="ico"><use href="#i-checkmark"></use></svg> Send for sign-off</button>
 <div class="status-msg" id="pmStatusMsg"></div>
+<div id="pmWaiting"></div>
 <table class="log" id="pmHistoryTable" style="margin-top:14px;">
 <thead><tr><th>Date</th><th>Type</th><th>Pts</th></tr></thead>
 <tbody></tbody>
@@ -8191,6 +8200,7 @@ if (merchSq === null) loadMerchSquare();
 if (resCache === null) loadReservations();
 if (pavCache === null) loadPavRentals().then(renderPavUpcoming);
 if (ideaCache === null) loadIdeas();
+if (ptsPending === null) loadPtsPending();
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -12560,6 +12570,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-merch', t: 'Merch Mansion stock, intake and sales', v: () => ({ items: [], intake: [], sales: [] }) },
 { g: 'traffic', k: 'ifm-complaints', t: 'Complaints filed', v: () => [] },
 { g: 'traffic', k: 'ifm-ideas', t: 'Ideas sent to the market', v: () => [] },
+{ g: 'traffic', k: 'ifm-points-pending', t: 'Points waiting on the President', v: () => [] },
 { g: 'traffic', k: 'ifm-reservations', t: 'Season booth choices and advance payments', v: () => ({}) },
 { g: 'config', k: 'ifm-merch-square', t: 'Merch Mansion Square Application ID', v: () => ({ appId: '', locationId: '' }) },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
@@ -14845,6 +14856,9 @@ if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); gcSetTender(gcTender()); stopQrScan(); }
 paintBackHands(document.getElementById('screen-' + name));
+if (name === 'ptssignoff') {
+if (!ptsPending) loadPtsPending().then(renderPtsSignOff); else renderPtsSignOff();
+}
 if (name === 'idea') {
 const t = document.getElementById('ideaListTitle');
 if (t) t.textContent = currentRole === 'vendor' ? 'Ideas You Have Sent' : 'Ideas Sent';
@@ -15031,11 +15045,12 @@ merch:             { title: 'Merch Mansion Stock and Till' },
 seasonres:         { title: 'Reserve a Season Booth' },
 complaint:         { title: 'Compliments and Complaints' },
 idea:              { title: 'A Good Idea' },
+ptssignoff:        { title: 'Points Sign-Off' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Take a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
-homescreen:        { title: 'Put It On Your Phone' },
+homescreen:        { title: 'Put IFM App on Your Device' },
 winterbooths:      { title: 'Winter Market Booths' },
 standing:          { title: 'Vendor Standing' },
 records:           { title: 'Vendor Records' },
@@ -17342,7 +17357,20 @@ refreshDateChips('pmDate');
 document.getElementById('pmType').value = 'Winter Market';
 }
 }
+function renderPmWaiting() {
+const host = document.getElementById('pmWaiting');
+if (!host) return;
+const waiting = ptsPendingFor(pmSelectedVendorId);
+if (!waiting.length) { host.innerHTML = ''; return; }
+host.innerHTML = '<p class="empty-note" style="margin:8px 2px 4px;"><b>Waiting on the Board President</b> \u2014 ' +
+'these do not count yet:</p>' +
+waiting.map(p => '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + (p.points > 0 ? '+' : '') + esc(p.points) + ' \u00b7 ' + esc(p.type) + '</div>' +
+'<div class="req-meta">sent ' + esc(formatDisplayDate(p.askedOn)) + '</div>' +
+'</div></div>').join('');
+}
 function renderPointsManagerHistory() {
+renderPmWaiting();
 const v = cache.vendors.find(x => x.vendorId === pmSelectedVendorId);
 const myLedger = cache.ledger.filter(r => r.vendorId === pmSelectedVendorId);
 const total = myLedger.reduce((s, r) => s + Number(r.points || 0), 0);
@@ -17358,6 +17386,120 @@ tr.children[2].textContent = r.points;
 tbody.appendChild(tr);
 });
 }
+// POINTS NEED A SECOND PAIR OF EYES.
+//
+// Points decide the order vendors are called in for booths, so a point
+// added or removed changes who gets which stall. The office enters them --
+// it is the office that knows who worked a PopUp -- but the entry now waits
+// for the Board President to release it, and until then it changes nothing.
+//
+// The season posting is deliberately NOT routed through here: that is one
+// press writing the same rule to every vendor at once, already a Board
+// decision, and holding 168 identical entries for sign-off would be
+// ceremony rather than oversight.
+// WHICH POINTS NEED A SECOND PAIR OF EYES.
+//
+// Not all of them. A point for a market day that happened, or for a PopUp
+// or Winter market on the day it ran, is bookkeeping: the office is writing
+// down something everybody saw. Holding those for sign-off would be
+// ceremony, and ceremony gets clicked through.
+//
+// What needs a second pair of eyes is discretion -- points on a day the
+// market did not trade, or with no event behind them at all, and anything
+// that reaches back and changes an event already in the books. Those are
+// the ones that move a vendor up the calling order without anyone else
+// having seen why.
+function ptsEventDate(popupId, winterMarketId) {
+if (popupId) {
+const p = (cache.popups || []).find(x => String(x.id) === String(popupId));
+return p ? (p.date || '') : '';
+}
+if (winterMarketId) {
+const w = (cache.wintermarket || []).find(x => String(x.id) === String(winterMarketId));
+return w ? (w.date || '') : '';
+}
+return '';
+}
+function ptsIsTradingDay(dateISO) {
+if (!dateISO) return false;
+const yr = Number(String(dateISO).slice(0, 4));
+if (allMarketDatesInSeason(yr).some(m => m.date === dateISO)) return true;
+if ((cache.popups || []).some(p => p.date === dateISO)) return true;
+if ((cache.wintermarket || []).some(w => w.date === dateISO)) return true;
+if (Object.keys(wlCache || {}).indexOf(dateISO) !== -1) return true;
+return false;
+}
+// Returns '' when the entry may go straight through, or the reason it cannot.
+function ptsNeedsSignOff(entry) {
+const evDate = ptsEventDate(entry.popupId, entry.winterMarketId);
+if (evDate && evDate !== entry.date) {
+return 'the date does not match the event it is attached to';
+}
+if (evDate) return '';
+if (!ptsIsTradingDay(entry.date)) {
+return 'the market did not trade on ' + formatDisplayDate(entry.date);
+}
+return '';
+}
+const PTS_PENDING_KEY = 'ifm-points-pending';
+let ptsPending = null;
+async function loadPtsPending() {
+const v = await storageGet(PTS_PENDING_KEY);
+ptsPending = (v !== STORAGE_MISSING && Array.isArray(v)) ? v : [];
+return ptsPending;
+}
+async function savePtsPending() { await storageSet(PTS_PENDING_KEY, ptsPending || []); }
+function ptsPendingFor(vendorId) {
+return (ptsPending || []).filter(p => p.state === 'waiting' && (!vendorId || p.vendorId === vendorId));
+}
+async function ptsSignOff(id, ok, why) {
+if (currentRole !== 'president') return;
+await loadPtsPending();
+const p = (ptsPending || []).find(x => x.id === id);
+if (!p || p.state !== 'waiting') return;
+if (ok) {
+cache.ledger.push({ vendorId: p.vendorId, date: p.date, type: p.type,
+points: Number(p.points), note: p.note, popupId: p.popupId, winterMarketId: p.winterMarketId,
+signedBy: 'president', signedOn: todayISO() });
+await storageSet('ifm-ledger', cache.ledger);
+}
+p.state = ok ? 'signed' : 'refused';
+p.decidedOn = todayISO();
+p.why = (why || '').trim();
+await savePtsPending();
+actAs((ok ? 'Points signed off' : 'Points refused') + ' \u2014 ' +
+(p.points > 0 ? '+' : '') + p.points + ' for ' + (boothVendorName(p.vendorId) || p.vendorId),
+{ kind: 'money', weight: 'notable', vendorId: p.vendorId });
+renderPtsSignOff();
+if (typeof renderPointsManagerHistory === 'function') renderPointsManagerHistory();
+}
+function renderPtsSignOff() {
+const host = document.getElementById('ptsSignList');
+if (!host) return;
+const waiting = ptsPendingFor(null);
+const sub = document.getElementById('ptsSignSub');
+if (sub) sub.textContent = waiting.length
+? waiting.length + ' waiting on you'
+: 'Nothing waiting';
+if (!waiting.length) {
+host.innerHTML = '<p class="empty-note">Nothing waiting. Points for a market day that traded are the office\u2019s to enter. ' +
+'What stops here is discretion: a day the market did not trade, no event behind it, or a change to an ' +
+'event already in the books.</p>';
+return;
+}
+host.innerHTML = waiting.map(p =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + (p.points > 0 ? '+' : '') + esc(p.points) + ' \u00b7 ' +
+esc(boothVendorName(p.vendorId) || p.vendorId) + '</div>' +
+'<div class="req-meta">' + esc(p.type) + ' \u00b7 ' + esc(formatDisplayDate(p.date)) +
+' \u00b7 entered by the office ' + esc(formatDisplayDate(p.askedOn)) + '</div>' +
+(p.why ? '<div class="req-meta" style="margin-top:2px;"><b>Needs you because</b> ' + esc(p.why) + '.</div>' : '') +
+(p.note ? '<div class="req-meta" style="margin-top:4px;">' + esc(p.note) + '</div>' : '') +
+'<div style="margin-top:6px;">' +
+'<button type="button" class="ghost-btn cio-undo" onclick="ptsSignOff(\'' + p.id + '\', true)">Sign it off</button>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="ptsSignOff(\'' + p.id + '\', false)">Refuse it</button>' +
+'</div></div></div>').join('');
+}
 async function submitPointsEntry() {
 const date = document.getElementById('pmDate').value;
 const type = document.getElementById('pmType').value.trim();
@@ -17371,9 +17513,25 @@ const pmVal = document.getElementById('pmPopup').value;
 const [pmKind, pmId] = pmVal ? pmVal.split(':') : [null, null];
 const popupId = pmKind === 'PU' ? pmId : undefined;
 const winterMarketId = pmKind === 'WM' ? pmId : undefined;
-cache.ledger.push({ vendorId: pmSelectedVendorId, date, type, points: Number(points), note, popupId, winterMarketId });
+const entry = { vendorId: pmSelectedVendorId, date: date, type: type, points: Number(points),
+note: note, popupId: popupId, winterMarketId: winterMarketId };
+const why = ptsNeedsSignOff(entry);
+if (!why) {
+cache.ledger.push(entry);
 await storageSet('ifm-ledger', cache.ledger);
 showMsg('pmStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Entry saved.');
+} else {
+await loadPtsPending();
+ptsPending.push(Object.assign({ id: 'PP' + Date.now().toString(36).toUpperCase(),
+askedBy: currentRole, askedOn: todayISO(), state: 'waiting', why: why }, entry));
+await savePtsPending();
+actAs('Points entered, waiting on the President \u2014 ' + (Number(points) > 0 ? '+' : '') + points +
+' for ' + (boothVendorName(pmSelectedVendorId) || pmSelectedVendorId),
+{ kind: 'money', weight: 'notable', vendorId: pmSelectedVendorId });
+showMsg('pmStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+'Sent to the Board President, because ' + esc(why) + '. <b>It does not count until they sign it off.</b> ' +
+'Points for a market day that traded go straight through.');
+}
 document.getElementById('pmPopup').value = '';
 document.getElementById('pmType').value = '';
 document.getElementById('pmPoints').value = '';
@@ -18626,7 +18784,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-120';
+const BUILD_ID = '17-3';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -39425,6 +39583,7 @@ tiles: [
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
 { s: 'boardflags', i: 'i-scale', t: 'To Discuss with the Board', d: 'Questions only the Board can settle \u2014 raised by builds, waiting for a meeting' },
 { s: 'complaint', i: 'i-scale', t: 'Compliments & Complaints', d: 'Everything sent or filed, whichever way it went' },
+{ s: 'ptssignoff', i: 'i-scale', t: 'Points Sign-Off', d: 'Points the office has entered, waiting on you \u2014 they do not count until signed' },
 { s: 'idea', i: 'i-star', t: 'Ideas', d: 'What vendors think the market could try' },
 ] },
 { key: 'prescommittees', title: 'Committees', icon: 'i-columns',
