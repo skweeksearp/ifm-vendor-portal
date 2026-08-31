@@ -9514,17 +9514,17 @@ cache.booths.forEach(b => {
 if (b.reservedBy) {
 const v = byId[b.reservedBy];
 if (!v || !v.category.endsWith('Full')) {
-b.reservedBy = null;
+clearBoothReservation(b, 'sat');
 changed = true;
 } else if (heldSat.has(b.reservedBy)) {
-b.reservedBy = null; changed = true;
+clearBoothReservation(b, 'sat'); changed = true;
 } else {
 heldSat.add(b.reservedBy);
 }
 }
 if (b.sundaySeasonalBy) {
 if (heldSun.has(b.sundaySeasonalBy) || heldSat.has(b.sundaySeasonalBy)) {
-b.sundaySeasonalBy = null; changed = true;
+clearBoothReservation(b, 'sun'); changed = true;
 } else {
 heldSun.add(b.sundaySeasonalBy);
 }
@@ -14939,15 +14939,34 @@ return results;
 // Everything else here is dated and needs no such guard: lottery
 // assignments, call-ins, booth shares. Those keep answering for any year,
 // which is what preserves real history while the invented part goes.
-function boothReservationYear(b) {
-return Number((b && b.reservedYear) || seasonYear());
+function boothReservationYear(b, kind) {
+if (!b) return 0;
+// Records written before reservations carried a season fall back to the
+// current one, which is the only season a year-less record can honestly
+// describe. Anything granted from build 17-8 onwards says so itself.
+const stamped = kind === 'sun' ? b.sundayYear : b.reservedYear;
+return Number(stamped || seasonYear());
+}
+// Written at the moment a booth is handed over, so the record carries its own
+// season and stops depending on what year it happens to be read in.
+function stampBoothReservation(booth, kind, year) {
+if (!booth) return;
+const y = Number(year || selectionSeason());
+if (kind === 'sun') booth.sundayYear = y; else booth.reservedYear = y;
+}
+// Cleared with the holder it belongs to. A year left behind on a released
+// booth is a fact about nobody.
+function clearBoothReservation(booth, kind) {
+if (!booth) return;
+if (kind === 'sun') { booth.sundaySeasonalBy = null; delete booth.sundayYear; }
+else { booth.reservedBy = null; delete booth.reservedYear; }
 }
 function attendedMarketDates(vendorId, year) {
 year = Number(year);
 const holdsSaturdayStall = cache.booths.some(b =>
-b.reservedBy === vendorId && boothReservationYear(b) === year);
+b.reservedBy === vendorId && boothReservationYear(b, 'sat') === year);
 const holdsSundayStall = cache.booths.some(b =>
-b.sundaySeasonalBy === vendorId && boothReservationYear(b) === year);
+b.sundaySeasonalBy === vendorId && boothReservationYear(b, 'sun') === year);
 const calledOut = new Set();
 const calledIn = new Set();
 cache.callinout.filter(r => r.vendorId === vendorId).forEach(r => {
@@ -16167,10 +16186,12 @@ function boothBaselineHolder(booth, date) {
 // holder at all -- naming the current holder for a date in a past season
 // would put a vendor in a booth they may never have stood in.
 const yr = Number(String(date || '').slice(0, 4));
-if (yr && boothReservationYear(booth) !== yr) return null;
-if (booth.reservedBy) return booth.reservedBy;
+if (booth.reservedBy && (!yr || boothReservationYear(booth, 'sat') === yr))
+return booth.reservedBy;
 const isSunday = new Date(date + 'T12:00:00').getDay() === 0;
-return (isSunday && booth.sundaySeasonalBy) ? booth.sundaySeasonalBy : null;
+if (isSunday && booth.sundaySeasonalBy && (!yr || boothReservationYear(booth, 'sun') === yr))
+return booth.sundaySeasonalBy;
+return null;
 }
 function computeOpenBooths(date) {
 const open = [];
@@ -19458,7 +19479,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-7';
+const BUILD_ID = '17-8';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22394,8 +22415,8 @@ await storageSet('ifm-ledger', cache.ledger);
 }
 let booths = 0;
 cache.booths.forEach(b => {
-if (b.reservedBy === l.vendorId) { b.reservedBy = null; booths++; }
-if (b.sundaySeasonalBy === l.vendorId) { b.sundaySeasonalBy = null; booths++; }
+if (b.reservedBy === l.vendorId) { clearBoothReservation(b, 'sat'); booths++; }
+if (b.sundaySeasonalBy === l.vendorId) { clearBoothReservation(b, 'sun'); booths++; }
 });
 if (booths) await storageSet('ifm-booths-v3', cache.booths);
 const led = buildHoursLedger(l.vendorId, Number(l.year));
@@ -24528,7 +24549,7 @@ if (!requireManager('auMsg')) return;
 const booth = cache.booths.find(b => String(b.num) === String(num));
 if (!booth) return;
 const who = kind === 'sat' ? booth.reservedBy : booth.sundaySeasonalBy;
-if (kind === 'sat') booth.reservedBy = null; else booth.sundaySeasonalBy = null;
+clearBoothReservation(booth, kind);
 if (cache.ops.auction) {
 Object.keys(cache.ops.auction).forEach(k => {
 const a = cache.ops.auction[k];
@@ -24562,6 +24583,7 @@ const booth = cache.booths.find(b => String(b.num) === num);
 if (!booth) { showMsg('auMsg', 'err', 'Pick a booth.'); return; }
 const vendorId = queue[0].v.vendorId;
 if (kind === 'sat') booth.reservedBy = vendorId; else booth.sundaySeasonalBy = vendorId;
+stampBoothReservation(booth, kind, selectionSeason());
 cache.ops.auction[kind].assigned[vendorId] = num;
 await storageSet('ifm-booths-v3', cache.booths);
 await saveOps();
@@ -41996,9 +42018,11 @@ if (!booth) return;
 if (currentAuction === 'annual-sunday') {
 if (booth.reservedBy || booth.sundaySeasonalBy) return;
 booth.sundaySeasonalBy = currentVendorId;
+stampBoothReservation(booth, 'sun', selectionSeason());
 } else {
 if (booth.reservedBy) return;
 booth.reservedBy = currentVendorId;
+stampBoothReservation(booth, 'sat', selectionSeason());
 }
 await storageSet('ifm-booths-v3', cache.booths);
 showMsg('boothStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Booth ' + selectedBoothNum + ' reserved!');
