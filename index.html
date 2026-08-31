@@ -2896,6 +2896,24 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p class="empty-note" style="margin-top:0;">Press <b>Wipe</b>. The Beta Reset tool clears these too, but Wipe is the one that says what it does. Once wiped, the statement tool shows only what the market actually recorded.</p>
 </div>
 </section>
+<section id="screen-idea" class="screen">
+<div class="screen-head" id="head-idea"></div>
+<p class="empty-note" style="margin:-4px 0 14px;">Something the market could do better, or something worth trying. It does not have to be finished, and it does not have to be a proposal &mdash; the office and the Board President read these, and anything worth taking further can become one later.</p>
+<div class="card desk-form">
+<label for="ideaTitle">What is it, in a few words</label>
+<input type="text" id="ideaTitle" autocomplete="off" placeholder="e.g. A shaded spot for the dish station">
+<label for="ideaBody" style="margin-top:10px;">Tell us more</label>
+<textarea id="ideaBody" rows="5" placeholder="What you would do, and what it would change."></textarea>
+<label for="ideaTouches" style="margin-top:10px;">What it touches (optional)</label>
+<input type="text" id="ideaTouches" autocomplete="off" placeholder="e.g. the pavilion, Sunday market, the kiosk">
+<button type="button" class="primary-btn" onclick="submitIdea()"><svg class="ico"><use href="#i-checkmark"></use></svg> Send it</button>
+<div class="status-msg" id="ideaMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span><span id="ideaListTitle">Ideas Sent</span></h2>
+<div id="ideaList"></div>
+</div>
+</section>
 <section id="screen-complaint" class="screen">
 <div class="screen-head" id="head-complaint"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">Say what happened and the app works out who should see it. A compliment is passed on; a complaint is looked into. The Board President sees both.</p>
@@ -4696,17 +4714,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <section id="screen-communicate" class="screen">
 <div class="screen-head" id="head-communicate"></div>
 <div class="card">
-<div class="comm-item">
-<div class="comm-title">A complaint about another vendor or a staff member</div>
-<div class="comm-desc"><b>Use Compliments &amp; Complaints</b> on your desk. It works out which committee should see it, records it with a reference number you can ask about later, and the Board President sees it whichever way it goes. The paper Grievance Form still exists if you would rather use it — both reach the Grievance Committee, and the committee answers within 48 hours either way.</div>
-<button type="button" class="comm-btn" onclick="showScreen('complaint')"><svg class="ico"><use href="#i-scale"></use></svg> Open Compliments &amp; Complaints</button>
-<a class="comm-btn ghost" href="https://ithacamarket.com/business-directory/member-resources/" target="_blank" rel="noopener"><svg class="ico"><use href="#i-document"></use></svg> The paper form instead</a>
-</div>
-<div class="comm-item">
-<div class="comm-title">Harassment, discrimination or unwanted touching</div>
-<div class="comm-desc">Handled in one place, under the IFM Sexual Harassment Policy: it goes to the Market Manager or a board officer, who must investigate promptly and keep it confidential. <b>It is not stored in this app</b> — not in the complaints list, not anywhere. Open it for the market’s form, a direct confidential email, and what the policy says about retaliation and going to the police.</div>
-<button type="button" class="comm-btn" onclick="showScreen('complaint'); setTimeout(function(){ var k=document.getElementById('cpKind'); if(k){ setFeedbackTone('down'); k.value='conduct'; renderComplaintForm(); var s=document.getElementById('cpSub'); if(s){ s.value='harassment'; renderComplaintForm(); } } }, 220);"><svg class="ico"><use href="#i-warning"></use></svg> How to report it</button>
-</div>
+
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-ruler"></use></svg></span>Booth Improvements</h2>
@@ -4726,6 +4734,11 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Governance</h2>
+<div class="comm-item">
+<div class="comm-title">A good idea for the market</div>
+<div class="comm-desc">Something worth trying, or something the market could do better. It does not need to be a finished proposal &mdash; write it down and the office and the Board President will see it.</div>
+<button type="button" class="comm-btn" onclick="showScreen('idea')"><svg class="ico"><use href="#i-star"></use></svg> Send an idea</button>
+</div>
 <div class="comm-item">
 <div class="comm-title">Not sure where it goes?</div>
 <div class="comm-desc">Five routes, depending on what the idea is &mdash; a problem with another vendor, something about the pavilion, a category question, an exception for you, or a change to how the market runs.</div>
@@ -4763,16 +4776,15 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" id="cioStillCallIn" style="margin-bottom:0;"></p>
 </div>
 <div class="card manager-only desk-form">
-<p class="empty-note" style="margin-top:0;">A document is the one that behaves differently: this only notes that one is on its way, and you mark it received on Vendor Requirements when it actually arrives. A sale goes straight to the kiosk under that vendor&rsquo;s booth. The rest become the record itself.</p>
+<p class="empty-note" style="margin-top:0;">A sale goes straight to the kiosk under that vendor&rsquo;s booth. The rest become the record itself. Documents are handled on <b>Vendor Requirements</b>, which is where their state is kept.</p>
 <label for="obVendor">Vendor</label>
-<select id="obVendor" onchange="fillObRequirements(); renderObPromoNote(); renderObCheckSeen();"></select>
+<select id="obVendor" onchange="renderObPromoNote(); renderObCheckSeen();"></select>
 <label>What they told you</label>
 <input type="hidden" id="obKind" value="Out">
 <div class="ob-kinds" id="obKinds">
 <button type="button" class="ob-kind selected" data-k="Out"><b>An absence</b><span>They will be away</span></button>
 <button type="button" class="ob-kind" data-k="In"><b>A booth request</b><span>They want a booth</span></button>
 <button type="button" class="ob-kind" data-k="share"><b>A booth share</b><span>Two businesses, one booth</span></button>
-<button type="button" class="ob-kind" data-k="doc"><b>A document</b><span>Insurance, permit, license</span></button>
 <button type="button" class="ob-kind" data-k="improve"><b>A proposal to a committee</b><span>Their idea, put to the committee that handles it</span></button>
 <button type="button" class="ob-kind" data-k="promo"><b>A sale or promotion</b><span>An offer to show at the kiosk</span></button>
 <button type="button" class="ob-kind" data-k="check"><b>A payment</b><span>Check, card or cash</span></button>
@@ -4816,10 +4828,6 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <label for="obCheckNote" style="margin-top:10px;">Note (optional)</label>
 <input type="text" id="obCheckNote" placeholder="e.g. second installment, or what they wrote on the memo line">
 <p class="empty-note" style="margin:8px 0 0;" id="obCheckSeen"></p>
-</div>
-<div id="obDocWrap" style="display:none;">
-<label for="obReq">Which document</label>
-<select id="obReq"></select>
 </div>
 <div id="obImpWrap" style="display:none;">
 <label for="obImpCmte">Which committee</label>
@@ -8183,6 +8191,7 @@ if (merchCache === null) loadMerch();
 if (merchSq === null) loadMerchSquare();
 if (resCache === null) loadReservations();
 if (pavCache === null) loadPavRentals().then(renderPavUpcoming);
+if (ideaCache === null) loadIdeas();
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -11255,18 +11264,16 @@ const k = (document.getElementById('obKind') || {}).value;
 const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
 show('obShareWrap', k === 'share');
 show('obCheckWrap', k === 'check');
-show('obDocWrap', k === 'doc');
 show('obImpWrap', k === 'improve');
 show('obPromoWrap', k === 'promo');
 if (k === 'improve') { fillObCommittees(); toggleObImpCmte(); }
 if (k === 'promo') renderObPromoNote();
 const dateLbl = document.querySelector('label[for="obDate"]');
-if (dateLbl) dateLbl.textContent = k === 'doc' ? 'Date they sent it'
+if (dateLbl) dateLbl.textContent = false ? 'Date they sent it'
 : k === 'improve' ? 'Date it arrived'
 : k === 'promo' ? 'Market day it runs on'
 : k === 'check' ? 'Date written on the check' : 'Market day it concerns';
 if (k === 'check') { toggleObPayMethod(); renderObCheckSeen(); }
-if (k === 'doc') fillObRequirements();
 }
 // An offer only ever appears when somebody taps that vendor's booth at the
 // kiosk, so a sale on a day they are not standing is invisible. Say so before
@@ -11342,16 +11349,6 @@ note.textContent = isBG
 : 'Goes on ' + cm.name + '\u2019s list' +
 (chair ? ', where ' + vendorNameFor(chair.id) + ' chairs it and will see it on their desk.'
 : ' \u2014 that committee has no chair on record, so nobody is alerted.');
-}
-function fillObRequirements() {
-if ((document.getElementById('obKind') || {}).value !== 'doc') return;
-const vid = (document.getElementById('obVendor') || {}).value;
-const sel = document.getElementById('obReq');
-if (!sel) return;
-const reqs = vendorRequirements(vid);
-sel.innerHTML = reqs.length
-? reqs.map(r => '<option value="' + esc(r.id) + '">' + esc(r.name) + '</option>').join('')
-: '<option value="">No requirement applies to this vendor</option>';
 }
 async function recordForVendor() {
 if (!requireManager('obMsg')) return;
@@ -11445,23 +11442,7 @@ esc(formatDisplayDate(marketDate)) + via + ' ' +
 : (live && live.date === marketDate
 ? 'It is showing at the kiosk now.'
 : 'The kiosk is showing ' + esc(shortLabel(live ? live.date : '')) + ', so it appears when that day comes round.')));
-} else if (status === 'doc') {
-const reqId = document.getElementById('obReq').value;
-if (!reqId) { showMsg('obMsg', 'err', 'No requirement applies to this vendor.'); return; }
-const key = reqStatusKey(reqId, vendorId);
-const rec = cache.requirements.status[key] || { state: 'missing', expiry: '', ref: '' };
-rec.state = 'pending';
-rec.sentOn = marketDate;
-rec.reportedAt = todayISO();
-rec.reviewNote = '';
-rec.channel = channel;
-rec.recordedBy = 'office';
-cache.requirements.status[key] = rec;
-await storageSet('ifm-requirements', cache.requirements);
-await saveSubmissions();
-showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Noted as sent by ' + name + via +
-' Mark it received on Vendor Requirements once it arrives.');
-} else if (status === 'improve') {
+} else if  (status === 'improve') {
 const title = document.getElementById('obImpTitle').value.trim();
 if (!title) { showMsg('obMsg', 'err', 'Give the proposal a title.'); return; }
 const cmteKey = (document.getElementById('obImpCmte') || {}).value || 'bg';
@@ -12578,6 +12559,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-demo-statements', t: 'Demo statement records \u2014 the invented months', v: () => ({ on: false, rows: [] }) },
 { g: 'traffic', k: 'ifm-merch', t: 'Merch Mansion stock, intake and sales', v: () => ({ items: [], intake: [], sales: [] }) },
 { g: 'traffic', k: 'ifm-complaints', t: 'Complaints filed', v: () => [] },
+{ g: 'traffic', k: 'ifm-ideas', t: 'Ideas sent to the market', v: () => [] },
 { g: 'traffic', k: 'ifm-reservations', t: 'Season booth choices and advance payments', v: () => ({}) },
 { g: 'config', k: 'ifm-merch-square', t: 'Merch Mansion Square Application ID', v: () => ({ appId: '', locationId: '' }) },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
@@ -14863,6 +14845,11 @@ if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); gcSetTender(gcTender()); stopQrScan(); }
 paintBackHands(document.getElementById('screen-' + name));
+if (name === 'idea') {
+const t = document.getElementById('ideaListTitle');
+if (t) t.textContent = currentRole === 'vendor' ? 'Ideas You Have Sent' : 'Ideas Sent';
+if (!ideaCache) loadIdeas().then(renderIdeaList); else renderIdeaList();
+}
 if (name === 'seasonres') {
 if (!resCache) loadReservations().then(renderSeasonRes); else renderSeasonRes();
 }
@@ -15043,6 +15030,7 @@ statements:        { title: 'Monthly Statements' },
 merch:             { title: 'Merch Mansion Stock and Till' },
 seasonres:         { title: 'Reserve a Season Booth' },
 complaint:         { title: 'Compliments and Complaints' },
+idea:              { title: 'A Good Idea' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Take a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
@@ -18638,7 +18626,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-116';
+const BUILD_ID = '16-118';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27284,6 +27272,93 @@ esc(kk ? kk.label : c.kind) + ' \u2014 ' + esc(sub ? sub.label : c.sub) +
 // it is passed to the person it is about and to the office. None of the
 // complaint machinery -- the grievance route, the harassment panel -- has
 // any business on a compliment, so it does not appear.
+// A GOOD IDEA NEEDS SOMEWHERE TO GO.
+//
+// The app could already explain how an idea reaches the Board, and could
+// take a formal Board proposal, but there was nothing in between -- so an
+// idea that was not yet a proposal had no home but a conversation someone
+// might remember. This is that in-between: write it down, it reaches the
+// office and the President, and it can be taken up as a proposal later
+// without the vendor having to draft one first.
+const IDEA_KEY = 'ifm-ideas';
+let ideaCache = null;
+async function loadIdeas() {
+const v = await storageGet(IDEA_KEY);
+ideaCache = (v !== STORAGE_MISSING && Array.isArray(v)) ? v : [];
+return ideaCache;
+}
+function canFileIdea() {
+return ['vendor', 'staff', 'manager', 'president', 'volunteer'].indexOf(currentRole) !== -1;
+}
+async function submitIdea() {
+if (!canFileIdea()) { showMsg('ideaMsg', 'err', 'Sign in to send an idea.'); return; }
+const title = (document.getElementById('ideaTitle').value || '').trim();
+const body = (document.getElementById('ideaBody').value || '').trim();
+if (!title) { showMsg('ideaMsg', 'err', 'Give it a short name \u2014 that is what people will see first.'); return; }
+if (body.length < 10) { showMsg('ideaMsg', 'err', 'Say a little more about it. A line or two is plenty, but a title alone is hard to act on.'); return; }
+await loadIdeas();
+const rec = {
+id: 'I' + Date.now().toString(36).toUpperCase(),
+title: title, body: body,
+touches: (document.getElementById('ideaTouches').value || '').trim(),
+on: todayISO(), at: Date.now(),
+byRole: currentRole,
+byVendorId: currentRole === 'vendor' ? currentVendorId : null,
+state: 'new'
+};
+ideaCache.push(rec);
+await storageSet(IDEA_KEY, ideaCache);
+actAs('Idea sent \u2014 ' + title, { kind: 'day', weight: 'routine' });
+['ideaTitle', 'ideaBody', 'ideaTouches'].forEach(id => {
+const e = document.getElementById(id); if (e) e.value = '';
+});
+renderIdeaList();
+showMsg('ideaMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Sent. The office and the ' +
+'Board President can see it. Reference <b>' + esc(rec.id) + '</b>.');
+}
+async function ideaSetState(id, state) {
+if (currentRole !== 'manager' && currentRole !== 'president') return;
+await loadIdeas();
+const r = (ideaCache || []).find(x => x.id === id);
+if (!r) return;
+r.state = state;
+r.stateBy = currentRole;
+r.stateOn = todayISO();
+await storageSet(IDEA_KEY, ideaCache);
+actAs('Idea marked ' + state + ' \u2014 ' + r.title, { kind: 'day', weight: 'routine' });
+renderIdeaList();
+}
+function renderIdeaList() {
+const host = document.getElementById('ideaList');
+if (!host) return;
+const all = (ideaCache || []).slice().reverse();
+const mine = currentRole === 'vendor' ? all.filter(i => i.byVendorId === currentVendorId) : all;
+const office = currentRole === 'manager' || currentRole === 'president';
+if (!mine.length) {
+host.innerHTML = '<p class="empty-note">' +
+(currentRole === 'vendor' ? 'You have not sent any.' : 'Nothing sent yet.') + '</p>';
+return;
+}
+host.innerHTML = mine.map(i => {
+const stamp = i.state === 'taken' ? '<span class="stamp in">taken up</span>'
+: i.state === 'parked' ? '<span class="season-tag">parked</span>'
+: '<span class="stamp late">new</span>';
+return '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(i.title) + ' ' + stamp + '</div>' +
+'<div class="req-meta">' + esc(formatDisplayDate(i.on)) +
+(office && i.byVendorId ? ' \u00b7 ' + esc(boothVendorName(i.byVendorId) || i.byVendorId)
+: office ? ' \u00b7 ' + esc(i.byRole) : '') +
+(i.touches ? ' \u00b7 touches ' + esc(i.touches) : '') + '</div>' +
+'<div class="req-meta" style="margin-top:4px;">' + esc(i.body.slice(0, 180)) +
+(i.body.length > 180 ? '\u2026' : '') + '</div>' +
+(office ? '<div style="margin-top:6px;">' +
+'<button type="button" class="ghost-btn cio-undo" onclick="ideaSetState(\'' + i.id + '\',\'taken\')">Taking it up</button>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="ideaSetState(\'' + i.id + '\',\'parked\')">Park it for now</button>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="showScreen(\'ideapath\')">How it reaches the Board</button>' +
+'</div>' : '') +
+'</div></div>';
+}).join('');
+}
 const COMPLIMENT_KINDS = [
 { k: 'person', label: 'Somebody who helped', subs: [
 { k: 'vendor', label: 'A vendor', to: 'praise' },
@@ -39350,6 +39425,7 @@ tiles: [
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
 { s: 'boardflags', i: 'i-scale', t: 'To Discuss with the Board', d: 'Questions only the Board can settle \u2014 raised by builds, waiting for a meeting' },
 { s: 'complaint', i: 'i-scale', t: 'Compliments & Complaints', d: 'Everything sent or filed, whichever way it went' },
+{ s: 'idea', i: 'i-star', t: 'Ideas', d: 'What vendors think the market could try' },
 ] },
 { key: 'prescommittees', title: 'Committees', icon: 'i-columns',
 sub: 'Who serves and who chairs \u2014 the President appoints the chairs (Bylaws VI \u00a72)',
