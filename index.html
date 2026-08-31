@@ -2602,6 +2602,14 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="fSeasonRes">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'seasonres')">
+<span class="fold-title">Reserve a Season Booth</span>
+<span class="fold-sub" id="resFoldSub">Choose the booths you would take, and settle the fee ahead of the round</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="auction" id="menuSatAuction">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'auction')">
 <span class="fold-title">Season-Long Booth Reservations</span>
@@ -2948,6 +2956,10 @@ Recording it here puts that notice in front of every vendor when they open the a
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span><span id="cpListTitle">What Has Been Filed</span></h2>
 <div id="cpList"></div>
 </div>
+</section>
+<section id="screen-seasonres" class="screen">
+<div class="screen-head" id="head-seasonres"></div>
+<div id="resBody"></div>
 </section>
 <section id="screen-merch" class="screen">
 <div class="screen-head" id="head-merch"></div>
@@ -8168,6 +8180,7 @@ if (stmtCache === null) loadStatements();
 if (demoStmt === null) loadDemoStatements();
 if (merchCache === null) loadMerch();
 if (merchSq === null) loadMerchSquare();
+if (resCache === null) loadReservations();
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -11597,7 +11610,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'fMerch', 'account', 'fGiftCert', 'snaptokens', 'mydocs',
+'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'snaptokens', 'mydocs',
 // Raising something that needs looking into sits with reaching the office.
 'fComplaint',
 // Your part in the market: the committees you sit on, and how to reach the office.
@@ -12563,6 +12576,7 @@ const BETA_RESET_KEYS = [
 { g: 'traffic', k: 'ifm-demo-statements', t: 'Demo statement records \u2014 the invented months', v: () => ({ on: false, rows: [] }) },
 { g: 'traffic', k: 'ifm-merch', t: 'Merch Mansion stock, intake and sales', v: () => ({ items: [], intake: [], sales: [] }) },
 { g: 'traffic', k: 'ifm-complaints', t: 'Complaints filed', v: () => [] },
+{ g: 'traffic', k: 'ifm-reservations', t: 'Season booth choices and advance payments', v: () => ({}) },
 { g: 'config', k: 'ifm-merch-square', t: 'Merch Mansion Square Application ID', v: () => ({ appId: '', locationId: '' }) },
 { g: 'traffic', k: 'ifm-improvements', t: 'Booth improvement proposals', v: () => [] },
 { g: 'traffic', k: 'ifm-feepays', t: 'Fee payments reported, and the office\u2019s answers', v: () => ({ items: [] }) },
@@ -14028,6 +14042,17 @@ amount: Number(d.amount || 0) });
 });
 });
 
+// Season booth reservations paid ahead of the round.
+Object.keys((resCache || {})[vendorId] || {}).forEach(key => {
+const r = (resCache[vendorId] || {})[key] || {};
+if (!r.paid || !r.paidOn || !inYear(r.paidOn)) return;
+const round = key.split(':')[1] === 'sunday' ? 'Sunday-only' : 'Saturday';
+charged.push({ date: r.paidOn, kind: 'Reserved stall fee',
+what: 'Reserved stall fee \u2014 ' + round + ' season booth', amount: r.paid });
+received.push({ date: r.paidOn,
+what: 'Paid in advance \u2014 ' + round + ' reserved stall fee', amount: r.paid });
+});
+
 // SNAP tokens taken at the stall. The customer paid in tokens; the market
 // redeems them, so this is money owed to the vendor and it comes off what
 // they owe. Valued at the Board's own token rate.
@@ -14793,6 +14818,9 @@ if (name === 'winterrules') renderWinterRules();
 if (name === 'yearend') initYearEndScreen();
 if (name === 'giftcerts') { initGiftCertsScreen(); renderGcOfficeScanRows(); gcSetTender(gcTender()); stopQrScan(); }
 paintBackHands(document.getElementById('screen-' + name));
+if (name === 'seasonres') {
+if (!resCache) loadReservations().then(renderSeasonRes); else renderSeasonRes();
+}
 if (name === 'complaint') {
 setFeedbackTone(feedbackTone());
 const t = document.getElementById('cpListTitle');
@@ -14968,6 +14996,7 @@ wedlist:           { title: 'Who Is Here Today' },
 giftcerts:         { title: 'Gift Certificates' },
 statements:        { title: 'Monthly Statements' },
 merch:             { title: 'Merch Mansion Stock and Till' },
+seasonres:         { title: 'Reserve a Season Booth' },
 complaint:         { title: 'Compliments and Complaints' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Take a Gift Certificate' },
@@ -16369,6 +16398,167 @@ function lottoDateOf(kind) { return lottoEl(kind, 'date').value; }
 // message; this way, if the office moves somebody, what the vendor sees moves
 // with it. The cost is that there is no history of what they were told -- and
 // that is the right trade for a thing that changes during the hour it matters.
+let resKind = 'saturday';
+function resSetKind(k) { resKind = k; renderSeasonRes(); }
+async function resAddPick(num) {
+const r = resFor(currentVendorId, resKind);
+if (r.awarded) return;
+if (r.picks.indexOf(num) !== -1) return;
+r.picks = r.picks.concat([num]);
+await resSave(currentVendorId, resKind, r);
+renderSeasonRes();
+}
+async function resDropPick(num) {
+const r = resFor(currentVendorId, resKind);
+if (r.awarded) return;
+r.picks = r.picks.filter(x => x !== num);
+await resSave(currentVendorId, resKind, r);
+renderSeasonRes();
+}
+async function resMovePick(num, dir) {
+const r = resFor(currentVendorId, resKind);
+const i = r.picks.indexOf(num);
+const j = i + dir;
+if (i < 0 || j < 0 || j >= r.picks.length) return;
+const p = r.picks.slice();
+p[i] = p[j]; p[j] = num;
+r.picks = p;
+await resSave(currentVendorId, resKind, r);
+renderSeasonRes();
+}
+async function resPayAhead() {
+const fee = resFeeFor(resKind);
+if (!(fee > 0)) {
+showMsg('resMsg', 'err', 'The Board has not set this fee yet, so there is nothing to pay in advance. ' +
+'Your choices are saved either way.');
+return;
+}
+const r = resFor(currentVendorId, resKind);
+if (r.paid >= fee) { showMsg('resMsg', 'ok', 'Already settled for this round.'); return; }
+if (!r.picks.length) {
+showMsg('resMsg', 'err', 'Choose at least one booth first \u2014 paying for a round you have not ' +
+'chosen in would leave the office holding money against nothing.');
+return;
+}
+r.paid = fee;
+r.paidOn = todayISO();
+await resSave(currentVendorId, resKind, r);
+actAs('Reserved stall fee paid in advance \u2014 ' + resRoundOf(resKind) + ' round',
+{ kind: 'money', weight: 'notable', vendorId: currentVendorId });
+renderSeasonRes();
+showMsg('resMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> $' + fmtMoney(fee) +
+' recorded against the ' + resRoundOf(resKind) + ' round. It shows on your statement, and the office ' +
+'matches it to the money when it arrives.');
+}
+function renderSeasonRes() {
+const host = document.getElementById('resBody');
+if (!host || !currentVendorId) return;
+const kind = resKind;
+const elig = resVendorEligible(currentVendorId, kind);
+const fee = resFeeFor(kind);
+const r = resFor(currentVendorId, kind);
+const avail = resAvailableBooths(currentVendorId, kind);
+const picked = r.picks.filter(n => true);
+
+let out = '<div class="card"><div class="tone-switch">' +
+'<button type="button" class="tone-btn' + (kind === 'saturday' ? ' on' : '') +
+'" onclick="resSetKind(\'saturday\')">Saturday \u00b7 late March</button>' +
+'<button type="button" class="tone-btn' + (kind === 'sunday' ? ' on' : '') +
+'" onclick="resSetKind(\'sunday\')">Sunday-only \u00b7 April</button></div>' +
+'<p class="empty-note" style="margin:10px 0 0;">' + (kind === 'saturday'
+? 'A Saturday season booth carries the right to the same booth on Sundays. Full Members only.'
+: 'A Sunday-only booth is held for one season; Easy Entry Vendors choose again the following April.') +
+'</p></div>';
+
+if (!elig.ok) {
+out += '<div class="card"><p class="empty-note" style="margin:0;"><b>Not this round.</b> ' +
+esc(elig.why) + '</p></div>';
+host.innerHTML = out;
+return;
+}
+
+if (r.awarded) {
+out += '<div class="card" style="border-color:#3F5B33; background:#F3F6EF;">' +
+'<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>' +
+'You have booth ' + esc(r.awarded) + '</h2>' +
+'<p class="empty-note" style="margin:0;">Given from your list when your turn came. It is yours for the season.</p></div>';
+host.innerHTML = out;
+return;
+}
+
+out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>' +
+'Booths You Would Take, In Order</h2>' +
+'<p class="empty-note" style="margin-top:0;">List as many as you like. When your turn comes the office ' +
+'works down this list and gives you the first one still free, so a longer list is a better chance. ' +
+'You do not have to be reachable on the day.</p>';
+out += picked.length
+? picked.map((n, i) =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + (i + 1) + '. Booth ' + esc(n) + '</div>' +
+'<div class="req-meta">' + esc(resBoothNote(n)) + '</div>' +
+'<div style="margin-top:6px;">' +
+'<button type="button" class="ghost-btn cio-undo" onclick="resMovePick(\'' + esc(n) + '\',-1)">Up</button>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="resMovePick(\'' + esc(n) + '\',1)">Down</button>' +
+'<button type="button" class="ghost-btn cio-undo" onclick="resDropPick(\'' + esc(n) + '\')">Remove</button>' +
+'</div></div></div>').join('')
+: '<p class="empty-note">Nothing chosen yet.</p>';
+out += '</div>';
+
+const rest = avail.filter(b => picked.indexOf(b.num) === -1);
+out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>' +
+'Available To You</h2>' +
+'<p class="empty-note" style="margin-top:0;">' + rest.length + ' booth' + (rest.length === 1 ? '' : 's') +
+' you could be given in this round. Anything not listed is already held, or not open to you.</p>' +
+'<input type="text" id="resFind" class="find-field" placeholder="Booth number" autocomplete="off" oninput="renderSeasonResList()">' +
+'<div id="resAvailList"></div></div>';
+
+out += '<div class="card"><h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>' +
+'Pay in Advance</h2>' +
+(fee > 0
+? '<p class="empty-note" style="margin-top:0;">The reserved stall fee for this round is <b>$' + fmtMoney(fee) +
+'</b>. Settling it now means nothing has to be collected on the day.</p>' +
+(r.paid >= fee
+? '<p class="empty-note"><b>Paid.</b> $' + fmtMoney(r.paid) + ' recorded on ' +
+esc(formatDisplayDate(r.paidOn)) + '.</p>'
+: '<button type="button" class="primary-btn" onclick="resPayAhead()">Pay the $' + fmtMoney(fee) + ' now</button>')
+: '<p class="empty-note" style="margin-top:0;"><b>The Board has not set this fee yet.</b> The Guide names a ' +
+'Reserved Stall Fee but does not state the amount, so there is nothing to pay in advance until the ' +
+'Board enters it in Market Rules. Your choices above are saved regardless.</p>') +
+'<div class="status-msg" id="resMsg"></div></div>';
+
+host.innerHTML = out;
+renderSeasonResList();
+}
+function resBoothNote(num) {
+const b = (cache.booths || []).find(x => x.num === num);
+if (!b) return '';
+const bits = [];
+if (b.u) bits.push('upgraded electric');
+if (b.w) bits.push('water nearby');
+if (b.np) bits.push('no parking');
+if (b.cp) bits.push('compact parking');
+if (b.nf) bits.push('no food');
+if (b.propane) bits.push('propane priority');
+if (b.corner) bits.push('corner');
+if (b.floor) bits.push(b.floor + ' floor');
+return bits.join(' \u00b7 ') || 'no special features';
+}
+function renderSeasonResList() {
+const host = document.getElementById('resAvailList');
+if (!host) return;
+const q = ((document.getElementById('resFind') || {}).value || '').trim();
+const r = resFor(currentVendorId, resKind);
+const rest = resAvailableBooths(currentVendorId, resKind)
+.filter(b => r.picks.indexOf(b.num) === -1)
+.filter(b => !q || b.num.indexOf(q) === 0);
+host.innerHTML = rest.length
+? rest.map(b =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">Booth ' + esc(b.num) + '</div>' +
+'<div class="req-meta">' + esc(resBoothNote(b.num)) + '</div>' +
+'</div><button type="button" class="ghost-btn cio-undo" onclick="resAddPick(\'' + esc(b.num) + '\')">Add</button></div>').join('')
+: '<p class="empty-note">' + (q ? 'No open booth starts with \u201c' + esc(q) + '\u201d.' : 'Nothing open to you in this round.') + '</p>';
+}
 function lottoNoticeFor(vendorId) {
 const out = [];
 const today = todayISO();
@@ -16413,6 +16603,81 @@ lottoRenderBooths(kind);
 showMsg('lottoCloseMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Closed. ' +
 Object.keys(rec.assignments || {}).length + ' placed; <b>' + without.length +
 '</b> told there was nothing left. They can see it on their own desk now.');
+}
+// CHOOSING A SEASON BOOTH IN ADVANCE.
+//
+// The Guide runs two rounds: the Annual Saturday Stall Auction in late
+// March, open to Full Members, and the Seasonal Sunday-only round in April,
+// where Easy Entry Vendors take a Sunday booth for one season and must
+// choose again the next year. Nobody bids: vendors are called in points
+// order and each takes a booth.
+//
+// Being called means being reachable at the moment your name comes up. A
+// vendor who lists the booths they would take, in order, is choosing in
+// advance rather than waiting by the phone; the office works down the list
+// when their turn arrives and gives them the first one still free.
+//
+// Eligibility is not a preference, it is the Guide: a Saturday season booth
+// is Full Members only, and the nine propane booths go to propane vendors
+// first in the Saturday round and are not in the Sunday round at all. The
+// list a vendor sees is filtered by that, so nobody ranks a booth they were
+// never entitled to.
+const RES_KEY = 'ifm-reservations';
+let resCache = null;
+async function loadReservations() {
+const v = await storageGet(RES_KEY);
+resCache = (v !== STORAGE_MISSING && v && typeof v === 'object') ? v : {};
+return resCache;
+}
+async function saveReservations() { await storageSet(RES_KEY, resCache || {}); }
+function resRoundOf(kind) { return kind === 'sunday' ? 'sunday' : 'saturday'; }
+function resSeasonKey(kind) { return seasonYear() + ':' + resRoundOf(kind); }
+function resFeeFor(kind) { return ruleNum(kind === 'sunday' ? 'resSunFee' : 'resSatFee') || 0; }
+function resVendorEligible(vendorId, kind) {
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+if (!v) return { ok: false, why: 'No vendor record.' };
+const full = /full/i.test(v.category || '');
+if (kind === 'saturday' && !full) return { ok: false,
+why: 'A season-long Saturday booth may only be reserved by Full Members. ' +
+'Easy Entry Vendors reserve a Sunday-only booth in the April round instead.' };
+return { ok: true };
+}
+// Booths this vendor could actually be given, in this round.
+function resAvailableBooths(vendorId, kind) {
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId) || {};
+const propane = !!v.propane;
+const held = resHeldMap(kind);
+return (cache.booths || []).filter(b => {
+if (!b.num || /^(P1|P2|WT)/.test(b.num)) return false;
+if (kind === 'saturday') {
+if (b.reservedBy) return false;
+} else {
+if (b.sundaySeasonalBy) return false;
+if (b.propane) return false;   // propane booths are not in the Sunday round
+}
+if (held[b.num]) return false;
+if (kind === 'saturday' && b.propane && !propane) return false;
+return true;
+}).sort((a, b) => Number(a.num) - Number(b.num));
+}
+function resHeldMap(kind) {
+const out = {};
+const key = resSeasonKey(kind);
+Object.keys(resCache || {}).forEach(vid => {
+const r = (resCache[vid] || {})[key];
+if (r && r.awarded) out[r.awarded] = vid;
+});
+return out;
+}
+function resFor(vendorId, kind) {
+const key = resSeasonKey(kind);
+return ((resCache || {})[vendorId] || {})[key] || { picks: [], paid: 0, awarded: null };
+}
+async function resSave(vendorId, kind, rec) {
+resCache = resCache || {};
+resCache[vendorId] = resCache[vendorId] || {};
+resCache[vendorId][resSeasonKey(kind)] = rec;
+await saveReservations();
 }
 function lottoRec(kind) {
 const date = lottoDateOf(kind);
@@ -18328,7 +18593,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-113';
+const BUILD_ID = '16-115';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -19632,6 +19897,20 @@ return (matched && snap) ? ' kiosk-match kiosk-snap' : '';
 }
 return (matched ? ' kiosk-match' : '') + (snap ? ' kiosk-snap' : '');
 }
+// A search shows the whole answer, so the map has to show the whole map.
+// Somebody zoomed in on booth 60 who then searches for bread, or clears the
+// box to start again, is looking for highlighted booths that may be at the
+// far end of the pavilion -- and would not see them. Every path that
+// rebuilds the highlighted set pulls the map back to the fitted view first.
+// A tap on a single booth is left alone: that is a person choosing to look
+// closely at one thing.
+function kioskShowWholeMap() {
+if (kioskZoom > KIOSK_ZOOM_MIN + 0.001 || kioskPanX || kioskPanY) {
+kioskZoom = KIOSK_ZOOM_MIN;
+kioskPanX = 0; kioskPanY = 0;
+applyKioskTransform();
+}
+}
 function toggleKioskSnap() {
 noteKioskActivity();
 kioskSnapOn = !kioskSnapOn;
@@ -19640,6 +19919,7 @@ applyKioskSnap();
 function applyKioskSnap() {
 const btn = document.getElementById('kioskSnapBtn');
 if (!btn) return;
+kioskShowWholeMap();
 kioskSnapBooths = kioskSnapOn ? kioskSnapStalls().said : new Set();
 btn.classList.toggle('on', kioskSnapOn);
 btn.setAttribute('aria-checked', kioskSnapOn ? 'true' : 'false');
@@ -20427,6 +20707,7 @@ return;
 }
 const el = document.getElementById('kioskProductSearch');
 if (el && !el.value.trim()) {
+kioskShowWholeMap();
 kioskMatchBooths = new Set();
 kioskMatchStructures = new Set();
 const results = document.getElementById('kioskResults');
@@ -20452,6 +20733,7 @@ const q = el ? el.value.trim().toLowerCase() : '';
 const occ = kioskOccupancy();
 kioskActiveBar = 'product';
 kioskSelectedBooth = null;
+kioskShowWholeMap();
 if (results) results.innerHTML = '';
 if (!q) {
 kioskMatchBooths = new Set();
@@ -20510,6 +20792,7 @@ const mode = active.mode;
 if (mode === 'product') { runKioskProductSearch(); return; }
 const results = document.getElementById('kioskResults');
 const occ = kioskOccupancy();
+kioskShowWholeMap();
 results.innerHTML = '';
 positionKioskResults();
 if (!q) {
@@ -26506,6 +26789,8 @@ const RULE_DEFS = [
 { g: 'Clocks and warnings', id: 'planDays', l: 'Days to submit a correction plan after notice', u: 'days', d: 60, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'safetyYears', l: 'Years between booth safety updates', u: 'years', d: 2, src: 'Guide, Booth Transfers and Updates' },
 { g: 'Clocks and warnings', id: 'lookbackYears', l: 'Years before an unsold juried product may be reclaimed', u: 'years', d: 3, src: 'Food Committee Guidelines' },
+{ g: 'Reservations', id: 'resSatFee', l: 'Reserved Saturday stall fee, for the season', u: '$', d: 0, src: 'Vendor Guide names the Reserved Stall Fee but does not state the amount \u2014 the Board sets it' },
+{ g: 'Reservations', id: 'resSunFee', l: 'Reserved Sunday-only stall fee, for the season', u: '$', d: 0, src: 'Vendor Guide names the Reserved Stall Fee but does not state the amount \u2014 the Board sets it' },
 { g: 'Card payments', id: 'sqPct', l: 'Square\u2019s percentage on a card payment', u: '%', d: 2.6, src: 'Square\u2019s published in-person rate \u2014 confirm against the market\u2019s own contract' },
 { g: 'Card payments', id: 'sqFixed', l: 'Square\u2019s fixed charge per card payment', u: '\u00a2', d: 15, src: 'Square\u2019s published in-person rate \u2014 confirm against the market\u2019s own contract' },
 { g: 'Monthly statements', id: 'stmtDueWeekend', l: 'Statements due by this market weekend of the following month', u: 'weekOfMonth', d: 2, src: 'BF45 \u2014 no rule existed; set when statements were built' },
