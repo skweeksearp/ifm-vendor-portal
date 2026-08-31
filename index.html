@@ -2510,12 +2510,8 @@ I sell food (prepared food or produce)
 </div>
 </div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-carrot"></use></svg></span>Recent Points History</h2>
-<table class="log" id="ptsHistoryTable">
-<thead><tr><th>Date</th><th>Type</th><th>Pts</th></tr></thead>
-<tbody></tbody>
-</table>
-<div class="empty-note" id="ptsHistoryEmpty" style="display:none;">No points activity on record yet.</div>
+<h2><span class="emoji"><svg class="ico"><use href="#i-carrot"></use></svg></span>Where Your Points Come From</h2>
+<div id="ptsBreakdown"></div>
 </div>
 <div class="card" id="myAttendCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span>Attendance<button type="button" class="help-dot" onclick="showPlanned('myattend')" aria-label="What are the rules here?">?</button></h2>
@@ -14191,16 +14187,7 @@ const fsp = document.getElementById('foldSubPoints');
 if (fsp) fsp.textContent = total + ' pts';
 renderMyAttendance(vendor.vendorId);
 document.getElementById('ptsYear').textContent = thisYearAttendance;
-const ptsBody = document.querySelector('#ptsHistoryTable tbody');
-ptsBody.innerHTML = '';
-const sortedLedger = [...myLedger].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 15);
-sortedLedger.forEach(row => {
-const tr = document.createElement('tr');
-tr.innerHTML = '<td>' + row.date + '</td><td>' + row.type + '</td>' +
-'<td class="mono pts-pos">+' + row.points + '</td>';
-ptsBody.appendChild(tr);
-});
-document.getElementById('ptsHistoryEmpty').style.display = sortedLedger.length ? 'none' : 'block';
+renderPointsBreakdown(vendor.vendorId, myLedger, total);
 const myCio = cache.callinout.filter(r => r.vendorId === vendor.vendorId)
 .sort((a, b) => (a.marketDate < b.marketDate ? 1 : -1)).slice(0, 10);
 const cioBody = document.querySelector('#cioTable tbody');
@@ -18325,7 +18312,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-111';
+const BUILD_ID = '16-112';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22111,6 +22098,41 @@ return 'You need ' + o.shortBy + ' more from the ' + o.left + ' ' + o.unit +
 }
 return o.shortBy + ' more to go, with ' + o.left + ' ' + o.unit + ' left. On track.';
 }
+// The Guide accrues points two ways and they behave differently: five for
+// each year at the market, which accrue in perpetuity, and one for each
+// market attended the previous year, which the Guide says carry for a year.
+// Showing one total hides that most of a long-standing vendor's number is
+// permanent while the rest turns over. Each line names its own rule.
+function renderPointsBreakdown(vendorId, ledger, total) {
+const host = document.getElementById('ptsBreakdown');
+if (!host) return;
+const rows = (ledger || []).slice();
+const sumOf = test => rows.filter(test).reduce((s, r) => s + Number(r.points || 0), 0);
+const membership = sumOf(r => /member/i.test(r.type));
+const attendance = sumOf(r => /attend/i.test(r.type));
+const other = Math.round((total - membership - attendance) * 100) / 100;
+const years = membership && ruleNum('ptsYear') ? Math.round(membership / ruleNum('ptsYear')) : null;
+const attendNote = rows.filter(r => /attend/i.test(r.type))
+.map(r => r.note).filter(Boolean)[0] || '';
+
+const line = (label, pts, note) =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(label) + ' \u00b7 <b>' + pts + '</b></div>' +
+'<div class="req-meta">' + note + '</div></div></div>';
+
+host.innerHTML =
+line('Years at the market', membership,
+(years ? years + ' year' + (years === 1 ? '' : 's') + ' \u00d7 ' + ruleNum('ptsYear') + ' points. ' : '') +
+'These keep accruing and are never lost.') +
+line('Markets attended', attendance,
+(attendNote ? esc(attendNote) + '. ' : '') +
+ruleNum('ptsDay') + ' point for each market attended. These are replaced each year ' +
+'when the season is posted.') +
+(other ? line('Other adjustments', (other > 0 ? '+' : '') + other,
+'Entered by the office.') : '') +
+'<div class="stmt-running"><span>Total</span><b>' + total + ' points</b></div>' +
+(rows.length ? '' : '<p class="empty-note" style="margin:8px 2px 0;">No points on record yet.</p>');
+}
 function renderMyAttendance(vendorId) {
 const card = document.getElementById('myAttendCard');
 const body = document.getElementById('myAttendBody');
@@ -25688,6 +25710,14 @@ esc(formatDisplayDate(n.date)) + '. ' +
 // the month running, hours against the season's requirement, and points.
 // Each line is derived from the same source its own drawer uses, so the
 // summary cannot drift from the tool it summarises.
+function acctRecentOpen(foldName) {
+const fold = document.querySelector('.dash-fold[data-fold="' + foldName + '"]');
+if (!fold) return;
+const bar = fold.querySelector('.fold-bar');
+if (!bar) return;
+if (!fold.classList.contains('open')) bar.click();
+setTimeout(() => fold.scrollIntoView({ block: 'start' }), 120);
+}
 function renderAccountRecent() {
 const host = document.getElementById('acctRecent');
 if (!host) return;
@@ -25717,18 +25747,18 @@ const hoursLine = !hl ? 'No hours recorded'
 : owed > 0 ? '<b>' + done.toFixed(1) + '</b> worked \u00b7 <b>' + owed.toFixed(1) + '</b> still owed'
 : '<b>' + done.toFixed(1) + '</b> worked \u2014 the season\u2019s hours are covered';
 
-const row = (label, body, screen, extra) =>
+const row = (label, body, target, extra) =>
 '<button type="button" class="req-row" style="width:100%; text-align:left; background:none; border:none; padding:10px 0; margin:0;" ' +
-'onclick="showScreen(\'' + screen + '\')">' +
+'onclick="acctRecentOpen(\'' + target + '\')">' +
 '<div class="req-row-main"><div class="req-name">' + esc(label) + '</div>' +
 '<div class="req-meta">' + body + '</div>' + (extra || '') + '</div></button>';
 
 host.innerHTML =
 '<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Recent Activity</h2>' +
 '<p class="empty-note" style="margin-top:0;">Where you stand right now. Tap any line for the detail.</p>' +
-row('Money', moneyLine, 'account', carried) +
+row('Money', moneyLine, 'accountmoney', carried) +
 row('Work Hours', hoursLine, 'hours') +
-row('Points', '<b>' + (pts == null ? '\u2014' : pts) + '</b> points this season', 'points');
+row('Points', '<b>' + (pts == null ? '\u2014' : pts) + '</b> points this season', 'fPoints');
 }
 function renderVendorAttn() {
 renderLottoNotice();
