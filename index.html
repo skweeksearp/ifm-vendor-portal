@@ -14923,9 +14923,31 @@ d.setDate(d.getDate() + 1);
 }
 return results;
 }
+// A RESERVATION IS NOT A RECORD OF A DATE.
+//
+// `reservedBy` is a standing fact with no year on it, so asked whether a
+// vendor was at the market in July 2025 it says yes -- as it would for 1995.
+// It once did exactly that: six months of 2025 Saturdays were charged to
+// eighty-three vendors for markets the app has no record of, and the lines
+// looked identical to real ones.
+//
+// So a reservation speaks only for its own season. `reservedYear` carries
+// that where a record has it; where one does not, the reservation is taken
+// to be the current one, which is the only season a year-less record can
+// honestly describe.
+//
+// Everything else here is dated and needs no such guard: lottery
+// assignments, call-ins, booth shares. Those keep answering for any year,
+// which is what preserves real history while the invented part goes.
+function boothReservationYear(b) {
+return Number((b && b.reservedYear) || seasonYear());
+}
 function attendedMarketDates(vendorId, year) {
-const holdsSaturdayStall = cache.booths.some(b => b.reservedBy === vendorId);
-const holdsSundayStall = cache.booths.some(b => b.sundaySeasonalBy === vendorId);
+year = Number(year);
+const holdsSaturdayStall = cache.booths.some(b =>
+b.reservedBy === vendorId && boothReservationYear(b) === year);
+const holdsSundayStall = cache.booths.some(b =>
+b.sundaySeasonalBy === vendorId && boothReservationYear(b) === year);
 const calledOut = new Set();
 const calledIn = new Set();
 cache.callinout.filter(r => r.vendorId === vendorId).forEach(r => {
@@ -16141,6 +16163,11 @@ return base + Number(lettered[2] || 0);
 return 2000000;
 }
 function boothBaselineHolder(booth, date) {
+// A reservation belongs to one season. Outside it the booth has no baseline
+// holder at all -- naming the current holder for a date in a past season
+// would put a vendor in a booth they may never have stood in.
+const yr = Number(String(date || '').slice(0, 4));
+if (yr && boothReservationYear(booth) !== yr) return null;
 if (booth.reservedBy) return booth.reservedBy;
 const isSunday = new Date(date + 'T12:00:00').getDay() === 0;
 return (isSunday && booth.sundaySeasonalBy) ? booth.sundaySeasonalBy : null;
@@ -19431,7 +19458,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-6';
+const BUILD_ID = '17-7';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
