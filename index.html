@@ -2354,6 +2354,7 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <span class="chair-bar-go">Review &rsaquo;</span>
 </div>
 <div class="card" id="lottoNotice" style="display:none;"></div>
+<div class="card" id="pavUpcoming" style="display:none;"></div>
 <div class="card" id="vendorAttn" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Needs Attention</h2>
 <p class="empty-note" id="vendorAttnSub" style="margin-top:0;"></p>
@@ -8181,6 +8182,7 @@ if (demoStmt === null) loadDemoStatements();
 if (merchCache === null) loadMerch();
 if (merchSq === null) loadMerchSquare();
 if (resCache === null) loadReservations();
+if (pavCache === null) loadPavRentals().then(renderPavUpcoming);
 cache.boothShares = boothShares === STORAGE_MISSING ? [] : (boothShares || []);
 cache.about = await loadAbout();
 const savedWin = await storageGet('ifm-about-win');
@@ -13027,6 +13029,49 @@ async function initPavRentalsScreen() {
 await loadPavRentals();
 refreshDateChips('prDate');
 renderPavRentals();
+}
+// WHAT IS COMING AT THE PAVILION.
+//
+// A vendor learned about a rental on the morning of the day, when the only
+// thing left to do is pack faster. Knowing a fortnight ahead that the 20th
+// means out by 4 changes what you bring and what you plan after market.
+//
+// The card shows itself only when something is booked. A rental happens a
+// handful of times a season, and a permanent empty drawer for it would cost
+// every vendor a line on their desk all year to say 'nothing'.
+function pavUpcoming(limit) {
+const today = todayISO();
+return (pavCache || [])
+.filter(r => r.date >= today)
+.sort((a, b) => a.date.localeCompare(b.date))
+.slice(0, limit || 6);
+}
+function renderPavUpcoming() {
+const card = document.getElementById('pavUpcoming');
+if (!card) return;
+if (currentRole !== 'vendor') { card.style.display = 'none'; return; }
+const list = pavUpcoming(6);
+if (!list.length) { card.style.display = 'none'; return; }
+card.style.display = 'block';
+card.innerHTML =
+'<h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>' +
+'The Pavilion Is Booked</h2>' +
+'<p class="empty-note" style="margin-top:0;">Somebody has the pavilion after market on these days. ' +
+'On a market day that means packed, cleaned and out of your booth space by <b>4 PM</b> \u2014 ' +
+'the Guide asks for it on page 17.</p>' +
+list.map(r => {
+const isMarket = pavIsMarketDate(r.date);
+const days = Math.round((new Date(r.date + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000);
+return '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(formatDisplayDate(r.date)) +
+(isMarket ? ' <span class="stamp late">out by 4 PM</span>'
+: ' <span class="season-tag">not a market day</span>') + '</div>' +
+'<div class="req-meta">' + esc(r.who) +
+(days === 0 ? ' \u00b7 today' : days === 1 ? ' \u00b7 tomorrow' : ' \u00b7 in ' + days + ' days') +
+'</div>' +
+(r.note ? '<div class="req-meta" style="margin-top:4px;">' + esc(r.note) + '</div>' : '') +
+'</div></div>';
+}).join('');
 }
 function pavNoticeSeenKey(dateISO) { return 'ifm-pav-seen-' + dateISO; }
 async function maybeShowPavNotice() {
@@ -18593,7 +18638,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '16-115';
+const BUILD_ID = '16-116';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26061,6 +26106,7 @@ row('Points', '<b>' + (pts == null ? '\u2014' : pts) + '</b> points this season'
 }
 function renderVendorAttn() {
 renderLottoNotice();
+renderPavUpcoming();
 renderAccountRecent();
 const card = document.getElementById('vendorAttn');
 const wrap = document.getElementById('vendorAttnList');
