@@ -195,8 +195,12 @@ overflow-wrap: break-word; }
 /* Only where a single unbroken string can genuinely be longer than the
    phone: a certificate code, a pasted address. Nothing with a title in it. */
 .stmt-table td, table.log td, .gcv-status, #gcvOut, #gcLookupOut,
-.report-row, .report-row * {
+.report-row, .report-row *:not(.r-name) {
 overflow-wrap: anywhere; }
+/* The name column is a title in all but class name, and this rule's whole
+   point is that titles do not get `anywhere`. `.report-row *` had been
+   sweeping it in, so a business name could break mid-word. */
+.report-row .r-name { overflow-wrap: break-word; }
 table.log, table.stmt-table { width: 100%; table-layout: auto; }
 /* The statement document. Deliberately plainer and squarer than the rest of
    the app: this is the one screen a vendor may print and hand to an
@@ -748,9 +752,14 @@ font-size: 22px; border-color: transparent;
 }
 .dir-points { margin-left: auto; text-align: center; }
 .report-row {
-display: flex; align-items: center; justify-content: space-between;
+display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
 padding: 8px 10px; border-bottom: 1px solid var(--paper-dim);
 }
+/* The stats line is a sentence, not a column, and beside a business name on a
+   phone it was squeezed to 26px and stacked one letter per line. Its own
+   line, always -- there is no width at which sharing one was readable. */
+.report-row .r-name { flex: 1 1 auto; min-width: 0; }
+.report-row .r-hours { flex: 1 1 100%; }
 .report-row.flagged { background: #F1E1D5; }
 .report-row .r-name { font-weight: 600; }
 .report-row .r-hours { font-size: 13px; opacity: 0.75; }
@@ -844,12 +853,17 @@ display: flex; align-items: center; justify-content: center; background: #fff;
 }
 .lotto-check.checked { background: var(--leaf); color: #fff; }
 .lotto-check .ico { width: 14px; height: 14px; }
-.lotto-name { flex: 1; min-width: 0; }
-.lotto-biz { font-weight: 700; font-size: 15px; color: var(--ink); }
-.lotto-pts { font-size: 12px; opacity: 0.65; }
+.lotto-name { flex: 1 1 auto; min-width: 6.5em; }
+.lotto-biz { font-weight: 700; font-size: 15px; color: var(--ink); overflow-wrap: break-word; }
+.lotto-pts { font-size: 12px; opacity: 0.65; overflow-wrap: break-word; }
+/* An input will not shrink to its `width` in a flex row: its automatic
+   minimum is its intrinsic size, about twenty characters. `min-width: 0` is
+   the half that does the work here -- without it the box held ~170px and the
+   vendor's name beside it was crushed to one character. */
 .lotto-booth {
-width: 60px; padding: 6px; border: 1px solid var(--paper-dim); border-radius: 6px;
-font-size: 14px; text-align: center; font-family: inherit;
+flex: 0 0 64px; min-width: 0;
+padding: 6px; border: 1px solid var(--paper-dim); border-radius: 6px;
+font-size: 16px; text-align: center; font-family: inherit;
 }
 /* This was a wrapped row of little tiles. Each tile held the name of whoever
    had vacated the booth, so a booth freed by "Rainbow Valley Ranch/Fingerlakes"
@@ -19569,7 +19583,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-12';
+const BUILD_ID = '17-13';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
