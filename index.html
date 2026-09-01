@@ -406,7 +406,8 @@ border: 1px solid rgba(35,42,32,0.15);
 .lotto-key i.available { background: var(--leaf); }
 .lotto-key i.assigned { background: var(--sunflower); }
 .lotto-key i.reserved { background: #4A5568; }
-#lottoPrintBackdrop.open, #feeStmtBackdrop.open, #yearEndBackdrop.open { align-items: stretch; }
+#lottoPrintBackdrop.open, #feeStmtBackdrop.open, #yearEndBackdrop.open,
+#stmtPrintBackdrop.open { align-items: stretch; }
 .print-shell {
 flex: 1; background: #fff; color: #000; display: flex; flex-direction: column; overflow: hidden;
 }
@@ -465,9 +466,16 @@ body:not(.kiosk-mode) #app { max-width: 640px; }
 @media print {
 @page { margin: 12mm; }
 #app, .print-bar { display: none !important; }
-#lottoPrintBackdrop.open, #feeStmtBackdrop.open, #yearEndBackdrop.open { display: block !important; position: static; background: none; }
+#lottoPrintBackdrop.open, #feeStmtBackdrop.open, #yearEndBackdrop.open,
+#stmtPrintBackdrop.open { display: block !important; position: static; background: none; }
 .print-shell { display: block; overflow: visible; }
-#lottoPrintSheet, #feeStmtSheet, #yearEndSheet { padding: 0; overflow: visible; }
+#lottoPrintSheet, #feeStmtSheet, #yearEndSheet, #stmtPrintSheet { padding: 0; overflow: visible; }
+/* One statement per sheet of paper. A vendor's statement is going in their
+   envelope, not on the back of somebody else's. */
+.stmt-page { break-after: page; }
+.stmt-page:last-child { break-after: auto; }
+.stmt-label { break-inside: avoid; border: 1px dashed #999; padding: 10mm;
+margin: 0 0 6mm; font-size: 12pt; line-height: 1.4; }
 html, body { background: #fff !important; color: #000 !important; }
 tr { break-inside: avoid; }
 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -14253,10 +14261,49 @@ if (sum) sum.innerHTML =
 '<div class="stat"><div class="stat-num">' + unsent.length + '</div><div class="stat-label">Not sent yet</div></div>';
 
 const bulk = document.getElementById('stmtBulk');
-if (bulk) bulk.innerHTML = !active.length ? '' :
+if (bulk) {
+if (!active.length) bulk.innerHTML = '';
+else {
+const r = stmtRoutes(ym);
+const eLeft = stmtUnsent(r.email).length, pLeft = stmtUnsent(r.post).length;
+const line = (label, n, left, note) =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + label + ' \u00b7 ' + n + '</div>' +
+'<div class="req-meta">' + note + '</div></div></div>';
+bulk.innerHTML =
+'<p class="empty-note" style="margin:0 0 8px;"><b>How each vendor can be reached</b> \u2014 ' +
+'read from the directory, not from a setting. ' + (open
+? 'This month is still running; sending waits until it closes.'
+: 'Nothing leaves this app on its own: email opens in your mail program, ' +
+'printing opens the print dialogue.') + '</p>' +
+line('Email', r.email.length, eLeft, eLeft
+? eLeft + ' still to send \u00b7 an email address is on file for them'
+: 'all sent') +
+line('Post', r.post.length, pLeft, r.post.length
+? (pLeft ? pLeft + ' still to send' : 'all sent') + ' \u00b7 no email address, but the market has a postal address'
+: 'nobody needs posting this month') +
+(r.unreachable.length
+? '<div class="req-row" style="border-left:3px solid #8A3B2E; padding-left:11px;">' +
+'<div class="req-row-main"><div class="req-name">No way to reach them \u00b7 ' + r.unreachable.length + '</div>' +
+'<div class="req-meta">' + r.unreachable.slice(0, 4).map(s => esc(s.contact.business)).join(', ') +
+(r.unreachable.length > 4 ? ' and others' : '') +
+' \u2014 neither an email nor a postal address is on file. Their statements print with the rest, ' +
+'but somebody has to ask them for a way to send it.</div></div></div>'
+: '') +
+(open ? '' :
+'<div class="act-switch" style="margin-top:10px;">' +
+'<button type="button" class="primary-btn" style="margin:0;" onclick="stmtEmailNext()">' +
+(eLeft ? 'Email the next one (' + eLeft + ' left)' : 'All emails sent') + '</button>' +
+'</div>' +
+'<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'post\')">Print the ' +
+r.post.length + ' for posting, with envelope addresses</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'all\')">Print all ' +
+active.length + ' \u2014 does not mark anything sent</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'labels\')">Envelope addresses only</button>') +
 '<button type="button" class="ghost-btn" onclick="stmtCopyAll()">Copy every statement as text</button>' +
-'<button type="button" class="ghost-btn" onclick="stmtExportCSV()">Export the month as a spreadsheet</button>' +
-'<p class="empty-note" style="margin:6px 2px 0;">Sending is one vendor at a time on purpose: each opens in your own mail program, addressed and written, for you to read before it goes. Nothing is sent by the app itself.</p>';
+'<button type="button" class="ghost-btn" onclick="stmtExportCSV()">Export the month as a spreadsheet</button>';
+}
+}
 
 const filt = (document.getElementById('stmtFilter') || {}).value || 'owing';
 const q = ((document.getElementById('stmtSearch') || {}).value || '').trim().toLowerCase();
@@ -14274,6 +14321,155 @@ return;
 }
 list.innerHTML = shown.map(s => stmtCardHTML(s)).join('');
 }
+// ---- sending the month ---------------------------------------------------
+// How this vendor can actually be reached. Read from the directory rather
+// than from a preference, because a preference can say "email" for somebody
+// who has never given the market an address to email.
+function stmtContact(vendorId) {
+const d = HARVESTED_DIRECTORY_DATA[vendorId] || {};
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId) || {};
+return {
+name: d.primaryContact || v.lastName || '',
+business: v.businessName || vendorId,
+email: (v.email || d.email || '').trim(),
+address: (v.address || d.address || '').trim(),
+};
+}
+// Three piles. The third is the point of the exercise: it is small, it is
+// invisible on the screen today, and every vendor in it is one the office
+// cannot reach at all.
+function stmtRoutes(ym) {
+const out = { email: [], post: [], unreachable: [] };
+(cache.vendors || []).forEach(v => {
+const s = statementFor(v.vendorId, ym);
+if (!(s.chargedTotal || s.receivedTotal || s.paid || s.sentAt)) return;
+const c = stmtContact(v.vendorId);
+s.contact = c;
+if (c.email) out.email.push(s);
+else if (c.address) out.post.push(s);
+else out.unreachable.push(s);
+});
+const byName = (a, b) => String(a.contact.business).localeCompare(String(b.contact.business));
+out.email.sort(byName); out.post.sort(byName); out.unreachable.sort(byName);
+return out;
+}
+function stmtUnsent(list) { return list.filter(s => !s.sentAt); }
+
+// ---- printing ------------------------------------------------------------
+// Built into the page rather than a new window: iOS blocks window.open from
+// anything but a direct tap, and a print that silently fails on the office
+// phone is worse than no print button.
+function openStmtPrint(html) {
+const sheet = document.getElementById('stmtPrintSheet');
+const back = document.getElementById('stmtPrintBackdrop');
+if (!sheet || !back) return;
+sheet.innerHTML = html;
+back.classList.add('open');
+back.style.display = 'flex';
+scrollAppToTop();
+}
+function closeStmtPrint() {
+const back = document.getElementById('stmtPrintBackdrop');
+if (!back) return;
+back.classList.remove('open');
+back.style.display = 'none';
+}
+// The statements themselves, one to a sheet of paper. Whoever they are for
+// is printed at the head of each, because a stack of statements with no name
+// on them is a sorting job nobody wants.
+function stmtPrintPages(list, ym) {
+if (!list.length) return '<p>Nothing to print for ' + esc(ymLabel(ym)) + '.</p>';
+return list.map(s => {
+const c = s.contact || stmtContact(s.vendorId);
+return '<div class="stmt-page">' +
+'<p style="font-size:11pt; margin:0 0 4mm;"><b>' + esc(c.business) + '</b>' +
+(c.name && c.name.trim().toLowerCase() !== String(c.business).trim().toLowerCase()
+? ' \u00b7 ' + esc(c.name) : '') +
+(c.address ? '<br>' + esc(c.address) : '') + '</p>' +
+stmtDocHTML(s, { print: true }) +
+'</div>';
+}).join('');
+}
+// Addresses for the envelopes, on their own sheet, cut lines and all.
+function stmtPrintLabels(list) {
+if (!list.length) return '<p>Nobody in this month needs posting.</p>';
+return '<h2 style="font-size:13pt;">Envelope addresses \u00b7 ' + list.length + '</h2>' +
+list.map(s => {
+const c = s.contact || stmtContact(s.vendorId);
+// A vendor trading under their own name is one line, not the same name
+// twice above their address.
+const sameName = c.name && c.business &&
+c.name.trim().toLowerCase() === c.business.trim().toLowerCase();
+return '<div class="stmt-label">' +
+(c.name && !sameName ? esc(c.name) + '<br>' : '') +
+'<b>' + esc(c.business) + '</b><br>' +
+esc(c.address || 'No address on file').replace(/,\s*/g, '<br>') +
+'</div>';
+}).join('');
+}
+async function stmtPrintRun(which) {
+if (!requireManager('stmtMsg')) return;
+const ym = document.getElementById('stmtMonth').value;
+const r = stmtRoutes(ym);
+const head = '<h1 style="font-size:15pt; margin:0 0 6mm;">Ithaca Farmers Market \u2014 ' +
+esc(ymLabel(ym)) + '</h1>';
+let list, body;
+if (which === 'labels') { list = r.post; body = head + stmtPrintLabels(list); }
+else if (which === 'post') { list = r.post; body = head + stmtPrintPages(list, ym) +
+'<div class="stmt-page">' + stmtPrintLabels(list) + '</div>'; }
+else if (which === 'unsent') { list = stmtUnsent(r.email.concat(r.post, r.unreachable));
+body = head + stmtPrintPages(list, ym); }
+else { list = r.email.concat(r.post, r.unreachable); body = head + stmtPrintPages(list, ym); }
+openStmtPrint(body);
+// Marked as sent only for the runs that ARE the sending. Printing every
+// statement to read them over is not sending them to anybody, and marking
+// it would tell the office a job was done that was not.
+if (which === 'post' && list.length) {
+await stmtMarkManySent(list.map(s => s.vendorId), ym, 'post');
+showMsg('stmtMsg', 'ok', list.length + ' marked as posted. The envelope addresses are on the last sheet.');
+}
+}
+
+// Marking a pile at once. One write and one redraw, because the per-vendor
+// version saved the whole store and rebuilt every card each time round --
+// eight vendors meant eight saves and eight renders for a single button.
+async function stmtMarkManySent(vendorIds, ym, how) {
+if (!requireManager('stmtMsg')) return 0;
+const at = Date.now();
+vendorIds.forEach(vendorId => {
+const id = stmtId(vendorId, ym);
+stmtCache[id] = Object.assign({}, stmtCache[id] || {},
+{ sentAt: at, sentBy: currentRole, sentHow: how || 'post' });
+});
+actAs('Statements marked ' + (how || 'sent') + ' \u2014 ' + vendorIds.length + ' for ' + ymLabel(ym),
+{ kind: 'money', weight: 'routine' });
+await saveStatements();
+renderStatements();
+return vendorIds.length;
+}
+
+// ---- the email run -------------------------------------------------------
+// One at a time, in order, with the office reading each before it goes --
+// but without hunting for the next one. The app opens the mail program; it
+// never sends.
+function stmtNextUnsentEmail(ym) {
+return stmtUnsent(stmtRoutes(ym).email)[0] || null;
+}
+async function stmtEmailNext() {
+if (!requireManager('stmtMsg')) return;
+const ym = document.getElementById('stmtMonth').value;
+const s = stmtNextUnsentEmail(ym);
+if (!s) { showMsg('stmtMsg', 'ok', 'Every vendor with an email address has had ' +
+esc(ymLabel(ym)) + '. Anyone left is in the post or unreachable pile.'); return; }
+window.location.href = stmtMailto(s);
+await stmtMarkSent(s.vendorId, ym, 'email');
+const left = stmtUnsent(stmtRoutes(ym).email).length;
+showMsg('stmtMsg', 'ok', 'Opened ' + esc(s.contact ? s.contact.business : s.vendorId) +
+'. Marked as sent \u2014 <b>if the mail program did not open, or you closed it without ' +
+'sending, mark it unsent on their card.</b> ' + left + ' left to email.');
+renderStatements();
+}
+
 function stmtCardHTML(s) {
 const rec = stmtRecord(s.vendorId, s.ym);
 const name = esc(s.vendor ? s.vendor.businessName : s.vendorId);
@@ -14308,10 +14504,18 @@ body += '<p class="empty-note" style="margin:8px 2px 6px;">' +
 (s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' owed' : '') : '') + '</p>';
 const email = (s.vendor || {}).email || '';
 if (!open) {
-body += '<a class="ghost-btn" style="display:inline-block;" href="' + stmtMailto(s) + '" ' +
-'onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'email\')">' +
-(email ? 'Open the email' : 'No email on file \u2014 open anyway') + '</a>' +
-'<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy the text</button>';
+const c = stmtContact(s.vendorId);
+body += email
+? '<a class="ghost-btn" style="display:inline-block;" href="' + stmtMailto(s) + '" ' +
+'onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'email\')">Open the email</a>'
+: '<p class="empty-note" style="margin:6px 2px;"><b>No email on file.</b> ' +
+(c.address ? 'They are in the posting pile \u2014 ' + esc(c.address)
+: '<b>No postal address either</b> \u2014 somebody has to ask them how to send it') + '.</p>';
+body += '<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Print this one</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy the text</button>' +
+(s.sentAt
+? '<button type="button" class="ghost-btn" onclick="stmtMarkUnsent(\'' + s.vendorId + '\',\'' + s.ym + '\')">Mark it not sent</button>'
+: '<button type="button" class="ghost-btn" onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'post\')">Mark it posted</button>');
 }
 if (s.outstanding > 0) {
 body += '<div class="desk-form" style="margin-top:8px;">' +
@@ -14325,6 +14529,29 @@ body += '<div class="desk-form" style="margin-top:8px;">' +
 }
 return body + '</div>';
 }
+function stmtPrintOne(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const s = statementFor(vendorId, ym);
+s.contact = stmtContact(vendorId);
+openStmtPrint('<h1 style="font-size:15pt; margin:0 0 6mm;">Ithaca Farmers Market \u2014 ' +
+esc(ymLabel(ym)) + '</h1>' + stmtPrintPages([s], ym));
+}
+// The sent mark is a claim about the world, and the world sometimes disagrees:
+// the mail program did not open, or it opened and was closed unsent. Undoing
+// has to be as easy as doing, or the office learns not to trust the mark.
+async function stmtMarkUnsent(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const id = stmtId(vendorId, ym);
+const rec = Object.assign({}, stmtCache[id] || {});
+delete rec.sentAt; delete rec.sentBy; delete rec.sentHow;
+stmtCache[id] = rec;
+actAs('Statement marked not sent \u2014 ' + ymLabel(ym),
+{ kind: 'money', weight: 'routine', vendorId: vendorId });
+await saveStatements();
+renderStatements();
+showMsg('stmtMsg', 'ok', 'Marked not sent. It is back in the pile.');
+}
+
 function stmtMailto(s) {
 const email = (s.vendor || {}).email || '';
 return 'mailto:' + encodeURIComponent(email) +
@@ -19601,7 +19828,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-17';
+const BUILD_ID = '17-18';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -43081,6 +43308,16 @@ init();</script>
     <div id="feeStmtSheet"></div>
   </div>
 </div>
+<div id="stmtPrintBackdrop" class="modal-backdrop">
+  <div class="print-shell">
+    <div class="print-bar">
+      <button type="button" class="ghost-btn" onclick="closeStmtPrint()">Close</button>
+      <button type="button" onclick="window.print()">Print</button>
+    </div>
+    <div id="stmtPrintSheet"></div>
+  </div>
+</div>
+
 <div id="lottoPrintBackdrop" class="modal-backdrop">
   <div class="print-shell">
     <div class="print-bar">
