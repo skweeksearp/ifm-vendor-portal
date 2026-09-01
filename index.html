@@ -3059,27 +3059,28 @@ Recording it here puts that notice in front of every vendor when they open the a
 <div id="stmtDemoBanner"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">One statement a month for every vendor: what they were charged, what they paid or were credited, and where they stand on points and hours. Built from the market&rsquo;s records each time it is opened, so a correction anywhere corrects the statement too.</p>
 <div class="card desk-form">
-<label for="stmtMonth">Statement month</label>
-<select id="stmtMonth" onchange="stmtResetPaging()"></select>
-<div id="stmtDueNote" class="empty-note" style="margin:8px 0 0;"></div>
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Whose Statement</h2>
+<select id="stmtVendor" onchange="renderVendorStatements()"></select>
 <div class="status-msg" id="stmtMsg"></div>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>The Month at a Glance</h2>
-<div id="stmtSummary" class="stat-row"></div>
+<div id="stmtVendorPane"></div>
+<div class="dash-fold" id="stmtMonthRunCard" data-fold="stmtmonthrun">
+<button type="button" class="fold-bar" onclick="toggleStmtMonthRun(this)">
+<span class="fold-title">Send a Whole Month</span>
+<span class="fold-sub">End of month, when every vendor gets one</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<p class="empty-note" style="margin-top:0;">For the end of the month, when every vendor gets one. To deal with a single vendor, find them above.</p>
+<div class="desk-form">
+<label for="stmtMonth">Month</label>
+<select id="stmtMonth" onchange="renderMonthRun()"></select>
+</div>
+<div id="stmtDueNote" class="empty-note" style="margin:8px 0 0;"></div>
+<div id="stmtSummary" class="stat-row" style="margin-top:10px;"></div>
 <div id="stmtBulk" style="margin-top:10px;"></div>
 </div>
-<div class="card desk-form">
-<label for="stmtFilter">Show</label>
-<select id="stmtFilter" onchange="stmtResetPaging()">
-<option value="owing">Owing something</option>
-<option value="all">Everyone</option>
-<option value="unsent">Not sent yet</option>
-<option value="credit">The market owes them</option>
-</select>
-<input type="text" id="stmtSearch" class="find-field" placeholder="Find a vendor by name" oninput="stmtResetPaging()" autocomplete="off">
 </div>
-<div id="stmtList"></div>
 </section>
 <section id="screen-giftcerts" class="screen">
 <div class="screen-head" id="head-giftcerts"></div>
@@ -14290,11 +14291,8 @@ out.push(d.toISOString().slice(0, 7));
 }
 return out;
 }
-// A new month or a new filter is a new list, so it starts at a screenful
-// again rather than inheriting the last one's "show everything".
-function stmtResetPaging() { stmtShowAll = false; renderStatements(); }
 function initStatementsScreen() {
-stmtShowAll = false;
+stmtFillVendorSelect();
 const sel = document.getElementById('stmtMonth');
 if (sel && !sel.options.length) {
 sel.innerHTML = stmtMonthOptions().map(ym =>
@@ -14309,12 +14307,128 @@ sel.innerHTML = stmtMonthOptions().map(ym =>
 const firstClosed = stmtMonthOptions().find(ym => !stmtIsOpen(ym));
 if (firstClosed) sel.value = firstClosed;
 }
-renderStatements();
+renderVendorStatements();
+renderMonthRun();
 }
-function renderStatements() {
+// ---- one vendor, every month --------------------------------------------
+// The select is filled with every vendor and left hidden; mountVendorFinder
+// fits it with the app's search box automatically, because its options are
+// vendors. That finder lists NOBODY until letters are typed, which is the
+// point -- no wall of names to scroll past to reach the one person the office
+// came here about. Never hand-build a second search box beside one of these.
+function stmtFillVendorSelect() {
+const sel = document.getElementById('stmtVendor');
+if (!sel) return;
+const keep = sel.value;
+const sig = (cache.vendors || []).map(v => v.vendorId).join(',');
+if (sel.dataset.sig === sig) return;
+sel.dataset.sig = sig;
+sel.innerHTML = '<option value="">Nobody chosen yet</option>' +
+(cache.vendors || []).slice().sort(byBusinessName)
+.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+sel.value = keep || '';
+mountVendorFinder(sel);
+}
+// Every month this vendor has anything in, newest first. The month is not a
+// setting on the screen any more -- it is a row in their list, so there is no
+// month to pick wrongly and nothing to reset between vendors.
+function vendorStatementMonths(vendorId) {
+return stmtMonthOptions()
+.map(ym => statementFor(vendorId, ym))
+.filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
+}
+function renderVendorStatements() {
+const pane = document.getElementById('stmtVendorPane');
+const sel = document.getElementById('stmtVendor');
+if (!pane || !sel) return;
+const vendorId = sel.value;
+if (!vendorId) { pane.innerHTML = ''; return; }
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+const c = stmtContact(vendorId);
+const months = vendorStatementMonths(vendorId);
+const owed = months.reduce((t, s) => t + Math.max(0, s.outstanding), 0);
+
+let out = '<div class="card"><h2 style="font-size:17px;">' + esc(v ? v.businessName : vendorId) + '</h2>';
+// How this one can be reached, said once at the top rather than repeated on
+// every month, because it is a fact about the vendor and not about a month.
+out += '<p class="empty-note" style="margin:4px 2px 10px;">' +
+(c.email ? '<b>Email:</b> ' + esc(c.email) : '<b>No email on file</b>') +
+' \u00b7 ' + (c.address ? '<b>Post:</b> ' + esc(c.address)
+: '<b>no postal address either</b> \u2014 somebody has to ask them how to send it') + '</p>';
+if (!months.length) {
+out += '<p class="empty-note" style="margin:0;">No statements yet. Nothing has been charged or ' +
+'credited to them in any month the app holds.</p></div>';
+pane.innerHTML = out;
+return;
+}
+out += '<p class="empty-note" style="margin:0 2px;">' + months.length + ' month' +
+(months.length === 1 ? '' : 's') +
+(owed > 0 ? ' \u00b7 <b>$' + fmtMoney(owed) + ' outstanding across them</b>' : ' \u00b7 all settled') +
+'</p></div>';
+
+months.forEach(s => {
+const open = stmtIsOpen(s.ym);
+out += '<div class="card"><h2 style="font-size:16px;">' + esc(ymLabel(s.ym)) +
+(open ? ' <span class="stamp">Still running</span>'
+: s.outstanding > 0 ? ' <span class="stamp in">Owing</span>'
+: s.outstanding < 0 ? ' <span class="stamp">Credit</span>'
+: ' <span class="stamp on">Settled</span>') + '</h2>' +
+'<div class="gc-balance" style="margin-top:6px;">' +
+'<div class="gc-bal-num">$' + fmtMoney(Math.abs(s.outstanding)) + '</div>' +
+'<div class="gc-bal-label">' + (s.outstanding > 0 ? 'due from them'
+: s.outstanding < 0 ? 'owed to them' : 'settled') + '</div></div>' +
+'<p class="empty-note" style="margin:8px 2px 0;">' +
+(s.charged.length + s.received.length) + ' line' +
+(s.charged.length + s.received.length === 1 ? '' : 's') +
+(s.sentAt ? ' \u00b7 sent ' + esc(formatDisplayDate(new Date(s.sentAt).toISOString().slice(0, 10))) +
+(s.sentHow ? ' by ' + esc(s.sentHow) : '') : ' \u00b7 not sent') + '</p>';
+if (open) {
+out += '<p class="empty-note" style="margin:6px 2px 0;">Still running \u2014 market days are ' +
+'being added to it. It becomes a statement when the month closes, and there is nothing to ' +
+'send until then.</p>';
+} else {
+out += '<div class="stmt-actions">' +
+(c.email ? '<a class="ghost-btn" href="' + stmtMailto(s) + '" ' +
+'onclick="stmtMarkSent(\'' + vendorId + '\',\'' + s.ym + '\',\'email\')">Email it</a>' : '') +
+'<button type="button" class="ghost-btn" onclick="stmtViewOne(\'' + vendorId + '\',\'' + s.ym + '\')">View</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + vendorId + '\',\'' + s.ym + '\')">Print</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + vendorId + '\',\'' + s.ym + '\')">Save PDF</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + vendorId + '\',\'' + s.ym + '\')">Copy text</button>' +
+(s.sentAt
+? '<button type="button" class="ghost-btn" onclick="stmtMarkUnsent(\'' + vendorId + '\',\'' + s.ym + '\')">Not sent</button>'
+: '<button type="button" class="ghost-btn" onclick="stmtMarkSent(\'' + vendorId + '\',\'' + s.ym + '\',\'post\')">Mark posted</button>') +
+'</div>';
+}
+out += '<div id="stmtOpen-' + esc(s.ym) + '" style="display:none; margin-top:10px;"></div></div>';
+});
+pane.innerHTML = out;
+}
+// Reading it on the screen, in the same document the vendor gets. Toggling
+// rather than opening a sheet: the office is usually comparing it with what
+// somebody is telling them at the window.
+function stmtViewOne(vendorId, ym) {
+const box = document.getElementById('stmtOpen-' + ym);
+if (!box) return;
+if (box.style.display === 'block') { box.style.display = 'none'; box.innerHTML = ''; return; }
+box.innerHTML = stmtDocHTML(statementFor(vendorId, ym));
+box.style.display = 'block';
+}
+
+function renderStatements() { renderVendorStatements(); renderMonthRun(); }
+// Shut until asked for. Building a month means 168 statements and three route
+// piles -- the whole cost of this screen -- and an office looking up one
+// vendor should not pay it to walk past.
+let stmtMonthRunOpen = false;
+function toggleStmtMonthRun(bar) {
+const fold = bar.closest('.dash-fold');
+stmtMonthRunOpen = !fold.classList.contains('open');
+fold.classList.toggle('open', stmtMonthRunOpen);
+if (stmtMonthRunOpen) renderMonthRun();
+}
+function renderMonthRun() {
 const sel = document.getElementById('stmtMonth');
-const list = document.getElementById('stmtList');
-if (!sel || !list) return;
+if (!sel) return;
+if (!stmtMonthRunOpen) return;
 const ym = sel.value || stmtMonthOptions()[0];
 const note = document.getElementById('stmtDueNote');
 const open = stmtIsOpen(ym);
@@ -14390,33 +14504,8 @@ active.length + ' \u2014 does not mark anything sent</button>' +
 }
 }
 
-const filt = (document.getElementById('stmtFilter') || {}).value || 'owing';
-const q = ((document.getElementById('stmtSearch') || {}).value || '').trim().toLowerCase();
-let shown = filt === 'all' ? active
-: filt === 'owing' ? owing
-: filt === 'unsent' ? unsent
-: filt === 'credit' ? credit
-: owing;
-if (q) shown = shown.filter(s => String(s.vendor && s.vendor.businessName || '').toLowerCase().includes(q));
-shown.sort((a, b) => b.outstanding - a.outstanding);
+}
 
-if (!shown.length) {
-list.innerHTML = '<p class="empty-note">Nothing to show for ' + esc(ymLabel(ym)) + ' under that filter.</p>';
-return;
-}
-// A screenful at a time. Drawing all of them meant half a megabyte of markup
-// and seven thousand elements laid out before the office could see the first
-// card -- for a list nobody reads to the end of.
-const cap = stmtShowAll ? shown.length : Math.min(shown.length, 25);
-list.innerHTML = shown.slice(0, cap).map(s => stmtCardHTML(s)).join('') +
-(cap < shown.length
-? '<button type="button" class="ghost-btn" onclick="stmtShowMore()">Show the other ' +
-(shown.length - cap) + ' \u2014 showing ' + cap + ' of ' + shown.length + '</button>'
-: shown.length > 25
-? '<p class="empty-note" style="margin:8px 2px;">All ' + shown.length + ' shown.</p>' : '');
-}
-let stmtShowAll = false;
-function stmtShowMore() { stmtShowAll = true; renderStatements(); }
 // ---- sending the month ---------------------------------------------------
 // How this vendor can actually be reached. Read from the directory rather
 // than from a preference, because a preference can say "email" for somebody
@@ -20001,7 +20090,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-20';
+const BUILD_ID = '17-21';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
