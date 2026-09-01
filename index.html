@@ -486,6 +486,10 @@ body:not(.kiosk-mode) #app { max-width: 640px; }
 #stmtPrintSheet .stmt-doc { border: none; border-radius: 0; box-shadow: none;
 padding: 0; background: #fff; }
 #stmtPrintSheet .stmt-page { padding: 0 0 8mm; }
+.stmt-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+.stmt-actions .ghost-btn, .stmt-actions a.ghost-btn {
+margin: 0; width: auto; flex: 0 1 auto; padding: 8px 12px; font-size: 14px;
+display: inline-flex; align-items: center; justify-content: center; }
 .stmt-foot { margin-top: 8mm; padding-top: 3mm; border-top: 1px solid #DDD6C0;
 font-size: 9pt; color: #55523F; line-height: 1.4; }
 .stmt-label { break-inside: avoid; border: 1px dashed #999; padding: 10mm;
@@ -3056,7 +3060,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p class="empty-note" style="margin:-4px 0 14px;">One statement a month for every vendor: what they were charged, what they paid or were credited, and where they stand on points and hours. Built from the market&rsquo;s records each time it is opened, so a correction anywhere corrects the statement too.</p>
 <div class="card desk-form">
 <label for="stmtMonth">Statement month</label>
-<select id="stmtMonth" onchange="renderStatements()"></select>
+<select id="stmtMonth" onchange="stmtResetPaging()"></select>
 <div id="stmtDueNote" class="empty-note" style="margin:8px 0 0;"></div>
 <div class="status-msg" id="stmtMsg"></div>
 </div>
@@ -3067,13 +3071,13 @@ Recording it here puts that notice in front of every vendor when they open the a
 </div>
 <div class="card desk-form">
 <label for="stmtFilter">Show</label>
-<select id="stmtFilter" onchange="renderStatements()">
+<select id="stmtFilter" onchange="stmtResetPaging()">
 <option value="owing">Owing something</option>
 <option value="all">Everyone</option>
 <option value="unsent">Not sent yet</option>
 <option value="credit">The market owes them</option>
 </select>
-<input type="text" id="stmtSearch" class="find-field" placeholder="Find a vendor by name" oninput="renderStatements()" autocomplete="off">
+<input type="text" id="stmtSearch" class="find-field" placeholder="Find a vendor by name" oninput="stmtResetPaging()" autocomplete="off">
 </div>
 <div id="stmtList"></div>
 </section>
@@ -7743,6 +7747,7 @@ if (actSaveTimer) clearTimeout(actSaveTimer);
 actSaveTimer = setTimeout(() => { actSaveTimer = null; storageSet('ifm-activity', cache.activity); }, 4000);
 }
 async function storageSet(key, value) {
+dropMoneyMemo();
 noteActivity(key);
 try {
 const res = await window.storage.set(key, JSON.stringify(value));
@@ -7760,6 +7765,7 @@ return STORAGE_MISSING;
 }
 }
 async function storageSetShared(key, value) {
+dropMoneyMemo();
 try {
 const res = await window.storage.set(key, JSON.stringify(value), true);
 if (!res) storageBroken = true;
@@ -14284,11 +14290,24 @@ out.push(d.toISOString().slice(0, 7));
 }
 return out;
 }
+// A new month or a new filter is a new list, so it starts at a screenful
+// again rather than inheriting the last one's "show everything".
+function stmtResetPaging() { stmtShowAll = false; renderStatements(); }
 function initStatementsScreen() {
+stmtShowAll = false;
 const sel = document.getElementById('stmtMonth');
 if (sel && !sel.options.length) {
 sel.innerHTML = stmtMonthOptions().map(ym =>
 '<option value="' + ym + '">' + esc(ymLabel(ym)) + '</option>').join('');
+// Open on the last CLOSED month, not the one running.
+//
+// A running month is not a statement, so it offers nothing to send or
+// print -- correctly. But it is also the first option in the list, so on
+// the first of September an office coming to send August arrived at an
+// empty September with no controls at all, and reasonably concluded the
+// tools were missing. The month with the work in it is the one to land on.
+const firstClosed = stmtMonthOptions().find(ym => !stmtIsOpen(ym));
+if (firstClosed) sel.value = firstClosed;
 }
 renderStatements();
 }
@@ -14326,7 +14345,7 @@ const bulk = document.getElementById('stmtBulk');
 if (bulk) {
 if (!active.length) bulk.innerHTML = '';
 else {
-const r = stmtRoutes(ym);
+const r = stmtRoutes(ym, all);
 const eLeft = stmtUnsent(r.email).length, pLeft = stmtUnsent(r.post).length;
 const line = (label, n, left, note) =>
 '<div class="req-row"><div class="req-row-main">' +
@@ -14385,8 +14404,19 @@ if (!shown.length) {
 list.innerHTML = '<p class="empty-note">Nothing to show for ' + esc(ymLabel(ym)) + ' under that filter.</p>';
 return;
 }
-list.innerHTML = shown.map(s => stmtCardHTML(s)).join('');
+// A screenful at a time. Drawing all of them meant half a megabyte of markup
+// and seven thousand elements laid out before the office could see the first
+// card -- for a list nobody reads to the end of.
+const cap = stmtShowAll ? shown.length : Math.min(shown.length, 25);
+list.innerHTML = shown.slice(0, cap).map(s => stmtCardHTML(s)).join('') +
+(cap < shown.length
+? '<button type="button" class="ghost-btn" onclick="stmtShowMore()">Show the other ' +
+(shown.length - cap) + ' \u2014 showing ' + cap + ' of ' + shown.length + '</button>'
+: shown.length > 25
+? '<p class="empty-note" style="margin:8px 2px;">All ' + shown.length + ' shown.</p>' : '');
 }
+let stmtShowAll = false;
+function stmtShowMore() { stmtShowAll = true; renderStatements(); }
 // ---- sending the month ---------------------------------------------------
 // How this vendor can actually be reached. Read from the directory rather
 // than from a preference, because a preference can say "email" for somebody
@@ -14404,12 +14434,14 @@ address: (v.address || d.address || '').trim(),
 // Three piles. The third is the point of the exercise: it is small, it is
 // invisible on the screen today, and every vendor in it is one the office
 // cannot reach at all.
-function stmtRoutes(ym) {
+function stmtRoutes(ym, prebuilt) {
 const out = { email: [], post: [], unreachable: [] };
-(cache.vendors || []).forEach(v => {
-const s = statementFor(v.vendorId, ym);
+// The caller usually has these already; building them twice was two passes
+// over 168 vendors for one screen.
+const list = prebuilt || (cache.vendors || []).map(v => statementFor(v.vendorId, ym));
+list.forEach(s => {
 if (!(s.chargedTotal || s.receivedTotal || s.paid || s.sentAt)) return;
-const c = stmtContact(v.vendorId);
+const c = stmtContact(s.vendorId);
 s.contact = c;
 if (c.email) out.email.push(s);
 else if (c.address) out.post.push(s);
@@ -14434,8 +14466,20 @@ back.classList.add('open');
 back.style.display = 'flex';
 scrollAppToTop();
 }
+// Called whenever a screen changes, not only by the Close button. A
+// full-screen sheet that only one control can dismiss will outlive the screen
+// it belongs to: navigate away with it open and it sits over everything,
+// still holding the app's title, looking exactly like a freeze.
+function closeStmtPrintIfOpen() {
+const back = document.getElementById('stmtPrintBackdrop');
+if (back && back.classList.contains('open')) closeStmtPrint();
+}
 function closeStmtPrint() {
 if (stmtTitleWas !== null) { document.title = stmtTitleWas; stmtTitleWas = null; }
+// The sheet can hold a hundred and sixty-seven statements. Emptying it on
+// the way out keeps that weight off every screen the office visits next.
+const sheet = document.getElementById('stmtPrintSheet');
+if (sheet) sheet.innerHTML = '';
 const back = document.getElementById('stmtPrintBackdrop');
 if (!back) return;
 back.classList.remove('open');
@@ -14538,6 +14582,10 @@ renderStatements();
 }
 
 function stmtCardHTML(s) {
+// Its own, not renderStatements'. A bare `open` here resolved to window.open
+// -- always truthy -- which silently withheld every action button on every
+// card and made every month claim to be still running.
+const open = stmtIsOpen(s.ym);
 const rec = stmtRecord(s.vendorId, s.ym);
 const name = esc(s.vendor ? s.vendor.businessName : s.vendorId);
 const state = s.outstanding > 0
@@ -14551,6 +14599,29 @@ body += '<div class="gc-balance' + (s.outstanding > 0 ? '' : ' gc-spent') + '" s
 s.outstanding < 0 ? 'owed to them' : 'settled') + '</div></div>';
 if (s.carried) body += '<p class="empty-note" style="margin:6px 2px 0;">Under the $' +
 fmtMoney(ruleNum('stmtCarryUnder')) + ' line the Board set \u2014 this can roll to next month rather than be chased.</p>';
+// What to DO with this vendor, directly under their name. These used to sit
+// at the foot of the card, below every line of the month and the payment
+// history -- several phone screens down, findable only by somebody who
+// already knew they were there.
+if (!open) {
+const c = stmtContact(s.vendorId);
+const email = c.email;
+body += '<div class="stmt-actions">' +
+(email
+? '<a class="ghost-btn" href="' + stmtMailto(s) + '" ' +
+'onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'email\')">Email it</a>'
+: '') +
+'<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Print</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + s.vendorId + '\',\'' + s.ym + '\')">Save PDF</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy text</button>' +
+(s.sentAt
+? '<button type="button" class="ghost-btn" onclick="stmtMarkUnsent(\'' + s.vendorId + '\',\'' + s.ym + '\')">Not sent</button>'
+: '<button type="button" class="ghost-btn" onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'post\')">Mark posted</button>') +
+'</div>' +
+(email ? '' : '<p class="empty-note" style="margin:4px 2px 0;"><b>No email on file.</b> ' +
+(c.address ? 'Posting pile \u2014 ' + esc(c.address)
+: '<b>No postal address either</b> \u2014 somebody has to ask them how to send it') + '.</p>');
+}
 const rows = s.charged.map(r => ['charge', r]).concat(s.received.map(r => ['credit', r]));
 if (rows.length) {
 body += '<p class="empty-note" style="margin:10px 2px 4px;"><b>' + rows.length + ' line' + (rows.length === 1 ? '' : 's') + ' this month</b></p>';
@@ -14569,22 +14640,6 @@ body += '<p class="empty-note" style="margin:8px 2px 6px;">' +
 ' \u00b7 points ' + (s.points == null ? '\u2014' : esc(s.points)) +
 (s.hours ? ' \u00b7 hours ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
 (s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' owed' : '') : '') + '</p>';
-const email = (s.vendor || {}).email || '';
-if (!open) {
-const c = stmtContact(s.vendorId);
-body += email
-? '<a class="ghost-btn" style="display:inline-block;" href="' + stmtMailto(s) + '" ' +
-'onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'email\')">Open the email</a>'
-: '<p class="empty-note" style="margin:6px 2px;"><b>No email on file.</b> ' +
-(c.address ? 'They are in the posting pile \u2014 ' + esc(c.address)
-: '<b>No postal address either</b> \u2014 somebody has to ask them how to send it') + '.</p>';
-body += '<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + s.vendorId + '\',\'' + s.ym + '\')">Save the PDF to attach</button>' +
-'<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Print this one</button>' +
-'<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy the text</button>' +
-(s.sentAt
-? '<button type="button" class="ghost-btn" onclick="stmtMarkUnsent(\'' + s.vendorId + '\',\'' + s.ym + '\')">Mark it not sent</button>'
-: '<button type="button" class="ghost-btn" onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'post\')">Mark it posted</button>');
-}
 if (s.outstanding > 0) {
 body += '<div class="desk-form" style="margin-top:8px;">' +
 '<label for="stmtPayAmt">Record a payment</label>' +
@@ -14952,7 +15007,29 @@ out.push({ date: a.date, day: a.day, booth: boothNum, amount: amount, paid: paid
 });
 return out;
 }
+// ---- remembering what has not changed ------------------------------------
+// accountData and statementFor are pure functions of stored data: same
+// records in, same answer out. They are also the most expensive things in the
+// app, and the statement screen asks for the same answer dozens of times in a
+// single render -- stmtBroughtForward alone walks twelve months and asks for
+// the same vendor-year each time.
+//
+// So the answers are kept until something is written. Every write in the app
+// goes through storageSet or storageSetShared, so dropping the cache there
+// covers everything, including a future feature that adds a new kind of
+// charge and would otherwise have to remember to invalidate by hand.
+let moneyMemo = { acct: new Map(), stmt: new Map() };
+function dropMoneyMemo() { moneyMemo.acct.clear(); moneyMemo.stmt.clear(); }
+
 function accountData(vendorId, year) {
+const memoKey = vendorId + '|' + Number(year);
+const hit = moneyMemo.acct.get(memoKey);
+if (hit) return hit;
+const built = accountDataUncached(vendorId, year);
+moneyMemo.acct.set(memoKey, built);
+return built;
+}
+function accountDataUncached(vendorId, year) {
 const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
 const inYear = d => String(d || '').slice(0, 4) === String(year);
 const charged = [], received = [], unseen = [];
@@ -16035,6 +16112,8 @@ renderTaskManager();
 let ifmCurrentScreen = 'dashboard';
 function showScreen(name) {
 const changed = ifmCurrentScreen !== name;
+// Any change of screen takes the print sheet down with it.
+if (changed) closeStmtPrintIfOpen();
 ifmCurrentScreen = name;
 armBackGesture();
 const sec = document.getElementById('screen-' + name);
@@ -19922,7 +20001,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-19';
+const BUILD_ID = '17-20';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
