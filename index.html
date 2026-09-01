@@ -252,7 +252,14 @@ font-size: 11px; color: #6E6A57; }
 @media print {
 body * { visibility: hidden; }
 .stmt-doc, .stmt-doc * { visibility: visible; }
+/* Lifting the document to the top-left is right for the ONE statement a
+   vendor prints from their own account, and ruinous for a month of them:
+   every copy lands on the same coordinates and the stack prints as a single
+   illegible sheet. So it applies only outside the office's print shell,
+   where the documents are meant to flow one after another. */
 .stmt-doc { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+#stmtPrintSheet .stmt-doc { position: static; width: auto; }
+#stmtPrintSheet, #stmtPrintSheet * { visibility: visible; }
 }
 .fold-optional { font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
 text-transform: uppercase; color: #8A8674; background: #EDE9DA;
@@ -474,6 +481,13 @@ body:not(.kiosk-mode) #app { max-width: 640px; }
    envelope, not on the back of somebody else's. */
 .stmt-page { break-after: page; }
 .stmt-page:last-child { break-after: auto; }
+/* The print shell is paper, so it is sized in paper units and the app's
+   rounded, shadowed card look comes off. */
+#stmtPrintSheet .stmt-doc { border: none; border-radius: 0; box-shadow: none;
+padding: 0; background: #fff; }
+#stmtPrintSheet .stmt-page { padding: 0 0 8mm; }
+.stmt-foot { margin-top: 8mm; padding-top: 3mm; border-top: 1px solid #DDD6C0;
+font-size: 9pt; color: #55523F; line-height: 1.4; }
 .stmt-label { break-inside: avoid; border: 1px dashed #999; padding: 10mm;
 margin: 0 0 6mm; font-size: 12pt; line-height: 1.4; }
 html, body { background: #fff !important; color: #000 !important; }
@@ -14113,6 +14127,54 @@ esc(formatDisplayDate(todayISO())) + '. If a line looks wrong, tell the office &
 '</div>';
 return body + '</div>';
 }
+// A covering note, not a transcript. What goes in the mail draft: who it is
+// for, what the figure is, and where to read the whole thing. The statement
+// itself travels as the attached PDF, or as the copy in their own app.
+//
+// It has to stand on its own regardless, because a mailto: cannot attach
+// anything and the office may forget the file. So the amount and the period
+// are in the note: a vendor who receives it with nothing attached still knows
+// what they owe and where to look.
+function stmtCoveringNote(s) {
+const money = n => '$' + fmtMoney(Math.abs(n));
+const name = s.vendor ? s.vendor.businessName : s.vendorId;
+const L = [];
+L.push('Hello ' + name + ',');
+L.push('');
+L.push('Your statement for ' + ymLabel(s.ym) + ' is attached as a PDF.');
+L.push('');
+if (s.outstanding > 0) {
+L.push('Outstanding: ' + money(s.outstanding));
+L.push('A statement is a record of what is owed, not a bill with a date of its');
+L.push('own. Anything on it that does carry a deadline shows that date on the line.');
+} else if (s.outstanding < 0) {
+L.push('The market owes you ' + money(s.outstanding) + '.');
+L.push('It will come off what you owe next month, or the office can pay it out.');
+} else {
+L.push('Nothing is due. This month is settled.');
+}
+if (s.yearEnd && s.yearEnd.length) {
+L.push('');
+L.push('Separately, ' + money(s.yearEndTotal) + ' of annual fees fall due on December 31');
+L.push('under the Vendor Guide. Settling the month does not settle those.');
+}
+L.push('');
+L.push('The same statement is on your own desk in the vendor portal, under');
+L.push('My Account, Statements \u2014 along with every earlier month.');
+L.push('');
+if (s.outstanding > 0) {
+L.push('To pay: cash or a check at the office window, checks to Ithaca Farmers');
+L.push('Market. What counts is the postmark, not the day it arrives.' +
+(squareConnected() ? ' Or by card in the app \u2014 the card fee is shown before you pay and the market keeps none of it.' : ''));
+L.push('');
+}
+L.push('If a line looks wrong, tell the office. Correcting the record corrects');
+L.push('the statement.');
+L.push('');
+L.push('Ithaca Farmers Market');
+L.push('Steamboat Landing \u00b7 545 Third St, Ithaca NY 14850');
+return L.join('\n');
+}
 function stmtEmailBody(s) {
 const money = n => '$' + fmtMoney(Math.abs(n));
 const L = [];
@@ -14295,6 +14357,10 @@ line('Post', r.post.length, pLeft, r.post.length
 '<button type="button" class="primary-btn" style="margin:0;" onclick="stmtEmailNext()">' +
 (eLeft ? 'Email the next one (' + eLeft + ' left)' : 'All emails sent') + '</button>' +
 '</div>' +
+'<p class="empty-note" style="margin:6px 2px 0;"><b>A mail link cannot carry a file</b>, so the ' +
+'app cannot attach the PDF for you. The draft it writes carries the amount and the period, so a ' +
+'vendor who gets it with nothing attached still knows where they stand. To attach the statement ' +
+'itself, use <b>Save the PDF to attach</b> on their card first.</p>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'post\')">Print the ' +
 r.post.length + ' for posting, with envelope addresses</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'all\')">Print all ' +
@@ -14369,6 +14435,7 @@ back.style.display = 'flex';
 scrollAppToTop();
 }
 function closeStmtPrint() {
+if (stmtTitleWas !== null) { document.title = stmtTitleWas; stmtTitleWas = null; }
 const back = document.getElementById('stmtPrintBackdrop');
 if (!back) return;
 back.classList.remove('open');
@@ -14511,7 +14578,8 @@ body += email
 : '<p class="empty-note" style="margin:6px 2px;"><b>No email on file.</b> ' +
 (c.address ? 'They are in the posting pile \u2014 ' + esc(c.address)
 : '<b>No postal address either</b> \u2014 somebody has to ask them how to send it') + '.</p>';
-body += '<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Print this one</button>' +
+body += '<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + s.vendorId + '\',\'' + s.ym + '\')">Save the PDF to attach</button>' +
+'<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Print this one</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy the text</button>' +
 (s.sentAt
 ? '<button type="button" class="ghost-btn" onclick="stmtMarkUnsent(\'' + s.vendorId + '\',\'' + s.ym + '\')">Mark it not sent</button>'
@@ -14553,10 +14621,36 @@ showMsg('stmtMsg', 'ok', 'Marked not sent. It is back in the pile.');
 }
 
 function stmtMailto(s) {
-const email = (s.vendor || {}).email || '';
+const email = stmtContact(s.vendorId).email || (s.vendor || {}).email || '';
 return 'mailto:' + encodeURIComponent(email) +
 '?subject=' + encodeURIComponent('Ithaca Farmers Market \u2014 statement for ' + ymLabel(s.ym)) +
-'&body=' + encodeURIComponent(stmtEmailBody(s));
+'&body=' + encodeURIComponent(stmtCoveringNote(s));
+}
+// Save one statement as a PDF, named for the vendor and the month.
+//
+// No PDF library is embedded and none is needed: the browser's print engine
+// already renders this exact markup, and Save as PDF on a computer or Share,
+// Save to Files on a phone writes it out. Setting the document title first is
+// what stops every file being called "index".
+function stmtSavePdf(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const s = statementFor(vendorId, ym);
+s.contact = stmtContact(vendorId);
+const who = String(s.contact.business || vendorId).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+stmtPrintWithTitle('IFM-statement-' + who + '-' + ym,
+stmtPrintPages([s], ym));
+showMsg('stmtMsg', 'ok', 'Choose <b>Save as PDF</b> in the print dialogue \u2014 or Share, then ' +
+'Save to Files on a phone. Then attach the file to the email. <b>The app cannot attach it for ' +
+'you: a mail link cannot carry a file.</b> The note it writes says the amount either way.');
+}
+// The print dialogue takes the filename from the document title, and the
+// title has to go back afterwards or the browser tab keeps the statement's
+// name for the rest of the session.
+let stmtTitleWas = null;
+function stmtPrintWithTitle(title, html) {
+if (stmtTitleWas === null) stmtTitleWas = document.title;
+document.title = title;
+openStmtPrint(html);
 }
 function stmtCopyOne(vendorId, ym) {
 const s = statementFor(vendorId, ym);
@@ -19828,7 +19922,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-18';
+const BUILD_ID = '17-19';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
