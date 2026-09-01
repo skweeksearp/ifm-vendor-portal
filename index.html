@@ -202,6 +202,23 @@ overflow-wrap: anywhere; }
    sweeping it in, so a business name could break mid-word. */
 .report-row .r-name { overflow-wrap: break-word; }
 table.log, table.stmt-table { width: 100%; table-layout: auto; }
+/* The row of things you can do with one statement. A wrapping row of small
+   buttons, not a column of full-width ones: there are six of them and they
+   are secondary to the figure above them.
+   This lived inside @media print by mistake, so it applied on paper and not
+   on screen. */
+.stmt-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+.stmt-actions > * { flex: 0 1 auto; }
+/* Every child carries its own shape rather than inheriting one from the row.
+   An <a> is inline by default: given pill padding and a 999px radius with no
+   width of its own, it collapses to a circle around its text. That was the
+   round blob where "Email it" should have been. */
+.stmt-actions .ghost-btn, .stmt-actions a.ghost-btn, .stmt-actions button {
+margin: 0; width: auto; min-width: 0; padding: 9px 14px; font-size: 14px;
+line-height: 1.2; text-align: center; text-decoration: none; white-space: nowrap;
+display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 360px) { .stmt-actions .ghost-btn { padding: 9px 11px; font-size: 13px; } }
+
 /* The statement document. Deliberately plainer and squarer than the rest of
    the app: this is the one screen a vendor may print and hand to an
    accountant, and it should look like paperwork, not like an app. */
@@ -486,10 +503,6 @@ body:not(.kiosk-mode) #app { max-width: 640px; }
 #stmtPrintSheet .stmt-doc { border: none; border-radius: 0; box-shadow: none;
 padding: 0; background: #fff; }
 #stmtPrintSheet .stmt-page { padding: 0 0 8mm; }
-.stmt-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
-.stmt-actions .ghost-btn, .stmt-actions a.ghost-btn {
-margin: 0; width: auto; flex: 0 1 auto; padding: 8px 12px; font-size: 14px;
-display: inline-flex; align-items: center; justify-content: center; }
 .stmt-foot { margin-top: 8mm; padding-top: 3mm; border-top: 1px solid #DDD6C0;
 font-size: 9pt; color: #55523F; line-height: 1.4; }
 .stmt-label { break-inside: avoid; border: 1px dashed #999; padding: 10mm;
@@ -20090,7 +20103,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-21';
+const BUILD_ID = '17-23';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -20963,11 +20976,19 @@ p.body = body;
 p.credit = document.getElementById('abCredit').value.trim();
 p.permit = document.getElementById('abPermit').value.trim();
 if (abPendingPhoto) {
+// A Drive marker IS the record. Storing it under a photo key the way an
+// uploaded image is stored made p.photo point at a key whose value was
+// 'drive:<id>' -- which then reached the page as an image source and could
+// never load. Sixty characters on the record is the whole point of a link.
+if (abPendingPhoto.indexOf('drive:') === 0) {
+p.photo = abPendingPhoto;
+} else {
 const key = 'ifm-about-photo-' + p.id;
 await storageSet(key, abPendingPhoto);
 cache.aboutPhotos = cache.aboutPhotos || {};
 cache.aboutPhotos[key] = abPendingPhoto;
 p.photo = key;
+}
 }
 await saveAbout();
 renderAboutEditor();
@@ -21040,6 +21061,11 @@ if (p.photo.indexOf('drive:') === 0) return drivePhotoUrl(p.photo.slice(6));
 if (p.photo.indexOf('http') === 0) return p.photo;
 if (p.photo.indexOf('data:') === 0) return p.photo;
 const have = (cache.aboutPhotos && cache.aboutPhotos[p.photo]) || '';
+// A record saved by the build that mangled Drive links: p.photo names a
+// photo key, and the value under it is a marker rather than an image. Read
+// it for what it is instead of making the office paste every link again.
+if (have.indexOf('drive:') === 0) return drivePhotoUrl(have.slice(6));
+if (have && have.indexOf('data:') !== 0 && have.indexOf('http') !== 0) return '';
 if (!have) aboutPhotoFetch(p.photo);
 return have;
 }
