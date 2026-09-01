@@ -14073,6 +14073,25 @@ function stmtShortDate(iso) {
 const d = new Date(String(iso) + 'T12:00:00');
 return isNaN(d) ? String(iso) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+// The work-hour line, written once because it appeared twice and the two
+// copies had already drifted -- both read `done`, which buildHoursLedger has
+// never returned, so every vendor was shown 0.0 hours worked.
+//
+// The real fields: `accrued` is what attendance has run up, `worked` is what
+// has been logged, `bgWorked` is Buildings and Grounds, `owed` is what is
+// still to do, `banked` is a surplus carried.
+function stmtHoursLine(hours) {
+if (!hours) return '';
+const n = v => Number(v || 0).toFixed(1);
+const parts = [n(hours.accrued) + ' accrued'];
+parts.push(n(hours.worked) + ' worked');
+if (Number(hours.bgWorked || 0) > 0) parts.push(n(hours.bgWorked) + ' B&G');
+if (Number(hours.owed || 0) > 0) parts.push('<b>' + n(hours.owed) + ' still owed this season</b>');
+else if (Number(hours.banked || 0) > 0) parts.push(n(hours.banked) + ' banked');
+else parts.push('none outstanding');
+return parts.join(' \u00b7 ');
+}
+
 function stmtDocHTML(s, opts) {
 const o = opts || {};
 const money = n => '$' + fmtMoney(Math.abs(n));
@@ -14176,8 +14195,7 @@ body += '</tbody></table>' +
 // Standing, because points and hours are what a vendor actually asks about
 body += '<div class="stmt-standing"><div class="stmt-lbl">Where you stand</div><div>' +
 '<b>Points:</b> ' + (s.points == null ? 'not recorded' : esc(s.points)) +
-(s.hours ? ' &nbsp;&nbsp; <b>Work hours:</b> ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
-(s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' still owed this season' : '') : '') +
+(s.hours ? '<br><b>Work hours:</b> ' + stmtHoursLine(s.hours) : '') +
 '</div></div>';
 // How to pay it -- on the statement itself, where it is needed
 if (s.outstanding > 0) {
@@ -14914,7 +14932,7 @@ renderVendorStatements();
 // stylesheet does nothing here and every rule has to travel on the element.
 function stmtEmailHtml(s) {
 const money = n => '$' + fmtMoney(Math.abs(n));
-const INK = '#23231B', DIM = '#55523F', LINE = '#DDD6C0', LEAF = '#3F5D34';
+const INK = '#23231B', DIM = '#55523F', LINE = '#DDD6C0', LEAF = '#3F5D34', WASH = '#F4F2E8';
 const rows = s.charged.map(r => ({ ...r, k: 'charge' }))
 .concat(s.received.map(r => ({ ...r, k: 'credit' })))
 .sort((a, b) => String(a.date).localeCompare(String(b.date)));
@@ -14922,7 +14940,23 @@ const stateWord = s.outstanding > 0 ? 'Amount due'
 : s.outstanding < 0 ? 'Credit in your favour' : 'Paid in full';
 const cell = 'padding:7px 8px; border-bottom:1px solid ' + LINE + '; font-size:14px; color:' + INK + ';';
 const num = cell + ' text-align:right; white-space:nowrap;';
+const foot = 'padding:8px; font-size:14px; color:' + INK + ';';
+const footNum = foot + ' text-align:right; white-space:nowrap;';
 const lbl = 'font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:' + DIM + ';';
+const sub = 'font-size:12px; color:' + DIM + '; margin-top:2px;';
+// A bordered block, used for the three notes below the table. Written as a
+// table because a mail client will honour a table border long after it has
+// given up on a div.
+const block = (title, right, inner, note, soft) =>
+'<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse; ' +
+'background:' + (soft ? '#FBFAF4' : WASH) + '; border:1px solid ' + LINE + '; margin:0 0 14px;">' +
+'<tr><td style="padding:12px 14px;">' +
+'<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;"><tr>' +
+'<td style="' + lbl + '">' + title + '</td>' +
+(right ? '<td style="text-align:right; font-size:15px; font-weight:bold; color:' + INK + ';">' + right + '</td>' : '') +
+'</tr></table>' + inner +
+(note ? '<div style="' + sub + ' margin-top:8px;">' + note + '</div>' : '') +
+'</td></tr></table>';
 
 let o = '<div style="font-family:Georgia,\'Times New Roman\',serif; color:' + INK +
 '; max-width:640px; line-height:1.45;">';
@@ -14953,7 +14987,7 @@ o += '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' 
 
 // The figure, in a box
 o += '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
-'style="border-collapse:collapse; background:#F4F2E8; border:1px solid ' + LINE + '; margin-bottom:16px;">' +
+'style="border-collapse:collapse; background:' + WASH + '; border:1px solid ' + LINE + '; margin-bottom:16px;">' +
 '<tr><td style="padding:14px 16px; text-align:center;">' +
 '<div style="' + lbl + '">' + stateWord + '</div>' +
 '<div style="font-size:30px; font-weight:bold; color:' + (s.outstanding > 0 ? INK : LEAF) + '; padding:2px 0;">' +
@@ -14964,47 +14998,109 @@ money(s.outstanding) + '</div>' +
 '</td></tr></table>';
 
 // The lines
-if (rows.length || s.brought) {
+if (rows.length) {
 o += '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
 'style="border-collapse:collapse; margin-bottom:14px;">' +
 '<tr>' +
 '<th align="left" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Date</th>' +
-'<th align="left" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">What</th>' +
-'<th align="right" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Charge</th>' +
-'<th align="right" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Credit</th>' +
+'<th align="left" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Description</th>' +
+'<th align="right" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Charges</th>' +
+'<th align="right" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Credits</th>' +
 '</tr>';
-if (s.brought) o += '<tr><td style="' + cell + '"></td>' +
-'<td style="' + cell + '"><i>Brought forward</i></td>' +
+if (s.brought) {
+o += '<tr><td style="' + cell + ' white-space:nowrap;">&mdash;</td>' +
+'<td style="' + cell + '"><b>Balance brought forward</b>' +
+'<div style="' + sub + '">' + esc((s.broughtMonths || []).map(m => ymLabel(m.ym) +
+' ' + (m.left < 0 ? '\u2212' : '') + '$' + fmtMoney(Math.abs(m.left))).join(' \u00b7 ')) + '</div></td>' +
 '<td style="' + num + '">' + (s.brought > 0 ? money(s.brought) : '') + '</td>' +
 '<td style="' + num + '">' + (s.brought < 0 ? money(s.brought) : '') + '</td></tr>';
+}
 rows.forEach(r => {
 o += '<tr><td style="' + cell + ' white-space:nowrap;">' + esc(stmtShortDate(r.date)) + '</td>' +
-'<td style="' + cell + '">' + esc(r.what) + '</td>' +
+'<td style="' + cell + '">' + esc(r.what) + (r.demo ? ' <i>(demo)</i>' : '') + '</td>' +
 '<td style="' + num + '">' + (r.k === 'charge' ? money(r.amount) : '') + '</td>' +
 '<td style="' + num + '">' + (r.k === 'credit' ? money(r.amount) : '') + '</td></tr>';
 });
-o += '<tr>' +
-'<td style="padding:8px; font-weight:bold; font-size:14px;" colspan="2">Totals</td>' +
-'<td style="padding:8px; text-align:right; font-weight:bold; font-size:14px;">' +
-money(s.chargedTotal + Math.max(0, s.brought)) + '</td>' +
-'<td style="padding:8px; text-align:right; font-weight:bold; font-size:14px;">' +
-money(s.receivedTotal) + '</td></tr></table>';
+o += '<tr><td style="' + foot + ' font-weight:bold;" colspan="2">Totals</td>' +
+'<td style="' + footNum + ' font-weight:bold;">' + money(s.chargedTotal + Math.max(0, s.brought)) + '</td>' +
+'<td style="' + footNum + ' font-weight:bold;">' + money(s.receivedTotal + Math.max(0, -s.brought)) + '</td></tr>' +
+(s.brought ? '<tr><td style="' + foot + '" colspan="3">This month alone</td>' +
+'<td style="' + footNum + '">' + money(s.thisMonth) + '</td></tr>' : '') +
+(s.paid ? '<tr><td style="' + foot + '" colspan="3">Paid against this statement</td>' +
+'<td style="' + footNum + '">' + money(s.paid) + '</td></tr>' : '') +
+'<tr><td style="' + foot + ' font-weight:bold; border-top:2px solid ' + LEAF + ';" colspan="3">' + stateWord + '</td>' +
+'<td style="' + footNum + ' font-weight:bold; border-top:2px solid ' + LEAF + ';">' + money(s.outstanding) + '</td></tr>' +
+'</table>';
+} else {
+o += '<p style="font-size:14px; color:' + DIM + ';">No charges or credits were recorded for this month.</p>';
 }
 
-// Year-end fees, which the month does not settle
+// Annual items already charged. Kept apart because they fall due on a
+// different day under a different rule.
 if (s.yearEnd && s.yearEnd.length) {
-o += '<div style="border-left:3px solid ' + LEAF + '; padding:2px 0 2px 12px; margin-bottom:14px;">' +
-'<div style="' + lbl + '">Falling due 31 December</div>' +
-s.yearEnd.map(f => '<div style="font-size:14px;">' + esc(f.what) + ' &mdash; ' + money(f.amount) + '</div>').join('') +
-'<div style="font-size:12px; color:' + DIM + '; margin-top:4px;">Settling this month does not settle these.</div>' +
-'</div>';
+let t = '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
+'style="border-collapse:collapse; margin-top:6px;">';
+s.yearEnd.forEach(r => {
+t += '<tr><td style="' + cell + '">' + esc(r.what) + (r.demo ? ' <i>(demo)</i>' : '') + '</td>' +
+'<td style="' + num + '">' + money(r.amount) + '</td></tr>';
+});
+t += '</table>';
+o += block('Annual &mdash; due ' + esc(formatDisplayDate(s.yearEndDue)), money(s.yearEndTotal), t,
+'These fall due on <b>December 31</b> under the Vendor Guide, not on the monthly date above. ' +
+'Settling the month does not settle these.');
+}
+
+// WHAT FALLS DUE ON 31 DECEMBER, including the work-hour shortfall. This is
+// the section the email was missing entirely, and it is the one a vendor
+// most needs in October rather than as a surprise in January.
+if (s.forecast && s.forecast.length) {
+let t = '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
+'style="border-collapse:collapse; margin-top:6px;">';
+s.forecast.forEach(f => {
+t += '<tr><td style="' + cell + (f.settled ? ' color:' + DIM + ';' : '') + '">' +
+esc(f.what) + (f.settled ? ' <i>(settled)</i>' : '') +
+(f.note ? '<div style="' + sub + '">' + esc(f.note) + '</div>' : '') + '</td>' +
+'<td style="' + num + (f.settled ? ' color:' + DIM + ';' : '') + '">' +
+(f.settled && !f.amount ? '&mdash;' : money(f.amount)) + '</td></tr>';
+});
+t += '</table>';
+o += block('Due at year end &mdash; December 31', money(s.forecastTotal), t,
+(s.forecastTotal > 0
+? '<b>Not owed yet.</b> This is what falls due on December 31 if the season closed today. ' +
+'It is shown on every statement so it is never a surprise in December.'
+: '<b>Nothing outstanding.</b> The year-end items are all settled or nil.'), true);
+}
+
+// Points and work hours: what a vendor actually asks about.
+o += block('Where you stand', '',
+'<div style="font-size:14px; margin-top:6px;"><b>Points:</b> ' +
+(s.points == null ? 'not recorded' : esc(String(s.points))) +
+(s.hours ? '<br><b>Work hours:</b> ' + stmtHoursLine(s.hours) : '') +
+'</div>' +
+(s.hours && Number(s.hours.owed || 0) > 0
+? '<div style="' + sub + ' margin-top:6px;">Hours not worked are invoiced at the Board\u2019s rate ' +
+'and that invoice falls due <b>February 28</b>. Hours themselves must be submitted by ' +
+'<b>December 31</b>.</div>' : ''), '', true);
+
+// How to pay it, on the statement itself where it is needed.
+if (s.outstanding > 0) {
+o += block('How to pay', '',
+'<div style="font-size:14px; margin-top:6px;">' +
+'<b>Cash or check</b> at the office window &mdash; checks to Ithaca Farmers Market. ' +
+'What counts is the postmark, not the day it arrives.<br>' +
+'<b>Card</b> ' + (squareConnected()
+? 'in the app, or at the office. The card fee is shown before you pay and the market keeps none of it.'
+: '&mdash; not yet live; the market\u2019s card account is not connected.') +
+'</div>', '', true);
 }
 
 o += '<hr style="border:0; border-top:1px solid ' + LINE + '; margin:16px 0 8px;">' +
-'<div style="font-size:12px; color:' + DIM + ';">' +
-'The same statement is on your own desk in the vendor portal, under My Account &rsaquo; Statements, ' +
-'along with every earlier month. If a line looks wrong, tell the office &mdash; correcting the record ' +
-'corrects the statement.</div></div>';
+'<div style="font-size:12px; color:' + DIM + ';">This statement is built from the market\u2019s records on ' +
+esc(formatDisplayDate(todayISO())) + '. If a line looks wrong, tell the office &mdash; correcting the ' +
+'record corrects this statement.' +
+(demoOn() ? ' <b>Lines marked demo are invented for testing and are not owed.</b>' : '') +
+' The same statement is on your own desk in the vendor portal, under My Account &rsaquo; Statements, ' +
+'along with every earlier month.</div></div>';
 return o;
 }
 // Both flavours on the clipboard at once: the formatted statement for a mail
@@ -20392,7 +20488,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-26';
+const BUILD_ID = '17-27';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
