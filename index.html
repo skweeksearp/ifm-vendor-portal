@@ -2474,8 +2474,16 @@ I sell food (prepared food or produce)
 <div class="card" id="acctRecent" style="margin-bottom:12px;"></div>
 <div class="dash-fold" data-fold="accountmoney">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
-<span class="fold-title">Money &amp; Statements</span>
-<span class="fold-sub" id="menuPaySub">This month, earlier statements, and how to pay</span>
+<span class="fold-title">Money</span>
+<span class="fold-sub" id="menuPaySub">What has landed this month, what you owe, and how to pay it</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="accountstatements">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mystatements')">
+<span class="fold-title">Statements</span>
+<span class="fold-sub" id="menuStmtSub">Each closed month, as a record of what was owed</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -2813,17 +2821,12 @@ an iPhone, swipe up from the bottom and flick the app away first. That is the on
 <div class="screen-head" id="head-account"></div>
 <div class="card manager-only" id="acctPickCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Whose account</h2>
-<select id="acctVendor" onchange="renderAccount(); renderMyStatementCurrent(); renderMyStatements();"></select>
+<select id="acctVendor" onchange="renderAccount(); renderMyStatementCurrent();"></select>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span><span id="myStmtCurrentTitle">Recent Activity</span></h2>
 <div id="myStmtCurrent"></div>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Earlier Statements</h2>
-<div id="myStatements"></div>
-</div>
-
 <div id="acctPayHalf">
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>How You Can Pay<button type="button" class="help-dot" onclick="showHelp(79)" aria-label="What are the ways to pay?">?</button></h2>
@@ -4312,6 +4315,18 @@ this side of it.</p>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
 <div id="snapSeason"></div>
+</div>
+</section>
+<section id="screen-mystatements" class="screen">
+<div class="screen-head" id="head-mystatements"></div>
+<div class="card manager-only" id="stmtPickCard" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Whose statements</h2>
+<select id="acctVendorStmt" onchange="renderMyStatements()"></select>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Earlier Statements</h2>
+<p class="empty-note" style="margin-top:0;">Each closed month, as a record of what was owed. <b>A statement carries no deadline of its own</b> &mdash; anything on it that has one shows that date on the line. The month still running is in <b>Money</b>.</p>
+<div id="myStatements"></div>
 </div>
 </section>
 <section id="screen-fcchecks" class="screen">
@@ -12301,7 +12316,7 @@ function updatePaySub() {
 const el = document.getElementById('menuPaySub');
 if (!el) return;
 if (currentRole !== 'vendor' || !currentVendorId || stmtCache === null) {
-el.textContent = 'This month, earlier statements, and how to pay';
+el.textContent = 'What has landed this month, what you owe, and how to pay it';
 return;
 }
 const ym = stmtMonthOptions()[0];
@@ -14275,31 +14290,14 @@ downloadCSV('statements-' + ym + '.csv',
 ['Vendor', 'Month', 'Charges', 'Credits', 'Owed', 'Paid', 'Outstanding',
 'Due', 'Sent', 'Settled', 'Points', 'Hours done'], rows);
 }
-// Move the older tools inside the fold once, at render. Doing it in the DOM
-// rather than by rewriting the markup keeps every id and handler they already
-// depend on intact -- these are working tools, not decoration.
-function stashOlderAccountTools() {
-// THE STATEMENTS COME FIRST, TOGETHER.
-//
-// This used to lift the paying half up between the running month and the
-// earlier statements, because how-to-pay belonged beside the statement it
-// applied to. That held while the paying half was a short card of reference
-// text. Pay Now made it a mode switch, an amount box, three itemised totals
-// and two buttons -- close to a full phone screen -- and Earlier Statements
-// went under it, somewhere nobody scrolls to. Nothing had broken; the
-// statements were simply buried by something taller than they were.
-//
-// So both statement cards stay adjacent and the paying half follows them.
-// A vendor reads what they owe, then how to pay it, which is the order the
-// question arrives in.
-const scr = document.getElementById('screen-account');
-const pay = document.getElementById('acctPayHalf');
-const earlier = document.getElementById('myStatements');
-const earlierCard = earlier ? earlier.closest('.card') : null;
-if (scr && pay && earlierCard && earlierCard.nextElementSibling !== pay) {
-scr.insertBefore(pay, earlierCard.nextElementSibling);
-}
-}
+// The paying half sits after the running month in the markup and no longer
+// has to be moved. It used to be lifted above Earlier Statements so that
+// how-to-pay sat beside the statement it applied to; when Pay Now grew into
+// close to a full phone screen that lift buried the statements instead.
+// Splitting the two screens removed the conflict, so the function is kept as
+// a no-op rather than deleted -- runScreenInit still calls it, and a silent
+// rename is how a call site gets missed.
+function stashOlderAccountTools() {}
 function renderMyStatementCurrent() {
 const host = document.getElementById('myStmtCurrent');
 const who = acctViewVendorId();
@@ -14318,6 +14316,36 @@ host.innerHTML =
 ? '<p class="empty-note" style="margin:6px 2px 0;">' +
 'Paid already? Tell the office under <b>How You Can Pay</b> above, so it can be matched to the money.</p>'
 : '');
+}
+// The bar says what is behind it, like every other drawer on this desk.
+function updateStmtSub() {
+const el = document.getElementById('menuStmtSub');
+if (!el) return;
+if (currentRole !== 'vendor' || !currentVendorId) {
+el.textContent = 'Each closed month, as a record of what was owed';
+return;
+}
+const months = stmtMonthOptions().slice(1, 7)
+.map(ym => statementFor(currentVendorId, ym))
+.filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
+if (!months.length) { el.textContent = 'Nothing earlier than this month yet'; return; }
+const owing = months.filter(s => s.outstanding > 0);
+el.textContent = months.length + ' month' + (months.length === 1 ? '' : 's') +
+(owing.length
+? ' \u00b7 $' + fmtMoney(owing.reduce((t, s) => t + s.outstanding, 0)) + ' still outstanding'
+: ' \u00b7 all settled');
+}
+function initMyStatementsScreen() {
+const pick = document.getElementById('stmtPickCard');
+const sel = document.getElementById('acctVendorStmt');
+if (currentRole !== 'vendor' && pick && sel) {
+pick.style.display = '';
+const keep = sel.value || currentVendorId;
+sel.innerHTML = (cache.vendors || []).slice().sort(byBusinessName)
+.map(v => '<option value="' + v.vendorId + '">' + esc(v.businessName) + '</option>').join('');
+if (keep) sel.value = keep;
+} else if (pick) { pick.style.display = 'none'; }
+renderMyStatements();
 }
 function renderMyStatements() {
 const host = document.getElementById('myStatements');
@@ -14696,9 +14724,20 @@ reported: reported, unseen: unseen,
 chargedTotal: sum(charged), receivedTotal: sum(received), reportedTotal: sum(reported),
 balance: Math.round((sum(charged) - sum(received)) * 100) / 100 };
 }
+// Two screens now carry a vendor picker -- Money and Statements -- so this
+// reads whichever one is actually on screen. Reading only the first would
+// send a manager who opened Statements directly to their own empty account.
 function acctViewVendorId() {
-const pick = document.getElementById('acctVendor');
-if (currentRole !== 'vendor' && pick && pick.value) return pick.value;
+const onScreen = id => {
+const el = document.getElementById(id);
+if (!el) return null;
+const scr = el.closest('section.screen');
+return (scr && scr.classList.contains('active') && el.value) ? el.value : null;
+};
+if (currentRole !== 'vendor') {
+const v = onScreen('acctVendorStmt') || onScreen('acctVendor');
+if (v) return v;
+}
 return currentVendorId;
 }
 function renderAccount() {
@@ -15475,7 +15514,8 @@ if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
 if (name === 'merch') { if (!merchCache || !merchSq) Promise.all([loadMerch(), loadMerchSquare()]).then(renderMerch); else renderMerch(); }
 if (name === 'demostmt') renderDemoStatements();
 if (name === 'pavrentals') initPavRentalsScreen();
-if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); renderMyStatements(); updatePaySub(); }
+if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); updatePaySub(); }
+if (name === 'mystatements') initMyStatementsScreen();
 if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
@@ -15675,6 +15715,7 @@ snaplog:           { title: 'SNAP Tokens In & Out' },
 snaptokens:        { title: 'SNAP Tokens' },
 fclog:             { title: 'FreshConnect Checks In' },
 fcchecks:          { title: 'FreshConnect Checks' },
+mystatements:      { title: 'Statements' },
 yearend:           { title: 'Year-End Money Worksheet' },
 winterpaperwork:   { title: 'Triphammer Paperwork' },
 winterrules:       { title: 'How Winter Differs' },
@@ -15858,6 +15899,7 @@ setDeskRelevance('commAgOnly', isAg,
 const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
 renderSnapDeskSub();
 renderFcDeskSub();
+updateStmtSub();
 applyVenueToDesk();
 const cmTitle = document.getElementById('menuMyCommitteesTitle');
 const cmSub = document.getElementById('menuMyCommitteesSub');
@@ -19490,7 +19532,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-10';
+const BUILD_ID = '17-11';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27065,7 +27107,7 @@ const row = (label, body, target, extra) =>
 host.innerHTML =
 '<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Summary</h2>' +
 '<p class="empty-note" style="margin-top:0;">Where you stand right now. Tap any line for the detail.</p>' +
-row('Money & Statements', moneyLine, 'accountmoney', carried) +
+row('Money', moneyLine, 'accountmoney', carried) +
 row('Work Hours', hoursLine, 'hours') +
 row('Points', '<b>' + (pts == null ? '\u2014' : pts) + '</b> points this season', 'fPoints');
 }
