@@ -4167,6 +4167,13 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <select id="mmProgram" onchange="switchProgram()"></select>
 <p class="empty-note" id="mmProgNote" style="margin:10px 0 0;"></p>
 </div>
+<div class="card desk-form" id="mmMineCard" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-toolbox"></use></svg></span>What You Run</h2>
+<label for="mmProgramMine" id="mmMineLabel">Which one</label>
+<select id="mmProgramMine" onchange="switchProgramMine()"></select>
+<p class="empty-note" id="mmMineNote" style="margin:10px 0 0;"></p>
+<p class="empty-note" id="mmOthersNote" style="margin:10px 0 0;"></p>
+</div>
 <div class="card manager-only desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Who Runs <span id="mmProgHead">It</span></h2>
 <p class="empty-note" style="margin-top:0;">The vendor at the head of it. Shifts they post come back to them to sign off, the same way a committee chair&rsquo;s do. Naming them stays with the office — nobody appoints themselves.</p>
@@ -5380,6 +5387,12 @@ comes from.</p>
 <section id="screen-mydocs" class="screen">
 <div class="screen-head" id="head-mydocs"></div>
 <p class="empty-note" id="mdSummary" style="margin-top:0;"></p>
+<div class="card desk-form" id="mdTraitCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>What You Do at Market</h2>
+<p class="empty-note" style="margin-top:0;">Which permits the market needs from you depends on what you sell, not on your membership class. Five questions, answered once. <b>Change an answer and the list below changes with it.</b></p>
+<div id="mdTraits"></div>
+<div class="status-msg" id="mdTraitMsg"></div>
+</div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>What the Market Needs From You<button type="button" class="help-dot" onclick="showHelp(62)" aria-label="What are the rules here?">?</button></h2>
 <div id="mdList"></div>
@@ -8320,6 +8333,10 @@ cache.requirements = requirements === STORAGE_MISSING
 : (requirements || { reqs: [], status: {} });
 cache.requirements.reqs = cache.requirements.reqs || [];
 cache.requirements.status = cache.requirements.status || {};
+try {
+const tr = await storageGetShared('ifm-doc-traits');
+cache.requirements.traits = (tr !== STORAGE_MISSING && tr) ? tr : {};
+} catch (e) { cache.requirements.traits = cache.requirements.traits || {}; }
 cache.ops = ops === STORAGE_MISSING ? { noshow: {}, fines: [], waived: {} } : (ops || {});
 try { await loadSnap(); } catch (e) { snapCache = snapCache || { accepts: {}, entries: [] }; }
 try { await loadFc(); } catch (e) { fcCache = fcCache || { accepts: {}, entries: [] }; }
@@ -19583,7 +19600,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-13';
+const BUILD_ID = '17-15';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22990,6 +23007,68 @@ row.appendChild(btn);
 wrap.appendChild(row);
 });
 }
+// ---- what a vendor does at market ---------------------------------------
+// The four vendor categories are membership classes. The Guide requires
+// permits by PRODUCT -- prepared food, home processing, wine, open flame --
+// and the vendor record does not carry that. So it is asked, once, and the
+// answers decide which documents appear.
+//
+// Unanswered is its own state, deliberately. A vendor who has never answered
+// is not "exempt" and not "in breach"; the office simply does not know, and
+// the screen says that rather than guessing either way.
+const VENDOR_TRAITS = [
+{ key: 'preparedFood', q: 'Do you sell food made or handled for eating \u2014 baked goods, prepared dishes, anything cut, cooked or packaged?',
+short: 'Prepared or handled food' },
+{ key: 'homeProcess', q: 'Do you make any of it in a home kitchen rather than a commercial one?',
+short: 'Home kitchen' },
+{ key: 'alcohol', q: 'Do you sell wine, cider or any other alcohol?',
+short: 'Wine or cider' },
+{ key: 'openFlame', q: 'Do you use propane, an open flame or any cooking appliance at your booth?',
+short: 'Open flame or propane' },
+{ key: 'scales', q: 'Do you weigh anything to price it?',
+short: 'Weighing to price' },
+];
+function vendorTraits(vendorId) {
+if (!cache.requirements.traits) cache.requirements.traits = {};
+const t = cache.requirements.traits[vendorId];
+return (t && typeof t === 'object') ? t : {};
+}
+// true, false, or undefined for "nobody has said". Three states, not two.
+function vendorTrait(vendorId, key) {
+const t = vendorTraits(vendorId);
+return Object.prototype.hasOwnProperty.call(t, key) ? !!t[key] : undefined;
+}
+function traitsAnswered(vendorId) {
+const t = vendorTraits(vendorId);
+return VENDOR_TRAITS.every(x => Object.prototype.hasOwnProperty.call(t, x.key));
+}
+async function setVendorTrait(vendorId, key, val) {
+if (!cache.requirements.traits) cache.requirements.traits = {};
+const t = cache.requirements.traits[vendorId] || {};
+t[key] = !!val;
+cache.requirements.traits[vendorId] = t;
+await storageSetShared('ifm-doc-traits', cache.requirements.traits);
+}
+// Whether a requirement reaches this vendor, and on what grounds.
+//   'yes'     required
+//   'no'      does not apply
+//   'unknown' depends on something nobody has answered yet
+function reqAppliesToVendor(req, vendorId) {
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
+if (!v) return 'no';
+if (req.appliesTo === 'all') return 'yes';
+if (req.appliesTo === 'category')
+return (req.categories || []).includes(v.category) ? 'yes' : 'no';
+if (req.appliesTo === 'trait') {
+// Any one of the named traits being true brings the document in.
+const answers = (req.traits || []).map(k => vendorTrait(vendorId, k));
+if (answers.some(a => a === true)) return 'yes';
+if (answers.some(a => a === undefined)) return 'unknown';
+return 'no';
+}
+return (req.vendorIds || []).includes(vendorId) ? 'yes' : 'no';
+}
+
 const REQUIREMENT_STATES = [
 { v: 'missing', t: 'Outstanding' },
 { v: 'pending', t: 'Awaiting review' },
@@ -23000,16 +23079,52 @@ const REQUIREMENT_STATES = [
 const REQUIREMENT_SEED = [
 { id: 'REQ-insurance', name: 'Business Liability Insurance',
 issuer: 'Vendor\u2019s own insurer',
-detail: '$1,000,000 business liability, naming IFM as additionally insured at every location the vendor attends. A vendor whose policy omits IFM counts as uninsured.',
-appliesTo: 'all', categories: [], vendorIds: [],
-effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
+detail: '$1,000,000 business liability, naming IFM as additionally insured at every location the vendor attends. A vendor whose policy omits IFM counts as uninsured. Guide p.24 \u2014 no vendor may sell at any market without a current certificate on file, and a new one must reach the Operations Manager immediately on expiry.',
+appliesTo: 'all', categories: [], vendorIds: [], traits: [],
+effective: '2026-01-01', renewal: 'expiry', blocking: true, link: '',
 due: '2025-12-31' },
-{ id: 'REQ-foodpermit', name: 'Food Service or Processing Permit',
-issuer: 'NYS Ag & Markets / Tompkins County Health Dept.',
-detail: 'Article 20-C, a county health department permit, or a Home Processing Registration \u2014 one of the three, per the Food Committee Guidelines. Filed before the first market and annually thereafter.',
-appliesTo: 'selected', categories: [], vendorIds: [],
+{ id: 'REQ-authority', name: 'Certificate of Authority',
+issuer: 'NYS Department of Taxation and Finance',
+detail: 'The sales tax certificate. Guide p.15 requires it to be displayed at the booth on every market day, alongside health department permits.',
+appliesTo: 'all', categories: [], vendorIds: [], traits: [],
+effective: '2026-01-01', renewal: 'once', blocking: false, link: '',
+due: '' },
+{ id: 'REQ-health', name: 'Health Department Permit',
+issuer: 'Tompkins County Health Department',
+detail: 'Guide p.15 names this among the signage that must be displayed and taken down each market day. Which permit, and whether one is needed at all, depends on what is sold.',
+appliesTo: 'trait', categories: [], vendorIds: [], traits: ['preparedFood'],
+effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
+due: '' },
+{ id: 'REQ-foodservice', name: 'Food Service Permit',
+issuer: 'Tompkins County Health Dept.',
+detail: 'Named on Guide p.4 among the permits that must be kept up to date. For food prepared or served at the booth.',
+appliesTo: 'trait', categories: [], vendorIds: [], traits: ['preparedFood', 'openFlame'],
+effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
+due: '' },
+{ id: 'REQ-foodpermit', name: 'Food or Home Processing Permit',
+issuer: 'NYS Ag & Markets',
+detail: 'Article 20-C, or a Home Processing Registration \u2014 <b>one of the two, not both</b>. Which one depends on whether the kitchen is commercial or domestic. Guide p.4; Food Committee Guidelines.',
+appliesTo: 'trait', categories: [], vendorIds: [], traits: ['preparedFood', 'homeProcess'],
 effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
 due: '2026-04-01' },
+{ id: 'REQ-winery', name: 'Farm Winery License',
+issuer: 'NYS Liquor Authority',
+detail: 'Guide p.4. Required of any vendor selling wine, cider or other alcohol at market.',
+appliesTo: 'trait', categories: [], vendorIds: [], traits: ['alcohol'],
+effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
+due: '' },
+{ id: 'REQ-fire', name: 'Fire Permit',
+issuer: 'Ithaca Fire Department',
+detail: 'Guide p.4. Required where propane, an open flame or a cooking appliance is used at the booth.',
+appliesTo: 'trait', categories: [], vendorIds: [], traits: ['openFlame'],
+effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
+due: '' },
+{ id: 'REQ-scales', name: 'Scale Certification',
+issuer: 'Tompkins County Weights & Measures',
+detail: 'A scale used to price goods must be sealed and certified. <b>The Guide does not name this</b> \u2014 it comes from New York law rather than from the market\u2019s own documents, and is listed here because the Guide\u2019s list is \u201cincluding but not limited to\u201d. Confirm with the office before treating it as a market requirement.',
+appliesTo: 'trait', categories: [], vendorIds: [], traits: ['scales'],
+effective: '2026-01-01', renewal: 'annual', blocking: false, link: '',
+due: '' },
 ];
 const RENEWAL_LABEL = { annual: 'Renews annually', expiry: 'Renews on expiry',
 event: 'Per market or event', once: 'One time only' };
@@ -23033,6 +23148,46 @@ const st = reqEffectiveState(req.id, vendorId);
 if (st === 'missing' && reqOverdue(req, vendorId)) return 'overdue';
 return st;
 }
+// ---- document clocks -----------------------------------------------------
+// Everything with an expiry date, and how close it is. Derived every time
+// rather than stored: a stored countdown is wrong by one every midnight.
+function docClocks() {
+const out = [];
+const warn = ruleNum('expiryWarn') || 30;
+const today = todayISO();
+(cache.requirements.reqs || []).forEach(req => {
+reqVendors(req).forEach(v => {
+const rec = reqStatusFor(req.id, v.vendorId);
+if (rec.state === 'onfile' && rec.expiry) {
+const days = Math.round((new Date(rec.expiry + 'T12:00:00') -
+new Date(today + 'T12:00:00')) / 86400000);
+if (days < 0) out.push({ req, v, days, kind: 'expired', expiry: rec.expiry });
+else if (days <= warn) out.push({ req, v, days, kind: 'expiring', expiry: rec.expiry });
+} else if (rec.state !== 'onfile' && rec.state !== 'exempt' && rec.state !== 'pending') {
+out.push({ req, v, days: null, kind: reqOverdue(req, v.vendorId) ? 'overdue' : 'missing' });
+}
+});
+});
+return out.sort((a, b) => (a.days === null ? -1e9 : a.days) - (b.days === null ? -1e9 : b.days));
+}
+function docClocksFor(vendorId) { return docClocks().filter(c => c.v.vendorId === vendorId); }
+// Vendors who could not legally sell tomorrow: a blocking document expired,
+// or never received. This is the figure the Board cares about.
+function blockedVendors() {
+const ids = new Set();
+docClocks().forEach(c => {
+if (!c.req.blocking) return;
+if (c.kind === 'expired' || c.kind === 'overdue' || c.kind === 'missing') ids.add(c.v.vendorId);
+});
+return Array.from(ids);
+}
+// Vendors nobody can assess, because they have not said what they do. Not in
+// breach and not clear -- a third pile, and one worth the office knowing the
+// size of.
+function unansweredVendors() {
+return (cache.vendors || []).filter(v => !traitsAnswered(v.vendorId)).map(v => v.vendorId);
+}
+
 function pendingSubmissions() {
 const out = [];
 cache.requirements.reqs.forEach(req => {
@@ -23052,18 +23207,38 @@ if (reqOverdue(req, v.vendorId)) out.push({ req: req, v: v });
 });
 return out;
 }
+// Who this requirement is actually on. A trait-based document reaches only
+// the vendors who have said it applies -- an unanswered vendor is NOT counted
+// here, because counting them would report an outstanding document against
+// somebody who may not need one at all.
 function reqVendors(req) {
 if (!req) return [];
 if (req.appliesTo === 'all') return cache.vendors.slice();
 if (req.appliesTo === 'category') {
 return cache.vendors.filter(v => (req.categories || []).includes(v.category)).sort(byBusinessName);
 }
+if (req.appliesTo === 'trait') {
+return cache.vendors.filter(v => reqAppliesToVendor(req, v.vendorId) === 'yes').sort(byBusinessName);
+}
 return (req.vendorIds || [])
 .map(id => cache.vendors.find(v => v.vendorId === id))
 .filter(Boolean);
 }
+// The vendors a trait-based document MIGHT be on, because nobody has
+// answered. Not in breach and not exempt -- unknown, which is its own thing
+// and worth the office seeing.
+function reqUnknownVendors(req) {
+if (!req || req.appliesTo !== 'trait') return [];
+return cache.vendors.filter(v => reqAppliesToVendor(req, v.vendorId) === 'unknown');
+}
 function reqAppliesLabel(req) {
 if (req.appliesTo === 'all') return 'Every vendor';
+if (req.appliesTo === 'trait') {
+const names = (req.traits || []).map(k => (VENDOR_TRAITS.find(t => t.key === k) || {}).short).filter(Boolean);
+const n = reqVendors(req).length, u = reqUnknownVendors(req).length;
+return (names.join(' or ') || 'Depends on the vendor') + ' \u00b7 ' + n + ' so far' +
+(u ? ', ' + u + ' unanswered' : '');
+}
 if (req.appliesTo === 'category') {
 return (req.categories || []).length ? (req.categories || []).join(', ') : 'No category chosen';
 }
@@ -25306,27 +25481,123 @@ function vendorRequirements(vendorId) {
 return cache.requirements.reqs.filter(req =>
 reqVendors(req).some(v => v.vendorId === vendorId));
 }
-function initMyDocsScreen() { renderMyDocs(); }
+// The five questions, and what each answer turns on. Three states per
+// question -- yes, no, and nobody has said -- because a blank answer is not
+// a no, and treating it as one would quietly excuse a vendor from a permit
+// the law requires of them.
+function renderVendorTraits() {
+const wrap = document.getElementById('mdTraits');
+const vendor = currentVendor();
+if (!wrap || !vendor) return;
+wrap.innerHTML = '';
+VENDOR_TRAITS.forEach(t => {
+const cur = vendorTrait(vendor.vendorId, t.key);
+const row = document.createElement('div');
+row.className = 'req-row';
+const brings = cache.requirements.reqs
+.filter(r => r.appliesTo === 'trait' && (r.traits || []).includes(t.key))
+.map(r => r.name);
+row.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + esc(t.q) + '</div>' +
+'<div class="req-meta">' + (brings.length
+? 'Saying yes adds: ' + esc(brings.join(', '))
+: 'Nothing depends on this yet') + '</div></div>';
+const bar = document.createElement('div');
+bar.className = 'tone-switch';
+bar.style.marginTop = '6px';
+[['Yes', true], ['No', false]].forEach(([label, val]) => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'tone-btn' + (cur === val ? ' on' : '');
+b.textContent = label;
+b.onclick = async () => {
+await setVendorTrait(vendor.vendorId, t.key, val);
+renderVendorTraits();
+renderMyDocs();
+showMsg('mdTraitMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Noted. ' +
+'The list below now matches what you do.');
+};
+bar.appendChild(b);
+});
+row.appendChild(bar);
+if (cur === undefined) {
+const n = document.createElement('p');
+n.className = 'req-example-note';
+n.textContent = 'Not answered yet \u2014 so the market does not know whether the permits below apply to you.';
+row.appendChild(n);
+}
+wrap.appendChild(row);
+});
+}
+
+function renderNotApplicable() {
+const wrap = document.getElementById('mdList');
+const vendor = currentVendor();
+if (!wrap || !vendor) return;
+const none = (cache.requirements.reqs || [])
+.filter(req => reqAppliesToVendor(req, vendor.vendorId) === 'no');
+if (!none.length) return;
+// Never hide, always grey. A vendor can only be sure the list is complete
+// if the things that are not on it are shown not being on it.
+const box = document.createElement('div');
+box.className = 'req-row';
+box.style.opacity = '0.6';
+box.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">Not needed from you</div>' +
+'<div class="req-meta">' + none.map(r => esc(r.name)).join(' \u00b7 ') + '</div>' +
+'<p class="req-detail">Based on your answers above. If any of that changes, ' +
+'change the answer and the document appears here.</p></div>';
+wrap.appendChild(box);
+}
+function initMyDocsScreen() { renderVendorTraits(); renderMyDocs(); }
 function renderMyDocs() {
 const vendor = currentVendor();
 const wrap = document.getElementById('mdList');
 const empty = document.getElementById('mdEmpty');
 if (!wrap || !vendor) return;
 wrap.innerHTML = '';
-const reqs = vendorRequirements(vendor.vendorId);
-empty.style.display = reqs.length ? 'none' : 'block';
-let outstanding = 0, pending = 0, accepted = 0;
+// EVERY document the market has, not only the ones already assigned. One
+// that does not apply is shown saying so; one whose answer is missing is
+// shown saying that. A vendor should be able to read this list and know
+// there is nothing else -- which they cannot do if the ones that do not
+// apply are simply absent.
+const all = (cache.requirements.reqs || []);
+const reqs = all.filter(req => reqAppliesToVendor(req, vendor.vendorId) !== 'no');
+const notApplicable = all.filter(req => reqAppliesToVendor(req, vendor.vendorId) === 'no');
+empty.style.display = all.length ? 'none' : 'block';
+let outstanding = 0, pending = 0, accepted = 0, unknown = 0;
 reqs.forEach(req => {
+if (reqAppliesToVendor(req, vendor.vendorId) === 'unknown') { unknown++; return; }
 const st = reqDisplayState(req, vendor.vendorId);
 if (st === 'onfile') accepted++;
 else if (st === 'pending') pending++;
 else if (st !== 'exempt') outstanding++;
 });
-document.getElementById('mdSummary').textContent = reqs.length
+document.getElementById('mdSummary').textContent = all.length
 ? accepted + ' on file \u00b7 ' + pending + ' posted and not yet marked received \u00b7 ' +
-outstanding + ' still to send.'
+outstanding + ' still to send' +
+(unknown ? ' \u00b7 ' + unknown + ' waiting on your answers above' : '') +
+(notApplicable.length ? ' \u00b7 ' + notApplicable.length + ' do not apply to you' : '') + '.'
 : '';
 reqs.forEach(req => {
+const applies = reqAppliesToVendor(req, vendor.vendorId);
+if (applies === 'unknown') {
+const u = document.createElement('div');
+u.className = 'req-row';
+const need = (req.traits || [])
+.map(k => (VENDOR_TRAITS.find(t => t.key === k) || {}).short).filter(Boolean);
+u.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + esc(req.name) + '</div>' +
+'<div class="req-meta">' + esc(req.issuer || '') + '</div>' +
+'<div class="req-tally"><span class="req-state submitted">Does this apply to you?</span></div>' +
+'<p class="req-detail">Whether the market needs this from you depends on ' +
+esc(need.join(' or ').toLowerCase()) + '. Answer the questions above and this ' +
+'either becomes a document to send or drops off your list.</p>' +
+(req.detail ? '<p class="req-example-note">' + req.detail + '</p>' : '') +
+'</div>';
+wrap.appendChild(u);
+return;
+}
 const rec = reqStatusFor(req.id, vendor.vendorId);
 const st = reqDisplayState(req, vendor.vendorId);
 const card = document.createElement('div');
@@ -25425,6 +25696,7 @@ card.appendChild(pickBtn);
 }
 wrap.appendChild(card);
 });
+renderNotApplicable();
 }
 async function reviewSubmission(reqId, vendorId, decision) {
 if (!requireManager()) return;
@@ -26615,6 +26887,19 @@ if (!vendorId) return [];
 const st = programLeads();
 return MARKET_PROGRAMS.filter(p => st[p.key] === vendorId);
 }
+// Whether this person runs THIS programme. The office runs all of them; a
+// vendor runs the ones they have been named to and no others.
+//
+// Everything used to route through isMerchLead(), which answers the much
+// broader question "do they lead anything at all" -- so the Merch Mansion
+// lead could act on Garbage and Dish Recycling, which the office had given
+// to other people. Leading one programme is not leading the market's
+// programmes.
+function canRunProgram(key) {
+if (isDeskAdmin()) return true;
+if (currentRole !== 'vendor' || !currentVendorId) return false;
+return !!key && programLead(key) === currentVendorId;
+}
 function programOf(key) { return MARKET_PROGRAMS.find(p => p.key === key) || null; }
 function merchLead() { return programLead('merch'); }
 function isMerchLead(vendorId) { return programsLedBy(vendorId).length > 0; }
@@ -26629,9 +26914,17 @@ function programsIRun() {
 if (currentRole === 'manager') return MARKET_PROGRAMS.slice();
 return currentRole === 'vendor' ? programsLedBy(currentVendorId) : [];
 }
-function requireMerch(msgId) {
-if (canRunMerch()) return true;
-if (msgId) showMsg(msgId, 'err', 'Only the Market Manager or whoever runs the Merch Mansion can change this.');
+// Guards the programme it is about to act on, not "any programme".
+function requireMerch(msgId, key) {
+const pk = key || mmProgram;
+if (canRunProgram(pk)) return true;
+const p = programOf(pk);
+const who = programLead(pk);
+if (msgId) showMsg(msgId, 'err', p
+? 'This is ' + esc(p.name) + ', which you do not run. ' +
+(who ? esc(vendorNameFor(who)) + ' does' : 'Nobody is named for it yet') +
+' \u2014 the office names who runs each programme.'
+: 'Only the Market Manager or whoever runs this programme can change it.');
 return false;
 }
 let mmProgram = 'merch';
@@ -26647,6 +26940,8 @@ pick.appendChild(o);
 if (!programOf(mmProgram)) mmProgram = MARKET_PROGRAMS[0].key;
 pick.value = mmProgram;
 }
+clampProgramToMine();
+renderMineProgramCard();
 const sel = document.getElementById('mmLead');
 if (sel && !sel.children.length) {
 const none = document.createElement('option');
@@ -26663,12 +26958,86 @@ renderProgramNote();
 renderProgramItems();
 renderMerchShifts();
 }
+// A vendor lead sees only what they run, and is told who holds the rest.
+//
+// mmProgram is one module-level variable shared by every desk on the device.
+// The office reads Garbage, hands the phone back, and the next vendor's "On
+// Their List" is still showing Garbage with nothing on the page to say so.
+// So for a vendor it is clamped to a programme they actually lead, and if
+// they lead none the screen says that plainly rather than showing whatever
+// was last selected.
+function clampProgramToMine() {
+if (currentRole !== 'vendor') return;
+const mine = programsLedBy(currentVendorId);
+if (!mine.length) { mmProgram = ''; return; }
+if (!mine.some(p => p.key === mmProgram)) mmProgram = mine[0].key;
+}
+function switchProgramMine() {
+const sel = document.getElementById('mmProgramMine');
+if (!sel) return;
+mmProgram = sel.value;
+['mmItemSearch', 'mmShiftSearch'].forEach(id => {
+const el = document.getElementById(id);
+if (el) el.value = '';
+});
+renderMineProgramCard();
+renderProgramItems();
+renderMerchShifts();
+}
+function renderMineProgramCard() {
+const card = document.getElementById('mmMineCard');
+if (!card) return;
+if (currentRole !== 'vendor' || !currentVendorId) { card.style.display = 'none'; return; }
+card.style.display = '';
+const mine = programsLedBy(currentVendorId);
+const sel = document.getElementById('mmProgramMine');
+const lbl = document.getElementById('mmMineLabel');
+const note = document.getElementById('mmMineNote');
+const others = document.getElementById('mmOthersNote');
+
+if (sel) {
+sel.innerHTML = '';
+mine.forEach(p => {
+const o = document.createElement('option');
+o.value = p.key; o.textContent = p.name;
+sel.appendChild(o);
+});
+sel.value = mmProgram || (mine[0] || {}).key || '';
+// One programme is not a choice, so it is shown as a fact instead.
+sel.style.display = mine.length > 1 ? '' : 'none';
+if (lbl) lbl.style.display = mine.length > 1 ? '' : 'none';
+}
+const p = programOf(mmProgram);
+if (note) note.innerHTML = !mine.length
+? '<b>You do not run any of the market\u2019s programmes.</b> The lists and shifts below are ' +
+'empty for that reason, not because there is nothing in them. The office names who runs each.'
+: mine.length > 1
+? 'You run ' + mine.map(x => esc(x.name)).join(' and ') + '. Everything below is about <b>' +
+esc(p ? p.name : '') + '</b>.'
+: 'You run <b>' + esc(mine[0].name) + '</b>. Everything below is about it.';
+
+// The other programmes are named, not hidden: a lead who finds a bin
+// overflowing should be able to see whose job it is without asking.
+if (others) {
+const rest = MARKET_PROGRAMS.filter(x => !mine.some(m => m.key === x.key));
+others.innerHTML = !rest.length ? '' :
+'<b>The market\u2019s other programmes are run by other people.</b> ' +
+rest.map(x => {
+const who = programLead(x.key);
+return esc(x.name) + ' \u2014 ' + (who ? esc(vendorNameFor(who)) : 'nobody named yet');
+}).join(' \u00b7 ') +
+'. You can see who to ask; their lists and shifts are theirs.';
+}
+}
+
 function renderProgramItems() {
 const wrap = document.getElementById('mmItemList');
 const empty = document.getElementById('mmItemEmpty');
 if (!wrap) return;
 wrap.innerHTML = '';
-const all = programItems(mmProgram) || [];
+// Not theirs, nothing shown. The card above says whose it is.
+const all = (currentRole === 'vendor' && !canRunProgram(mmProgram))
+? [] : (programItems(mmProgram) || []);
 const q = ((document.getElementById('mmItemSearch') || {}).value || '').trim().toLowerCase();
 const items = all.filter(it => !q ||
 [it.text, it.kind === 'agenda' ? 'to take up' : 'something to do',
@@ -26742,8 +27111,11 @@ showMsg('mmLeadMsg', 'ok', (next
 renderMerchShifts();
 }
 async function postMerchShift(key) {
-if (!requireMerch('mmShiftMsg')) return;
+// The key comes from the vendor card's own picker, which lists only their
+// programmes -- but the guard checks it anyway rather than trusting the
+// control that supplied it.
 const pk = key || mmProgram;
+if (!requireMerch('mmShiftMsg', pk)) return;
 const p = programOf(pk);
 const title = document.getElementById('mmShiftTitle').value.trim();
 if (!title) { showMsg('mmShiftMsg', 'err', 'Say what the shift is.'); return; }
@@ -27021,6 +27393,21 @@ m: 'Reported' + (s.date ? ' for ' + s.date : '') + ' \u00b7 waiting on the manag
 out.push({ key: 'share:' + s.id + ':' + s.status, state: s.status === 'allowed' ? 'yes' : 'no',
 t: who, m: s.status === 'allowed' ? 'Allowed by the manager' : 'Denied by the manager' });
 }
+});
+docClocksFor(me).forEach(c => {
+if (c.kind === 'expiring')
+out.push({ key: 'clock:' + c.req.id + ':' + c.expiry, state: 'waiting', go: 'mydocs',
+t: c.req.name, m: 'Expires ' + formatDisplayDate(c.expiry) + ' \u2014 ' + c.days +
+' day' + (c.days === 1 ? '' : 's') + ' left' +
+(c.req.blocking ? '. You may not sell once it lapses.' : '') });
+else if (c.kind === 'expired')
+out.push({ key: 'clock:' + c.req.id + ':expired:' + c.expiry, state: 'no', label: 'Expired', go: 'mydocs',
+t: c.req.name, m: 'Expired ' + formatDisplayDate(c.expiry) +
+(c.req.blocking ? ' \u2014 you may not sell until a current one is on file.' : '') });
+else if (c.kind === 'overdue')
+out.push({ key: 'clock:' + c.req.id + ':overdue', state: 'no', label: 'Overdue', go: 'mydocs',
+t: c.req.name, m: 'Was due ' + formatDisplayDate(c.req.due) + ' and nothing has been received' +
+(c.req.blocking ? ' \u2014 you may not sell without it.' : '.') });
 });
 (cache.requirements && cache.requirements.reqs || []).forEach(req => {
 const rec = reqStatusFor(req.id, me);
@@ -27332,6 +27719,46 @@ if (overdue.length) {
 alerts.push({ topic: 'Documents', n: overdue.length, t: overdue.length + ' past their due date',
 d: 'Assigned, nothing received, and the date has gone by',
 cls: 'expired', go: 'requirements' });
+}
+const clocks = docClocks();
+const blocked = blockedVendors();
+if (blocked.length) {
+alerts.push({ topic: 'Documents', n: blocked.length,
+t: blocked.length + (blocked.length === 1 ? ' vendor may not lawfully sell' : ' vendors may not lawfully sell'),
+d: currentRole === 'president'
+? 'A blocking permit is expired or was never received. Guide p.24: a vendor whose ' +
+'insurance certificate is not on file may not sell at any market. This is the number ' +
+'the Board should know; the chasing is the office\u2019s.'
+: blocked.slice(0, 3).map(vendorNameFor).join(', ') +
+(blocked.length > 3 ? ' and others' : '') + ' \u2014 a blocking permit is expired or missing',
+cls: 'expired', go: 'requirements' });
+}
+const expiring = clocks.filter(c => c.kind === 'expiring');
+const expired = clocks.filter(c => c.kind === 'expired');
+if (expired.length) {
+alerts.push({ topic: 'Documents', n: expired.length,
+t: expired.length + (expired.length === 1 ? ' document has expired' : ' documents have expired'),
+d: expired.slice(0, 3).map(c => c.v.businessName + ' \u2014 ' + c.req.name).join('; ') +
+(expired.length > 3 ? ' and others' : '') +
+'. A blocking document that has lapsed means that vendor may not sell.',
+cls: 'expired', go: 'requirements' });
+}
+if (expiring.length) {
+alerts.push({ topic: 'Documents', n: expiring.length,
+t: expiring.length + ' expiring within ' + (ruleNum('expiryWarn') || 30) + ' days',
+d: 'The Guide has management remind vendors in advance \u2014 ' +
+expiring.slice(0, 3).map(c => c.v.businessName + ' in ' + c.days + 'd').join(', ') +
+(expiring.length > 3 ? ' and others' : ''),
+cls: 'expiring', go: 'requirements' });
+}
+const unanswered = unansweredVendors();
+if (unanswered.length) {
+alerts.push({ topic: 'Documents', n: unanswered.length,
+t: unanswered.length + ' vendors have not said what they do at market',
+d: 'Which permits apply depends on what a vendor sells, not on their membership class. ' +
+'Until they answer, the market cannot tell whether they are compliant or exempt \u2014 ' +
+'they are in neither pile.',
+cls: 'submitted', go: 'requirements' });
 }
 const vmWaiting = vmPending().length;
 if (vmWaiting) {
