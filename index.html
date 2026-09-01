@@ -14161,7 +14161,7 @@ const name = s.vendor ? s.vendor.businessName : s.vendorId;
 const L = [];
 L.push('Hello ' + name + ',');
 L.push('');
-L.push('Your statement for ' + ymLabel(s.ym) + ' is attached as a PDF.');
+L.push('Your statement for ' + ymLabel(s.ym) + ' is below.');
 L.push('');
 if (s.outstanding > 0) {
 L.push('Outstanding: ' + money(s.outstanding));
@@ -14401,8 +14401,7 @@ out += '<p class="empty-note" style="margin:6px 2px 0;">Still running \u2014 mar
 'send until then.</p>';
 } else {
 out += '<div class="stmt-actions">' +
-(c.email ? '<a class="ghost-btn" href="' + stmtMailto(s) + '" ' +
-'onclick="stmtMarkSent(\'' + vendorId + '\',\'' + s.ym + '\',\'email\')">Email it</a>' : '') +
+(c.email ? '<button type="button" class="ghost-btn" onclick="stmtEmailWithBody(\'' + vendorId + '\',\'' + s.ym + '\')">Email it</button>' : '') +
 '<button type="button" class="ghost-btn" onclick="stmtViewOne(\'' + vendorId + '\',\'' + s.ym + '\')">View</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + vendorId + '\',\'' + s.ym + '\')">Print</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + vendorId + '\',\'' + s.ym + '\')">Save PDF</button>' +
@@ -14503,10 +14502,10 @@ line('Post', r.post.length, pLeft, r.post.length
 '<button type="button" class="primary-btn" style="margin:0;" onclick="stmtEmailNext()">' +
 (eLeft ? 'Email the next one (' + eLeft + ' left)' : 'All emails sent') + '</button>' +
 '</div>' +
-'<p class="empty-note" style="margin:6px 2px 0;"><b>A mail link cannot carry a file</b>, so the ' +
-'app cannot attach the PDF for you. The draft it writes carries the amount and the period, so a ' +
-'vendor who gets it with nothing attached still knows where they stand. To attach the statement ' +
-'itself, use <b>Save the PDF to attach</b> on their card first.</p>' +
+'<p class="empty-note" style="margin:6px 2px 0;"><b>Each one copies the statement, then opens the ' +
+'draft \u2014 paste it under the note.</b> It arrives formatted, the way it looks here, with no ' +
+'attachment to remember. A mail link cannot carry a file or any formatting of its own, which is ' +
+'why the pasting step exists. Prefer an attachment? <b>Save PDF</b> on the vendor\u2019s card.</p>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'post\')">Print the ' +
 r.post.length + ' for posting, with envelope addresses</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'all\')">Print all ' +
@@ -14674,11 +14673,13 @@ const ym = document.getElementById('stmtMonth').value;
 const s = stmtNextUnsentEmail(ym);
 if (!s) { showMsg('stmtMsg', 'ok', 'Every vendor with an email address has had ' +
 esc(ymLabel(ym)) + '. Anyone left is in the post or unreachable pile.'); return; }
-window.location.href = stmtMailto(s);
+const copied = await stmtCopyRich(s.vendorId, ym);
 await stmtMarkSent(s.vendorId, ym, 'email');
+window.location.href = stmtMailto(s);
 const left = stmtUnsent(stmtRoutes(ym).email).length;
 showMsg('stmtMsg', 'ok', 'Opened ' + esc(s.contact ? s.contact.business : s.vendorId) +
-'. Marked as sent \u2014 <b>if the mail program did not open, or you closed it without ' +
+(copied ? '. <b>Their statement is on the clipboard \u2014 paste it under the note.</b>' : '.') +
+' Marked as sent \u2014 <b>if the mail program did not open, or you closed it without ' +
 'sending, mark it unsent on their card.</b> ' + left + ' left to email.');
 renderStatements();
 }
@@ -14775,6 +14776,157 @@ actAs('Statement marked not sent \u2014 ' + ymLabel(ym),
 await saveStatements();
 renderStatements();
 showMsg('stmtMsg', 'ok', 'Marked not sent. It is back in the pile.');
+}
+
+// ---- the statement as email-safe HTML ------------------------------------
+// Inline styles only, tables for layout, no shorthand anyone strips. A mail
+// client throws away <style> blocks and class selectors, so the app's
+// stylesheet does nothing here and every rule has to travel on the element.
+function stmtEmailHtml(s) {
+const money = n => '$' + fmtMoney(Math.abs(n));
+const INK = '#23231B', DIM = '#55523F', LINE = '#DDD6C0', LEAF = '#3F5D34';
+const rows = s.charged.map(r => ({ ...r, k: 'charge' }))
+.concat(s.received.map(r => ({ ...r, k: 'credit' })))
+.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+const stateWord = s.outstanding > 0 ? 'Amount due'
+: s.outstanding < 0 ? 'Credit in your favour' : 'Paid in full';
+const cell = 'padding:7px 8px; border-bottom:1px solid ' + LINE + '; font-size:14px; color:' + INK + ';';
+const num = cell + ' text-align:right; white-space:nowrap;';
+const lbl = 'font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:' + DIM + ';';
+
+let o = '<div style="font-family:Georgia,\'Times New Roman\',serif; color:' + INK +
+'; max-width:640px; line-height:1.45;">';
+
+// Letterhead
+o += '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
+'style="border-collapse:collapse; margin-bottom:14px;"><tr>' +
+'<td style="vertical-align:top;">' +
+'<div style="font-size:19px; font-weight:bold; color:' + INK + ';">Ithaca Farmers Market</div>' +
+'<div style="font-size:12px; color:' + DIM + ';">Steamboat Landing &middot; 545 Third St, Ithaca NY 14850</div>' +
+'</td>' +
+'<td style="vertical-align:top; text-align:right; ' + lbl + ' font-weight:bold; color:' + LEAF + ';">Statement</td>' +
+'</tr></table>' +
+'<hr style="border:0; border-top:2px solid ' + LEAF + '; margin:0 0 14px;">';
+
+// Who and when
+o += '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
+'style="border-collapse:collapse; margin-bottom:16px;"><tr>' +
+'<td style="vertical-align:top; width:50%;">' +
+'<div style="' + lbl + '">Vendor</div>' +
+'<div style="font-size:15px; font-weight:bold;">' + esc(s.vendor ? s.vendor.businessName : s.vendorId) + '</div>' +
+'</td><td style="vertical-align:top; text-align:right;">' +
+'<div style="' + lbl + '">Statement period</div>' +
+'<div style="font-size:15px; font-weight:bold;">' + esc(ymLabel(s.ym)) + '</div>' +
+'<div style="' + lbl + ' margin-top:6px;">Issued</div>' +
+'<div style="font-size:14px;">' + esc(formatDisplayDate(todayISO())) + '</div>' +
+'</td></tr></table>';
+
+// The figure, in a box
+o += '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
+'style="border-collapse:collapse; background:#F4F2E8; border:1px solid ' + LINE + '; margin-bottom:16px;">' +
+'<tr><td style="padding:14px 16px; text-align:center;">' +
+'<div style="' + lbl + '">' + stateWord + '</div>' +
+'<div style="font-size:30px; font-weight:bold; color:' + (s.outstanding > 0 ? INK : LEAF) + '; padding:2px 0;">' +
+money(s.outstanding) + '</div>' +
+(s.outstanding > 0
+? '<div style="font-size:12px; color:' + DIM + ';">This statement carries no deadline of its own. ' +
+'Anything on it that has one is shown with its own date.</div>' : '') +
+'</td></tr></table>';
+
+// The lines
+if (rows.length || s.brought) {
+o += '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" ' +
+'style="border-collapse:collapse; margin-bottom:14px;">' +
+'<tr>' +
+'<th align="left" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Date</th>' +
+'<th align="left" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">What</th>' +
+'<th align="right" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Charge</th>' +
+'<th align="right" style="' + lbl + ' padding:0 8px 6px; border-bottom:1px solid ' + LINE + ';">Credit</th>' +
+'</tr>';
+if (s.brought) o += '<tr><td style="' + cell + '"></td>' +
+'<td style="' + cell + '"><i>Brought forward</i></td>' +
+'<td style="' + num + '">' + (s.brought > 0 ? money(s.brought) : '') + '</td>' +
+'<td style="' + num + '">' + (s.brought < 0 ? money(s.brought) : '') + '</td></tr>';
+rows.forEach(r => {
+o += '<tr><td style="' + cell + ' white-space:nowrap;">' + esc(stmtShortDate(r.date)) + '</td>' +
+'<td style="' + cell + '">' + esc(r.what) + '</td>' +
+'<td style="' + num + '">' + (r.k === 'charge' ? money(r.amount) : '') + '</td>' +
+'<td style="' + num + '">' + (r.k === 'credit' ? money(r.amount) : '') + '</td></tr>';
+});
+o += '<tr>' +
+'<td style="padding:8px; font-weight:bold; font-size:14px;" colspan="2">Totals</td>' +
+'<td style="padding:8px; text-align:right; font-weight:bold; font-size:14px;">' +
+money(s.chargedTotal + Math.max(0, s.brought)) + '</td>' +
+'<td style="padding:8px; text-align:right; font-weight:bold; font-size:14px;">' +
+money(s.receivedTotal) + '</td></tr></table>';
+}
+
+// Year-end fees, which the month does not settle
+if (s.yearEnd && s.yearEnd.length) {
+o += '<div style="border-left:3px solid ' + LEAF + '; padding:2px 0 2px 12px; margin-bottom:14px;">' +
+'<div style="' + lbl + '">Falling due 31 December</div>' +
+s.yearEnd.map(f => '<div style="font-size:14px;">' + esc(f.what) + ' &mdash; ' + money(f.amount) + '</div>').join('') +
+'<div style="font-size:12px; color:' + DIM + '; margin-top:4px;">Settling this month does not settle these.</div>' +
+'</div>';
+}
+
+o += '<hr style="border:0; border-top:1px solid ' + LINE + '; margin:16px 0 8px;">' +
+'<div style="font-size:12px; color:' + DIM + ';">' +
+'The same statement is on your own desk in the vendor portal, under My Account &rsaquo; Statements, ' +
+'along with every earlier month. If a line looks wrong, tell the office &mdash; correcting the record ' +
+'corrects the statement.</div></div>';
+return o;
+}
+// Both flavours on the clipboard at once: the formatted statement for a mail
+// program that takes it, and the readable transcript for one that does not.
+// A client that refuses HTML gets something usable rather than nothing.
+// Copy the formatted statement, then open the draft. In that order: opening
+// the mail program can hand focus away from the browser, and a clipboard
+// write after focus is lost is refused on iOS.
+async function stmtEmailWithBody(vendorId, ym) {
+const s = statementFor(vendorId, ym);
+const ok = await stmtCopyRich(vendorId, ym);
+await stmtMarkSent(vendorId, ym, 'email');
+window.location.href = stmtMailto(s);
+showMsg('stmtMsg', ok ? 'ok' : 'err', ok
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> Statement copied and the draft opened. ' +
+'<b>Paste it under the note</b> \u2014 it arrives formatted, the way it looks here. ' +
+'Marked as sent; if the draft never opened, mark it not sent.'
+: 'The draft opened, but this device would not let the app copy the statement. ' +
+'Use <b>Save PDF</b> and attach it instead.');
+}
+
+async function stmtCopyRich(vendorId, ym) {
+const s = statementFor(vendorId, ym);
+const html = stmtEmailHtml(s);
+const text = stmtEmailBody(s);
+try {
+if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+await navigator.clipboard.write([new ClipboardItem({
+'text/html': new Blob([html], { type: 'text/html' }),
+'text/plain': new Blob([text], { type: 'text/plain' }),
+})]);
+return true;
+}
+} catch (e) {}
+// Older Safari has no ClipboardItem. Selecting a live element and copying it
+// carries the formatting too -- it is how rich text moved between programs
+// long before there was an API for it.
+try {
+const box = document.createElement('div');
+box.setAttribute('contenteditable', 'true');
+box.style.cssText = 'position:fixed; left:-9999px; top:0; white-space:normal;';
+box.innerHTML = html;
+document.body.appendChild(box);
+const range = document.createRange();
+range.selectNodeContents(box);
+const sel = window.getSelection();
+sel.removeAllRanges(); sel.addRange(range);
+const ok = document.execCommand('copy');
+sel.removeAllRanges();
+box.remove();
+return ok;
+} catch (e) { return false; }
 }
 
 function stmtMailto(s) {
@@ -20103,7 +20255,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-23';
+const BUILD_ID = '17-24';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
