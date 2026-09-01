@@ -2494,14 +2494,6 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="accountstatements">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mystatements')">
-<span class="fold-title">Statements</span>
-<span class="fold-sub" id="menuStmtSub">Each closed month, as a record of what was owed</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
 <div class="dash-fold" data-fold="hours">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'hours')">
 <span class="fold-title">Work Hours</span>
@@ -2541,6 +2533,14 @@ I sell food (prepared food or produce)
 <div id="myAttendBody"></div>
 </div>
 </div>
+</div>
+<div class="dash-fold" data-fold="accountstatements">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mystatements')">
+<span class="fold-title">Statements</span>
+<span class="fold-sub" id="menuStmtSub">Each closed month, as a record of what was owed</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
 </div>
 </div>
 </div>
@@ -8337,6 +8337,7 @@ try {
 const tr = await storageGetShared('ifm-doc-traits');
 cache.requirements.traits = (tr !== STORAGE_MISSING && tr) ? tr : {};
 } catch (e) { cache.requirements.traits = cache.requirements.traits || {}; }
+await mergeHealthIntoFoodService();
 cache.ops = ops === STORAGE_MISSING ? { noshow: {}, fines: [], waived: {} } : (ops || {});
 try { await loadSnap(); } catch (e) { snapCache = snapCache || { accepts: {}, entries: [] }; }
 try { await loadFc(); } catch (e) { fcCache = fcCache || { accepts: {}, entries: [] }; }
@@ -19600,7 +19601,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-15';
+const BUILD_ID = '17-17';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -23089,15 +23090,9 @@ detail: 'The sales tax certificate. Guide p.15 requires it to be displayed at th
 appliesTo: 'all', categories: [], vendorIds: [], traits: [],
 effective: '2026-01-01', renewal: 'once', blocking: false, link: '',
 due: '' },
-{ id: 'REQ-health', name: 'Health Department Permit',
-issuer: 'Tompkins County Health Department',
-detail: 'Guide p.15 names this among the signage that must be displayed and taken down each market day. Which permit, and whether one is needed at all, depends on what is sold.',
-appliesTo: 'trait', categories: [], vendorIds: [], traits: ['preparedFood'],
-effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
-due: '' },
 { id: 'REQ-foodservice', name: 'Food Service Permit',
-issuer: 'Tompkins County Health Dept.',
-detail: 'Named on Guide p.4 among the permits that must be kept up to date. For food prepared or served at the booth.',
+issuer: 'Tompkins County Health Department',
+detail: 'The Guide names this twice and differently \u2014 p.4 calls it a <b>Food Service Permit</b> among the permits that must be kept current, and p.15 calls it a <b>health department permit</b> among the signage that must be displayed and taken down each market day. <b>In Tompkins County these are one permit</b>, issued by the Health Department, so the market asks for it once. Post it or scan it here, and display it at the booth.',
 appliesTo: 'trait', categories: [], vendorIds: [], traits: ['preparedFood', 'openFlame'],
 effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
 due: '' },
@@ -23137,6 +23132,42 @@ return cache.requirements.status[reqStatusKey(reqId, vendorId)] ||
 async function saveSubmissions() {
 await storageSetShared('ifm-doc-submissions', cache.requirements.status);
 }
+// A build shipped with the health department permit and the food service
+// permit as two requirements. They are one permit in Tompkins County, so the
+// first was withdrawn -- and anything a vendor had already sent against it
+// has to come with it. Left behind, the record would sit in the status map
+// under an id nothing reads and the vendor's accepted permit would quietly
+// read as outstanding again.
+//
+// Only moved where the surviving requirement has nothing better: a permit
+// already accepted under the right id is not overwritten by an older record.
+const RANK = { onfile: 4, pending: 3, returned: 2, exempt: 1, missing: 0 };
+async function mergeHealthIntoFoodService() {
+const status = (cache.requirements && cache.requirements.status) || {};
+let moved = 0;
+(cache.vendors || []).forEach(v => {
+const from = 'REQ-health|' + v.vendorId;
+if (!status[from]) return;
+const to = 'REQ-foodservice|' + v.vendorId;
+const oldRank = RANK[(status[from] || {}).state] || 0;
+const newRank = RANK[(status[to] || {}).state] || 0;
+if (oldRank > newRank) status[to] = status[from];
+delete status[from];
+moved++;
+});
+// The withdrawn requirement itself, on a sheet that already holds it.
+const reqs = (cache.requirements && cache.requirements.reqs) || [];
+const at = reqs.findIndex(r => r.id === 'REQ-health');
+if (at >= 0) { reqs.splice(at, 1); moved++; }
+if (moved) {
+try {
+await saveSubmissions();
+await storageSet('ifm-requirements', { reqs: reqs, status: status });
+} catch (e) {}
+}
+return moved;
+}
+
 function reqOverdue(req, vendorId) {
 if (!req || !req.due) return false;
 const st = reqStatusFor(req.id, vendorId).state;
