@@ -10818,6 +10818,7 @@ await loadSnap();
 snapCache.accepts[v.vendorId] = !!yes;
 await saveSnap();
 renderSnapVendor();
+applyDeskOrder().catch(() => {});
 showMsg('snapVendorMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
 (yes ? 'Noted \u2014 you accept SNAP tokens. Shoppers filtering for SNAP at the kiosk can now see you, '
 + 'and the office sees it when they take tokens in.'
@@ -11393,6 +11394,7 @@ await loadFc();
 fcCache.accepts[v.vendorId] = !!yes;
 await saveFc();
 renderFcVendor();
+applyDeskOrder().catch(() => {});
 showMsg('fcVendorMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
 (yes ? 'Noted \u2014 you take FreshConnect Checks. The office sees it when they take checks in.'
 : 'Noted \u2014 you do not take FreshConnect Checks. Switch back any time.'));
@@ -12179,6 +12181,23 @@ function deskDefaultOrder() {
     ? DESK_STEAMBOAT_ORDER.concat(DESK_STABLE_ORDER, DESK_OTHER_MARKETS)
     : DESK_STABLE_ORDER.concat(DESK_STEAMBOAT_ORDER, DESK_OTHER_MARKETS);
 }
+// Drawers the vendor has said they do not use. They keep their place on the
+// desk, at the end of it, rather than being taken away -- the switch that
+// sent them there is inside them.
+function deskDemotedKeys() {
+if (currentRole !== 'vendor' || !currentVendorId) return [];
+const out = [];
+if (typeof snapAccepts === 'function' && !snapAccepts(currentVendorId)) out.push('snaptokens');
+if (typeof fcAccepts === 'function' && !fcAccepts(currentVendorId)) out.push('fcchecks');
+return out;
+}
+// Applied to whatever order came before it, saved or default, so the answer
+// always has the last word on where these two sit.
+function deskWithDemotions(seq) {
+const demote = deskDemotedKeys();
+if (!demote.length) return seq;
+return seq.filter(k => demote.indexOf(k) < 0).concat(demote.filter(k => seq.indexOf(k) >= 0));
+}
 let deskDragAttached = false;
 let deskOrderCache = null;
 async function loadDeskOrders() {
@@ -12200,11 +12219,29 @@ const byKey = {};
 dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])').forEach(f => { if (f.dataset.fold) byKey[f.dataset.fold] = f; });
 const seq = saved.filter(k => byKey[k]);
 dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])').forEach(f => { if (f.dataset.fold && !seq.includes(f.dataset.fold)) seq.push(f.dataset.fold); });
-seq.forEach(k => dash.insertBefore(byKey[k], note));
+deskWithDemotions(seq).forEach(k => dash.insertBefore(byKey[k], note));
 }
 async function saveDeskOrder() {
 const dash = document.getElementById('screen-dashboard');
-const order = Array.from(dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])')).map(f => f.dataset.fold).filter(Boolean);
+let order = Array.from(dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])')).map(f => f.dataset.fold).filter(Boolean);
+// The demoted drawers are at the foot because of an answer, not because the
+// vendor dragged them there. Saving them in that position would make the
+// demotion permanent, and switching back to "I accept" would leave the
+// drawer at the bottom with nothing on the bar to explain it. So they are
+// recorded where the vendor's own arrangement puts them.
+const demoted = deskDemotedKeys();
+if (demoted.length) {
+const prior = (deskOrderCache && deskOrderCache.id === currentVendorId ? deskOrderCache.order : null) || deskDefaultOrder();
+order = order.filter(k => demoted.indexOf(k) < 0);
+demoted.forEach(k => {
+const at = prior.indexOf(k);
+if (at < 0) { order.push(k); return; }
+// Slot it back beside whichever neighbour from before is still present.
+let anchor = -1;
+for (let i = at - 1; i >= 0 && anchor < 0; i--) anchor = order.indexOf(prior[i]);
+order.splice(anchor + 1, 0, k);
+});
+}
 deskOrderCache = { id: currentVendorId, order: order };
 const all = await loadDeskOrders();
 all[currentVendorId] = order;
@@ -12220,7 +12257,7 @@ deskOrderCache = null;
 await storageSet('ifm-desk-order', all);
 const dash = document.getElementById('screen-dashboard');
 const note = document.getElementById('menuTailorNote');
-deskDefaultOrder().forEach(k => {
+deskWithDemotions(deskDefaultOrder()).forEach(k => {
 const f = dash.querySelector(':scope > .dash-fold[data-fold="' + k + '"]');
 if (f) dash.insertBefore(f, note);
 });
@@ -19532,7 +19569,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-11';
+const BUILD_ID = '17-12';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
