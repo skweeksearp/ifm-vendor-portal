@@ -4393,9 +4393,20 @@ this side of it.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Whose statements</h2>
 <select id="acctVendorStmt" onchange="renderMyStatements()"></select>
 </div>
-<div class="card desk-form" id="vqCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Does a Line Look Wrong?</h2>
-<p class="empty-note" style="margin-top:0;">Tell the office and they will look. <b>Nothing is deleted when a line is corrected</b> &mdash; the original stays where it is and the correction sits beside it, dated, with the reason. That way the statement you were sent still makes sense next to the one you have now.</p>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Earlier Statements</h2>
+<p class="empty-note" style="margin-top:0;">Each closed month, as a record of what was owed. <b>A statement carries no deadline of its own</b> &mdash; anything on it that has one shows that date on the line. The month still running is in <b>Money</b>.</p>
+<div id="myStatements"></div>
+</div>
+<div class="dash-fold" id="vqCard" data-fold="vquery">
+<button type="button" class="fold-bar" onclick="vqToggle(this)">
+<span class="fold-title">Does a line look wrong?</span>
+<span class="fold-sub" id="vqSub">Tell the office and they will look</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<p class="empty-note" style="margin-top:0;"><b>Nothing is deleted when a line is corrected</b> &mdash; the original stays where it is and the correction sits beside it, dated, with the reason. That way the statement you were sent still makes sense next to the one you have now.</p>
+<div class="desk-form">
 <label for="vqMonth">Which month</label>
 <select id="vqMonth"></select>
 <label for="vqLine">Which line</label>
@@ -4404,12 +4415,9 @@ this side of it.</p>
 <textarea id="vqSays" rows="3" placeholder="I was not at the market that Saturday &mdash; I called out on the Wednesday."></textarea>
 <div class="status-msg" id="vqMsg"></div>
 <button type="button" class="primary-btn" onclick="vqRaise()">Send it to the office</button>
+</div>
 <div id="vqMine" style="margin-top:12px;"></div>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Earlier Statements</h2>
-<p class="empty-note" style="margin-top:0;">Each closed month, as a record of what was owed. <b>A statement carries no deadline of its own</b> &mdash; anything on it that has one shows that date on the line. The month still running is in <b>Money</b>.</p>
-<div id="myStatements"></div>
 </div>
 </section>
 <section id="screen-fcchecks" class="screen">
@@ -5495,11 +5503,17 @@ comes from.</p>
 <section id="screen-mydocs" class="screen">
 <div class="screen-head" id="head-mydocs"></div>
 <p class="empty-note" id="mdSummary" style="margin-top:0;"></p>
-<div class="card desk-form" id="mdTraitCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>What You Do at Market</h2>
+<div class="dash-fold" id="mdTraitCard" data-fold="mdtraits">
+<button type="button" class="fold-bar" onclick="mdTraitToggle(this)">
+<span class="fold-title">What You Do at Market</span>
+<span class="fold-sub" id="mdTraitSub">Five questions that decide which permits apply</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
 <p class="empty-note" style="margin-top:0;">Which permits the market needs from you depends on what you sell, not on your membership class. Five questions, answered once. <b>Change an answer and the list below changes with it.</b></p>
 <div id="mdTraits"></div>
 <div class="status-msg" id="mdTraitMsg"></div>
+</div>
 </div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>What the Market Needs From You<button type="button" class="help-dot" onclick="showHelp(62)" aria-label="What are the rules here?">?</button></h2>
@@ -15386,6 +15400,25 @@ el.textContent = months.length + ' month' + (months.length === 1 ? '' : 's') +
 : ' \u00b7 all settled');
 }
 // ---- the vendor's half ---------------------------------------------------
+// Shut until wanted. It fills when opened rather than on the way in, so the
+// drawer costs nothing to walk past.
+function vqToggle(bar) {
+const fold = bar.closest('.dash-fold');
+const open = !fold.classList.contains('open');
+fold.classList.toggle('open', open);
+if (open) { vqFillMonths(); renderVqMine(); }
+}
+// The bar says whether anything is outstanding, so a vendor waiting on an
+// answer does not have to open it to find out.
+function renderVqSub() {
+const el = document.getElementById('vqSub');
+if (!el || !currentVendorId) return;
+const mine = corrForVendor(currentVendorId);
+const open = mine.filter(q => q.state === 'open').length;
+const answered = mine.filter(q => q.state !== 'open').length;
+el.textContent = open ? open + ' with the office'
+: answered ? answered + ' answered' : 'Tell the office and they will look';
+}
 function vqFillMonths() {
 const sel = document.getElementById('vqMonth');
 if (!sel || !currentVendorId) return;
@@ -15430,6 +15463,7 @@ showMsg('vqMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> S
 'it on their desk. <b>Nothing changes on your statement until they answer</b> \u2014 and when they ' +
 'do, you will see both the original line and the correction.');
 renderVqMine();
+renderVqSub();
 }
 function renderVqMine() {
 const wrap = document.getElementById('vqMine');
@@ -15465,8 +15499,7 @@ if (vq) vq.style.display = (currentRole === 'vendor' && currentVendorId) ? '' : 
 if (currentRole === 'vendor' && currentVendorId) {
 const m = document.getElementById('vqMonth');
 if (m && !m.onchange) m.onchange = vqFillLines;
-vqFillMonths();
-renderVqMine();
+renderVqSub();
 }
 renderMyStatements();
 }
@@ -20772,7 +20805,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-28';
+const BUILD_ID = '17-29';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26700,6 +26733,28 @@ reqVendors(req).some(v => v.vendorId === vendorId));
 // question -- yes, no, and nobody has said -- because a blank answer is not
 // a no, and treating it as one would quietly excuse a vendor from a permit
 // the law requires of them.
+function mdTraitToggle(bar) {
+const fold = bar.closest('.dash-fold');
+const open = !fold.classList.contains('open');
+fold.classList.toggle('open', open);
+if (open) renderVendorTraits();
+}
+// Shut, the bar has to say enough that a vendor knows whether to open it --
+// otherwise an unanswered question is invisible and the permits below look
+// simply wrong.
+function renderTraitSub() {
+const el = document.getElementById('mdTraitSub');
+const v = currentVendor();
+if (!el || !v) return;
+const answered = VENDOR_TRAITS.filter(t => vendorTrait(v.vendorId, t.key) !== undefined).length;
+const yes = VENDOR_TRAITS.filter(t => vendorTrait(v.vendorId, t.key) === true)
+.map(t => t.short.toLowerCase());
+el.textContent = answered === 0
+? 'Not answered \u2014 so the market cannot tell which permits apply to you'
+: answered < VENDOR_TRAITS.length
+? (VENDOR_TRAITS.length - answered) + ' of ' + VENDOR_TRAITS.length + ' still unanswered'
+: (yes.length ? yes.join(', ') : 'none of the five apply to you');
+}
 function renderVendorTraits() {
 const wrap = document.getElementById('mdTraits');
 const vendor = currentVendor();
@@ -26728,6 +26783,7 @@ b.textContent = label;
 b.onclick = async () => {
 await setVendorTrait(vendor.vendorId, t.key, val);
 renderVendorTraits();
+renderTraitSub();
 renderMyDocs();
 showMsg('mdTraitMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Noted. ' +
 'The list below now matches what you do.');
@@ -26764,7 +26820,7 @@ box.innerHTML = '<div class="req-row-main">' +
 'change the answer and the document appears here.</p></div>';
 wrap.appendChild(box);
 }
-function initMyDocsScreen() { renderVendorTraits(); renderMyDocs(); }
+function initMyDocsScreen() { renderTraitSub(); renderMyDocs(); }
 function renderMyDocs() {
 const vendor = currentVendor();
 const wrap = document.getElementById('mdList');
