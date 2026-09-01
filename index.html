@@ -207,6 +207,9 @@ table.log, table.stmt-table { width: 100%; table-layout: auto; }
    are secondary to the figure above them.
    This lived inside @media print by mistake, so it applied on paper and not
    on screen. */
+.handover-code { background: #F4F2E8; border: 1px solid #DDD6C0; border-radius: 8px;
+padding: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
+line-height: 1.45; white-space: pre; overflow-x: auto; color: #23231B; margin: 10px 0; }
 .stmt-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
 .stmt-actions > * { flex: 0 1 auto; }
 /* Every child carries its own shape rather than inheriting one from the row.
@@ -4798,6 +4801,52 @@ read its payment records, or lock its members out belongs to an account the <i>m
 institutionally &mdash; not a developer&rsquo;s personal login, and not the current manager&rsquo;s personal
 login either, which only moves the problem one desk over.</p>
 <div id="handoverList"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Sending Statements Without Pasting</h2>
+<p class="empty-note" style="margin-top:0;"><b>A mail link cannot send anything.</b> It asks the office&rsquo;s own mail program to open a draft, in plain text, with no attachment and no formatting &mdash; which is why the statement has to be pasted in. Nothing on the browser side changes that.</p>
+<p class="empty-note">The way round it is for the <b>backend</b> to send: the market&rsquo;s Apps Script already holds the sheet, already runs as the market&rsquo;s own account, and can send mail. Add the code below and the <b>Send it</b> buttons appear on the statements screen. Until then they stay hidden and the drafting route is offered instead.</p>
+<p class="empty-note"><b>Two things to know before switching it on.</b> First, this is the app sending on the market&rsquo;s behalf rather than opening a draft for a person to read &mdash; so it keeps a preview and a confirm, and records what went and when, but the office is no longer reading each one before it goes. Second, Google caps sending: <b>100 messages a day on an ordinary Gmail account, 1,500 on a Workspace one</b>. With 168 vendors, a market on ordinary Gmail sends a month across two days. The app asks the script what is left and stops before it is refused halfway.</p>
+<p class="empty-note"><b>Whose address it comes from is whoever owns the script.</b> That is the same rule as everything else on this screen: it should be an account the market controls, not a personal login.</p>
+<pre class="handover-code" id="mailScript">// Add to the market's Apps Script, then Deploy &gt; Manage deployments &gt; New
+// version. Nothing else in the app changes; the Send buttons light up on
+// their own once this answers.
+//
+// Put this INSIDE the existing doGet / doPost, alongside the sheet handling.
+
+function ifmMailCheck() {
+  return { ok: true,
+           from: Session.getEffectiveUser().getEmail(),
+           remaining: MailApp.getRemainingDailyQuota() };
+}
+
+function ifmSendMail(p) {
+  if (!p || !p.to || !p.html) return { ok: false, error: 'missing to or html' };
+  if (MailApp.getRemainingDailyQuota() &lt; 1) {
+    return { ok: false, error: 'the daily sending quota is used up' };
+  }
+  MailApp.sendEmail({
+    to: p.to,
+    subject: p.subject || 'Ithaca Farmers Market statement',
+    htmlBody: p.html,
+    body: p.text || '',
+    name: 'Ithaca Farmers Market'
+  });
+  return { ok: true };
+}
+
+// In doGet, before the sheet lookup:
+//   if (e.parameter.action === 'mailcheck') {
+//     return ContentService.createTextOutput(JSON.stringify(ifmMailCheck()))
+//       .setMimeType(ContentService.MimeType.JSON);
+//   }
+//
+// In doPost, after JSON.parse(e.postData.contents) into `body`:
+//   if (body.action === 'sendmail') {
+//     return ContentService.createTextOutput(JSON.stringify(ifmSendMail(body)))
+//       .setMimeType(ContentService.MimeType.JSON);
+//   }</pre>
+<button type="button" class="ghost-btn" onclick="copyMailScript(this)">Copy the code</button>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>Who Owns This</h2>
@@ -14304,8 +14353,21 @@ out.push(d.toISOString().slice(0, 7));
 }
 return out;
 }
+function copyMailScript(btn) {
+const el = document.getElementById('mailScript');
+if (!el) return;
+navigator.clipboard.writeText(el.textContent).then(() => {
+const was = btn.textContent;
+btn.textContent = 'Copied \u2014 paste it into the Apps Script editor';
+setTimeout(() => { btn.textContent = was; }, 4000);
+}).catch(() => { btn.textContent = 'Select the code and copy it by hand'; });
+}
 function initStatementsScreen() {
 stmtFillVendorSelect();
+// Asked once and remembered. The app cannot know whether the script
+// understands `sendmail` without asking, and guessing either way would put
+// a button on the screen that lies.
+if (!stmtMailerState) stmtMailerCheck().then(() => renderStatements()).catch(() => {});
 const sel = document.getElementById('stmtMonth');
 if (sel && !sel.options.length) {
 sel.innerHTML = stmtMonthOptions().map(ym =>
@@ -14401,7 +14463,11 @@ out += '<p class="empty-note" style="margin:6px 2px 0;">Still running \u2014 mar
 'send until then.</p>';
 } else {
 out += '<div class="stmt-actions">' +
-(c.email ? '<button type="button" class="ghost-btn" onclick="stmtEmailWithBody(\'' + vendorId + '\',\'' + s.ym + '\')">Email it</button>' : '') +
+(c.email && stmtMailerState && stmtMailerState.ready
+? '<button type="button" class="primary-btn" style="margin:0;" onclick="stmtSendWithPreview(\'' +
+vendorId + '\',\'' + s.ym + '\')">Send it</button>' : '') +
+(c.email ? '<button type="button" class="ghost-btn" onclick="stmtEmailWithBody(\'' + vendorId + '\',\'' + s.ym + '\')">' +
+(stmtMailerState && stmtMailerState.ready ? 'Draft it instead' : 'Email it') + '</button>' : '') +
 '<button type="button" class="ghost-btn" onclick="stmtViewOne(\'' + vendorId + '\',\'' + s.ym + '\')">View</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + vendorId + '\',\'' + s.ym + '\')">Print</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + vendorId + '\',\'' + s.ym + '\')">Save PDF</button>' +
@@ -14499,13 +14565,20 @@ line('Post', r.post.length, pLeft, r.post.length
 : '') +
 (open ? '' :
 '<div class="act-switch" style="margin-top:10px;">' +
-'<button type="button" class="primary-btn" style="margin:0;" onclick="stmtEmailNext()">' +
-(eLeft ? 'Email the next one (' + eLeft + ' left)' : 'All emails sent') + '</button>' +
+(stmtMailerState && stmtMailerState.ready
+? '<button type="button" class="primary-btn" style="margin:0;" onclick="stmtSendMonth()">' +
+(eLeft ? 'Send all ' + eLeft + ' now' : 'All emails sent') + '</button>'
+: '<button type="button" class="primary-btn" style="margin:0;" onclick="stmtEmailNext()">' +
+(eLeft ? 'Email the next one (' + eLeft + ' left)' : 'All emails sent') + '</button>') +
 '</div>' +
-'<p class="empty-note" style="margin:6px 2px 0;"><b>Each one copies the statement, then opens the ' +
-'draft \u2014 paste it under the note.</b> It arrives formatted, the way it looks here, with no ' +
-'attachment to remember. A mail link cannot carry a file or any formatting of its own, which is ' +
-'why the pasting step exists. Prefer an attachment? <b>Save PDF</b> on the vendor\u2019s card.</p>' +
+(stmtMailerState && stmtMailerState.ready
+? '<button type="button" class="ghost-btn" onclick="stmtEmailNext()">Draft them one at a time instead</button>'
+: '') +
+'<p class="empty-note" style="margin:6px 2px 0;"><b>Each one copies the statement and opens an empty ' +
+'draft \u2014 paste, then send.</b> It arrives formatted, the way it looks here, with no attachment ' +
+'to remember. A mail link cannot carry a file or any formatting of its own, which is why the ' +
+'pasting step exists at all. Prefer an attachment? <b>Save PDF</b> on the vendor\u2019s card. ' +
+'Rather not paste anything? The backend can send these outright \u2014 see Handover.</p>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'post\')">Print the ' +
 r.post.length + ' for posting, with envelope addresses</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtPrintRun(\'all\')">Print all ' +
@@ -14678,83 +14751,12 @@ await stmtMarkSent(s.vendorId, ym, 'email');
 window.location.href = stmtMailto(s);
 const left = stmtUnsent(stmtRoutes(ym).email).length;
 showMsg('stmtMsg', 'ok', 'Opened ' + esc(s.contact ? s.contact.business : s.vendorId) +
-(copied ? '. <b>Their statement is on the clipboard \u2014 paste it under the note.</b>' : '.') +
+(copied ? '. <b>The draft is empty and their statement is on the clipboard \u2014 paste, then send.</b>' : '.') +
 ' Marked as sent \u2014 <b>if the mail program did not open, or you closed it without ' +
 'sending, mark it unsent on their card.</b> ' + left + ' left to email.');
 renderStatements();
 }
 
-function stmtCardHTML(s) {
-// Its own, not renderStatements'. A bare `open` here resolved to window.open
-// -- always truthy -- which silently withheld every action button on every
-// card and made every month claim to be still running.
-const open = stmtIsOpen(s.ym);
-const rec = stmtRecord(s.vendorId, s.ym);
-const name = esc(s.vendor ? s.vendor.businessName : s.vendorId);
-const state = s.outstanding > 0
-? '<span class="stamp in">Owing</span>'
-: s.outstanding < 0 ? '<span class="stamp out">Market owes them</span>'
-: '<span class="stamp in">Settled</span>';
-let body = '<div class="card" style="margin-top:10px;"><h2 style="font-size:16px;">' + name + ' ' + state + '</h2>';
-body += '<div class="gc-balance' + (s.outstanding > 0 ? '' : ' gc-spent') + '" style="margin-top:6px;">' +
-'<div class="gc-bal-num">$' + fmtMoney(Math.abs(s.outstanding)) + '</div>' +
-'<div class="gc-bal-label">' + (s.outstanding > 0 ? 'due from them' :
-s.outstanding < 0 ? 'owed to them' : 'settled') + '</div></div>';
-if (s.carried) body += '<p class="empty-note" style="margin:6px 2px 0;">Under the $' +
-fmtMoney(ruleNum('stmtCarryUnder')) + ' line the Board set \u2014 this can roll to next month rather than be chased.</p>';
-// What to DO with this vendor, directly under their name. These used to sit
-// at the foot of the card, below every line of the month and the payment
-// history -- several phone screens down, findable only by somebody who
-// already knew they were there.
-if (!open) {
-const c = stmtContact(s.vendorId);
-const email = c.email;
-body += '<div class="stmt-actions">' +
-(email
-? '<a class="ghost-btn" href="' + stmtMailto(s) + '" ' +
-'onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'email\')">Email it</a>'
-: '') +
-'<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Print</button>' +
-'<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + s.vendorId + '\',\'' + s.ym + '\')">Save PDF</button>' +
-'<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + s.vendorId + '\',\'' + s.ym + '\')">Copy text</button>' +
-(s.sentAt
-? '<button type="button" class="ghost-btn" onclick="stmtMarkUnsent(\'' + s.vendorId + '\',\'' + s.ym + '\')">Not sent</button>'
-: '<button type="button" class="ghost-btn" onclick="stmtMarkSent(\'' + s.vendorId + '\',\'' + s.ym + '\',\'post\')">Mark posted</button>') +
-'</div>' +
-(email ? '' : '<p class="empty-note" style="margin:4px 2px 0;"><b>No email on file.</b> ' +
-(c.address ? 'Posting pile \u2014 ' + esc(c.address)
-: '<b>No postal address either</b> \u2014 somebody has to ask them how to send it') + '.</p>');
-}
-const rows = s.charged.map(r => ['charge', r]).concat(s.received.map(r => ['credit', r]));
-if (rows.length) {
-body += '<p class="empty-note" style="margin:10px 2px 4px;"><b>' + rows.length + ' line' + (rows.length === 1 ? '' : 's') + ' this month</b></p>';
-rows.sort((a, b) => String(a[1].date).localeCompare(String(b[1].date))).forEach(([k, r]) => {
-body += '<div class="req-row"><div class="req-row-main"><div class="req-name">' +
-(k === 'charge' ? '' : '\u2212 ') + '$' + fmtMoney(r.amount) +
-(r.demo ? ' <span class="season-tag">demo</span>' : '') + '</div>' +
-'<div class="req-meta">' + esc(formatDisplayDate(r.date)) + ' \u00b7 ' + esc(r.what) + '</div></div></div>';
-});
-}
-if (s.paid) body += '<p class="empty-note" style="margin:6px 2px 0;"><b>$' + fmtMoney(s.paid) + ' paid</b> against this statement' +
-((rec.payments || []).length ? ' \u00b7 ' + rec.payments.map(p => formatDisplayDate(p.on) + ' $' + fmtMoney(p.amount)).join(', ') : '') + '</p>';
-body += '<p class="empty-note" style="margin:8px 2px 6px;">' +
-(open ? '<b>Still running</b>'
-: s.sentAt ? 'Sent ' + esc(formatDisplayDate(new Date(s.sentAt).toISOString().slice(0, 10))) : '<b>Not sent yet</b>') +
-' \u00b7 points ' + (s.points == null ? '\u2014' : esc(s.points)) +
-(s.hours ? ' \u00b7 hours ' + Number(s.hours.done || 0).toFixed(1) + ' done' +
-(s.hours.owed > 0 ? ', ' + Number(s.hours.owed).toFixed(1) + ' owed' : '') : '') + '</p>';
-if (s.outstanding > 0) {
-body += '<div class="desk-form" style="margin-top:8px;">' +
-'<label for="stmtPayAmt">Record a payment</label>' +
-'<div class="mr-unit-row"><input type="number" id="stmtPayAmt" step="0.01" min="0.01" placeholder="' + fmtMoney(s.outstanding) + '"><span class="mr-unit">dollars</span></div>' +
-'<select id="stmtPayHow"><option>Card \u00b7 Square</option><option>Cash at the office</option><option>Check</option><option>Not recorded</option></select>' +
-'<p class="empty-note" style="margin:6px 2px 0;">To put money on account for fees <i>not yet charged</i>, ' +
-'use <b>Pay ahead</b> on the vendor\u2019s own account screen \u2014 it lands as a credit and every fee ' +
-'charged afterwards draws it down.</p>' +
-'<button type="button" class="primary-btn" onclick="stmtRecordPayment(\'' + s.vendorId + '\',\'' + s.ym + '\')">Record it</button></div>';
-}
-return body + '</div>';
-}
 function stmtPrintOne(vendorId, ym) {
 if (!requireManager('stmtMsg')) return;
 const s = statementFor(vendorId, ym);
@@ -14776,6 +14778,134 @@ actAs('Statement marked not sent \u2014 ' + ymLabel(ym),
 await saveStatements();
 renderStatements();
 showMsg('stmtMsg', 'ok', 'Marked not sent. It is back in the pile.');
+}
+
+// ---- sending from the backend --------------------------------------------
+// Apps Script sends the message; the browser only asks it to. That is the
+// whole difference between this and a mailto: link, and it is why nothing has
+// to be pasted.
+//
+// The daily quota is the real constraint, not the code: a consumer Gmail
+// account may send 100 messages a day and a Workspace account 1,500. With 168
+// vendors, a market on consumer Gmail sends a month over two days. The app
+// asks the backend what is left rather than guessing, and stops before it is
+// refused halfway through a run.
+let stmtMailerState = null;   // null = not asked yet
+async function stmtMailerCheck(force) {
+if (stmtMailerState && !force) return stmtMailerState;
+if (!IFM_BACKEND_URL) { stmtMailerState = { ready: false, why: 'no backend' }; return stmtMailerState; }
+try {
+const r = await ifmFetch(IFM_BACKEND_URL + '?action=mailcheck', null, 8000);
+const j = await r.json();
+stmtMailerState = j && j.ok
+? { ready: true, from: j.from || '', left: Number(j.remaining || 0) }
+: { ready: false, why: 'the script has no sendmail action yet' };
+} catch (e) {
+stmtMailerState = { ready: false, why: 'the backend did not answer' };
+}
+return stmtMailerState;
+}
+// A whole month, one message at a time with a pause between. Apps Script
+// counts every send against a daily quota and will refuse the rest once it is
+// gone, so this stops at the limit rather than discovering it halfway and
+// leaving the office unable to tell who got one.
+let stmtRunStop = false;
+async function stmtSendMonth() {
+if (!requireManager('stmtMsg')) return;
+const ym = document.getElementById('stmtMonth').value;
+const st = await stmtMailerCheck(true);
+if (!st.ready) {
+showMsg('stmtMsg', 'err', 'Sending from the app is not switched on \u2014 ' + esc(st.why) + '.');
+return;
+}
+const queue = stmtUnsent(stmtRoutes(ym).email);
+if (!queue.length) { showMsg('stmtMsg', 'ok', 'Everyone with an email address has had ' +
+esc(ymLabel(ym)) + '.'); return; }
+if (st.left && st.left < queue.length) {
+showMsg('stmtMsg', 'err', '<b>' + queue.length + ' to send, ' + st.left + ' left in today\u2019s ' +
+'quota.</b> Google allows 100 messages a day on an ordinary Gmail account and 1,500 on a ' +
+'Workspace one. Send ' + st.left + ' now and the rest tomorrow, or send the remainder by hand. ' +
+'<button type="button" class="link-btn" onclick="stmtSendMonthGo(' + st.left + ')">Send ' +
+st.left + ' now</button>');
+return;
+}
+stmtSendMonthGo(queue.length);
+}
+async function stmtSendMonthGo(limit) {
+const ym = document.getElementById('stmtMonth').value;
+const queue = stmtUnsent(stmtRoutes(ym).email).slice(0, limit);
+stmtRunStop = false;
+let done = 0, failed = [];
+for (const s of queue) {
+if (stmtRunStop) break;
+showMsg('stmtMsg', 'ok', 'Sending ' + (done + 1) + ' of ' + queue.length + ' \u2014 ' +
+esc(s.contact.business) + '\u2026 <button type="button" class="link-btn" ' +
+'onclick="stmtRunStop = true">stop</button>');
+const r = await stmtSendOne(s.vendorId, ym);
+if (r.ok) done++; else failed.push(s.contact.business + ' (' + r.why + ')');
+// A breath between messages: a tight loop against Apps Script gets throttled.
+await new Promise(res => setTimeout(res, 400));
+}
+renderStatements();
+showMsg('stmtMsg', failed.length ? 'err' : 'ok',
+'<b>' + done + ' sent.</b>' +
+(stmtRunStop ? ' Stopped before the rest.' : '') +
+(failed.length ? ' <b>' + failed.length + ' did not go:</b> ' + esc(failed.slice(0, 3).join('; ')) +
+(failed.length > 3 ? ' and others' : '') + '. They are still marked unsent.' : ''));
+}
+
+// One message. The HTML is built here, so what the vendor receives is what
+// the office previewed, not a second rendering made somewhere else.
+async function stmtSendOne(vendorId, ym) {
+const s = statementFor(vendorId, ym);
+const c = stmtContact(vendorId);
+if (!c.email) return { ok: false, why: 'no email address on file' };
+const body = {
+action: 'sendmail',
+to: c.email,
+subject: 'Ithaca Farmers Market \u2014 statement for ' + ymLabel(ym),
+html: stmtEmailHtml(s),
+text: stmtCoveringNote(s),
+};
+try {
+const r = await ifmFetch(IFM_BACKEND_URL, { method: 'POST',
+headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) }, 20000);
+const j = await r.json();
+if (!j || !j.ok) return { ok: false, why: (j && j.error) || 'the script refused it' };
+await stmtMarkSent(vendorId, ym, 'email');
+return { ok: true };
+} catch (e) { return { ok: false, why: 'the message did not reach the backend' }; }
+}
+// Sending is not undoable, so it asks first and shows exactly what will go.
+async function stmtSendWithPreview(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const st = await stmtMailerCheck();
+if (!st.ready) {
+showMsg('stmtMsg', 'err', 'Sending straight from the app is not switched on \u2014 ' + esc(st.why) +
+'. Use <b>Email it</b>, which opens a draft for you to paste into, or <b>Save PDF</b>.');
+return;
+}
+const c = stmtContact(vendorId);
+const s = statementFor(vendorId, ym);
+openStmtPrint('<div style="max-width:640px;">' +
+'<p style="font:14px/1.5 system-ui; color:#55523F;"><b>This will be sent to ' + esc(c.email) +
+'</b>' + (st.from ? ' from ' + esc(st.from) : '') + '. It cannot be unsent.</p>' +
+'<div style="border:1px solid #DDD6C0; padding:14px;">' + stmtEmailHtml(s) + '</div>' +
+'<div class="stmt-actions" style="margin-top:12px;">' +
+'<button type="button" class="ghost-btn" onclick="closeStmtPrint()">Not now</button>' +
+'<button type="button" class="primary-btn" style="margin:0;" onclick="stmtSendConfirmed(\'' +
+vendorId + '\',\'' + ym + '\')">Send it</button>' +
+'</div></div>');
+}
+async function stmtSendConfirmed(vendorId, ym) {
+closeStmtPrint();
+showMsg('stmtMsg', 'ok', 'Sending\u2026');
+const r = await stmtSendOne(vendorId, ym);
+showMsg('stmtMsg', r.ok ? 'ok' : 'err', r.ok
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> Sent to ' +
+esc(stmtContact(vendorId).email) + ' and marked sent.'
+: 'Not sent \u2014 ' + esc(r.why) + '. Nothing was marked.');
+renderVendorStatements();
 }
 
 // ---- the statement as email-safe HTML ------------------------------------
@@ -14889,8 +15019,8 @@ const ok = await stmtCopyRich(vendorId, ym);
 await stmtMarkSent(vendorId, ym, 'email');
 window.location.href = stmtMailto(s);
 showMsg('stmtMsg', ok ? 'ok' : 'err', ok
-? '<svg class="ico"><use href="#i-checkmark"></use></svg> Statement copied and the draft opened. ' +
-'<b>Paste it under the note</b> \u2014 it arrives formatted, the way it looks here. ' +
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> Statement copied and an <b>empty</b> draft ' +
+'opened. <b>Paste, then send</b> \u2014 it arrives formatted, the way it looks here. ' +
 'Marked as sent; if the draft never opened, mark it not sent.'
 : 'The draft opened, but this device would not let the app copy the statement. ' +
 'Use <b>Save PDF</b> and attach it instead.');
@@ -14929,11 +15059,18 @@ return ok;
 } catch (e) { return false; }
 }
 
+// The draft opens EMPTY. The statement is pasted into it and carries
+// everything the note used to say, so a pre-filled body is only something to
+// delete first. The subject stays: an empty subject line is its own problem.
+//
+// stmtCoveringNote is still built and still used -- a real send from the
+// backend carries it as the text/plain alternative, for a mail client that
+// refuses HTML and would otherwise show an empty message.
 function stmtMailto(s) {
 const email = stmtContact(s.vendorId).email || (s.vendor || {}).email || '';
 return 'mailto:' + encodeURIComponent(email) +
 '?subject=' + encodeURIComponent('Ithaca Farmers Market \u2014 statement for ' + ymLabel(s.ym)) +
-'&body=' + encodeURIComponent(stmtCoveringNote(s));
+'&body=';
 }
 // Save one statement as a PDF, named for the vendor and the month.
 //
@@ -20255,7 +20392,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-24';
+const BUILD_ID = '17-26';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
