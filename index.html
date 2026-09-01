@@ -19479,7 +19479,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-8';
+const BUILD_ID = '17-9';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27052,7 +27052,7 @@ const row = (label, body, target, extra) =>
 '<div class="req-meta">' + body + '</div>' + (extra || '') + '</div></button>';
 
 host.innerHTML =
-'<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Recent Activity</h2>' +
+'<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Summary</h2>' +
 '<p class="empty-note" style="margin-top:0;">Where you stand right now. Tap any line for the detail.</p>' +
 row('Money', moneyLine, 'accountmoney', carried) +
 row('Work Hours', hoursLine, 'hours') +
