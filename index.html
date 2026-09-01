@@ -2474,8 +2474,8 @@ I sell food (prepared food or produce)
 <div class="card" id="acctRecent" style="margin-bottom:12px;"></div>
 <div class="dash-fold" data-fold="accountmoney">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'account')">
-<span class="fold-title">Money</span>
-<span class="fold-sub" id="menuPaySub">What has landed this month, what you owe, and how to pay it</span>
+<span class="fold-title">Money &amp; Statements</span>
+<span class="fold-sub" id="menuPaySub">This month, earlier statements, and how to pay</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -12301,7 +12301,7 @@ function updatePaySub() {
 const el = document.getElementById('menuPaySub');
 if (!el) return;
 if (currentRole !== 'vendor' || !currentVendorId || stmtCache === null) {
-el.textContent = 'What has landed this month, what you owe, and how to pay it';
+el.textContent = 'This month, earlier statements, and how to pay';
 return;
 }
 const ym = stmtMonthOptions()[0];
@@ -14279,13 +14279,25 @@ downloadCSV('statements-' + ym + '.csv',
 // rather than by rewriting the markup keeps every id and handler they already
 // depend on intact -- these are working tools, not decoration.
 function stashOlderAccountTools() {
-// How to pay belongs immediately after the statement it applies to.
+// THE STATEMENTS COME FIRST, TOGETHER.
+//
+// This used to lift the paying half up between the running month and the
+// earlier statements, because how-to-pay belonged beside the statement it
+// applied to. That held while the paying half was a short card of reference
+// text. Pay Now made it a mode switch, an amount box, three itemised totals
+// and two buttons -- close to a full phone screen -- and Earlier Statements
+// went under it, somewhere nobody scrolls to. Nothing had broken; the
+// statements were simply buried by something taller than they were.
+//
+// So both statement cards stay adjacent and the paying half follows them.
+// A vendor reads what they owe, then how to pay it, which is the order the
+// question arrives in.
 const scr = document.getElementById('screen-account');
 const pay = document.getElementById('acctPayHalf');
 const earlier = document.getElementById('myStatements');
 const earlierCard = earlier ? earlier.closest('.card') : null;
-if (scr && pay && earlierCard && pay.nextElementSibling !== earlierCard) {
-scr.insertBefore(pay, earlierCard);
+if (scr && pay && earlierCard && earlierCard.nextElementSibling !== pay) {
+scr.insertBefore(pay, earlierCard.nextElementSibling);
 }
 }
 function renderMyStatementCurrent() {
@@ -14327,7 +14339,6 @@ const state = s.outstanding > 0
 return '<div class="req-row"><div class="req-row-main">' +
 '<div class="req-name">' + esc(ymLabel(s.ym)) + ' ' + state + '</div>' +
 '<div class="req-meta">' +
-(s.outstanding > 0 ? '$' + fmtMoney(s.outstanding) + ' outstanding \u00b7 ' : '') +
 esc(s.charged.length + s.received.length) + ' line' + (s.charged.length + s.received.length === 1 ? '' : 's') +
 (s.paid ? ' \u00b7 $' + fmtMoney(s.paid) + ' paid' : '') + '</div>' +
 '<button type="button" class="ghost-btn" style="margin-top:6px;" onclick="showMyStatement(\'' + s.ym + '\')">Read it</button>' +
@@ -19479,7 +19490,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-9';
+const BUILD_ID = '17-10';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27054,7 +27065,7 @@ const row = (label, body, target, extra) =>
 host.innerHTML =
 '<h2><span class="emoji"><svg class="ico"><use href="#i-columns"></use></svg></span>Summary</h2>' +
 '<p class="empty-note" style="margin-top:0;">Where you stand right now. Tap any line for the detail.</p>' +
-row('Money', moneyLine, 'accountmoney', carried) +
+row('Money & Statements', moneyLine, 'accountmoney', carried) +
 row('Work Hours', hoursLine, 'hours') +
 row('Points', '<b>' + (pts == null ? '\u2014' : pts) + '</b> points this season', 'fPoints');
 }
