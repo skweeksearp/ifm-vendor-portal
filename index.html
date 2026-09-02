@@ -2935,8 +2935,9 @@ Recording it here puts that notice in front of every vendor when they open the a
 <div class="lotto-dates" id="prDateChips"></div>
 <label for="prWho" style="margin-top:10px;">Who has it</label>
 <input type="text" id="prWho" placeholder="e.g. Wedding reception &mdash; Alvarez party" autocomplete="off">
-<label for="prNote" style="margin-top:10px;">Anything vendors should know (optional)</label>
+<label for="prNote" style="margin-top:10px;">Notes for the office (optional)</label>
 <input type="text" id="prNote" placeholder="e.g. caterers arrive 3:30, keep the north aisle clear" autocomplete="off">
+<p class="empty-note" style="margin:4px 0 0;"><b>Vendors do not see this, or the name above.</b> They are told the date and that the pavilion is let &mdash; nothing about who has it. Write what the office needs.</p>
 <button type="button" class="primary-btn" onclick="addPavRental()"><svg class="ico"><use href="#i-checkmark"></use></svg> Add to the schedule</button>
 <div class="status-msg" id="prMsg"></div>
 </div>
@@ -13763,12 +13764,16 @@ out += '<div class="pav-key">' +
 '<span><span class="pav-swatch pav-market"></span> market day</span>' +
 '<span><span class="pav-swatch pav-rented"></span> pavilion booked</span>' +
 '</div>';
+// The renter's name and the office's note only where the office is looking.
+// This grid is theirs today, but a calendar is the kind of thing that gets
+// put in front of somebody else later, and then the name travels with it.
+const office = isDeskAdmin();
 out += ahead.length
 ? '<div class="pav-next">' + ahead.slice(0, 4).map(r =>
-'<div class="tracker-row"><div class="t-title"><b>' + esc(formatDisplayDate(r.date)) + '</b> \u00b7 ' +
-esc(r.who) + (pavIsMarketDate(r.date)
+'<div class="tracker-row"><div class="t-title"><b>' + esc(formatDisplayDate(r.date)) + '</b>' +
+(office ? ' \u00b7 ' + esc(r.who) : '') + (pavIsMarketDate(r.date)
 ? ' <span class="season-tag">Out by 4 PM</span>' : '') + '</div>' +
-(r.note ? '<div class="t-sub">' + esc(r.note) + '</div>' : '') + '</div>').join('') +
+(office && r.note ? '<div class="t-sub">' + esc(r.note) + '</div>' : '') + '</div>').join('') +
 (ahead.length > 4 ? '<p class="empty-note" style="margin:6px 2px 0;">and ' + (ahead.length - 4) +
 ' more further out.</p>' : '') + '</div>'
 : '<p class="empty-note" style="margin:8px 2px 0;">Nothing booked in these two months.</p>';
@@ -13807,10 +13812,11 @@ return '<div class="req-row"><div class="req-row-main">' +
 '<div class="req-name">' + esc(formatDisplayDate(r.date)) +
 (isMarket ? ' <span class="stamp late">out by 4 PM</span>'
 : ' <span class="season-tag">not a market day</span>') + '</div>' +
-'<div class="req-meta">' + esc(r.who) +
+// Not who has it. A vendor needs the date and what it means for them;
+// whose event it is belongs to the renter and the office.
+'<div class="req-meta">' + (isMarket ? 'The pavilion is let after market' : 'The pavilion is let') +
 (days === 0 ? ' \u00b7 today' : days === 1 ? ' \u00b7 tomorrow' : ' \u00b7 in ' + days + ' days') +
 '</div>' +
-(r.note ? '<div class="req-meta" style="margin-top:4px;">' + esc(r.note) + '</div>' : '') +
 '</div></div>';
 }).join('');
 }
@@ -13824,11 +13830,11 @@ if (!rental || !pavIsMarketDate(today)) return;
 try { if (localStorage.getItem(pavNoticeSeenKey(today)) === '1') return; } catch (e) {}
 const when = document.getElementById('pavNoticeWhen');
 const note = document.getElementById('pavNoticeNote');
-if (when) when.textContent = formatDisplayDate(today) + ' \u00b7 ' + rental.who;
-if (note) {
-note.textContent = rental.note || '';
-note.style.display = rental.note ? 'block' : 'none';
-}
+// The date and the deadline. Not the renter, and not the office's own note
+// about them -- "the Alvarez party are setting up early" tells a vendor who
+// has it just as plainly as the name field does.
+if (when) when.textContent = formatDisplayDate(today);
+if (note) { note.textContent = ''; note.style.display = 'none'; }
 const back = document.getElementById('pavNoticeBackdrop');
 if (back) { back.style.display = ''; back.classList.add('open'); }
 }
@@ -20961,7 +20967,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-40';
+const BUILD_ID = '17-41';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
