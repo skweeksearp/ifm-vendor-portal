@@ -5008,7 +5008,6 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <p class="empty-note" id="cioStillCallIn" style="margin-bottom:0;"></p>
 </div>
 <div class="card manager-only desk-form">
-<p class="empty-note" style="margin-top:0;">A sale goes straight to the kiosk under that vendor&rsquo;s booth. The rest become the record itself. Documents are handled on <b>Vendor Requirements</b>, which is where their state is kept.</p>
 <label for="obVendor">Vendor</label>
 <select id="obVendor" onchange="renderObPromoNote(); renderObCheckSeen();"></select>
 <label>What they told you</label>
@@ -5078,6 +5077,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <input type="date" id="obDate" onchange="renderObPromoNote()">
 <label for="obWhen">When they told the office</label>
 <input type="datetime-local" id="obWhen">
+<p class="empty-note" style="margin:4px 0 0;">Deadlines are judged against this, not against when you typed it in.</p>
 <label for="obChannel">How it arrived</label>
 <select id="obChannel">
 <option>Phone</option><option>Email</option><option>Mail</option><option>In person</option>
@@ -14466,6 +14466,85 @@ return stmtMonthOptions()
 .map(ym => statementFor(vendorId, ym))
 .filter(s => s.chargedTotal || s.receivedTotal || s.paid || s.sentAt);
 }
+// The office's own correction, started from a month rather than from a
+// complaint. Same posting path, same record, no query attached.
+function corrOpenForm(vendorId, ym) {
+if (!requireManager('stmtMsg')) return;
+const box = document.getElementById('stmtOpen-' + ym);
+if (!box) return;
+if (box.dataset.mode === 'correct') { box.style.display = 'none'; box.innerHTML = ''; box.dataset.mode = ''; return; }
+const s = statementFor(vendorId, ym);
+const rows = s.charged.concat(s.received);
+box.dataset.mode = 'correct';
+box.innerHTML = '<div class="desk-form" style="border-top:1px solid var(--paper-dim); padding-top:10px;">' +
+'<p class="empty-note" style="margin-top:0;"><b>The original line stays where it is.</b> This posts a ' +
+'dated correction beside it with your reason, so the statement already sent still makes sense.</p>' +
+'<label for="cfLine">Which line</label>' +
+'<select id="cfLine" onchange="corrFormPick(\'' + vendorId + '\',\'' + ym + '\')">' +
+rows.map((r, i) => '<option value="' + i + '">' + esc(formatDisplayDate(r.date)) + ' \u00b7 ' +
+esc(r.what) + ' \u00b7 $' + fmtMoney(r.amount) + '</option>').join('') +
+'<option value="whole">Something not on the list</option></select>' +
+'<label for="cfReason">Why it is being corrected</label>' +
+'<textarea id="cfReason" rows="2" placeholder="Charged for a Saturday they called out of on the Wednesday."></textarea>' +
+'<label for="cfAmount">By how much</label>' +
+'<div class="mr-unit-row"><input type="number" id="cfAmount" step="0.01" min="0" inputmode="decimal" ' +
+'value="' + (rows[0] ? fmtMoney(rows[0].amount) : '') + '"><span class="mr-unit">dollars</span></div>' +
+'<div class="tone-switch" style="margin-top:6px;">' +
+'<button type="button" class="tone-btn on" id="cf-credit" onclick="corrFormSide(\'credit\')">Take it off what they owe</button>' +
+'<button type="button" class="tone-btn" id="cf-charge" onclick="corrFormSide(\'charge\')">Add to what they owe</button>' +
+'</div>' +
+'<div class="stmt-actions">' +
+'<button type="button" class="primary-btn" style="margin:0;" onclick="corrFormPost(\'' + vendorId + '\',\'' + ym + '\')">Post the correction</button>' +
+'<button type="button" class="ghost-btn" onclick="corrOpenForm(\'' + vendorId + '\',\'' + ym + '\')">Cancel</button>' +
+'</div></div>';
+box.style.display = 'block';
+}
+let corrFormSideVal = 'credit';
+function corrFormSide(side) {
+corrFormSideVal = side;
+['credit', 'charge'].forEach(k => {
+const b = document.getElementById('cf-' + k);
+if (b) b.className = 'tone-btn' + (k === side ? ' on' : '');
+});
+}
+// Picking a line fills the amount with that line's figure: correcting a $40
+// booth fee almost always means $40, and retyping it is how a digit gets
+// dropped.
+function corrFormPick(vendorId, ym) {
+const sel = document.getElementById('cfLine');
+const amt = document.getElementById('cfAmount');
+if (!sel || !amt) return;
+if (sel.value === 'whole') { amt.value = ''; return; }
+const s = statementFor(vendorId, ym);
+const r = s.charged.concat(s.received)[Number(sel.value)];
+if (r) amt.value = fmtMoney(r.amount);
+}
+async function corrFormPost(vendorId, ym) {
+const reason = (document.getElementById('cfReason') || {}).value.trim();
+const amount = Number((document.getElementById('cfAmount') || {}).value || 0);
+const sel = document.getElementById('cfLine');
+if (reason.length < 5) {
+showMsg('stmtMsg', 'err', 'Say what the correction is for. It goes on the vendor\u2019s statement ' +
+'beside the original line and stays there.');
+return;
+}
+if (!(amount > 0)) { showMsg('stmtMsg', 'err', 'Enter the amount to correct by.'); return; }
+const s = statementFor(vendorId, ym);
+const rows = s.charged.concat(s.received);
+const r = sel && sel.value !== 'whole' ? rows[Number(sel.value)] : null;
+const what = r ? 'Correction \u2014 ' + r.what : 'Correction';
+const a = await corrAdjust(vendorId, ym, what, amount, corrFormSideVal, reason, null);
+if (!a) return;
+const box = document.getElementById('stmtOpen-' + ym);
+if (box) { box.style.display = 'none'; box.innerHTML = ''; box.dataset.mode = ''; }
+showMsg('stmtMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Posted \u2014 ' +
+(corrFormSideVal === 'credit' ? 'off' : 'onto') + ' their balance by $' + fmtMoney(amount) +
+'. <b>The original line is untouched;</b> this sits beside it dated today.');
+corrFormSideVal = 'credit';
+renderVendorStatements();
+renderCorrQueue();
+}
+
 // ---- the office's half ---------------------------------------------------
 // Two answers, both recorded. "We looked and it is right" is an answer, and
 // keeping it is what stops the same query arriving again next month.
@@ -14476,11 +14555,15 @@ if (!card || !wrap) return;
 if (currentRole === 'vendor') { card.style.display = 'none'; return; }
 const open = corrOpen();
 const recent = corrQueries(q => q.state !== 'open').slice(0, 3);
-if (!open.length && !recent.length) { card.style.display = 'none'; return; }
+// Never hide, always grey. An empty card is how a manager learns the tool is
+// here at all -- hidden, it looked to Sean like correcting had not been built.
 card.style.display = '';
 wrap.innerHTML = '';
 if (!open.length) {
-wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 8px;">Nothing waiting.</p>';
+wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 8px;">' +
+'<b>No vendor has queried a line.</b> This fills when one does. ' +
+'To correct something the office has spotted itself, find the vendor below and use ' +
+'<b>Correct a line</b> on the month it is in \u2014 you do not have to wait to be told.</p>';
 }
 open.forEach(q => {
 const el = document.createElement('div');
@@ -14622,6 +14705,7 @@ vendorId + '\',\'' + s.ym + '\')">Send it</button>' : '') +
 '<button type="button" class="ghost-btn" onclick="stmtPrintOne(\'' + vendorId + '\',\'' + s.ym + '\')">Print</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtSavePdf(\'' + vendorId + '\',\'' + s.ym + '\')">Save PDF</button>' +
 '<button type="button" class="ghost-btn" onclick="stmtCopyOne(\'' + vendorId + '\',\'' + s.ym + '\')">Copy text</button>' +
+'<button type="button" class="ghost-btn" onclick="corrOpenForm(\'' + vendorId + '\',\'' + s.ym + '\')">Correct a line</button>' +
 (s.sentAt
 ? '<button type="button" class="ghost-btn" onclick="stmtMarkUnsent(\'' + vendorId + '\',\'' + s.ym + '\')">Not sent</button>'
 : '<button type="button" class="ghost-btn" onclick="stmtMarkSent(\'' + vendorId + '\',\'' + s.ym + '\',\'post\')">Mark posted</button>') +
@@ -14637,7 +14721,13 @@ pane.innerHTML = out;
 function stmtViewOne(vendorId, ym) {
 const box = document.getElementById('stmtOpen-' + ym);
 if (!box) return;
-if (box.style.display === 'block') { box.style.display = 'none'; box.innerHTML = ''; return; }
+// View and Correct share one box under the month. Whichever opens has to
+// take the other down, or a half-filled correction form sits under a
+// statement and the Post button acts on values nobody can see.
+if (box.style.display === 'block' && box.dataset.mode !== 'correct') {
+box.style.display = 'none'; box.innerHTML = ''; return;
+}
+box.dataset.mode = 'view';
 box.innerHTML = stmtDocHTML(statementFor(vendorId, ym));
 box.style.display = 'block';
 }
@@ -20805,7 +20895,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-29';
+const BUILD_ID = '17-31';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -30884,7 +30974,7 @@ tiles: [
 { key: 'manual', title: 'Manual Input', icon: 'i-quill',
 sub: 'What a vendor told the office by phone, email, mail or at the desk \u2014 typed in on their behalf',
 tiles: [
-{ s: 'callinout', i: 'i-phone', t: 'Record What They Told You', d: 'Absences, booth requests, shares, documents, proposals and sales \u2014 dated by when they told you, not when you typed it' },
+{ s: 'callinout', i: 'i-phone', t: 'Record What They Told You', d: 'Phone, email or desk \u2014 typed in on their behalf' },
 { s: 'vprofile', i: 'i-columns', t: 'Update a Vendor\u2019s Profile', d: 'Their contact details, second person, links and products \u2014 changed on their behalf and marked as such' },
 { s: 'vreset', i: 'i-key', t: 'Help a Vendor Get Back In', d: 'A vendor at the desk who cannot sign in \u2014 check it is them, issue a one-time code, and leave a record that you did' },
 ] },
@@ -44069,11 +44159,9 @@ if (formCard) formCard.style.display = vendor ? '' : 'none';
 if (!vendor) {
 card.style.display = 'none';
 const mLede = document.getElementById('cioLede');
-if (mLede) mLede.innerHTML = 'Where the office writes down what a vendor said when they did not use the app \u2014 ' +
-'a phone call, an email, a letter, or a word at the desk. What you enter here becomes the same record their ' +
-'own screen would have made, so it reaches the same places and counts the same way. The one thing that ' +
-'matters most is <strong>when they told you</strong>: every deadline is judged against that, not against ' +
-'the moment you typed it in.';
+// One line. What this screen is for is legible from the form; what is not
+// legible is that the date decides the deadline, and that sits by the date.
+if (mLede) mLede.textContent = 'What a vendor told you off-app. It becomes the same record their own screen would have made.';
 initRecordForVendor();
 return;
 }
