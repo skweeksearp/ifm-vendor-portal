@@ -2524,7 +2524,6 @@ I sell food (prepared food or produce)
 </div>
 </div>
 </div>
-<div id="vendorVenuePicker"></div>
 <div class="dash-fold" data-fold="account">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">My Account</span>
@@ -2796,22 +2795,6 @@ I sell food (prepared food or produce)
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'gcvendor')">
 <span class="fold-title">Take a Gift Certificate</span>
 <span class="fold-sub">Scan a customer&rsquo;s certificate &middot; the money comes to you</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="snaptokens" id="menuSnapTokens">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaptokens')">
-<span class="fold-title">SNAP Tokens</span>
-<span class="fold-sub" id="foldSubSnap">Whether you take them, and what you have turned in</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="fcchecks" id="menuFreshConnect">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'fcchecks')">
-<span class="fold-title">FreshConnect Checks</span>
-<span class="fold-sub" id="foldSubFC">Whether you take them, and what you have turned in</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -4332,32 +4315,20 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="comm-item"><div class="comm-title">The handoff document</div><div class="comm-desc">The next session inherits whatever the handoff says &mdash; it must describe the app as shipped, not as remembered.</div></div>
 </div>
 </section>
-<section id="screen-snaptokens" class="screen">
-<div class="screen-head" id="head-snaptokens"></div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Do You Accept SNAP Tokens?<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_VENDOR)" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" id="snapWhoNote" style="margin-top:0;"></p>
-<div class="row" id="snapToggleRow" style="display:flex; gap:8px;">
-<button type="button" class="primary-btn" id="snapYes" onclick="setSnapAccepts(true)">I accept SNAP</button>
-<button type="button" class="ghost-btn" id="snapNo" onclick="setSnapAccepts(false)">I do not accept SNAP</button>
-</div>
-<div class="status-msg" id="snapVendorMsg"></div>
-</div>
-<div class="card" id="snapVendorSeasonCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
-<div id="snapVendorSeason"></div>
-</div>
-<div class="card" id="snapVendorLogCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Every Time You Turned Tokens In</h2>
-<p class="empty-note" style="margin-top:0;">The office records each one. If a line is wrong, or one is missing, tell the office &mdash; their count is the one that pays out.</p>
-<div id="snapVendorLog" class="drawer-list"></div>
-</div>
-</section>
 <section id="screen-snaplog" class="screen">
 <div class="screen-head" id="head-snaplog"></div>
 <div class="card desk-form">
 <label for="snapDate">Market day</label>
 <select id="snapDate" onchange="renderSnapDay()"></select>
+</div>
+<div class="card desk-form" id="snapAcceptCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span><span id="snapAcceptTitle"></span></h2>
+<p class="empty-note" style="margin-top:0;" id="snapAcceptNote"></p>
+<div class="tone-switch">
+<button type="button" class="tone-btn" id="snapAcceptYes">They take them</button>
+<button type="button" class="tone-btn" id="snapAcceptNo">They do not</button>
+</div>
+<div class="status-msg" id="snapAcceptMsg"></div>
 </div>
 <div class="card" id="snapBalanceCard" style="display:none;"></div>
 <div class="card desk-form">
@@ -4376,7 +4347,7 @@ this side of it.</p>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Tokens Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_MGR)" aria-label="What are the rules here?">?</button></h2>
 <label for="snapVendor">Vendor</label>
-<select id="snapVendor"></select>
+<select id="snapVendor" onchange="renderAcceptCard('snap')"></select>
 <label for="snapCount">How many tokens</label>
 <input type="number" id="snapCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 24">
 <div class="status-msg" id="snapMsg"></div>
@@ -4425,27 +4396,6 @@ this side of it.</p>
 </div>
 </div>
 </section>
-<section id="screen-fcchecks" class="screen">
-<div class="screen-head" id="head-fcchecks"></div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Do You Accept FreshConnect Checks?<button type="button" class="help-dot" onclick="showHelp(HELP_FC_VENDOR)" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" id="fcWhoNote" style="margin-top:0;"></p>
-<div class="row" id="fcToggleRow" style="display:flex; gap:8px;">
-<button type="button" class="primary-btn" id="fcYes" onclick="setFcAccepts(true)">I accept FreshConnect</button>
-<button type="button" class="ghost-btn" id="fcNo" onclick="setFcAccepts(false)">I do not accept them</button>
-</div>
-<div class="status-msg" id="fcVendorMsg"></div>
-</div>
-<div class="card" id="fcVendorSeasonCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
-<div id="fcVendorSeason"></div>
-</div>
-<div class="card" id="fcVendorLogCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Every Time You Turned Checks In</h2>
-<p class="empty-note" style="margin-top:0;">The office records each one. If a line is wrong, or one is missing, tell the office &mdash; their count is the one that pays out.</p>
-<div id="fcVendorLog" class="drawer-list"></div>
-</div>
-</section>
 <section id="screen-fclog" class="screen">
 <div class="screen-head" id="head-fclog"></div>
 <div class="card desk-form">
@@ -4456,7 +4406,7 @@ this side of it.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Checks Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_FC_MGR)" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" style="margin-top:0;">New York State issues FreshConnect Checks, not the market, so there is nothing to hand out and nothing to reconcile against. This is the one half that exists: a vendor brings checks back and the market pays them out.</p>
 <label for="fcVendor">Vendor</label>
-<select id="fcVendor"></select>
+<select id="fcVendor" onchange="renderAcceptCard('fc')"></select>
 <label for="fcAmount">Total face value of the checks</label>
 <div class="mr-unit-row">
 <input type="number" id="fcAmount" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00">
@@ -4467,6 +4417,15 @@ this side of it.</p>
 <div class="status-msg" id="fcMsg"></div>
 <button type="button" class="primary-btn" onclick="recordFc()">Record and tell the vendor</button>
 <p class="empty-note" id="fcValueNote" style="margin-top:8px;"></p>
+</div>
+<div class="card desk-form" id="fcAcceptCard">
+<h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span><span id="fcAcceptTitle"></span></h2>
+<p class="empty-note" style="margin-top:0;" id="fcAcceptNote"></p>
+<div class="tone-switch">
+<button type="button" class="tone-btn" id="fcAcceptYes">They take them</button>
+<button type="button" class="tone-btn" id="fcAcceptNo">They do not</button>
+</div>
+<div class="status-msg" id="fcAcceptMsg"></div>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Turned In On This Day</h2>
@@ -10911,111 +10870,8 @@ function snapTotal(list) { return list.reduce((s, e) => s + Number(e.tokens || 0
 function snapMoney(tokens) { return tokens * (ruleNum('snapTokenValue') || 1); }
 
 // ---- the vendor's half ---------------------------------------------------
-function initSnapVendorScreen() {
-if (!snapCache) snapCache = { accepts: {}, entries: [] };
-renderSnapVendor();                       // whatever is known now
-loadSnap().then(renderSnapVendor).catch(() => {});   // and again when it lands
-}
-function renderSnapVendor() {
-const v = currentVendor();
-if (!v) return;
-const on = snapAccepts(v.vendorId);
-const chosen = snapIsChosen(v.vendorId);
-
-const yes = document.getElementById('snapYes'), no = document.getElementById('snapNo');
-if (yes && no) {
-yes.className = on ? 'primary-btn' : 'ghost-btn';
-no.className = on ? 'ghost-btn' : 'primary-btn';
-}
-const note = document.getElementById('snapWhoNote');
-if (note) {
-const why = ' <em>Nobody has set this yet, so the app has guessed from your membership class (' +
-esc(v.category) + '). It does not know what you actually sell \u2014 if the guess is wrong, ' +
-'the two buttons below are yours to change it.</em>';
-note.innerHTML = on
-? 'SNAP tokens are wooden tokens a shopper buys at the office with their SNAP benefit. ' +
-'You take them like cash, bring them back to the office, and the market pays you out. ' +
-'<b>You decide whether you take them, and you can change your mind whenever you like.</b>' +
-(chosen ? '' : why)
-: 'You are down as <b>not</b> accepting SNAP tokens, so shoppers filtering for SNAP at the kiosk ' +
-'will not see you. <b>This is yours to change whenever you like.</b>' +
-(chosen ? '' : why);
-}
-// The two cards below go quiet when the answer is no. Dimmed, not hidden:
-// a vendor should be able to see what they would be looking at if they said
-// yes, and the reason the app thinks they said no.
-setDeskRelevance('snapVendorSeasonCard', on,
-'Nothing to total while you are down as not accepting SNAP tokens. Switch to <b>I accept SNAP</b> ' +
-'above and this fills in as you turn tokens in at the office.');
-setDeskRelevance('snapVendorLogCard', on,
-'Nothing to list while you are down as not accepting SNAP tokens. If you have taken some anyway ' +
-'\u2014 a shopper handed one over and you took it \u2014 the office can still redeem them for you; ' +
-'switching above will show them here.');
-
-const year = seasonYear();
-const mine = snapEntriesFor(v.vendorId, year);
-const total = snapTotal(mine);
-const season = document.getElementById('snapVendorSeason');
-if (season) {
-season.innerHTML =
-'<div class="tracker-row"><div class="t-title">Tokens turned in, ' + year +
-'</div><div class="t-note"><b>' + total + '</b> \u00b7 $' + fmtMoney(snapMoney(total)) + '</div></div>' +
-'<div class="tracker-row"><div class="t-title">Times you turned tokens in</div>' +
-'<div class="t-note">' + mine.length + '</div></div>' +
-(mine.length ? '<div class="tracker-row"><div class="t-title">Most recent</div><div class="t-note">' +
-esc(formatDisplayDate(mine[0].date)) + '</div></div>' : '');
-}
-const log = document.getElementById('snapVendorLog');
-if (log) {
-log.innerHTML = '';
-if (!mine.length) {
-log.innerHTML = '<p class="empty-note">Nothing recorded yet this season.</p>';
-} else {
-mine.forEach(e => {
-const row = document.createElement('div');
-row.className = 'attn-item';
-row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div>';
-row.querySelector('.attn-t').textContent = formatDisplayDate(e.date);
-row.querySelector('.attn-m').textContent = e.tokens + ' token' + (e.tokens === 1 ? '' : 's') +
-' \u00b7 $' + fmtMoney(snapMoney(e.tokens)) +
-' \u00b7 recorded by the office ' + shortDate(e.recordedAt);
-log.appendChild(row);
-});
-setTimeout(() => { fitListToRows(log, '.attn-item', 5.4); markListEnds(log); }, 0);
-}
-}
-renderSnapDeskSub();
-}
 // Written on every desk render, not only when the drawer is opened. A drawer
 // bar belongs to the desk, and a desk is redrawn for whoever is at it.
-function renderSnapDeskSub() {
-const sub = document.getElementById('foldSubSnap');
-const v = currentVendor();
-if (!sub || !v) return;
-const on = snapAccepts(v.vendorId);
-const total = snapTotal(snapEntriesFor(v.vendorId, seasonYear()));
-sub.textContent = !on ? 'You do not accept SNAP \u2014 tap to change'
-: (total ? total + ' token' + (total === 1 ? '' : 's') + ' turned in this season'
-: 'You accept SNAP \u2014 nothing turned in yet this season');
-}
-async function setSnapAccepts(yes) {
-const v = currentVendor();
-if (!v) return;
-await loadSnap();
-// Recorded explicitly, so the category default never overrides it again --
-// the same rule the seeded records follow. A vendor who says no and then sees
-// the app quietly say yes next season would rightly stop trusting it.
-snapCache.accepts[v.vendorId] = !!yes;
-await saveSnap();
-renderSnapVendor();
-applyDeskOrder().catch(() => {});
-showMsg('snapVendorMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
-(yes ? 'Noted \u2014 you accept SNAP tokens. Shoppers filtering for SNAP at the kiosk can now see you, '
-+ 'and the office sees it when they take tokens in.'
-: 'Noted \u2014 you do not accept SNAP tokens. Shoppers filtering for SNAP at the kiosk will not see you. '
-+ 'Switch back any time.'));
-}
-
 // ---- the manager's half --------------------------------------------------
 // DRAW FIRST, FETCH SECOND.
 //
@@ -11038,6 +10894,66 @@ drawSnapLogScreen();
 // if it is different, the screen redraws.
 loadSnap().then(drawSnapLogScreen).catch(() => {});
 }
+// ---- who takes them, recorded by the office ------------------------------
+// The vendor used to answer this on their own desk. That drawer has gone --
+// the vendor brings tokens to the office and reads the credit on their bill,
+// which is the whole arrangement -- but the answer still matters, because the
+// kiosk tells shoppers which stalls take SNAP.
+//
+// So the office keeps it, on the screen where they take the tokens in and
+// have the vendor in front of them. Which also, at last, gives somebody a way
+// to correct the app's guess: it keys on Ag versus craft, so it has every
+// bakery in the market down as not accepting SNAP.
+function renderAcceptCard(kind) {
+const P = kind === 'snap'
+? { card: 'snapAcceptCard', title: 'snapAcceptTitle', note: 'snapAcceptNote',
+yes: 'snapAcceptYes', no: 'snapAcceptNo', msg: 'snapAcceptMsg',
+sel: 'snapVendor', what: 'SNAP tokens', accepts: snapAccepts, chosen: snapIsChosen }
+: { card: 'fcAcceptCard', title: 'fcAcceptTitle', note: 'fcAcceptNote',
+yes: 'fcAcceptYes', no: 'fcAcceptNo', msg: 'fcAcceptMsg',
+sel: 'fcVendor', what: 'FreshConnect Checks', accepts: fcAccepts, chosen: fcIsChosen };
+const card = document.getElementById(P.card);
+const sel = document.getElementById(P.sel);
+if (!card || !sel) return;
+const vid = sel.value;
+if (!vid) { card.style.display = 'none'; return; }
+card.style.display = '';
+const name = boothVendorName(vid) || vid;
+const on = P.accepts(vid);
+const told = P.chosen(vid);
+document.getElementById(P.title).textContent = 'Does ' + name + ' take ' + P.what + '?';
+document.getElementById(P.note).innerHTML = told
+? 'Recorded by the office. <b>The kiosk tells shoppers this</b>, so it is worth getting right.'
+: '<b>Nobody has said.</b> The app has guessed from their membership class, and the guess is a ' +
+'poor one \u2014 it keys on Ag against craft, so a bakery comes out as not accepting when they ' +
+'almost certainly do. <b>The kiosk is telling shoppers whatever this says</b>, so ask them.';
+[['yes', true], ['no', false]].forEach(([k, val]) => {
+const b = document.getElementById(P[k]);
+if (!b) return;
+b.className = 'tone-btn' + (told && on === val ? ' on' : '');
+b.onclick = async () => {
+await setAcceptFlag(kind, vid, val);
+renderAcceptCard(kind);
+showMsg(P.msg, 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded \u2014 ' +
+esc(name) + (val ? ' takes ' : ' does not take ') + P.what + '. The kiosk says so from now on.');
+};
+});
+}
+async function setAcceptFlag(kind, vendorId, val) {
+if (!requireMarketRole()) return;
+if (kind === 'snap') {
+await loadSnap();
+snapCache.accepts[vendorId] = !!val;
+await saveSnap();
+renderSnapVendorChoices();
+} else {
+await loadFc();
+fcCache.accepts[vendorId] = !!val;
+await saveFc();
+renderFcVendorChoices();
+}
+}
+
 function drawSnapLogScreen() {
 const sel = document.getElementById('snapDate');
 if (!sel) return;
@@ -11057,6 +10973,7 @@ if (note) note.textContent = 'A token counts as $' + fmtMoney(ruleNum('snapToken
 '. The log keeps the number of tokens, which is the fact; the money is worked out from that, ' +
 'so changing the rate later re-values every past line. Change it in Market Rules if it is wrong.';
 renderSnapVendorChoices();
+renderAcceptCard('snap');
 renderSnapDay();
 renderSnapSeason();
 }
@@ -11496,100 +11413,6 @@ return Math.round(list.reduce((s, e) => s + Number(e.amount || 0), 0) * 100) / 1
 function fcChecks(list) { return list.reduce((s, e) => s + Number(e.checks || 0), 0); }
 
 // ---- the vendor's half ---------------------------------------------------
-function initFcVendorScreen() {
-if (!fcCache) fcCache = { accepts: {}, entries: [] };
-renderFcVendor();
-loadFc().then(renderFcVendor).catch(() => {});
-}
-function renderFcVendor() {
-const v = currentVendor();
-if (!v) return;
-const on = fcAccepts(v.vendorId);
-const chosen = fcIsChosen(v.vendorId);
-
-const yes = document.getElementById('fcYes'), no = document.getElementById('fcNo');
-if (yes && no) {
-yes.className = on ? 'primary-btn' : 'ghost-btn';
-no.className = on ? 'ghost-btn' : 'primary-btn';
-}
-const note = document.getElementById('fcWhoNote');
-if (note) {
-const why = ' <em>Nobody has set this yet, so the app has guessed from your membership class (' +
-esc(v.category) + '). It does not know what you actually sell \u2014 if the guess is wrong, ' +
-'the two buttons below are yours to change it.</em>';
-note.innerHTML = on
-? 'FreshConnect Checks are issued by New York State to shoppers, not by the market. ' +
-'You take them like cash for food, bring them back to the office, and the market pays you out ' +
-'at the value printed on the check. <b>You decide whether you take them, and you can change ' +
-'your mind whenever you like.</b>' + (chosen ? '' : why)
-: 'You are down as <b>not</b> accepting FreshConnect Checks. <b>This is yours to change ' +
-'whenever you like.</b>' + (chosen ? '' : why);
-}
-setDeskRelevance('fcVendorSeasonCard', on,
-'Nothing to total while you are down as not accepting FreshConnect Checks. Switch to ' +
-'<b>I accept FreshConnect</b> above and this fills in as you turn checks in at the office.');
-setDeskRelevance('fcVendorLogCard', on,
-'Nothing to list while you are down as not accepting FreshConnect Checks. If you have taken ' +
-'some anyway \u2014 a shopper handed one over and you took it \u2014 the office can still ' +
-'redeem them for you; switching above will show them here.');
-
-const year = seasonYear();
-const mine = fcEntriesFor(v.vendorId, year);
-const money = fcMoney(mine);
-const season = document.getElementById('fcVendorSeason');
-if (season) {
-season.innerHTML =
-'<div class="tracker-row"><div class="t-title">Turned in, ' + year +
-'</div><div class="t-note"><b>$' + fmtMoney(money) + '</b></div></div>' +
-'<div class="tracker-row"><div class="t-title">Times you turned checks in</div>' +
-'<div class="t-note">' + mine.length + '</div></div>' +
-(mine.length ? '<div class="tracker-row"><div class="t-title">Most recent</div><div class="t-note">' +
-esc(formatDisplayDate(mine[0].date)) + '</div></div>' : '');
-}
-const log = document.getElementById('fcVendorLog');
-if (log) {
-log.innerHTML = '';
-if (!mine.length) {
-log.innerHTML = '<p class="empty-note">Nothing recorded yet this season.</p>';
-} else {
-mine.forEach(e => {
-const row = document.createElement('div');
-row.className = 'attn-item';
-row.innerHTML = '<div class="attn-info"><div class="attn-t"></div><div class="attn-m"></div></div>';
-row.querySelector('.attn-t').textContent = formatDisplayDate(e.date);
-row.querySelector('.attn-m').textContent = '$' + fmtMoney(e.amount) +
-(e.checks ? ' \u00b7 ' + e.checks + ' check' + (e.checks === 1 ? '' : 's') : '') +
-' \u00b7 recorded by the office ' + shortDate(e.recordedAt);
-log.appendChild(row);
-});
-setTimeout(() => { fitListToRows(log, '.attn-item', 5.4); markListEnds(log); }, 0);
-}
-}
-renderFcDeskSub();
-}
-function renderFcDeskSub() {
-const sub = document.getElementById('foldSubFC');
-const v = currentVendor();
-if (!sub || !v) return;
-const on = fcAccepts(v.vendorId);
-const money = fcMoney(fcEntriesFor(v.vendorId, seasonYear()));
-sub.textContent = !on ? 'You do not take FreshConnect \u2014 tap to change'
-: (money ? '$' + fmtMoney(money) + ' turned in this season'
-: 'You take FreshConnect \u2014 nothing turned in yet this season');
-}
-async function setFcAccepts(yes) {
-const v = currentVendor();
-if (!v) return;
-await loadFc();
-fcCache.accepts[v.vendorId] = !!yes;
-await saveFc();
-renderFcVendor();
-applyDeskOrder().catch(() => {});
-showMsg('fcVendorMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
-(yes ? 'Noted \u2014 you take FreshConnect Checks. The office sees it when they take checks in.'
-: 'Noted \u2014 you do not take FreshConnect Checks. Switch back any time.'));
-}
-
 // ---- the manager's half --------------------------------------------------
 // Draw first, fetch second, exactly as the SNAP log learned to.
 function initFcLogScreen() {
@@ -11617,6 +11440,7 @@ if (note) note.textContent = 'Record the face value printed on the checks. Unlik
 'the market does not set what a FreshConnect Check is worth \u2014 New York State does \u2014 ' +
 'so there is no rate here to change and no past line that could be re-valued.';
 renderFcVendorChoices();
+renderAcceptCard('fc');
 renderFcDay();
 renderFcSeason();
 }
@@ -12353,7 +12177,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'snaptokens', 'fcchecks', 'mydocs',
+'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'mydocs',
 // Raising something that needs looking into sits with reaching the office.
 'fComplaint',
 // Your part in the market: the committees you sit on, and how to reach the office.
@@ -12376,20 +12200,8 @@ function deskDefaultOrder() {
 // Drawers the vendor has said they do not use. They keep their place on the
 // desk, at the end of it, rather than being taken away -- the switch that
 // sent them there is inside them.
-function deskDemotedKeys() {
-if (currentRole !== 'vendor' || !currentVendorId) return [];
-const out = [];
-if (typeof snapAccepts === 'function' && !snapAccepts(currentVendorId)) out.push('snaptokens');
-if (typeof fcAccepts === 'function' && !fcAccepts(currentVendorId)) out.push('fcchecks');
-return out;
-}
 // Applied to whatever order came before it, saved or default, so the answer
 // always has the last word on where these two sit.
-function deskWithDemotions(seq) {
-const demote = deskDemotedKeys();
-if (!demote.length) return seq;
-return seq.filter(k => demote.indexOf(k) < 0).concat(demote.filter(k => seq.indexOf(k) >= 0));
-}
 let deskDragAttached = false;
 let deskOrderCache = null;
 async function loadDeskOrders() {
@@ -12411,29 +12223,11 @@ const byKey = {};
 dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])').forEach(f => { if (f.dataset.fold) byKey[f.dataset.fold] = f; });
 const seq = saved.filter(k => byKey[k]);
 dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])').forEach(f => { if (f.dataset.fold && !seq.includes(f.dataset.fold)) seq.push(f.dataset.fold); });
-deskWithDemotions(seq).forEach(k => dash.insertBefore(byKey[k], note));
+seq.forEach(k => dash.insertBefore(byKey[k], note));
 }
 async function saveDeskOrder() {
 const dash = document.getElementById('screen-dashboard');
-let order = Array.from(dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])')).map(f => f.dataset.fold).filter(Boolean);
-// The demoted drawers are at the foot because of an answer, not because the
-// vendor dragged them there. Saving them in that position would make the
-// demotion permanent, and switching back to "I accept" would leave the
-// drawer at the bottom with nothing on the bar to explain it. So they are
-// recorded where the vendor's own arrangement puts them.
-const demoted = deskDemotedKeys();
-if (demoted.length) {
-const prior = (deskOrderCache && deskOrderCache.id === currentVendorId ? deskOrderCache.order : null) || deskDefaultOrder();
-order = order.filter(k => demoted.indexOf(k) < 0);
-demoted.forEach(k => {
-const at = prior.indexOf(k);
-if (at < 0) { order.push(k); return; }
-// Slot it back beside whichever neighbour from before is still present.
-let anchor = -1;
-for (let i = at - 1; i >= 0 && anchor < 0; i--) anchor = order.indexOf(prior[i]);
-order.splice(anchor + 1, 0, k);
-});
-}
+const order = Array.from(dash.querySelectorAll(':scope > .dash-fold:not([data-fixed])')).map(f => f.dataset.fold).filter(Boolean);
 deskOrderCache = { id: currentVendorId, order: order };
 const all = await loadDeskOrders();
 all[currentVendorId] = order;
@@ -12449,7 +12243,7 @@ deskOrderCache = null;
 await storageSet('ifm-desk-order', all);
 const dash = document.getElementById('screen-dashboard');
 const note = document.getElementById('menuTailorNote');
-deskWithDemotions(deskDefaultOrder()).forEach(k => {
+deskDefaultOrder().forEach(k => {
 const f = dash.querySelector(':scope > .dash-fold[data-fold="' + k + '"]');
 if (f) dash.insertBefore(f, note);
 });
@@ -17025,9 +16819,7 @@ if (name === 'mystatements') initMyStatementsScreen();
 if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
-if (name === 'snaptokens') initSnapVendorScreen();
 if (name === 'fclog') initFcLogScreen();
-if (name === 'fcchecks') initFcVendorScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
 if (name === 'directory') renderDirectory('');
 if (name === 'lottery') { initLotteryScreen(); centreLiveMap('lottoMapWrap'); }
@@ -17220,9 +17012,7 @@ volunteer:         { title: 'Volunteers / Partners' },
 appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
 snaplog:           { title: 'SNAP Tokens In & Out' },
-snaptokens:        { title: 'SNAP Tokens' },
 fclog:             { title: 'FreshConnect Checks In' },
-fcchecks:          { title: 'FreshConnect Checks' },
 mystatements:      { title: 'Statements' },
 yearend:           { title: 'Year-End Money Worksheet' },
 winterpaperwork:   { title: 'Triphammer Paperwork' },
@@ -17347,7 +17137,6 @@ const b = cache.booths.find(x => boothBaselineHolder(x, date) === vendorId);
 return b ? b.num : null;
 }
 function applyVenueToDesk() {
-buildSeasonNote('vendorVenuePicker');
 DESK_STEAMBOAT_ORDER.forEach(k => setFoldSeason(k, 'steamboat'));
 setFoldSeason('winter', 'winter');
 setFoldSeason('wednesday', 'wednesday');
@@ -17402,8 +17191,6 @@ setDeskRelevance('commAgOnly', isAg,
 'made from what they grow. Your membership is recorded as ' + vendor.category + '. If that is wrong, or if your ' +
 'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
-renderSnapDeskSub();
-renderFcDeskSub();
 updateStmtSub();
 applyVenueToDesk();
 const cmTitle = document.getElementById('menuMyCommitteesTitle');
@@ -17460,7 +17247,7 @@ note.textContent = 'This desk is filtered specifically for you \u2014 ' +
 note.style.display = '';
 }
 }
-const SCREEN_HELP = {"evacuation": 50, "stallimprove": 49, "dataexport": 46, "calloutpatterns": 45, "pointsmanager": 42, "winterbooths": 28, "standing": 25, "leaves": 24, "whrate": 23, "satlottery": 21, "popupsvendor": 8, "winter": 5, "yearend": 65, "snaptokens": 67, "snaplog": 66, "fcchecks": 83, "fclog": 82, "pretend": 68, "tuning": 69, "winterpaperwork": 70, "account": 64};
+const SCREEN_HELP = {"evacuation": 50, "stallimprove": 49, "dataexport": 46, "calloutpatterns": 45, "pointsmanager": 42, "winterbooths": 28, "standing": 25, "leaves": 24, "whrate": 23, "satlottery": 21, "popupsvendor": 8, "winter": 5, "yearend": 65, "snaplog": 66, "fclog": 82, "pretend": 68, "tuning": 69, "winterpaperwork": 70, "account": 64};
 function renderScreenHead(name) {
 const slot = document.getElementById('head-' + name);
 if (!slot) return;
@@ -21070,7 +20857,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-36';
+const BUILD_ID = '17-38';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -42219,19 +42006,6 @@ loadImprovements().then(renderManagerAlerts);
 }
 // One quiet line where the three-button picker used to be. It names the
 // season and states the architecture: the calendar leads, the records stay.
-// This used to name which markets "are running", read off the month table.
-// With the switching gone that sentence was the last place the guess was
-// stated as fact -- and the one a manager would repeat to a vendor. The
-// market knows its own schedule; the app does not, and every market's own
-// drawer says when it trades.
-function buildSeasonNote(hostId) {
-const host = document.getElementById(hostId);
-if (!host) return;
-const tail = hostId === 'mgrVenuePicker'
-? '<b>Every market is on this desk, all year.</b> Steamboat Landing, Wednesday at East Hill, the Winter Market and PopUps each keep their own drawer whether or not they are trading this week \u2014 and the market\u2019s records, vendors, points, money and the paper trail, keep the same spot beside them. One pool of vendors, whichever market is trading.'
-: '<b>Every market is on this desk, all year.</b> Nothing is dimmed or moved because of the month, so you can read what a market asks of you before its season starts. Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot all year too.';
-host.innerHTML = '<p class="venue-note">' + tail + '</p>';
-}
 // ===========================================================================
 // ONE VENDOR, WHOLE STANDING
 //
@@ -42528,12 +42302,6 @@ tiles: [
 // The desk knows whose it is. One renderer, two lists.
 function deskFolders() { return currentRole === 'president' ? PRES_FOLDERS : MGR_FOLDERS; }
 function renderManagerFolders() {
-// The venue note tells whoever is on duty which markets are running today.
-// That is a market-day fact for the office, not board business, so the
-// President's desk does not carry it.
-const vp = document.getElementById('mgrVenuePicker');
-if (currentRole === 'president') { if (vp) vp.innerHTML = ''; }
-else buildSeasonNote('mgrVenuePicker');
 // The log is the President's supervisory view; it sits under Needs Attention.
 const act = document.getElementById('presActivity');
 if (act) {
