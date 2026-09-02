@@ -210,6 +210,32 @@ table.log, table.stmt-table { width: 100%; table-layout: auto; }
 .handover-code { background: #F4F2E8; border: 1px solid #DDD6C0; border-radius: 8px;
 padding: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
 line-height: 1.45; white-space: pre; overflow-x: auto; color: #23231B; margin: 10px 0; }
+/* The pavilion month. Seven columns whatever the phone: a calendar that
+   reflows into six is not a calendar. Cells stay square by aspect-ratio so
+   nothing has to be measured. */
+.pav-cal { margin: 10px 0 14px; }
+.pav-cal-head { font-weight: 700; font-size: 15px; margin: 0 2px 6px; color: var(--ink); }
+.pav-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.pav-dow { font-size: 11px; text-align: center; color: #8A8268; padding-bottom: 2px; }
+.pav-cell { position: relative; aspect-ratio: 1; border-radius: 6px;
+  border: 1px solid var(--paper-dim, #D8D2BE); background: #FFFDF6;
+  display: flex; align-items: center; justify-content: center; }
+.pav-blank { border: 0; background: none; }
+.pav-num { font-size: 13px; color: var(--ink); }
+.pav-market { background: #ECF0E6; border-color: #C7D3BC; }
+.pav-rented { background: var(--leaf, #3F5D34); border-color: var(--leaf, #3F5D34); }
+.pav-rented .pav-num { color: #fff; font-weight: 700; }
+.pav-past { opacity: 0.45; }
+.pav-today { box-shadow: 0 0 0 2px var(--leaf, #3F5D34); }
+/* The dot is for anyone who cannot tell the fills apart: colour is never the
+   only thing carrying a fact. */
+.pav-dot { position: absolute; bottom: 3px; width: 4px; height: 4px;
+  border-radius: 50%; background: #fff; }
+.pav-key { display: flex; gap: 14px; font-size: 12px; color: #8A8268; margin: 2px 2px 8px; }
+.pav-key span { display: inline-flex; align-items: center; gap: 5px; }
+.pav-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block;
+  border: 1px solid var(--paper-dim, #D8D2BE); }
+.pav-next { margin-top: 6px; }
 .fold-empty-note { margin: 4px 2px 10px; }
 .stmt-jobs { margin-top: 6px; }
 .stmt-job { font-size: 14px; padding: 5px 0; border-bottom: 1px solid #E8E3D2; }
@@ -2913,6 +2939,10 @@ Recording it here puts that notice in front of every vendor when they open the a
 <input type="text" id="prNote" placeholder="e.g. caterers arrive 3:30, keep the north aisle clear" autocomplete="off">
 <button type="button" class="primary-btn" onclick="addPavRental()"><svg class="ico"><use href="#i-checkmark"></use></svg> Add to the schedule</button>
 <div class="status-msg" id="prMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>The Next Two Months</h2>
+<div id="prCalendar"></div>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>The Schedule</h2>
@@ -13619,6 +13649,7 @@ await loadPavRentals();
 if (pavRentalOn(date)) { showMsg('prMsg', 'err', 'There is already a rental recorded for that date.'); return; }
 pavCache.push({ id: 'pr' + Date.now(), date: date, who: who, note: note, addedAt: Date.now() });
 pavCache.sort((a, b) => a.date.localeCompare(b.date));
+renderPavCalendar('prCalendar');
 await savePavRentals();
 showMsg('prMsg', 'ok', pavIsMarketDate(date)
 ? 'Added. Every vendor will see the 4 PM notice when they open the app that morning.'
@@ -13665,6 +13696,7 @@ host.appendChild(row);
 async function initPavRentalsScreen() {
 await loadPavRentals();
 refreshDateChips('prDate');
+renderPavCalendar('prCalendar');
 renderPavRentals();
 }
 // WHAT IS COMING AT THE PAVILION.
@@ -13676,6 +13708,78 @@ renderPavRentals();
 // The card shows itself only when something is booked. A rental happens a
 // handful of times a season, and a permanent empty drawer for it would cost
 // every vendor a line on their desk all year to say 'nothing'.
+// ---- the pavilion, by the month ------------------------------------------
+// A grid of one month: every day, market days marked, rentals filled in. The
+// gaps are half the information -- a list of what is booked cannot show three
+// clear Saturdays followed by two that are gone, and that is exactly what
+// somebody arranging cover needs to see.
+const PAV_MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+'July', 'August', 'September', 'October', 'November', 'December'];
+function pavMonthGrid(year, month) {
+const first = new Date(year, month, 1);
+const days = new Date(year, month + 1, 0).getDate();
+const lead = first.getDay();
+const today = todayISO();
+const iso = d => year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+
+let out = '<div class="pav-cal">' +
+'<div class="pav-cal-head">' + PAV_MONTH_NAMES[month] + ' ' + year + '</div>' +
+'<div class="pav-cal-grid">' +
+['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => '<div class="pav-dow">' + d + '</div>').join('');
+for (let i = 0; i < lead; i++) out += '<div class="pav-cell pav-blank"></div>';
+for (let d = 1; d <= days; d++) {
+const date = iso(d);
+const rental = pavRentalOn(date);
+const market = pavIsMarketDate(date);
+const cls = ['pav-cell'];
+if (market) cls.push('pav-market');
+if (rental) cls.push('pav-rented');
+if (date === today) cls.push('pav-today');
+if (date < today) cls.push('pav-past');
+// The title carries the detail. A cell is a fingertip wide; the whole
+// booking will not fit in it and should not try.
+const title = rental
+? formatDisplayDate(date) + ' \u2014 ' + rental.who +
+(market ? ' \u00b7 vendors out by 4 PM' : ' \u00b7 not a market day')
+: market ? formatDisplayDate(date) + ' \u2014 market day, nothing booked' : '';
+out += '<div class="' + cls.join(' ') + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' +
+'<span class="pav-num">' + d + '</span>' +
+(rental ? '<span class="pav-dot"></span>' : '') + '</div>';
+}
+out += '</div></div>';
+return out;
+}
+// Two months from today, which is as far ahead as anybody schedules cover and
+// as far as the office usually has bookings.
+function pavCalendarHTML(months) {
+const now = new Date();
+let out = '';
+for (let i = 0; i < (months || 2); i++) {
+const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+out += pavMonthGrid(d.getFullYear(), d.getMonth());
+}
+const ahead = pavUpcoming(20);
+out += '<div class="pav-key">' +
+'<span><span class="pav-swatch pav-market"></span> market day</span>' +
+'<span><span class="pav-swatch pav-rented"></span> pavilion booked</span>' +
+'</div>';
+out += ahead.length
+? '<div class="pav-next">' + ahead.slice(0, 4).map(r =>
+'<div class="tracker-row"><div class="t-title"><b>' + esc(formatDisplayDate(r.date)) + '</b> \u00b7 ' +
+esc(r.who) + (pavIsMarketDate(r.date)
+? ' <span class="season-tag">Out by 4 PM</span>' : '') + '</div>' +
+(r.note ? '<div class="t-sub">' + esc(r.note) + '</div>' : '') + '</div>').join('') +
+(ahead.length > 4 ? '<p class="empty-note" style="margin:6px 2px 0;">and ' + (ahead.length - 4) +
+' more further out.</p>' : '') + '</div>'
+: '<p class="empty-note" style="margin:8px 2px 0;">Nothing booked in these two months.</p>';
+return out;
+}
+function renderPavCalendar(hostId) {
+const host = document.getElementById(hostId);
+if (!host) return;
+host.innerHTML = pavCalendarHTML(2);
+}
+
 function pavUpcoming(limit) {
 const today = todayISO();
 return (pavCache || [])
@@ -20857,7 +20961,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-38';
+const BUILD_ID = '17-40';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -30816,6 +30920,22 @@ const msg = mk('div', { 'class': 'status-msg', id: 'chTaskMsg' });
 return card;
 }
 // The lead's own copy of the posting form, on the vendor side of the app.
+// THE MERCH MANSION LEAD DOES NOT GET THE PAVILION CALENDAR.
+//
+// It was built and taken out again in the same day. The reasoning is worth
+// keeping, because the case for giving it to them is a good one and will be
+// made again: the Merch Mansion is the market's own stand, a rental means out
+// by 4 PM, and the lead has a till to close and shifts already posted to
+// people expecting a normal afternoon.
+//
+// It is still wrong. The lead is a vendor, and the Merch Mansion sells to the
+// same customers on the same floor as everyone else. Knowing which dates are
+// let, and to whom, ahead of other vendors is an advantage nobody voted to
+// give them -- and the market cannot hand one vendor a planning advantage
+// over the rest because their programme is inconvenient.
+//
+// The office keeps the calendar. It is a view of a list the office already
+// holds and enters, so it tells nobody anything new.
 function buildMerchLeadCard() {
 const mk = (tag, attrs) => { const el = document.createElement(tag);
 Object.keys(attrs || {}).forEach(k => el.setAttribute(k, attrs[k])); return el; };
