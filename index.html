@@ -72,7 +72,7 @@ background: #fff; text-align: left; font-family: inherit; cursor: pointer; }
 .mgr-tile:active { transform: scale(0.98); }
 .mgr-tile .mt-title { font-weight: 700; font-size: 15px; line-height: 1.25; }
 .mgr-tile .mt-sub { font-size: 12px; opacity: 0.6; margin-top: 6px; }
-.mgr-tile.off-season { opacity: 0.5; }
+
 .mgr-tile .season-tag { font-size: 10px; }
 .mgr-drawer-head { margin: 2px 0 10px; }
 .mgr-drawer-head h2 { margin: 0 0 2px; font-size: 19px; }
@@ -1119,9 +1119,10 @@ body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 4
 /* Off-season drawers: filed by the calendar, dimmed but never locked.
    Softer than .not-yours -- nothing is being withheld, it is just not the
    season for it, so the drawer still opens for anyone planning ahead. */
-.dash-fold.off-season > .fold-bar .fold-title,
-.dash-fold.off-season > .fold-bar .fold-sub { opacity: .5; }
-.dash-fold.off-season > .fold-bar .fold-chev { opacity: .35; }
+/* Nothing is dimmed for being out of season any more: the app stopped
+   deciding which markets were trading from a table of month numbers, because
+   the market decides that and this file was guessing. The rules are gone
+   rather than left unused, so nothing can quietly start applying them. */
 .season-tag {
   font-size: 11px; font-weight: 800; letter-spacing: .04em;
   text-transform: uppercase; color: #8A8268;
@@ -6016,12 +6017,35 @@ function venueInSeason(k, d) {
 function seasonNow() {
   return venueInSeason('winter') ? 'winter' : 'steamboat';
 }
+// Is this market trading today? Read from the market's OWN dates, never
+// guessed from the month or from the day of the week.
+//
+// Both of those guesses have now been wrong in production. The season table
+// said the Winter Market runs January to March, so a February Saturday was
+// not a market day at Steamboat and the drawer was dimmed; taking the table
+// away made every Saturday a Winter market day, including one in July. The
+// market keeps its own dates -- the Winter Market as a list the office
+// edits, Wednesday generated from the season the office set, Steamboat from
+// marketDatesInSeason -- and those are the only answer worth giving.
+//
+// A venue with no dates recorded returns false and its bar says nothing. A
+// missing tag is better than a confident wrong one, which is what this whole
+// mechanism came out for.
 function venueRunsToday(k) {
-  if (!venueInSeason(k)) return false;
-  const d = new Date().getDay();
-  if (k === 'wednesday') return d === 3;
-  if (k === 'winter') return d === 6;
-  if (k === 'steamboat') return d === 0 || d === 6;
+  const today = todayISO();
+  if (k === 'winter') {
+    return (cache.wintermarket || []).some(w => String(w.date) === today);
+  }
+  if (k === 'wednesday') {
+    // wedDatesThisSeason is the list the Wednesday tools already work from,
+    // generated from the season the office set rather than from a guess here.
+    return typeof wedDatesThisSeason === 'function'
+      ? wedDatesThisSeason().indexOf(today) !== -1 : false;
+  }
+  if (k === 'steamboat') {
+    return (marketDatesInSeason(Number(today.slice(0, 4))) || [])
+      .some(m => m.date === today);
+  }
   return false;
 }
 function isMarketDayToday() {
@@ -10409,7 +10433,11 @@ if (!deskHandoverQuiet) clearDeskState();
 document.body.classList.toggle('role-' + r, role === r));
 paintHeaderBadge();
 const evac = document.getElementById('evacBar');
-if (evac) evac.style.display = ((role === 'vendor' || role === 'manager' || role === 'staff') && !venueInSeason('winter')) ? 'flex' : 'none';
+// The evacuation plan is not seasonal. It was hidden through the winter
+// months on the reasoning that it describes the Steamboat pavilion -- but a
+// fire plan withheld because of the date is the wrong side of that argument,
+// and the months it judged by were a guess in the first place.
+if (evac) evac.style.display = (role === 'vendor' || role === 'manager' || role === 'staff') ? 'flex' : 'none';
 if (role === 'manager') {
 document.getElementById('bizName').textContent = 'Market Manager';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 full admin toolkit';
@@ -12338,10 +12366,12 @@ const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos'];
 // vendor learns one place to look for all of them. Which are running is said
 // on each bar rather than by moving them about.
 const DESK_OTHER_MARKETS = ['winter', 'wednesday', 'popupsvendor'];
+// One order, every day of the year. This used to put the file cabinet above
+// the Steamboat tools out of season, so a vendor's desk was arranged
+// differently in February than in July -- for no reason they asked for, off a
+// table of month numbers this file has no business being sure about.
 function deskDefaultOrder() {
-  return venueInSeason('steamboat')
-    ? DESK_STEAMBOAT_ORDER.concat(DESK_STABLE_ORDER, DESK_OTHER_MARKETS)
-    : DESK_STABLE_ORDER.concat(DESK_STEAMBOAT_ORDER, DESK_OTHER_MARKETS);
+  return DESK_STEAMBOAT_ORDER.concat(DESK_STABLE_ORDER, DESK_OTHER_MARKETS);
 }
 // Drawers the vendor has said they do not use. They keep their place on the
 // desk, at the end of it, rather than being taken away -- the switch that
@@ -17323,30 +17353,27 @@ setFoldSeason('winter', 'winter');
 setFoldSeason('wednesday', 'wednesday');
 setFoldSeason('popupsvendor', null);
 }
-const VENUE_RETURNS = {
-  steamboat: 'back in April, Saturdays at Steamboat Landing',
-  wednesday: 'back in May, Wednesdays at East Hill Plaza',
-  winter: 'back in January, Saturdays at Triphammer'
-};
-// A drawer that is out of season is dimmed and tagged, never hidden and never
-// locked: a vendor planning ahead in March can still read what Wednesday asks
-// of them. Nothing moves with the calendar -- only what the bar says.
+// Every drawer reads the same all year. The only thing the calendar is
+// allowed to add is a <b>Today</b> tag when a market is actually running this
+// morning -- a fact about today, which moves nothing and dims nothing.
+//
+// It used to dim the drawer and replace its subtitle with "Out of season,
+// back in January". Two things were wrong with that. Greying means "not for
+// you" everywhere else in this app, and a market that is not trading this
+// week is not being withheld from anybody. And the months it judged by are a
+// guess: the market decides when the Winter Market runs, not this file, and
+// the first time that changes the app dims a market that is trading.
 function setFoldSeason(key, venue) {
 const f = document.querySelector('#screen-dashboard .dash-fold[data-fold="' + key + '"]');
 if (!f) return;
 f.style.display = '';
-const inSeason = !venue || venueInSeason(venue);
-f.classList.toggle('off-season', !inSeason);
+f.classList.remove('off-season');
 const sub = f.querySelector(':scope > .fold-bar .fold-sub');
 if (!sub) return;
 if (sub.dataset.plain === undefined) sub.dataset.plain = sub.innerHTML;
-if (!inSeason) {
-sub.innerHTML = '<span class="season-tag">Out of season</span> \u00b7 ' + VENUE_RETURNS[venue];
-} else if (venue && venueRunsToday(venue)) {
-sub.innerHTML = '<span class="season-tag">Today</span> \u00b7 ' + sub.dataset.plain;
-} else {
-sub.innerHTML = sub.dataset.plain;
-}
+sub.innerHTML = (venue && venueRunsToday(venue))
+? '<span class="season-tag">Today</span> \u00b7 ' + sub.dataset.plain
+: sub.dataset.plain;
 }
 function applyVendorVisibility() {
 const show = (id, visible) => {
@@ -19124,10 +19151,22 @@ const own = boothLayoutFor(num);
 const grid = own ? String(own.grid || '') : boothMapGrid(num);
 return String(grid || '').indexOf(code) !== -1;
 }
+// Only the places a vendor could actually point at. boothWhere() is the one
+// list of section names that mean anything outside this file -- everything
+// else was invented when the booth data was digitised, and offering "a booth
+// in Row A" asks a vendor to choose somewhere they have never heard of.
 function boothSectionNames() {
 const seen = [];
-(cache.booths || []).forEach(b => { if (b.section && !seen.includes(b.section)) seen.push(b.section); });
+(cache.booths || []).forEach(b => {
+const where = boothWhere(b);
+if (where && !seen.includes(where)) seen.push(where);
+});
 return seen;
+}
+// The booths that count as being in a named place, for the count beside the
+// option and for matching a stored choice.
+function boothsWhere(where) {
+return (cache.booths || []).filter(b => boothWhere(b) === where);
 }
 // One grouped menu per choice: every way of asking, in one place, so a
 // vendor picks what they mean rather than learning which box does what.
@@ -19136,12 +19175,25 @@ const opt = (val, label, on) => '<option value="' + esc(val) + '"' + (on ? ' sel
 let s = opt('', '\u2014 nothing chosen \u2014', !sel);
 s += '<optgroup label="A particular booth">';
 (cache.booths || []).slice().sort((a, b) => boothSortKey(a.num) - boothSortKey(b.num))
-.forEach(b => { s += opt('booth:' + b.num, 'Booth ' + b.num + ' \u2014 ' + b.section, sel === 'booth:' + b.num); });
+.forEach(b => {
+const where = boothWhere(b);
+s += opt('booth:' + b.num, 'Booth ' + b.num + (where ? ' \u2014 ' + where : ''), sel === 'booth:' + b.num);
+});
 s += '</optgroup><optgroup label="Somewhere in the market">';
 boothSectionNames().forEach(x => {
-const n = (cache.booths || []).filter(b => b.section === x).length;
+const n = boothsWhere(x).length;
 s += opt('section:' + x, 'A booth in ' + x + ' (' + n + ')', sel === 'section:' + x);
 });
+// A choice made before this, on a section name no longer offered, is still
+// theirs. It stays in the list while it is selected so the picker shows what
+// they actually chose rather than falling silently back to "nothing chosen".
+if (sel && sel.indexOf('section:') === 0) {
+const cur = sel.slice(8);
+if (!boothSectionNames().includes(cur)) {
+s += opt(sel, 'A booth in ' + cur + ' (' +
+(cache.booths || []).filter(b => b.section === cur).length + ')', true);
+}
+}
 s += '</optgroup><optgroup label="Any booth with">';
 PREF_FEATURES.forEach(f => {
 const n = (cache.booths || []).filter(b => f.test(b)).length;
@@ -19236,7 +19288,9 @@ return 'any booth with ' + (f ? f.label.toLowerCase() : c.v);
 function prefChoiceTest(c) {
 if (!c || !c.k) return () => false;
 if (c.k === 'booth') return b => String(b.num) === String(c.v);
-if (c.k === 'section') return b => b.section === c.v;
+// Matches a recognisable place, and still matches a raw section name for a
+// choice saved before those stopped being offered.
+if (c.k === 'section') return b => boothWhere(b) === c.v || b.section === c.v;
 const f = PREF_FEATURES.find(x => x.k === c.v);
 return f ? f.test : () => false;
 }
@@ -20055,10 +20109,16 @@ const rows = cache.callinout.map(r => [vendorNameFor(r.vendorId), r.vendorId, r.
 downloadCSV('ifm-attendance.csv', ['Business Name', 'Vendor ID', 'Market Date', 'Day', 'Status'], rows);
 }
 function exportBoothsCSV() {
+// Two columns, because they are two different things. "Where" is a name
+// somebody would recognise; the raw section is an internal label invented
+// when the data was digitised, and a spreadsheet travels far enough from
+// this app that the column heading has to say so.
 const rows = cache.booths.map(b => [
-b.num, b.section, b.reservedBy ? vendorNameFor(b.reservedBy) : '', b.reservedBy || '', b.note || ''
+b.num, boothWhere(b), b.section,
+b.reservedBy ? vendorNameFor(b.reservedBy) : '', b.reservedBy || '', b.note || ''
 ]);
-downloadCSV('ifm-booth-assignments.csv', ['Booth', 'Section', 'Reserved By', 'Vendor ID', 'Note'], rows);
+downloadCSV('ifm-booth-assignments.csv',
+['Booth', 'Where', 'Section (internal)', 'Reserved By', 'Vendor ID', 'Note'], rows);
 }
 function initSendToCommittee() {
 const sel = document.getElementById('ftCmte');
@@ -21010,7 +21070,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-33';
+const BUILD_ID = '17-36';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -42159,20 +42219,18 @@ loadImprovements().then(renderManagerAlerts);
 }
 // One quiet line where the three-button picker used to be. It names the
 // season and states the architecture: the calendar leads, the records stay.
+// This used to name which markets "are running", read off the month table.
+// With the switching gone that sentence was the last place the guess was
+// stated as fact -- and the one a manager would repeat to a vendor. The
+// market knows its own schedule; the app does not, and every market's own
+// drawer says when it trades.
 function buildSeasonNote(hostId) {
 const host = document.getElementById(hostId);
 if (!host) return;
-const live = [];
-if (venueInSeason('steamboat')) live.push('Steamboat Landing');
-if (venueInSeason('wednesday')) live.push('Wednesday at East Hill');
-if (venueInSeason('winter')) live.push('the Winter Market');
-let lead;
-if (live.length === 1) lead = '<b>' + live[0] + '</b> is running.';
-else lead = '<b>' + live.slice(0, -1).join(', ') + '</b> and <b>' + live[live.length - 1] + '</b> are running.';
 const tail = hostId === 'mgrVenuePicker'
-? ' The market\u2019s records \u2014 vendors, points, money, the paper trail \u2014 keep the same spot on this desk all year: one pool of vendors, whichever market is trading.'
-: ' Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot on this desk all year.';
-host.innerHTML = '<p class="venue-note">' + lead + tail + '</p>';
+? '<b>Every market is on this desk, all year.</b> Steamboat Landing, Wednesday at East Hill, the Winter Market and PopUps each keep their own drawer whether or not they are trading this week \u2014 and the market\u2019s records, vendors, points, money and the paper trail, keep the same spot beside them. One pool of vendors, whichever market is trading.'
+: '<b>Every market is on this desk, all year.</b> Nothing is dimmed or moved because of the month, so you can read what a market asks of you before its season starts. Your own records \u2014 points, hours, fees, documents \u2014 keep the same spot all year too.';
+host.innerHTML = '<p class="venue-note">' + tail + '</p>';
 }
 // ===========================================================================
 // ONE VENDOR, WHOLE STANDING
@@ -42486,20 +42544,20 @@ const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 renderManagerAlerts();
 grid.innerHTML = '';
+// One order, every day of the year. The other markets sit together at the
+// foot because that is a fixed place a manager can learn, not because of the
+// month -- which is what the comment below always claimed and the code did
+// not do: it split the rest into in-season and out and reordered them too.
 const inSeason = [], stable = [], off = [];
 deskFolders().forEach(f => {
 if (MGR_OTHER_MARKETS.indexOf(f.key) !== -1) { off.push(f); return; }
-const own = MGR_VENUE_OF[f.key];
-if (!own || venueInSeason(own)) inSeason.push(f);
-else stable.push(f);
+inSeason.push(f);
 });
-// Steamboat's own folders lead while Steamboat is running; the market-day
-// folder leads the lot on a Saturday or Sunday. The other three markets sit
-// together at the foot, in a fixed order, tagged rather than shuffled.
-if (venueRunsToday('steamboat')) {
-const k = inSeason.findIndex(f => f.key === 'marketday');
-if (k > 0) inSeason.unshift(inSeason.splice(k, 1)[0]);
-}
+// Nothing moves. Market Day used to jump to the front on a Saturday, which
+// meant the desk was in a different order depending on the day you opened it
+// -- and, because the promotion asked the season table first, in a different
+// order in February than in July. Its bar still says it is market day; the
+// tile stays where a manager left it.
 off.sort((a, b) => MGR_OTHER_MARKETS.indexOf(a.key) - MGR_OTHER_MARKETS.indexOf(b.key));
 // foot:true entries stay at the absolute end regardless of season ordering.
 const foot = [];
@@ -42510,7 +42568,7 @@ const ordered = inSeason.concat(stable, off, foot);
 if (MGR_DESK_STYLE !== 'grid') {
 inSeason.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
 stable.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
-off.forEach(f => grid.appendChild(buildMgrFolder(f, true)));
+off.forEach(f => grid.appendChild(buildMgrFolder(f, false)));
 return;
 }
 const openF = mgrOpenFolder
@@ -42523,8 +42581,7 @@ grid.appendChild(back);
 const head = document.createElement('div');
 head.className = 'mgr-drawer-head';
 const pv = openF.key ? MGR_VENUE_OF[openF.key] : null;
-const pTag = pv && !venueInSeason(pv) ? '<span class="season-tag">Out of season</span> \u00b7 '
-: pv && venueRunsToday(pv) ? '<span class="season-tag">Today</span> \u00b7 ' : '';
+const pTag = pv && venueRunsToday(pv) ? '<span class="season-tag">Today</span> \u00b7 ' : '';
 head.innerHTML = '<h2>' + esc(openF.title || openF.t) + '</h2>' +
 '<div class="mt-sub">' + pTag + esc(openF.sub || openF.d || '') + '</div>';
 grid.appendChild(head);
@@ -42545,19 +42602,15 @@ grid.appendChild(tiles);
 // otherwise how many tools wait inside. Off-season tiles grey, never hide.
 function mgrTileSub(f) {
 const venue = f.key ? MGR_VENUE_OF[f.key] : null;
-const inSeason = !venue || venueInSeason(venue);
-if (!inSeason) return '<span class="season-tag">Out of season</span>';
 const today = venue && venueRunsToday(venue);
 const n = f.tiles ? f.tiles.length : 1;
 const count = n + (n === 1 ? ' tool' : ' tools');
 return (today ? '<span class="season-tag">Today</span> \u00b7 ' : '') + count;
 }
 function buildMgrTile(f) {
-const venue = f.key ? MGR_VENUE_OF[f.key] : null;
-const inSeason = !venue || venueInSeason(venue);
 const tile = document.createElement('button');
 tile.type = 'button';
-tile.className = 'mgr-tile' + (inSeason ? '' : ' off-season');
+tile.className = 'mgr-tile';
 tile.innerHTML = '<span class="mt-title">' + esc(f.title || f.t) + '</span>' +
 '<span class="mt-sub">' + mgrTileSub(f) + '</span>';
 tile.onclick = (f.s && !f.tiles)
@@ -42568,14 +42621,12 @@ return tile;
 function buildMgrFolder(f, grouped) {
 if (f.s) return buildToolFold(f);
 const venue = MGR_VENUE_OF[f.key];
-const inSeason = !venue || venueInSeason(venue);
 let sub;
-if (!inSeason) sub = '<span class="season-tag">Out of season</span> \u00b7 ' + VENUE_RETURNS[venue];
-else if (venue && venueRunsToday(venue)) sub = '<span class="season-tag">Today</span> \u00b7 ' + esc(f.sub);
+if (venue && venueRunsToday(venue)) sub = '<span class="season-tag">Today</span> \u00b7 ' + esc(f.sub);
 else if (!grouped && venueRunsToday('steamboat') && f.key === 'marketday') sub = '<b>It\u2019s market day.</b> ' + esc(f.sub);
 else sub = esc(f.sub);
 const fold = document.createElement('div');
-fold.className = 'dash-fold' + (inSeason ? '' : ' off-season');
+fold.className = 'dash-fold';
 fold.dataset.fold = 'mgr-' + f.key;
 const bar = document.createElement('button');
 bar.type = 'button';
