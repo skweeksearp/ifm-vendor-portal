@@ -236,6 +236,18 @@ line-height: 1.45; white-space: pre; overflow-x: auto; color: #23231B; margin: 1
 .pav-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block;
   border: 1px solid var(--paper-dim, #D8D2BE); }
 .pav-next { margin-top: 6px; }
+/* The new-build bar. Bottom of the screen rather than the top: the top is
+   where the crumb and the title are, and a bar that pushes those down moves
+   everything under a thumb that was already aiming at something. */
+.sw-update { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 60;
+background: var(--ink, #23231B); color: #FFFDF6; border-radius: 14px;
+padding: 12px 14px; font-size: 14px; line-height: 1.4;
+box-shadow: 0 6px 20px rgba(35,42,32,0.28);
+display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sw-update .ghost-btn { margin: 0; width: auto; padding: 7px 14px; font-size: 14px;
+background: #FFFDF6; color: var(--ink, #23231B); border-color: #FFFDF6; }
+.sw-update .link-btn { color: #CFC9B4; }
+.sw-update span { flex: 1 1 100%; }
 .fold-empty-note { margin: 4px 2px 10px; }
 .stmt-jobs { margin-top: 6px; }
 .stmt-job { font-size: 14px; padding: 5px 0; border-bottom: 1px solid #E8E3D2; }
@@ -2385,6 +2397,11 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
 </svg>
 <div id="app">
 <div id="loading" class="loading"></div>
+<div id="swUpdateBar" class="sw-update" style="display:none;">
+<span id="swUpdateText">A newer version of the app is ready.</span>
+<button type="button" class="ghost-btn" onclick="swTakeUpdate(this)">Load it</button>
+<button type="button" class="link-btn" onclick="swDismissUpdate()">Not now</button>
+</div>
 <div id="landing" class="picker" style="display:none;">
 <img id="landingLogo" class="picker-logo" alt="Ithaca Farmers Market">
 <div style="text-align:center; margin: 2px 0 0;"><button type="button" class="help-dot" onclick="showHelp(59)" aria-label="About this build">?</button></div>
@@ -2836,7 +2853,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="winter">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
 <span class="fold-title">Winter Market</span>
-<span class="fold-sub">Jan–Mar Saturdays at Triphammer</span>
+<span class="fold-sub">Jan–Mar Saturdays at Triphammer &middot; earns a point a day</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
@@ -2844,7 +2861,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="wednesday">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'wednesday')">
 <span class="fold-title">Wednesday Market</span>
-<span class="fold-sub">East Hill Plaza &middot; May&ndash;October, 3&ndash;6&nbsp;PM</span>
+<span class="fold-sub">East Hill Plaza &middot; May&ndash;October, 3&ndash;6&nbsp;PM &middot; earns a point a day</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -2852,7 +2869,7 @@ I sell food (prepared food or produce)
 <div class="dash-fold" data-fold="popupsvendor">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'popupsvendor')">
 <span class="fold-title">PopUp Events</span>
-<span class="fold-sub">Satellite markets &amp; one-off tabling</span>
+<span class="fold-sub">Satellite markets &amp; one-off tabling &middot; a market day earns a point</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
@@ -3260,7 +3277,9 @@ from last week if most of the same people came.</p>
 <div class="stat"><div class="stat-num">May&ndash;Oct</div><div class="stat-label">Season</div></div>
 <div class="stat"><div class="stat-num">3&ndash;6&nbsp;PM</div><div class="stat-label">Wednesdays</div></div>
 <div class="stat"><div class="stat-num">$20</div><div class="stat-label">Daily Fee</div></div>
+<div class="stat"><div class="stat-num">+1</div><div class="stat-label">Point Earned</div></div>
 </div>
+<p class="empty-note" style="margin:8px 2px 0;">Every market you attend earns a point, and this is a market. Points set your place in next year&rsquo;s stall auction and every weekly Booth Selection &mdash; so a Wednesday afternoon here counts toward a Saturday booth at Steamboat. <span class="empty-note">Guide p.27: one point for each market attended the previous year.</span></p>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-map-pin"></use></svg></span>Getting a Space<button type="button" class="help-dot" onclick="showHelp(71)" aria-label="What are the rules here?">?</button></h2>
@@ -3294,7 +3313,9 @@ announces any change.</p>
 <div class="stat"><div class="stat-num">Jan&ndash;Mar</div><div class="stat-label">Season</div></div>
 <div class="stat"><div class="stat-num">Sat</div><div class="stat-label">Day</div></div>
 <div class="stat"><div class="stat-num">$30</div><div class="stat-label">Daily Fee</div></div>
+<div class="stat"><div class="stat-num">+1</div><div class="stat-label">Point Earned</div></div>
 </div>
+<p class="empty-note" style="margin:8px 2px 0;">Every market you attend earns a point, and this is a market. A Triphammer Saturday in February counts toward your place in the Steamboat auction and every Booth Selection next season. <span class="empty-note">Guide p.27: one point for each market attended the previous year.</span></p>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-map-pin"></use></svg></span>Booth Reservations<button type="button" class="help-dot" onclick="showHelp(6)" aria-label="What are the rules here?">?</button></h2>
@@ -3318,6 +3339,7 @@ announces any change.</p>
 <div class="screen-head" id="head-popupsvendor"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>Upcoming</h2>
+<p class="empty-note" style="margin-top:0;"><b>A PopUp that is a market earns a point, like any other market day.</b> Points set your place in next year&rsquo;s stall auction and every weekly Booth Selection. Tabling that is not a market does not &mdash; if you are unsure which a particular event is, ask the office before you count on it. <span class="empty-note">Guide p.27: one point for each market attended the previous year.</span></p>
 <div id="popupVendorUpcoming"></div>
 <div class="empty-note" id="popupVendorUpcomingEmpty" style="display:none;">No upcoming PopUps scheduled right now.</div>
 </div>
@@ -4831,6 +4853,129 @@ read its payment records, or lock its members out belongs to an account the <i>m
 institutionally &mdash; not a developer&rsquo;s personal login, and not the current manager&rsquo;s personal
 login either, which only moves the problem one desk over.</p>
 <div id="handoverList"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clock"></use></svg></span>Serving the App From the Phone</h2>
+<p class="empty-note" style="margin-top:0;"><b>Written, tested, and switched off.</b> index.html is about 2.2&nbsp;MB, 644&nbsp;KB over the wire, and GitHub Pages sets no long cache header on it &mdash; so today every visit downloads and parses the whole thing before anything appears, and iOS drops backgrounded tabs, which makes &ldquo;every visit&rdquo; most of them.</p>
+<p class="empty-note">Measured with it on: <b>692&nbsp;ms cold against 367&nbsp;ms warm</b>, and the app opens with <b>no network at all</b> &mdash; which matters at Steamboat Landing, where the signal is poor and the market is busiest exactly when it is worst. It also ends the mid-deploy 404: GitHub Pages serves real 404s for about two minutes after an upload, and with this a vendor gets the previous build, working, instead of nothing.</p>
+<p class="empty-note"><b>What it costs is a second file.</b> A service worker cannot be registered from inside the page that registers it, so <code>sw.js</code> has to sit beside <code>index.html</code>. That makes a deploy two uploads instead of one, and <b>uploading index.html without sw.js would leave the old worker serving the old app</b>. That is the whole reason it is off.</p>
+<p class="empty-note"><b>To switch it on:</b> save the code below as <code>sw.js</code> next to <code>index.html</code>, replace <code>__BUILD_ID__</code> with the build number, and set <code>SERVICE_WORKER_ON = true</code> in this file. Do both, or neither. From then on every deploy is two files and the build number must change in both.</p>
+<p class="empty-note">It never reloads the app under somebody: a new build is fetched quietly and a bar offers it. This app takes money, and swapping the code mid-correction is worse than a stale page.</p>
+<pre class="handover-code" id="swScript">// Ithaca Farmers Market Vendor Portal -- service worker
+//
+// Build: __BUILD_ID__   (stamped by build.py; do not edit by hand)
+//
+// WHAT THIS IS FOR. index.html is about 2.2 MB, 644 KB over the wire. Without
+// this, every visit downloads and parses the whole thing before the app can
+// draw anything, and the person watches a spinner. GitHub Pages sets no long
+// cache header on index.html, and iOS Safari evicts backgrounded tabs, so
+// "every visit" means most of them.
+//
+// With this, the app is served from the device. The spinner appears once
+// after a deploy instead of every time, and the app opens with no signal at
+// all -- which matters at Steamboat Landing, where the phone signal is poor
+// and the market is busiest exactly when the network is worst.
+//
+// IT ALSO FIXES THE MID-DEPLOY 404. GitHub Pages serves genuine 404s for
+// about two minutes after an upload. Today that means a vendor who opens the
+// app in that window gets nothing. Here, a failed fetch falls back to the
+// cached copy: they get the previous build, working, instead of an error.
+//
+// WHAT IT DELIBERATELY DOES NOT DO. It never swaps the running code under
+// somebody. This app takes money and records attendance; a page that reloads
+// itself while a manager is halfway through a correction is worse than a
+// stale page. A new build is fetched quietly, and the person is told there is
+// one and taps when they are ready.
+
+const BUILD = '__BUILD_ID__';
+const CACHE = 'ifm-' + BUILD;
+
+// Only what the app needs to start. Everything else it uses is inside
+// index.html already, which is the point of a single-file app.
+const SHELL = ['./', './index.html'];
+
+self.addEventListener('install', event =&gt; {
+  event.waitUntil((async () =&gt; {
+    const cache = await caches.open(CACHE);
+    // One at a time and forgiving: a precache that rejects as a whole means
+    // no service worker at all, and a partly warm cache beats none.
+    await Promise.all(SHELL.map(async url =&gt; {
+      try { await cache.add(new Request(url, { cache: 'reload' })); } catch (e) {}
+    }));
+    // Deliberately NOT skipWaiting. A new worker waits until the person asks
+    // for it, so the code under a half-finished task never changes.
+  })());
+});
+
+self.addEventListener('activate', event =&gt; {
+  event.waitUntil((async () =&gt; {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k =&gt; (k !== CACHE &amp;&amp; k.indexOf('ifm-') === 0)
+      ? caches.delete(k) : Promise.resolve()));
+    await self.clients.claim();
+  })());
+});
+
+// The page asks for the new worker when the person taps the banner. Until
+// then this one keeps serving, whatever is waiting.
+self.addEventListener('message', event =&gt; {
+  if (event.data === 'ifm-activate-now') self.skipWaiting();
+});
+
+self.addEventListener('fetch', event =&gt; {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  // The backend is the Google Apps Script and must never be cached: it holds
+  // the sheet, and a cached answer is a wrong balance.
+  if (url.pathname.indexOf('/macros/') !== -1) return;
+
+  // Anything that navigates -- opening the app, a bookmark, a scanned QR --
+  // is answered from the cache first and refreshed behind the person's back.
+  const isPage = req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').indexOf('text/html') !== -1;
+
+  event.respondWith((async () =&gt; {
+    const cache = await caches.open(CACHE);
+    const hit = await cache.match(isPage ? './index.html' : req, { ignoreSearch: isPage });
+
+    // Refresh in the background either way. The person is not waiting on it,
+    // so a slow network costs them nothing.
+    const fresh = fetch(req).then(res =&gt; {
+      if (res &amp;&amp; res.ok &amp;&amp; res.type === 'basic') {
+        cache.put(isPage ? './index.html' : req, res.clone()).catch(() =&gt; {});
+      }
+      return res;
+    }).catch(() =&gt; null);
+
+    if (hit) return hit;
+
+    const res = await fresh;
+    if (res) return res;
+
+    // No cache, no network. For a page this is the only honest answer, and
+    // it says what to do rather than showing the browser's dinosaur.
+    if (isPage) {
+      return new Response(
+        '&lt;!doctype html&gt;&lt;meta charset="utf-8"&gt;' +
+        '&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;' +
+        '&lt;style&gt;body{font:16px/1.5 -apple-system,system-ui,sans-serif;' +
+        'background:#EFEDE3;color:#23231B;margin:0;padding:48px 24px;text-align:center}' +
+        'b{display:block;font-size:19px;margin-bottom:8px}&lt;/style&gt;' +
+        '&lt;b&gt;No signal, and nothing saved yet&lt;/b&gt;' +
+        'The app has not been opened on this phone before, so there is no copy ' +
+        'on it to fall back to. Try again where there is a signal &amp;mdash; once it ' +
+        'has loaded here once, it will open without one.',
+        { headers: { 'Content-Type': 'text/html; charset=utf-8' }, status: 503 });
+    }
+    return Response.error();
+  })());
+});
+</pre>
+<button type="button" class="ghost-btn" onclick="copySwScript(this)">Copy the code</button>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Sending Statements Without Pasting</h2>
@@ -10242,6 +10387,96 @@ try { runScreenInit(sec.id.replace('screen-', '')); } catch (e) {}
 // it IS a list of vendors -- and that waits on its own, with something to read
 // while it does. Every other desk is entered by choosing a role, by which time
 // the records have almost always arrived.
+// ---- serving the app from the device -------------------------------------
+// index.html is 2.2 MB, 644 KB over the wire, and GitHub Pages sets no long
+// cache header on it -- so without this, every visit downloads and parses the
+// whole thing before anything appears. iOS evicts backgrounded tabs too, so
+// "every visit" is most of them.
+//
+// The worker is a SEPARATE FILE, sw.js, beside index.html. It has to be: a
+// service worker cannot be registered from inside the page that registers it.
+// That is the one thing this costs -- a deploy is two files now instead of
+// one, and uploading index.html without sw.js leaves the old worker serving
+// the old app.
+//
+// All of it is optional. No service worker support, a page opened from a
+// file, a registration that fails -- each falls through and the app is
+// exactly what it was.
+// OFF until the market is ready to deploy two files. The worker's whole
+// source is in Handover, with a Copy button; turning it on is this constant
+// and uploading sw.js beside index.html.
+const SERVICE_WORKER_ON = false;
+let swWaiting = null;
+// Switching it off has to UNDO it, not merely skip it. A phone that
+// registered the worker while it was on keeps that worker, and it keeps
+// serving its cached copy of the app -- so a later upload of index.html
+// alone would never reach that phone, invisibly, because the app the person
+// sees is the app that was cached. Removing it here means a device recovers
+// on its next load without anybody knowing it had one.
+async function removeServiceWorker() {
+if (!('serviceWorker' in navigator)) return;
+try {
+const regs = await navigator.serviceWorker.getRegistrations();
+await Promise.all(regs.map(r => r.unregister().catch(() => {})));
+} catch (e) {}
+try {
+const keys = await caches.keys();
+await Promise.all(keys.filter(k => k.indexOf('ifm-') === 0)
+.map(k => caches.delete(k).catch(() => {})));
+} catch (e) {}
+}
+function registerServiceWorker() {
+if (!SERVICE_WORKER_ON) { removeServiceWorker(); return; }
+if (!('serviceWorker' in navigator)) return;
+if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+navigator.serviceWorker.register('sw.js').then(reg => {
+// Already one waiting from a previous visit.
+if (reg.waiting) swOfferUpdate(reg.waiting);
+reg.addEventListener('updatefound', () => {
+const sw = reg.installing;
+if (!sw) return;
+sw.addEventListener('statechange', () => {
+// installed WITH a controller means this is an update, not a first
+// install. A first install has nothing to offer -- the person is
+// already looking at the build it just cached.
+if (sw.state === 'installed' && navigator.serviceWorker.controller) swOfferUpdate(sw);
+});
+});
+// Check once on the way in. Anything more often costs a request for a file
+// that changes a few times a season.
+try { reg.update(); } catch (e) {}
+}).catch(() => {});
+// The page reloads only after the new worker has actually taken over, and
+// only because somebody asked for it.
+let reloading = false;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+if (!swReloadWanted || reloading) return;
+reloading = true;
+location.reload();
+});
+}
+let swReloadWanted = false;
+function swOfferUpdate(worker) {
+swWaiting = worker;
+const bar = document.getElementById('swUpdateBar');
+if (bar) bar.style.display = 'flex';
+}
+function swDismissUpdate() {
+const bar = document.getElementById('swUpdateBar');
+if (bar) bar.style.display = 'none';
+// Not taken away for good: it is offered again next time the app opens,
+// because a build somebody has declined once is still the build they should
+// eventually be on.
+}
+function swTakeUpdate(btn) {
+if (btn) { btn.disabled = true; btn.textContent = 'Loading\u2026'; }
+swReloadWanted = true;
+if (swWaiting) swWaiting.postMessage('ifm-activate-now');
+// If the worker never answers -- it was collected, or the message was lost --
+// reload anyway rather than leaving a dead button on the screen.
+setTimeout(() => { if (!document.hidden) location.reload(); }, 2500);
+}
+
 let ifmDataReady = null;
 async function init() {
 const bootStarted = Date.now();
@@ -10254,6 +10489,7 @@ paintPickerBackHand();
 paintLandingLogo();
 stampBuild();
 document.getElementById('loading').style.display = 'none';
+registerServiceWorker();
 let kioskFirst = false;
 try { kioskFirst = localStorage.getItem('ifm-kiosk-device') === '1'; } catch (e) {}
 if (!kioskFirst) showLanding();
@@ -14450,6 +14686,15 @@ const d = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
 out.push(d.toISOString().slice(0, 7));
 }
 return out;
+}
+function copySwScript(btn) {
+const el = document.getElementById('swScript');
+if (!el) return;
+navigator.clipboard.writeText(el.textContent).then(() => {
+const was = btn.textContent;
+btn.textContent = 'Copied \u2014 save it as sw.js beside index.html';
+setTimeout(() => { btn.textContent = was; }, 4000);
+}).catch(() => { btn.textContent = 'Select the code and copy it by hand'; });
 }
 function copyMailScript(btn) {
 const el = document.getElementById('mailScript');
@@ -21000,7 +21245,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-45';
+const BUILD_ID = '17-51';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22704,11 +22949,28 @@ window.addEventListener('pagehide', forgetGesture);
 wrap.addEventListener('touchmove', ev => {
 if (kioskPointers.size && (kioskDrag || kioskPinch)) ev.preventDefault();
 }, { passive: false });
+// Pinch zooms; scroll pans. A trackpad pinch arrives as ctrl+wheel exactly
+// so software can tell it from a scroll, and this used to zoom on both --
+// so two fingers moved across the pad ran the zoom to its limit and back
+// instead of moving the map.
 wrap.addEventListener('wheel', ev => {
-if (!ev.ctrlKey && Math.abs(ev.deltaY) < 2) return;
+if (Math.abs(ev.deltaX) < 1 && Math.abs(ev.deltaY) < 1) return;
 ev.preventDefault();
 noteKioskActivity();
+if (ev.ctrlKey) {
 setKioskZoom(kioskZoom * (ev.deltaY < 0 ? 1.12 : 0.89), ev.clientX, ev.clientY);
+return;
+}
+// deltaMode 1 is lines rather than pixels -- a mouse wheel on some
+// browsers. Sixteen pixels a line is the usual reckoning; without this a
+// mouse wheel moves the map about a pixel and feels broken.
+const unit = ev.deltaMode === 1 ? 16 : (ev.deltaMode === 2 ? 400 : 1);
+// Shift with a plain wheel means sideways, the way it does everywhere
+// else, so a mouse with one wheel can still reach the ends of the map.
+if (ev.shiftKey && !ev.deltaX) kioskPanX -= ev.deltaY * unit;
+else { kioskPanX -= ev.deltaX * unit; kioskPanY -= ev.deltaY * unit; }
+clampKioskPan();
+applyKioskTransform();
 }, { passive: false });
 }
 function renderKiosk() {
@@ -26993,7 +27255,7 @@ const answered = VENDOR_TRAITS.filter(t => vendorTrait(v.vendorId, t.key) !== un
 const yes = VENDOR_TRAITS.filter(t => vendorTrait(v.vendorId, t.key) === true)
 .map(t => t.short.toLowerCase());
 el.textContent = answered === 0
-? 'Not answered \u2014 so the market cannot tell which permits apply to you'
+? 'Answer these first \u2014 the permits below depend on them'
 : answered < VENDOR_TRAITS.length
 ? (VENDOR_TRAITS.length - answered) + ' of ' + VENDOR_TRAITS.length + ' still unanswered'
 : (yes.length ? yes.join(', ') : 'none of the five apply to you');
@@ -27010,11 +27272,13 @@ row.className = 'req-row';
 const brings = cache.requirements.reqs
 .filter(r => r.appliesTo === 'trait' && (r.traits || []).includes(t.key))
 .map(r => r.name);
+// The question alone. It used to carry a line naming the documents a yes
+// would add -- a list of things that have not happened yet, printed above
+// the actual list of things. Answering changes that list; describing it
+// first only made five questions into a page.
 row.innerHTML = '<div class="req-row-main">' +
-'<div class="req-name">' + esc(t.q) + '</div>' +
-'<div class="req-meta">' + (brings.length
-? 'Saying yes adds: ' + esc(brings.join(', '))
-: 'Nothing depends on this yet') + '</div></div>';
+'<div class="req-name">' + esc(t.q) + '</div></div>';
+void brings;
 const bar = document.createElement('div');
 bar.className = 'tone-switch';
 bar.style.marginTop = '6px';
@@ -27034,10 +27298,13 @@ showMsg('mdTraitMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></s
 bar.appendChild(b);
 });
 row.appendChild(bar);
-if (cur === undefined) {
+// The "not answered" note only where it points at a GAP. When none of the
+// five are answered the bar above already says so, and repeating it under
+// every question turned five short questions into a page and a half.
+if (cur === undefined && VENDOR_TRAITS.some(x => vendorTrait(vendor.vendorId, x.key) !== undefined)) {
 const n = document.createElement('p');
 n.className = 'req-example-note';
-n.textContent = 'Not answered yet \u2014 so the market does not know whether the permits below apply to you.';
+n.textContent = 'Still to answer.';
 row.appendChild(n);
 }
 wrap.appendChild(row);
@@ -27155,7 +27422,22 @@ const yes = TENDERS.filter(t => t.accepts(v.vendorId)).map(t => t.name);
 el.textContent = yes.length ? 'You take ' + yes.join(' and ') : 'You take neither';
 }
 
-function initMyDocsScreen() { renderTraitSub(); renderMyDocs(); }
+function initMyDocsScreen() {
+renderTraitSub();
+// Unanswered, the questions are the point of this screen: the list of
+// permits below them cannot be right until they are answered, so opening
+// it to a shut drawer and two documents tells a vendor something untrue.
+// Answered, they fold away and the documents come first -- which is what
+// somebody returning to check an expiry wants.
+const fold = document.getElementById('mdTraitCard');
+const v = currentVendor();
+if (fold && v) {
+const unanswered = VENDOR_TRAITS.some(t => vendorTrait(v.vendorId, t.key) === undefined);
+fold.classList.toggle('open', unanswered);
+if (unanswered) renderVendorTraits();
+}
+renderMyDocs();
+}
 function renderMyDocs() {
 const vendor = currentVendor();
 const wrap = document.getElementById('mdList');
@@ -27179,6 +27461,11 @@ if (st === 'onfile') accepted++;
 else if (st === 'pending') pending++;
 else if (st !== 'exempt') outstanding++;
 });
+// A vendor who has answered nothing is looking at the two documents that
+// apply to everybody, and has no way to know the rest are waiting on them.
+const unanswered = VENDOR_TRAITS.filter(t => vendorTrait(vendor.vendorId, t.key) === undefined).length;
+const sumEl = document.getElementById('mdSummary');
+if (sumEl) sumEl.className = 'empty-note' + (unanswered === VENDOR_TRAITS.length ? ' md-waiting' : '');
 document.getElementById('mdSummary').textContent = all.length
 ? accepted + ' on file \u00b7 ' + pending + ' posted and not yet marked received \u00b7 ' +
 outstanding + ' still to send' +
@@ -29477,6 +29764,12 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF52', kind: 'question', cat: 'Board', src: 'Found while noting on each market that attending it earns a point',
+t: 'The points example names Tuesday markets, and the Winter Market is never named at all',
+d: 'THE RULE IS CLEAR AND THE APP NOW STATES IT. Guide p.27: \u201cOne point is earned for each market attended the previous year.\u201d Not each Saturday \u2014 each market. The worked example beside it removes any doubt, adding 15 Saturday, 15 Sunday and 4 Tuesday markets to reach 54 points. A satellite market earns points like any other, and the Wednesday, Winter and PopUp screens now say so. ' +
+'TWO LOOSE ENDS IN THE GUIDE ITSELF. The example names TUESDAY markets; the market\u2019s satellite has run on Wednesday at East Hill Plaza for some time. The rule underneath is general enough that the day plainly does not matter, but a vendor reading the example and then the Wednesday page is reading two different days. And the Winter Market is not named anywhere in the points section \u2014 it is covered by \u201ceach market\u201d on a plain reading, and the app treats it that way, but the Guide never says it out loud. ' +
+'A THIRD, SMALLER ONE: a PopUp that is a market earns a point; tabling at an event that is not a market presumably does not. The app says so and tells a vendor to ask the office when unsure, because nothing written down draws that line. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: whether to update the example to the current satellite day, and whether to name the Winter Market and PopUps in the points section rather than leaving them to \u201ceach market\u201d. Neither changes what anybody earns \u2014 both change whether a vendor can find that out by reading.' },
 { id: 'BF51', kind: 'question', cat: 'Board', src: 'Noticed by the market administrator; the app asserts two incompatible answers',
 t: 'Is the Dish Truck the market\u2019s own programme, or an outside operation the market hosts?',
 d: 'THE APP SAYS BOTH, IN TWO PLACES. Under What the Market Runs it is \u201cDish Recycling\u201d, one of four programmes the market runs, with a named lead, posted shifts and work hours that count against what a vendor owes. Under Volunteer Roles it is \u201cThe Dish Truck\u201d, described as Ithaca\u2019s reusable-dish program, with the note that \u201cdetails belong to the Dish Truck itself and the office\u201d \u2014 which is an outside operation the market hosts. Both were written by this app; neither came from a market document. ' +
@@ -31310,7 +31603,7 @@ tiles: [
 // Market is a place with its own dates and its own booths; a PopUp is a
 // one-off somewhere else entirely.
 { key: 'winter', title: 'Winter Market', icon: 'i-snowflake',
-sub: 'Triphammer \u2014 Saturdays, January to March',
+sub: 'Triphammer \u2014 Saturdays, January to March. Attendance earns a point a day, like any market',
 tiles: [
 { s: 'wintermarketadmin', i: 'i-snowflake', t: 'Winter Market Dates', d: 'Add or delete Triphammer dates' },
 { s: 'winterbooths', i: 'i-snowflake', t: 'Winter Market Spaces', d: '44 spaces across two atria, assigned by date &middot; its own map, no kiosk' },
@@ -31318,13 +31611,13 @@ tiles: [
 { s: 'winterrules', i: 'i-scale', t: 'How Winter Differs', d: 'What carries over from Steamboat and what does not' },
 ] },
 { key: 'wednesday', title: 'Wednesday Market', icon: 'i-sun-rays',
-sub: 'East Hill Plaza \u2014 Wednesdays, May to October, 3 to 6 PM',
+sub: 'East Hill Plaza \u2014 Wednesdays, May to October, 3 to 6 PM. Attendance earns a point a day, like any market',
 tiles: [
 { s: 'wednesday', i: 'i-tent', t: 'How Wednesday Runs', d: 'No lottery, no assigned spaces, arrival order &middot; the $20 fee collected on site' },
 { s: 'wedlist', i: 'i-list', t: 'Who Is Here Today', d: 'Tick off who turned up, then publish the list to the website' },
 ] },
 { key: 'popups', title: 'PopUp Markets', icon: 'i-tent',
-sub: 'One-off markets away from Steamboat Landing',
+sub: 'One-off markets away from Steamboat Landing. A market day attended earns a point, like any other',
 tiles: [
 { s: 'popups', i: 'i-tent', t: 'PopUp Events', d: 'Add or delete satellite market events' },
 ] },
