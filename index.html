@@ -16220,6 +16220,14 @@ sel.innerHTML = (cache.vendors || []).slice().sort(byBusinessName)
 if (keep) sel.value = keep;
 } else if (pick) { pick.style.display = 'none'; }
 renderAccount();
+// Everything that reads the picker draws HERE, after it has been filled --
+// not from the call site, which cannot know when this async function has
+// got that far. The manager's picker is populated a few lines above; a
+// render fired before that reads an empty select and concludes nobody is
+// chosen.
+stashOlderAccountTools();
+renderMyStatementCurrent();
+updatePaySub();
 }
 function renderAll() {
 paintHeaderBadge();
@@ -16924,7 +16932,11 @@ if (name === 'statements') { initStatementsScreen(); renderDemoStatements(); }
 if (name === 'merch') { if (!merchCache || !merchSq) Promise.all([loadMerch(), loadMerchSquare()]).then(renderMerch); else renderMerch(); }
 if (name === 'demostmt') renderDemoStatements();
 if (name === 'pavrentals') initPavRentalsScreen();
-if (name === 'account') { initAccountScreen(); stashOlderAccountTools(); renderMyStatementCurrent(); updatePaySub(); }
+// initAccountScreen is async and owns the vendor picker, so it draws the
+// rest itself once that is filled. Calling the renderers from here ran them
+// against an empty picker and printed "Choose a vendor above" underneath a
+// picker that had a vendor in it.
+if (name === 'account') initAccountScreen();
 if (name === 'mystatements') initMyStatementsScreen();
 if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
@@ -20967,7 +20979,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-41';
+const BUILD_ID = '17-42';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
