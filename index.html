@@ -20979,7 +20979,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-42';
+const BUILD_ID = '17-43';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22583,8 +22583,36 @@ const onPanel = ev => !!(ev.target && ev.target.closest &&
 ev.target.closest('.kiosk-results, .kiosk-detail, .kiosk-bar, .kiosk-zoomreset, .kiosk-learn, .kiosk-about-win, .kiosk-tuner, .kiosk-join-win'));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const pts = () => Array.from(kioskPointers.values());
+// A finger nobody has heard from in three seconds is not on the glass. iOS
+// takes gestures away without an up -- a notification, the Control Centre
+// swipe, the app going to the background -- and one phantom entry left in
+// this Map makes the NEXT single tap look like a two-finger pinch, for ever.
+// Sweeping on the way in costs nothing and cannot leave the kiosk stuck.
+const sweepStalePointers = () => {
+const now = Date.now();
+kioskPointers.forEach((v, id) => {
+// 1.2 seconds. The two fingers of a pinch land within a few hundred
+// milliseconds of each other, so this never breaks a real pinch; and it is
+// well under the pause before somebody who has just been ignored taps
+// again, so a ghost is gone before it can spoil that tap.
+if (now - (v.t || 0) > 1200) kioskPointers.delete(id);
+});
+if (kioskPointers.size < 2) kioskPinch = null;
+if (kioskPointers.size === 0) kioskDrag = null;
+};
 wrap.addEventListener('pointerdown', ev => {
-kioskPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+// isPrimary is the browser telling us this is the FIRST finger of a new
+// gesture -- so nothing else is on the glass, and anything still in the Map
+// is a ghost. This is exact and immediate, where the staleness sweep below
+// only catches ghosts a few seconds old and would still misread a visitor
+// who taps again straight away.
+if (ev.isPrimary) {
+kioskPointers.clear();
+kioskPinch = null;
+kioskDrag = null;
+}
+sweepStalePointers();
+kioskPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY, t: Date.now() });
 kioskGestureMoved = false;
 if (kioskPointers.size === 2) {
 const [a, b] = pts();
@@ -22600,7 +22628,7 @@ kioskDrag = { x: ev.clientX, y: ev.clientY, panX: kioskPanX, panY: kioskPanY, he
 });
 wrap.addEventListener('pointermove', ev => {
 if (!kioskPointers.has(ev.pointerId)) return;
-kioskPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+kioskPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY, t: Date.now() });
 if (kioskPinch && kioskPointers.size === 2) {
 const [a, b] = pts();
 const d = dist(a, b);
@@ -22632,8 +22660,28 @@ noteKioskActivity();
 };
 wrap.addEventListener('pointerup', end);
 wrap.addEventListener('pointercancel', end);
+// Every other way a gesture can end. pointerup alone is a promise the
+// browser does not always keep.
+wrap.addEventListener('pointerleave', end);
+wrap.addEventListener('lostpointercapture', end);
+// And the moment the system takes the screen: iOS suspends a backgrounded
+// web app instantly, so whatever fingers were down are gone and no event is
+// coming to say so. Forgetting them here is what stops the kiosk being
+// wedged by somebody glancing at a notification.
+const forgetGesture = () => {
+kioskPointers.clear();
+kioskPinch = null;
+kioskDrag = null;
+kioskGestureMoved = false;
+};
+document.addEventListener('visibilitychange', () => { if (document.hidden) forgetGesture(); });
+window.addEventListener('blur', forgetGesture);
+window.addEventListener('pagehide', forgetGesture);
+// Only swallow a touchmove while a finger is genuinely down. Left to the
+// gesture flags alone, a stuck one meant the kiosk stopped scrolling
+// entirely -- the other half of what a frozen screen feels like.
 wrap.addEventListener('touchmove', ev => {
-if (kioskDrag || kioskPinch) ev.preventDefault();
+if (kioskPointers.size && (kioskDrag || kioskPinch)) ev.preventDefault();
 }, { passive: false });
 wrap.addEventListener('wheel', ev => {
 if (!ev.ctrlKey && Math.abs(ev.deltaY) < 2) return;
