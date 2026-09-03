@@ -4757,14 +4757,6 @@ this side of it.</p>
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="dev-creativity">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'creativity')">
-<span class="fold-title">Creativity</span>
-<span class="fold-sub">Ideas for the market that are neither rules nor records &mdash; kept here so they are not lost</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
 <div class="dash-fold" data-fold="dev-plainwords">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'plainwords')">
 <span class="fold-title">Vocabulary</span>
@@ -4832,13 +4824,6 @@ Anyone using the app right now loses what they were doing.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>Never Touched by Either</h2>
 <p class="empty-note" style="margin-top:0;">Not records at all &mdash; work somebody made. Nothing on this desk can reach it.</p>
 <div id="brNever"></div>
-</div>
-</section>
-<section id="screen-creativity" class="screen">
-<div class="screen-head" id="head-creativity"></div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-bloom"></use></svg></span>Ideas Worth Keeping</h2>
-<div class="comm-item"><div class="comm-title">Name things after the market&rsquo;s managers</div><div class="comm-desc">Honor the people who have run the market over the years by putting their names on the things they cared for &mdash; a pavilion section, a bench, a gate, an annual award. The list of names lives with the office and the long memory of the members; the naming itself is a Board decision.</div></div>
 </div>
 </section>
 <section id="screen-handover" class="screen">
@@ -10808,9 +10793,6 @@ unblocks: 'Everything that asks whether a vendor holds a booth: what the Request
 { t: 'Shared outlet locations', keeper: 'The Operations Manager and whoever last chased a tripped breaker',
 what: 'Where the shared outlets actually are, and which sub-panel feeds each one. The sub-panels sit about eight feet up and are on no map the market keeps.',
 unblocks: 'The electrical layer of the booth-pick map. The Map Editor can place outlets and cord runs today \u2014 what is missing is the ground truth to place them from, and resetting a tripped breaker is a work-hours job nobody wants to hunt for.' },
-{ t: 'Grounds &amp; landmarks survey', keeper: 'The office and the long memory of the market',
-what: 'A layout of benches and picnic tables, the names of the playgrounds, and any culturally significant landmarks on the grounds.',
-unblocks: 'The kiosk map as an educational tool \u2014 furniture and landmarks a visitor can find on the map and learn about. The Map Editor on the developer desk can place all of it; it is waiting only on someone to say where things are.' },
 ];
 // The handover list. Ordered hardest-first: the items that cannot simply be
 // copied come before the ones that can.
@@ -17429,7 +17411,6 @@ bootreport:        { title: 'How This Opening Went' },
 selfaudit:         { title: 'Self-Audit' },
 orgstalls:         { title: 'Community Organizations' },
 changechecklist:   { title: 'Version Update Checklist' },
-creativity:        { title: 'Creativity' },
 aboutedit:         { title: 'Information Screen Subjects' },
 betareset:         { title: 'Beta Reset' },
 principles:        { title: 'Principles' },
@@ -21264,7 +21245,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-54';
+const BUILD_ID = '17-55';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
