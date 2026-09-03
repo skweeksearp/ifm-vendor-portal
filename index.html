@@ -2825,6 +2825,14 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="ftender">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'tender')">
+<span class="fold-title">SNAP &amp; FreshConnect</span>
+<span class="fold-sub" id="foldSubTender">Whether you take them &mdash; the kiosk tells shoppers</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="winter">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
 <span class="fold-title">Winter Market</span>
@@ -5493,6 +5501,16 @@ comes from.</p>
 <input type="text" id="bfNewSource" placeholder="e.g. Vendor Guide, Vendor Rules and Fines">
 <button class="primary-btn" onclick="addBoardFlag()"><svg class="ico"><use href="#i-checkmark"></use></svg> Add Topic</button>
 <div class="status-msg" id="bfMsg"></div>
+</div>
+</section>
+<section id="screen-tender" class="screen">
+<div class="screen-head" id="head-tender"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>What You Take at the Stall</h2>
+<p class="empty-note" style="margin-top:0;">Two questions, and they are yours to answer. <b>The information kiosk in the pavilion tells shoppers which stalls take SNAP</b>, so a shopper looking for somewhere to spend their tokens is sent by what you say here.</p>
+<p class="empty-note">Neither is a promise to the market and neither is recorded against you. Change an answer whenever you like &mdash; when you turn tokens or checks in at the office, the credit reaches your bill either way.</p>
+<div id="tenderList"></div>
+<div class="status-msg" id="tenderMsg"></div>
 </div>
 </section>
 <section id="screen-mydocs" class="screen">
@@ -12208,7 +12226,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'mydocs',
+'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'ftender', 'mydocs',
 // Raising something that needs looking into sits with reaching the office.
 'fComplaint',
 // Your part in the market: the committees you sit on, and how to reach the office.
@@ -16942,6 +16960,7 @@ if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'fclog') initFcLogScreen();
+if (name === 'tender') initTenderScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
 if (name === 'directory') renderDirectory('');
 if (name === 'lottery') { initLotteryScreen(); centreLiveMap('lottoMapWrap'); }
@@ -17135,6 +17154,7 @@ appglossary:       { title: 'App Glossary' },
 seedmerge:         { title: 'Seed Corrections' },
 snaplog:           { title: 'SNAP Tokens In & Out' },
 fclog:             { title: 'FreshConnect Checks In' },
+tender:            { title: 'SNAP & FreshConnect' },
 mystatements:      { title: 'Statements' },
 yearend:           { title: 'Year-End Money Worksheet' },
 winterpaperwork:   { title: 'Triphammer Paperwork' },
@@ -17314,6 +17334,7 @@ setDeskRelevance('commAgOnly', isAg,
 'business has changed, the office can record a class change.');
 const onCmte = committeesFor(vendor.vendorId).length > 0 || isMerchLead(vendor.vendorId);
 updateStmtSub();
+renderTenderSub();
 applyVenueToDesk();
 const cmTitle = document.getElementById('menuMyCommitteesTitle');
 const cmSub = document.getElementById('menuMyCommitteesSub');
@@ -20979,7 +21000,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-43';
+const BUILD_ID = '17-45';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27042,6 +27063,98 @@ box.innerHTML = '<div class="req-row-main">' +
 'change the answer and the document appears here.</p></div>';
 wrap.appendChild(box);
 }
+// ---- what a vendor takes at the stall ------------------------------------
+// One drawer, two questions. They used to sit in separate drawers alongside
+// season totals and a log of everything turned in -- and those two were
+// duplicates of the credit on the vendor's own bill, so they came out. The
+// questions are not duplicates of anything: nothing else in the app can
+// answer them, and the kiosk repeats whatever they say to shoppers.
+const TENDERS = [
+{ key: 'snap', name: 'SNAP tokens', kiosk: true,
+what: 'Wooden tokens a shopper buys at the office with an EBT card. You take them like cash for approved food and cannot give change, then turn them in at the office.',
+accepts: v => snapAccepts(v), chosen: v => snapIsChosen(v) },
+{ key: 'fc', name: 'FreshConnect Checks', kiosk: false,
+what: 'Issued by New York State to shoppers, for food. You take them like cash, bring them back to the office, and the market pays you out at the value printed on the check.',
+accepts: v => fcAccepts(v), chosen: v => fcIsChosen(v) },
+];
+function initTenderScreen() { renderTender(); }
+function renderTender() {
+const wrap = document.getElementById('tenderList');
+const v = currentVendor();
+if (!wrap || !v) return;
+wrap.innerHTML = '';
+TENDERS.forEach(t => {
+const on = t.accepts(v.vendorId);
+const told = t.chosen(v.vendorId);
+const row = document.createElement('div');
+row.className = 'req-row';
+row.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + esc(t.name) + '</div>' +
+'<div class="req-meta">' + esc(t.what) + '</div></div>';
+const bar = document.createElement('div');
+bar.className = 'tone-switch';
+bar.style.marginTop = '8px';
+[['I take them', true], ['I do not', false]].forEach(([label, val]) => {
+const b = document.createElement('button');
+b.type = 'button';
+// Unanswered means neither is lit. A guess shown as a choice would look
+// like the vendor had already said something, and this is exactly the
+// question they have never been asked.
+b.className = 'tone-btn' + (told && on === val ? ' on' : '');
+b.textContent = label;
+b.onclick = async () => {
+await setTenderFlag(t.key, v.vendorId, val);
+renderTender();
+renderTenderSub();
+showMsg('tenderMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Noted \u2014 ' +
+(val ? 'you take ' : 'you do not take ') + esc(t.name) + '.' +
+(t.kiosk ? ' <b>The kiosk tells shoppers so from now on.</b>' : ''));
+};
+bar.appendChild(b);
+});
+row.appendChild(bar);
+if (!told) {
+const n = document.createElement('p');
+n.className = 'req-example-note';
+// The guess is bad and the vendor is the one who can say so. Naming the
+// bakery case is what makes a baker realise the app means them.
+n.innerHTML = '<b>You have not answered this one.</b> Until you do, the app is guessing from your ' +
+'membership class \u2014 and it guesses badly, because it keys on Ag against craft. A bakery ' +
+'comes out as <i>not</i> accepting when it almost certainly does. ' +
+(t.kiosk ? 'Right now the kiosk is telling shoppers whatever the guess says about your stall.'
+: 'The office is working from the guess.');
+row.appendChild(n);
+}
+wrap.appendChild(row);
+});
+}
+async function setTenderFlag(key, vendorId, val) {
+if (key === 'snap') {
+await loadSnap();
+snapCache.accepts[vendorId] = !!val;
+await saveSnap();
+} else {
+await loadFc();
+fcCache.accepts[vendorId] = !!val;
+await saveFc();
+}
+}
+// The bar says where the vendor stands without their opening it -- including,
+// and especially, that they have not answered.
+function renderTenderSub() {
+const el = document.getElementById('foldSubTender');
+const v = currentVendor();
+if (!el || !v) return;
+const unanswered = TENDERS.filter(t => !t.chosen(v.vendorId));
+if (unanswered.length === TENDERS.length) {
+el.textContent = 'Not answered \u2014 the kiosk is going on a guess';
+return;
+}
+if (unanswered.length) { el.textContent = 'One still unanswered'; return; }
+const yes = TENDERS.filter(t => t.accepts(v.vendorId)).map(t => t.name);
+el.textContent = yes.length ? 'You take ' + yes.join(' and ') : 'You take neither';
+}
+
 function initMyDocsScreen() { renderTraitSub(); renderMyDocs(); }
 function renderMyDocs() {
 const vendor = currentVendor();
@@ -29364,6 +29477,13 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF51', kind: 'question', cat: 'Board', src: 'Noticed by the market administrator; the app asserts two incompatible answers',
+t: 'Is the Dish Truck the market\u2019s own programme, or an outside operation the market hosts?',
+d: 'THE APP SAYS BOTH, IN TWO PLACES. Under What the Market Runs it is \u201cDish Recycling\u201d, one of four programmes the market runs, with a named lead, posted shifts and work hours that count against what a vendor owes. Under Volunteer Roles it is \u201cThe Dish Truck\u201d, described as Ithaca\u2019s reusable-dish program, with the note that \u201cdetails belong to the Dish Truck itself and the office\u201d \u2014 which is an outside operation the market hosts. Both were written by this app; neither came from a market document. ' +
+'THE GUIDE IS NO HELP. It does not mention a reusable-dish scheme at all. Its only trace of the subject is the rule that the sink behind the office is for rinsing dishes only, and the requirement that vendors take their own trash away. ' +
+'WHY IT IS NOT A LABELLING QUESTION. Work hours are money: hours a vendor owes and does not work are invoiced at the Board\u2019s rate. If the Dish Truck is the market\u2019s own programme, crediting hours for a shift on it is the market paying for its own work, which is ordinary. If it is a separate operation, the market is discharging vendors\u2019 obligations to the market in exchange for labour given to somebody else \u2014 and the Board should have decided that on purpose rather than by an app\u2019s choice of screen. ' +
+'WHAT THE APP DOES MEANWHILE: nothing has changed. Dish shifts still post and still credit hours, exactly as before, because withdrawing that on the app\u2019s own authority would be the same mistake in the other direction. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: whether the Dish Truck is the market\u2019s programme or a partner\u2019s; and if a partner\u2019s, whether working a dish shift discharges a vendor\u2019s work-hour obligation to the market.' },
 { id: 'BF50', kind: 'question', cat: 'Board', src: 'Raised while removing the invented deadline from monthly statements',
 t: 'Should an unpaid daily selling fee be treated as an exception on the day, rather than a line on next month\u2019s statement?',
 d: 'The Guide is unambiguous about when a daily selling fee is paid: to the staff member on duty each selling day, before the market opens at Steamboat Landing, and collected on site during market at Wednesday and Winter. On that reading a booth fee outstanding on Monday is not a receivable at all \u2014 it is a vendor who sold without paying, which is an anomaly, not ordinary billing. ' +
