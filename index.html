@@ -10415,15 +10415,34 @@ let swWaiting = null;
 // on its next load without anybody knowing it had one.
 async function removeServiceWorker() {
 if (!('serviceWorker' in navigator)) return;
+// Being CONTROLLED means this very page was served by a worker -- so what
+// the person is reading may be a cached older build, and every fix since is
+// missing. Unregistering does not undo that: the page in front of them is
+// already the stale one.
+const wasControlled = !!navigator.serviceWorker.controller;
+let found = 0;
 try {
 const regs = await navigator.serviceWorker.getRegistrations();
+found = regs.length;
 await Promise.all(regs.map(r => r.unregister().catch(() => {})));
 } catch (e) {}
 try {
 const keys = await caches.keys();
-await Promise.all(keys.filter(k => k.indexOf('ifm-') === 0)
-.map(k => caches.delete(k).catch(() => {})));
+const mine = keys.filter(k => k.indexOf('ifm-') === 0);
+found += mine.length;
+await Promise.all(mine.map(k => caches.delete(k).catch(() => {})));
 } catch (e) {}
+if (!wasControlled && !found) return;
+// One reload, and only one. Without this the device needs two loads to come
+// back -- and somebody who reloads once, sees the same fault and decides the
+// fix did not work is the whole reason this matters. The flag lives in
+// sessionStorage so a failure to clear cannot put the app in a reload loop:
+// the second attempt in the same session simply does not happen.
+try {
+if (sessionStorage.getItem('ifm-sw-cleaned') === '1') return;
+sessionStorage.setItem('ifm-sw-cleaned', '1');
+} catch (e) { return; }
+if (wasControlled) location.reload();
 }
 function registerServiceWorker() {
 if (!SERVICE_WORKER_ON) { removeServiceWorker(); return; }
@@ -21245,7 +21264,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-51';
+const BUILD_ID = '17-52';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22769,6 +22788,15 @@ kioskContentBounds = { x: minX - pad, y: minY - pad,
 w: (maxX - minX) + pad * 2, h: (maxY - minY) + pad * 2 };
 return kioskContentBounds;
 }
+// While a finger is down the screen is updated once per animation frame,
+// not once per event. A phone delivers pointer moves faster than it can
+// draw, so the extra calls were work nobody could ever see -- and because
+// each one read layout after writing style, they were the expensive kind.
+let kioskFrame = 0;
+function scheduleKioskTransform() {
+if (kioskFrame) return;
+kioskFrame = requestAnimationFrame(() => { kioskFrame = 0; applyKioskTransform(); });
+}
 function applyKioskTransform() {
 const wrap = document.getElementById('kioskMapWrap');
 const scale = document.getElementById('kioskMapScale');
@@ -22797,12 +22825,24 @@ const cb = kioskContent();
 const k = kioskBaseScale * kioskZoom;
 return cb.w * k > (wrap.clientWidth || 0) + 1 || cb.h * k > (wrap.clientHeight || 0) + 1;
 }
+// The bounds a drag has to stay inside. Taken once when a finger lands and
+// reused for the whole gesture: the wrapper does not resize while somebody
+// is dragging, and measuring it again on every move is what forced a layout
+// a hundred and twenty times a second.
+let kioskPanBounds = null;
+function measureKioskPanBounds() {
+const wrap = document.getElementById('kioskMapWrap');
+if (!wrap) { kioskPanBounds = null; return; }
+kioskPanBounds = { w: wrap.clientWidth || 0, h: wrap.clientHeight || 0, cb: kioskContent() };
+}
 function clampKioskPan() {
 const wrap = document.getElementById('kioskMapWrap');
 const canvas = document.getElementById('kioskBoothCanvas');
 if (!wrap || !canvas) return;
-const w = wrap.clientWidth || 0, h = wrap.clientHeight || 0;
-const cb = kioskContent();
+const cached = kioskPanBounds;
+const w = cached ? cached.w : (wrap.clientWidth || 0);
+const h = cached ? cached.h : (wrap.clientHeight || 0);
+const cb = cached ? cached.cb : kioskContent();
 const shownW = cb.w * kioskBaseScale * kioskZoom;
 const shownH = cb.h * kioskBaseScale * kioskZoom;
 const zoomedIn = kioskZoom > KIOSK_ZOOM_MIN + 0.001;
@@ -22882,9 +22922,12 @@ kioskPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY, t: Date.now() })
 kioskGestureMoved = false;
 if (kioskPointers.size === 2) {
 const [a, b] = pts();
+measureKioskPanBounds();
 kioskPinch = { d: dist(a, b), zoom: kioskZoom };
 kioskDrag = null;
 } else if (kioskPointers.size === 1 && kioskMapOverflows() && !onPanel(ev)) {
+// Measured here, once, for the whole drag.
+measureKioskPanBounds();
 // Deliberately no pointer capture here. Capturing on pointerdown sends the
 // click to the capture element instead of the booth, so once the map was
 // zoomed in at all, tapping a booth did nothing. Capture is taken only once
@@ -22914,13 +22957,13 @@ try { wrap.setPointerCapture(ev.pointerId); } catch (e) {}
 kioskPanX = kioskDrag.panX + dx;
 kioskPanY = kioskDrag.panY + dy;
 clampKioskPan();
-applyKioskTransform();
+scheduleKioskTransform();
 }
 });
 const end = ev => {
 kioskPointers.delete(ev.pointerId);
 if (kioskPointers.size < 2) kioskPinch = null;
-if (kioskPointers.size === 0) kioskDrag = null;
+if (kioskPointers.size === 0) { kioskDrag = null; kioskPanBounds = null; }
 try { wrap.releasePointerCapture(ev.pointerId); } catch (e) {}
 noteKioskActivity();
 };
@@ -22938,6 +22981,7 @@ const forgetGesture = () => {
 kioskPointers.clear();
 kioskPinch = null;
 kioskDrag = null;
+kioskPanBounds = null;
 kioskGestureMoved = false;
 };
 document.addEventListener('visibilitychange', () => { if (document.hidden) forgetGesture(); });
@@ -22970,7 +23014,7 @@ const unit = ev.deltaMode === 1 ? 16 : (ev.deltaMode === 2 ? 400 : 1);
 if (ev.shiftKey && !ev.deltaX) kioskPanX -= ev.deltaY * unit;
 else { kioskPanX -= ev.deltaX * unit; kioskPanY -= ev.deltaY * unit; }
 clampKioskPan();
-applyKioskTransform();
+scheduleKioskTransform();
 }, { passive: false });
 }
 function renderKiosk() {
