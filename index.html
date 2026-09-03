@@ -21264,7 +21264,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-52';
+const BUILD_ID = '17-53';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22969,10 +22969,16 @@ noteKioskActivity();
 };
 wrap.addEventListener('pointerup', end);
 wrap.addEventListener('pointercancel', end);
-// Every other way a gesture can end. pointerup alone is a promise the
-// browser does not always keep.
-wrap.addEventListener('pointerleave', end);
-wrap.addEventListener('lostpointercapture', end);
+// NOT pointerleave, and NOT lostpointercapture. Both fire as a normal part
+// of taking pointer capture -- the browser sends boundary events when the
+// pointer's target changes -- so ending the gesture on them killed every
+// drag six pixels in, which is where capture is taken. A 180-pixel swipe
+// moved the map fifteen pixels and stopped.
+//
+// What guards against a gesture that never ends is above: isPrimary clears
+// ghosts the instant a new one starts, the 1.2-second sweep catches older
+// ones, and visibility, blur and pagehide cover the system taking the
+// finger away. None of those fire mid-drag, which is the whole difference.
 // And the moment the system takes the screen: iOS suspends a backgrounded
 // web app instantly, so whatever fingers were down are gone and no event is
 // coming to say so. Forgetting them here is what stops the kiosk being
