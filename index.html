@@ -3142,6 +3142,12 @@ Recording it here puts that notice in front of every vendor when they open the a
 <select id="stmtVendor" onchange="renderVendorStatements()"></select>
 <div class="status-msg" id="stmtMsg"></div>
 </div>
+<div class="card" id="exrCard" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>Exception Requests for the Board</h2>
+<p class="empty-note" style="margin-top:0;">The Guide&rsquo;s <b>Special Needs Requests</b>. The Board decides these; the office passes them on and records the answer. An approved one is what removes the up-to-$100-a-market charge for an attendance shortfall, so a decision nobody wrote down is a charge nobody can explain later.</p>
+<div class="status-msg" id="exrMgrMsg"></div>
+<div id="exrList"></div>
+</div>
 <div class="card" id="corrCard" style="display:none;">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Lines a Vendor Says Are Wrong</h2>
 <p class="empty-note" style="margin-top:0;">Every statement ends by inviting this. <b>Correcting does not erase</b> &mdash; the original line stays and a dated correction sits beside it with the reason, so a statement already sent still makes sense.</p>
@@ -5131,8 +5137,24 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>Exceptions &amp; Accommodations</h2>
 <div class="comm-item">
 <div class="comm-title">Exception Request <span style="font-weight:400; opacity:.7;">&mdash; the Guide calls this the &ldquo;Special Needs Request&rdquo;</span></div>
-<div class="comm-desc">Asks the Board to allow something the rules otherwise do not: a late fee, a shortfall against the attendance requirement, a Leave of Absence, a disability accommodation. It is a policy exception, whatever the reason. Submit at least one week before the December Board meeting.</div>
-<span class="comm-btn disabled"><svg class="ico"><use href="#i-warning"></use></svg> Form not in project files — contact the Operations Manager directly</span>
+<div class="comm-desc">Asks the Board to allow something the rules otherwise do not: a late fee, a shortfall against the attendance requirement, a Leave of Absence, a disability accommodation. It is a policy exception, whatever the reason.</div>
+<div class="desk-form" id="exrForm">
+<label for="exrAbout">What you are asking for</label>
+<select id="exrAbout" onchange="renderExrNote()">
+<option value="attendance">To fall short of the required Saturdays or Sundays</option>
+<option value="late">To be late with a renewal or a fee</option>
+<option value="leave">A Leave of Absence for the year</option>
+<option value="access">A disability or access accommodation</option>
+<option value="other">Something else the rules do not allow</option>
+</select>
+<div id="exrNote" class="empty-note" style="margin:6px 0 0;"></div>
+<label for="exrWhy" style="margin-top:10px;">Why, in your own words</label>
+<textarea id="exrWhy" rows="4" placeholder="The Board reads this. Say what you are asking for and why &mdash; and if you already know the numbers, put them in."></textarea>
+<div class="status-msg" id="exrMsg"></div>
+<button type="button" class="primary-btn" onclick="exrSubmit()">Send it to the office for the Board</button>
+<p class="empty-note" style="margin:8px 2px 0;"><b>The Board decides these, not the office.</b> The office passes it on; nobody at the window can grant one, and the Guide says plainly that they are <b>not automatically granted</b>.</p>
+</div>
+<div id="exrMine" style="margin-top:12px;"></div>
 </div>
 </div>
 <div class="card" id="commAgOnly">
@@ -7975,6 +7997,7 @@ const ACT_KEYS = {
 'ifm-freshconnect':    { t: 'FreshConnect Checks', k: 'money', w: 'notable' },
 'ifm-prepay':          { t: 'Money paid in advance', k: 'money', w: 'notable' },
 'ifm-corrections':     { t: 'Queried lines and corrections', k: 'money', w: 'notable' },
+'ifm-exceptions':      { t: 'Exception Requests to the Board', k: 'board', w: 'notable' },
 'ifm-hours':           { t: 'Work hours', k: 'records' },
 'ifm-tasks':           { t: 'Work-hour tasks', k: 'records' },
 'ifm-attendance':      { t: 'Attendance', k: 'day' },
@@ -8659,6 +8682,7 @@ try { await loadSnap(); } catch (e) { snapCache = snapCache || { accepts: {}, en
 try { await loadFc(); } catch (e) { fcCache = fcCache || { accepts: {}, entries: [] }; }
 try { await loadPrepay(); } catch (e) { prepayCache = prepayCache || []; }
 try { await loadCorrections(); } catch (e) { correctCache = correctCache || { queries: [], adjustments: [] }; }
+try { await loadExceptions(); } catch (e) { exrCache = exrCache || []; }
 cache.ops.fines = cache.ops.fines || [];
 cache.ops.noshow = cache.ops.noshow || {};
 cache.ops.fines = cache.ops.fines || [];
@@ -13715,6 +13739,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'traffic', k: 'ifm-freshconnect', t: 'FreshConnect Checks \u2014 who takes them, and what they turned in', v: () => ({ accepts: {}, entries: [] }) },
 { g: 'traffic', k: 'ifm-prepay', t: 'Money a vendor put on account in advance', v: () => [] },
 { g: 'traffic', k: 'ifm-corrections', t: 'Lines a vendor has queried, and the corrections made', v: () => ({ queries: [], adjustments: [] }) },
+{ g: 'traffic', k: 'ifm-exceptions', t: 'Exception Requests waiting on the Board, and what it decided', v: () => [] },
 { g: 'config', k: 'ifm-reset-log', t: 'When the beta reset was pressed, and from which phone', v: () => [] },
 { g: 'traffic', k: 'ifm-wedlist', t: 'Who was at the Wednesday market, week by week', v: () => ({}) },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
@@ -14878,6 +14903,7 @@ setTimeout(() => { btn.textContent = was; }, 4000);
 }).catch(() => { btn.textContent = 'Select the code and copy it by hand'; });
 }
 function initStatementsScreen() {
+loadExceptions().then(() => renderExrQueue()).catch(() => {});
 stmtFillVendorSelect();
 // Asked once and remembered. The app cannot know whether the script
 // understands `sendmail` without asking, and guessing either way would put
@@ -15004,6 +15030,77 @@ showMsg('stmtMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg>
 corrFormSideVal = 'credit';
 renderVendorStatements();
 renderCorrQueue();
+}
+
+// ---- the office's side of an Exception Request ---------------------------
+// Never hide, always grey: the card stays with nothing waiting, so the office
+// learns the queue exists before the December meeting rather than after it.
+function renderExrQueue() {
+const card = document.getElementById('exrCard');
+const wrap = document.getElementById('exrList');
+if (!card || !wrap) return;
+if (currentRole === 'vendor') { card.style.display = 'none'; return; }
+card.style.display = '';
+const open = exrOpen();
+const done = (exrCache || []).filter(x => x.state !== 'open').slice(0, 3);
+wrap.innerHTML = '';
+if (!open.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 8px;"><b>Nothing waiting.</b> ' +
+'Vendors raise these from <b>Forms &amp; Contacts</b> on their own desk. They must reach the ' +
+'office by <b>' + esc(formatDisplayDate(exrDeadline())) + '</b> to go to the December meeting.</p>';
+}
+open.forEach(x => {
+const el = document.createElement('div');
+el.className = 'req-row';
+el.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + esc(boothVendorName(x.vendorId) || x.vendorId) + ' \u00b7 ' +
+esc(EXR_ABOUT[x.about] || x.about) +
+(x.inTime ? '' : ' <span class="stamp in">After the deadline</span>') + '</div>' +
+'<div class="req-meta">Sent ' + esc(formatDisplayDate(String(x.raisedAt).slice(0, 10))) +
+' \u00b7 for the ' + esc(String(x.season)) + ' season</div>' +
+'<div class="req-meta" style="margin-top:4px;"><b>They say:</b> ' + esc(x.why) + '</div>' +
+'<div class="desk-form" style="margin-top:8px;">' +
+'<label for="exa-' + x.id + '">What the Board decided</label>' +
+'<textarea id="exa-' + x.id + '" rows="2" placeholder="Granted for this season only \u2014 minuted at the December meeting."></textarea>' +
+'<div class="stmt-actions">' +
+'<button type="button" class="primary-btn" style="margin:0;" onclick="exrAnswer(\'' + x.id + '\',\'granted\')">Board granted it</button>' +
+'<button type="button" class="ghost-btn" onclick="exrAnswer(\'' + x.id + '\',\'refused\')">Board refused it</button>' +
+'</div></div></div>';
+wrap.appendChild(el);
+});
+done.forEach(x => {
+const el = document.createElement('div');
+el.className = 'req-row';
+el.style.opacity = '0.65';
+el.innerHTML = '<div class="req-row-main"><div class="req-name">' +
+esc(boothVendorName(x.vendorId) || x.vendorId) + ' \u00b7 ' + esc(EXR_ABOUT[x.about] || x.about) +
+(x.state === 'granted' ? ' <span class="stamp on">Granted</span>' : ' <span class="stamp in">Refused</span>') +
+'</div><div class="req-meta">' + esc(x.answer || '') + '</div></div>';
+wrap.appendChild(el);
+});
+}
+async function exrAnswer(id, state) {
+if (!requireManager('exrMgrMsg')) return;
+const answer = (document.getElementById('exa-' + id) || {}).value.trim();
+if (answer.length < 5) {
+showMsg('exrMgrMsg', 'err', 'Write down what the Board decided and why. This is the only record ' +
+'of it, and a vendor charged later will ask.');
+return;
+}
+await loadExceptions();
+const x = (exrCache || []).find(r => r.id === id);
+if (!x) return;
+x.state = state;
+x.answer = answer;
+x.answeredAt = new Date().toISOString();
+x.answeredBy = currentRole;
+await saveExceptions();
+actAs('Recorded the Board\u2019s answer on an exception \u2014 ' + state,
+{ kind: 'board', weight: 'notable', vendorId: x.vendorId });
+showMsg('exrMgrMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded. ' +
+'The vendor sees it on their own screen. <b>This does not change any charge by itself</b> \u2014 ' +
+'if the Board waived a fee, take it off with <b>Correct a line</b> on the month it is in.');
+renderExrQueue();
 }
 
 // ---- the office's half ---------------------------------------------------
@@ -15194,7 +15291,7 @@ box.innerHTML = stmtDocHTML(statementFor(vendorId, ym));
 box.style.display = 'block';
 }
 
-function renderStatements() { renderCorrQueue(); renderVendorStatements(); renderMonthRun(); }
+function renderStatements() { renderExrQueue(); renderCorrQueue(); renderVendorStatements(); renderMonthRun(); }
 // Shut until asked for. Building a month means 168 statements and three route
 // piles -- the whole cost of this screen -- and an office looking up one
 // vendor should not pay it to walk past.
@@ -17412,6 +17509,7 @@ if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'fclog') initFcLogScreen();
 if (name === 'tender') initTenderScreen();
+if (name === 'communicate') initCommunicateScreen();
 if (name === 'booths') { renderBooths(); centreLiveMap('boothCanvasWrap'); }
 if (name === 'directory') renderDirectory('');
 if (name === 'lottery') { initLotteryScreen(); centreLiveMap('lottoMapWrap'); }
@@ -21450,7 +21548,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-64';
+const BUILD_ID = '17-65';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27682,6 +27780,117 @@ const yes = TENDERS.filter(t => t.accepts(v.vendorId)).map(t => t.name);
 el.textContent = yes.length ? 'You take ' + yes.join(' and ') : 'You take neither';
 }
 
+function initCommunicateScreen() {
+// Only a vendor may raise one: a manager reading this screen must not ask
+// the Board for an exception in somebody else's name.
+const form = document.getElementById('exrForm');
+const mine = document.getElementById('exrMine');
+const own = currentRole === 'vendor' && !!currentVendorId;
+if (form) form.style.display = own ? '' : 'none';
+if (mine) mine.style.display = own ? '' : 'none';
+if (!own) return;
+loadExceptions().then(() => { renderExrNote(); renderExrMine(); }).catch(() => {});
+renderExrNote();
+}
+
+// ---- Exception Requests --------------------------------------------------
+// The Guide's Special Needs Request. Recorded rather than merely named,
+// because it is the one thing with an absolute annual deadline and money
+// behind it: an approved request is what removes the up-to-$100-a-market
+// charge for an attendance shortfall, and a missed December is a whole year.
+const EXR_KEY = 'ifm-exceptions';
+let exrCache = null;
+async function loadExceptions() {
+const v = await storageGet(EXR_KEY);
+exrCache = (v !== STORAGE_MISSING && Array.isArray(v)) ? v : [];
+return exrCache;
+}
+async function saveExceptions() { await storageSet(EXR_KEY, exrCache || []); }
+const EXR_ABOUT = {
+attendance: 'Attendance shortfall',
+late: 'Late renewal or fee',
+leave: 'Leave of Absence',
+access: 'Access or disability accommodation',
+other: 'Something else',
+};
+// The deadline the Guide gives twice, in two different forms. Page 6 says
+// forms must reach management by the first Wednesday of December; page 29
+// says a minimum of one week before the December Board meeting, which is the
+// second Wednesday. Those are close but not the same date, and a vendor
+// reading page 29 could file after the page 6 cut-off. The EARLIER of the two
+// is used, because the app must not tell somebody they are in time when one
+// reading of the Guide says they are not. Filed as a Board question.
+function exrDeadline(year) {
+const y = year || seasonYear();
+const d = new Date(y, 11, 1);
+while (d.getDay() !== 3) d.setDate(d.getDate() + 1);
+return d.getFullYear() + '-12-' + String(d.getDate()).padStart(2, '0');
+}
+function exrForVendor(vendorId) {
+return (exrCache || []).filter(x => x.vendorId === vendorId);
+}
+function exrOpen() { return (exrCache || []).filter(x => x.state === 'open'); }
+function renderExrNote() {
+const el = document.getElementById('exrNote');
+const k = (document.getElementById('exrAbout') || {}).value;
+if (!el) return;
+const due = exrDeadline();
+const late = todayISO() > due;
+const notes = {
+attendance: 'Without an approved request the Board may charge up to <b>$100 for each market</b> short of the requirement.',
+late: 'Without one, fees unpaid by <b>31 December</b> count as having left the market.',
+leave: 'A Leave runs for one year only and needs Board approval. You still pay the application fee, and the reserved booth fee if you hold one.',
+access: 'The Guide handles this through the same request as any other exception. Say what you need rather than why, if you would rather.',
+other: 'Anything the rules do not otherwise allow.',
+};
+el.innerHTML = (notes[k] || '') +
+'<br><b>Due ' + esc(formatDisplayDate(due)) + '</b> \\u2014 it has to reach the office in time to go ' +
+'to the December Board meeting.' +
+(late ? ' <b>That date has passed for this year.</b> Send it anyway if it matters \\u2014 the office ' +
+'will tell you whether the Board can still hear it.' : '');
+}
+async function exrSubmit() {
+const about = (document.getElementById('exrAbout') || {}).value;
+const why = (document.getElementById('exrWhy') || {}).value.trim();
+if (why.length < 15) {
+showMsg('exrMsg', 'err', 'Say what you are asking for and why. The Board reads this and has ' +
+'nothing else to go on.');
+return;
+}
+await loadExceptions();
+const rec = { id: 'EXR' + Date.now(), vendorId: currentVendorId,
+about: about, why: why.slice(0, 2000),
+raisedAt: new Date().toISOString(), season: selectionSeason(),
+due: exrDeadline(), inTime: todayISO() <= exrDeadline(),
+state: 'open', answer: '', answeredAt: null, answeredBy: '' };
+exrCache.unshift(rec);
+await saveExceptions();
+actAs('Asked the Board for an exception \\u2014 ' + (EXR_ABOUT[about] || about),
+{ kind: 'board', weight: 'notable', vendorId: currentVendorId });
+document.getElementById('exrWhy').value = '';
+showMsg('exrMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Sent. The office has ' +
+'it and passes it to the Board. <b>Nothing changes until the Board decides</b> \\u2014 keep to the ' +
+'rules meanwhile, because a request is not permission.');
+renderExrMine();
+}
+function renderExrMine() {
+const wrap = document.getElementById('exrMine');
+if (!wrap || !currentVendorId) return;
+const mine = exrForVendor(currentVendorId);
+if (!mine.length) { wrap.innerHTML = ''; return; }
+wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 6px;"><b>What you have asked for</b></p>' +
+mine.slice(0, 6).map(x =>
+'<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(EXR_ABOUT[x.about] || x.about) +
+(x.state === 'open' ? ' <span class="stamp">With the Board</span>'
+: x.state === 'granted' ? ' <span class="stamp on">Granted</span>'
+: ' <span class="stamp in">Refused</span>') + '</div>' +
+'<div class="req-meta">Sent ' + esc(formatDisplayDate(String(x.raisedAt).slice(0, 10))) +
+(x.inTime ? '' : ' \\u00b7 after the deadline') + '</div>' +
+(x.answer ? '<div class="req-meta" style="margin-top:4px;"><b>The Board:</b> ' + esc(x.answer) + '</div>' : '') +
+'</div></div>').join('');
+}
+
 function initMyDocsScreen() {
 renderTraitSub();
 // Unanswered, the questions are the point of this screen: the list of
@@ -29901,6 +30110,19 @@ expiring.slice(0, 3).map(c => c.v.businessName + ' in ' + c.days + 'd').join(', 
 (expiring.length > 3 ? ' and others' : ''),
 cls: 'expiring', go: 'requirements' });
 }
+const exWaiting = exrOpen();
+if (exWaiting.length) {
+const due = exrDeadline();
+const days = Math.round((new Date(due + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000);
+alerts.push({ topic: 'Board', n: exWaiting.length,
+t: exWaiting.length + (exWaiting.length === 1 ? ' exception request for the Board'
+: ' exception requests for the Board'),
+d: exWaiting.map(x => (boothVendorName(x.vendorId) || x.vendorId) + ' \u2014 ' +
+(EXR_ABOUT[x.about] || x.about)).slice(0, 3).join('; ') +
+(days >= 0 ? '. They must reach the Board by ' + formatDisplayDate(due) + ' \u2014 ' + days +
+' days.' : '. The December cut-off has passed; the Board decides whether it can still hear them.'),
+cls: 'submitted', go: 'statements' });
+}
 const queried = corrOpen();
 if (queried.length) {
 alerts.push({ topic: 'Statements', n: queried.length,
@@ -30021,6 +30243,12 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF53', kind: 'question', cat: 'Board', src: 'Found while building the Exception Request tool',
+t: 'The Guide gives two different deadlines for the same form',
+d: 'THE FORM. What the Guide calls a Special Needs Request, and this app calls an Exception Request \u2014 the request to the Board to allow an action outside current policy. Both names are shown together everywhere so nobody is lost between them. ' +
+'THE TWO DEADLINES. Page 6 says forms must be received by management by the FIRST WEDNESDAY OF DECEMBER, so they can be communicated to the Board before the December meeting on the second Wednesday. Page 29 says, twice, that a vendor anticipating an attendance shortfall must submit one A MINIMUM OF ONE WEEK BEFORE THE DECEMBER BOARD MEETING. One week before the second Wednesday is the first Wednesday, so in most years these agree \u2014 but they are not the same rule, they are stated in different units, and a vendor who reads page 29 and counts back seven days can land after the page 6 cut-off. ' +
+'WHAT THE APP DOES MEANWHILE: it uses the FIRST WEDNESDAY OF DECEMBER, the earlier reading, and tells the vendor that date plainly. It must not tell somebody they are in time when one reading of the Guide says they are not. A request sent after it is accepted and marked \u201cafter the deadline\u201d rather than refused, because whether the Board can still hear it is the Board\u2019s call. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: one deadline, stated one way, in both places.' },
 { id: 'BF52', kind: 'question', cat: 'Board', src: 'Found while noting on each market that attending it earns a point',
 t: 'The points example names Tuesday markets, and the Winter Market is never named at all',
 d: 'THE RULE IS CLEAR AND THE APP NOW STATES IT. Guide p.27: \u201cOne point is earned for each market attended the previous year.\u201d Not each Saturday \u2014 each market. The worked example beside it removes any doubt, adding 15 Saturday, 15 Sunday and 4 Tuesday markets to reach 54 points. A satellite market earns points like any other, and the Wednesday, Winter and PopUp screens now say so. ' +
