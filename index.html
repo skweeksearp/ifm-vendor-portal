@@ -15186,8 +15186,10 @@ const a = await corrAdjust(q.vendorId, q.ym, 'Correction', amount, side, reason,
 if (!a) return;
 showMsg('corrMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Posted \u2014 ' +
 (side === 'credit' ? 'off' : 'onto') + ' their balance by $' + fmtMoney(amount) +
-'. <b>The original line is untouched;</b> this sits beside it dated today.');
+'. <b>The original line is untouched;</b> this sits beside it dated today. ' +
+'They are told on their Notifications.');
 renderCorrQueue();
+renderVendorAttn();
 renderVendorStatements();
 }
 async function corrDoExplain(id) {
@@ -15198,9 +15200,10 @@ showMsg('corrMsg', 'err', 'Say why the line is right. Telling them nothing is ho
 return;
 }
 if (await corrExplain(id, answer)) {
-showMsg('corrMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Answered. They see ' +
-'it on their own Statements screen.');
+showMsg('corrMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Answered. It is on ' +
+'their Notifications now, and on their Statements screen.');
 renderCorrQueue();
+renderVendorAttn();
 }
 }
 
@@ -21548,7 +21551,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-65';
+const BUILD_ID = '17-66';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -29911,6 +29914,24 @@ row('Money', moneyLine, 'accountmoney', carried) +
 row('Work Hours', hoursLine, 'hours') +
 row('Points', '<b>' + (pts == null ? '\u2014' : pts) + '</b> points this season', 'fPoints');
 }
+// Which answers this vendor has already read. Kept on the device rather than
+// in the shared record: it is about one person having seen something, not
+// about the market's books, and it must never travel to another vendor.
+function corrSeenKey() { return 'ifm-corr-seen-' + (currentVendorId || ''); }
+function corrSeenList() {
+try { return JSON.parse(localStorage.getItem(corrSeenKey()) || '[]') || []; }
+catch (e) { return []; }
+}
+function corrSeen(id) { return corrSeenList().indexOf(id) !== -1; }
+function markCorrSeen(id) {
+try {
+const list = corrSeenList();
+if (list.indexOf(id) === -1) list.push(id);
+localStorage.setItem(corrSeenKey(), JSON.stringify(list.slice(-200)));
+} catch (e) {}
+renderVendorAttn();
+}
+
 function renderVendorAttn() {
 renderLottoNotice();
 renderPavUpcoming();
@@ -29922,6 +29943,24 @@ const me = currentVendorId;
 wrap.innerHTML = '';
 if (!me) { card.style.display = 'none'; return; }
 const items = [];
+
+// The office's answer to a line this vendor queried. Shown here because
+// Notifications is where a vendor looks; the Statements screen carries the
+// same thing, but nobody goes back to a screen to check whether a reply
+// arrived.
+corrForVendor(me).forEach(q => {
+if (q.state === 'open') return;
+if (corrSeen(q.id)) return;
+items.push({
+t: q.state === 'adjusted' ? 'A line was corrected' : 'The office answered your query',
+m: ymLabel(q.ym) + ' \u00b7 ' + q.line + (q.answer ? ' \u2014 ' + q.answer : ''),
+label: q.state === 'adjusted' ? 'Corrected' : 'Answered',
+cls: q.state === 'adjusted' ? 'onfile' : 'expiring',
+go: 'mystatements',
+dismiss: q.id,
+});
+});
+
 const st = attendanceStanding(me);
 st.obligations.forEach(o => {
 if (o.verdict !== 'risk' && o.verdict !== 'impossible') return;
@@ -29936,8 +29975,8 @@ card.style.display = items.length ? 'block' : 'none';
 if (!items.length) return;
 const sub = document.getElementById('vendorAttnSub');
 if (sub) sub.textContent = items.length === 1
-? 'One thing to keep an eye on this season.'
-: items.length + ' things to keep an eye on this season.';
+? 'One thing for you.'
+: items.length + ' things for you.';
 items.forEach(a => {
 const row = document.createElement('div');
 row.className = 'req-row';
@@ -29948,13 +29987,28 @@ main.innerHTML =
 '<div class="req-meta">' + esc(a.m) + '</div>' +
 '<div class="req-tally"><span class="req-state ' + a.cls + '">' + esc(a.label) + '</span></div>';
 main.onclick = () => {
-const fold = document.querySelector('.dash-fold[data-fold="fPoints"]');
+// Each item goes where its own detail is. These used to all open Points,
+// which was right when attendance was the only thing here.
+const key = a.go || 'fPoints';
+const fold = document.querySelector('.dash-fold[data-fold="' + key + '"]')
+|| document.querySelector('.dash-fold[data-fold="accountstatements"]');
 const bar = fold && fold.querySelector('.fold-bar');
 if (!bar) return;
 if (!fold.classList.contains('open')) toggleFold(bar);
 bar.scrollIntoView({ block: 'start', behavior: 'smooth' });
 };
 row.appendChild(main);
+// An answer is news, and news goes stale. Without a way to put it down,
+// Notifications fills with things already read and stops being read at all.
+if (a.dismiss) {
+const x = document.createElement('button');
+x.type = 'button';
+x.className = 'link-btn';
+x.style.cssText = 'align-self:flex-start; margin:2px 0 0 2px;';
+x.textContent = 'Got it';
+x.onclick = ev => { ev.stopPropagation(); markCorrSeen(a.dismiss); };
+row.appendChild(x);
+}
 wrap.appendChild(row);
 });
 }
