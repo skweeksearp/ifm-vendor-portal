@@ -5142,7 +5142,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 </div>
 <div class="card manager-only desk-form">
 <label for="obVendor">Vendor</label>
-<select id="obVendor" onchange="renderObPromoNote(); renderObCheckSeen();"></select>
+<select id="obVendor" onchange="renderObPromoNote(); renderObCheckSeen(); fillObWhTasks();"></select>
 <label>What they told you</label>
 <input type="hidden" id="obKind" value="Out">
 <div class="ob-kinds" id="obKinds">
@@ -5152,6 +5152,17 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <button type="button" class="ob-kind" data-k="improve"><b>A proposal to a committee</b><span>Their idea, put to the committee that handles it</span></button>
 <button type="button" class="ob-kind" data-k="promo"><b>A sale or promotion</b><span>An offer to show at the kiosk</span></button>
 <button type="button" class="ob-kind" data-k="check"><b>A payment</b><span>Check, card or cash</span></button>
+<button type="button" class="ob-kind" data-k="wh"><b>A work shift</b><span>They want one, or they have done one</span></button>
+</div>
+<div id="obWhWrap" style="display:none;">
+<div class="tone-switch">
+<button type="button" class="tone-btn on" id="obWhClaim" onclick="setObWhMode('claim')">They want a shift</button>
+<button type="button" class="tone-btn" id="obWhDone" onclick="setObWhMode('done')">They have done one</button>
+<button type="button" class="tone-btn" id="obWhDrop" onclick="setObWhMode('drop')">They cannot come</button>
+</div>
+<label for="obWhTask" style="margin-top:10px;">Which shift</label>
+<select id="obWhTask"></select>
+<p class="empty-note" style="margin:6px 0 0;" id="obWhNote"></p>
 </div>
 <div id="obShareWrap" style="display:none;">
 <label for="obGuest">Who is joining them in the booth</label>
@@ -12129,6 +12140,129 @@ document.getElementById('obKind').value = btn.dataset.k;
 document.querySelectorAll('#obKinds .ob-kind').forEach(b => b.classList.toggle('selected', b === btn));
 toggleObKind();
 }
+// ---- a work shift, taken down by the office ------------------------------
+// Three things a vendor might telephone about, and they are genuinely
+// different: taking a shift, saying it is done, and giving it up. Signing off
+// is deliberately NOT among them -- that belongs to the lead who can say
+// whether the work happened.
+let obWhMode = 'claim';
+function setObWhMode(m) {
+obWhMode = m;
+['claim', 'done', 'drop'].forEach(k => {
+const b = document.getElementById('obWh' + (k === 'claim' ? 'Claim' : k === 'done' ? 'Done' : 'Drop'));
+if (b) b.className = 'tone-btn' + (k === m ? ' on' : '');
+});
+fillObWhTasks();
+}
+// Which shifts to offer depends on what the office is recording. Offering a
+// shift the vendor has not claimed when they are reporting it done is how a
+// wrong record gets made in a hurry at the desk.
+function obWhTasksFor(vendorId, mode) {
+const all = cache.tasks || [];
+if (mode === 'claim') {
+return all.filter(t => {
+if (t.assignedTo && t.assignedTo !== vendorId) return false;
+if ((t.claims || []).some(c => c.vendorId === vendorId)) return false;
+if (t.spotsNeeded !== null && (t.claims || []).length >= t.spotsNeeded) return false;
+return Number(t.hours || 0) > 0;
+});
+}
+return all.filter(t => (t.claims || []).some(c => c.vendorId === vendorId &&
+(mode === 'drop' ? c.status !== 'approved' : (c.status || 'claimed') === 'claimed')));
+}
+function fillObWhTasks() {
+const sel = document.getElementById('obWhTask');
+const note = document.getElementById('obWhNote');
+const vendorId = (document.getElementById('obVendor') || {}).value;
+if (!sel) return;
+const list = obWhTasksFor(vendorId, obWhMode);
+const keep = sel.value;
+sel.innerHTML = list.map(t => '<option value="' + esc(t.id) + '">' + esc(t.title) +
+' \u00b7 ' + Number(t.hours || 0).toFixed(1) + ' hr' + (Number(t.hours) === 1 ? '' : 's') +
+(t.date ? ' \u00b7 ' + esc(formatDisplayDate(t.date)) : '') + '</option>').join('');
+if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
+if (!note) return;
+if (!vendorId) { note.textContent = 'Pick the vendor first.'; return; }
+if (!list.length) {
+note.innerHTML = obWhMode === 'claim'
+? '<b>Nothing open they could take.</b> Either no shifts are posted, or the ones that are have ' +
+'been filled or already claimed by them.'
+: '<b>They have not claimed anything outstanding.</b> A shift has to be claimed before it can be ' +
+'reported done or given up \u2014 use <b>They want a shift</b> first if they did the work without ' +
+'claiming it.';
+return;
+}
+note.innerHTML = obWhMode === 'claim'
+? 'The spot is <b>taken</b> as soon as this is recorded, so nobody else can claim it while they are ' +
+'on the phone.'
+: obWhMode === 'done'
+? '<b>This reports it, it does not sign it off.</b> It goes to whoever runs that programme to ' +
+'approve, exactly as it would if they had reported it themselves. The hours are credited when the ' +
+'lead approves, not now.'
+: 'The spot is released and goes back on the list for somebody else.';
+}
+async function obRecordWorkShift(vendorId, told) {
+const sel = document.getElementById('obWhTask');
+const taskId = sel ? sel.value : '';
+if (!taskId) {
+showMsg('obMsg', 'err', 'Pick the shift. If nothing is listed, the note under the picker says why.');
+return false;
+}
+const tasks = await loadTasks();
+const task = tasks.find(t => t.id === taskId);
+if (!task) { showMsg('obMsg', 'err', 'That shift is no longer on the list.'); return false; }
+const v = (cache.vendors || []).find(x => x.vendorId === vendorId) || {};
+const name = esc(v.businessName || vendorId);
+task.claims = task.claims || [];
+
+if (obWhMode === 'claim') {
+if (task.claims.some(c => c.vendorId === vendorId)) {
+showMsg('obMsg', 'err', name + ' has already claimed that shift.'); return false;
+}
+// Checked again here, not only when the list was drawn: the office may
+// have had the form open while somebody else took the last spot.
+if (task.spotsNeeded !== null && task.claims.length >= task.spotsNeeded) {
+showMsg('obMsg', 'err', 'That shift filled up while this was open. Nothing has been recorded.');
+return false;
+}
+task.claims.push({ vendorId: vendorId, businessName: v.businessName,
+claimedAt: told, status: 'claimed', viaOffice: true });
+} else {
+const claim = task.claims.find(c => c.vendorId === vendorId);
+if (!claim) { showMsg('obMsg', 'err', name + ' has not claimed that shift.'); return false; }
+if (obWhMode === 'drop') {
+if (claim.status === 'approved') {
+showMsg('obMsg', 'err', 'That shift is already signed off and the hours are credited. ' +
+'Ask the lead to take it back rather than releasing it here.');
+return false;
+}
+task.claims = task.claims.filter(c => c.vendorId !== vendorId);
+} else {
+claim.status = 'reported';
+claim.reportedAt = told;
+claim.reportedViaOffice = true;
+}
+}
+cache.tasks = tasks;
+await saveTasks();
+const hrs = Number(task.hours || 0).toFixed(1);
+actAs(obWhMode === 'claim' ? 'Claimed a work shift \u2014 ' + task.title
+: obWhMode === 'drop' ? 'Gave up a work shift \u2014 ' + task.title
+: 'Reported a work shift done \u2014 ' + task.title,
+{ kind: 'hours', weight: 'notable', vendorId: vendorId });
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
+(obWhMode === 'claim'
+? '<b>' + name + '</b> has ' + esc(task.title) + ' \u2014 ' + hrs + ' hours. The spot is theirs; ' +
+'nobody else can take it.'
+: obWhMode === 'drop'
+? '<b>' + name + '</b> has given up ' + esc(task.title) + '. It is back on the list.'
+: '<b>' + name + '</b> is down as having done ' + esc(task.title) + ' \u2014 ' + hrs + ' hours. ' +
+'<b>It is not signed off yet:</b> it is now with whoever runs that programme, the same as if they ' +
+'had reported it themselves. The hours reach their account when the lead approves.'));
+fillObWhTasks();
+return true;
+}
+
 function toggleObKind() {
 const k = (document.getElementById('obKind') || {}).value;
 const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
@@ -12136,13 +12270,16 @@ show('obShareWrap', k === 'share');
 show('obCheckWrap', k === 'check');
 show('obImpWrap', k === 'improve');
 show('obPromoWrap', k === 'promo');
+show('obWhWrap', k === 'wh');
+if (k === 'wh') fillObWhTasks();
 if (k === 'improve') { fillObCommittees(); toggleObImpCmte(); }
 if (k === 'promo') renderObPromoNote();
 const dateLbl = document.querySelector('label[for="obDate"]');
 if (dateLbl) dateLbl.textContent = false ? 'Date they sent it'
 : k === 'improve' ? 'Date it arrived'
 : k === 'promo' ? 'Market day it runs on'
-: k === 'check' ? 'Date written on the check' : 'Market day it concerns';
+: k === 'check' ? 'Date written on the check'
+: k === 'wh' ? 'Market day it relates to' : 'Market day it concerns';
 if (k === 'check') { toggleObPayMethod(); renderObCheckSeen(); }
 }
 // An offer only ever appears when somebody taps that vendor's booth at the
@@ -12232,6 +12369,10 @@ if (!vendorId || !marketDate) { showMsg('obMsg', 'err', 'Pick the vendor and the
 if (!whenStr) { showMsg('obMsg', 'err', 'Say when they told the office \u2014 that is what the deadline is judged against.'); return; }
 const told = new Date(whenStr).getTime();
 const name = esc(boothVendorName(vendorId) || vendorId);
+if (status === 'wh') {
+await obRecordWorkShift(vendorId, told);
+return;
+}
 if (status === 'check') {
 const method = (document.getElementById('obPayMethod') || {}).value || 'check';
 const amt = Math.round(Number(document.getElementById('obCheckAmt').value || 0) * 100) / 100;
@@ -21245,7 +21386,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-55';
+const BUILD_ID = '17-57';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22985,6 +23126,12 @@ if (kioskPointers.size && (kioskDrag || kioskPinch)) ev.preventDefault();
 // so two fingers moved across the pad ran the zoom to its limit and back
 // instead of moving the map.
 wrap.addEventListener('wheel', ev => {
+// Over the results list, the detail card, the reading panel or any other
+// panel that takes its own input, the wheel belongs to that panel. The
+// pointer path has always asked this; the wheel path never did, so a
+// scroll over four thousand pixels of search results panned the map
+// instead and the list could not be moved at all.
+if (onPanel(ev)) { noteKioskActivity(); return; }
 if (Math.abs(ev.deltaX) < 1 && Math.abs(ev.deltaY) < 1) return;
 ev.preventDefault();
 noteKioskActivity();
