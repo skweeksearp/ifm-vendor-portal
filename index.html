@@ -55,6 +55,11 @@ color: var(--ink);
 padding: 10px 16px 10px;
 display: block;
 }
+/* Above everything. Moving the offline notice out of the way fixed today's
+   collision; this is what stops the next thing pinned to the bottom of a
+   screen from doing the same. The evacuation plan is the one control that
+   has to work when the rest of the app is not. */
+.evac-bar { position: relative; z-index: 999; }
 .evac-bar {
 display: flex; align-items: center; justify-content: center; gap: 8px;
 width: 100%; margin-bottom: 10px; padding: 9px 12px;
@@ -2141,8 +2146,17 @@ font-size: 16px;
 background: none; border: none; padding: 8px 0 0; font-size: 13px;
 color: inherit; opacity: 0.7; text-decoration: underline; cursor: pointer;
 }
+/* Clear of the evacuation bar. This notice used to sit at the very bottom,
+   where on a phone it covered the Emergency Evacuation Plan completely and
+   ate every tap on it -- and it only ever appears when the signal is bad,
+   which is exactly the market day when somebody needs that plan. */
+/* Anchored to the TOP, not the bottom. The market header -- which carries
+   the evacuation bar -- sits at the foot of this layout, so anything pinned
+   to the bottom of the screen collides with it sooner or later. Raising the
+   notice by a fixed number of pixels only moved the collision; putting it at
+   the other end of the screen removes it. */
 .offline-note {
-position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+position: fixed; left: 50%; top: 10px; transform: translateX(-50%);
 background: #FFF7E6; border: 1px solid #D9A441; border-radius: 12px;
 padding: 10px 16px; z-index: 997; max-width: 90%; text-align: center;
 }
@@ -21440,7 +21454,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-59';
+const BUILD_ID = '17-60';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
