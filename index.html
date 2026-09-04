@@ -13357,7 +13357,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Year-End Money Worksheet",
-"body": "<p>Every money figure this app holds for one year, on one page for whoever does the market's books.</p><p><b>It is a worksheet, not a set of accounts.</b> The app has never seen a bank statement, a cash drawer, or a single expense. It holds what the office typed in while running markets.</p><p>Four kinds of fact are kept apart and never added together. <em>Recorded as received</em> is the nearest thing to income it has. <em>Membership share installments</em> are <b>equity, not income</b> — a member buys a share and can be repaid it on leaving, and booking that as revenue would overstate what the market earned and understate what it owes its members. <em>Vendor-reported</em> payments are unconfirmed by anybody. And the last section lists what the app cannot see, which for a tax return matters more than what it can.</p><p>Two figures are inferred rather than stored, and the page says so on itself: renewals hold a postmark but not an amount, and day fees hold who paid but not how much.</p>"
+"body": "<p>Every money figure this app holds for one year, on one page for whoever does the market's books.</p><p><b>It is a worksheet, not a set of accounts.</b> The app has never seen a bank statement, a cash drawer, or a single expense. It holds what the office typed in while running markets.</p><p>Three kinds of fact are kept apart and never added together. <em>Recorded as received</em> is the nearest thing to income it has. <em>Membership share installments</em> are <b>equity, not income</b> \u2014 a member buys a share and can be repaid it on leaving, and booking that as revenue would overstate what the market earned and understate what it owes its members. And the last section lists what the app cannot see, which for a tax return matters more than what it can.</p><p>Two figures are inferred rather than stored, and the page says so on itself: renewals hold a postmark but not an amount, and day fees hold who paid but not how much.</p>"
 },
 {
 "title": "SNAP Tokens In & Out",
@@ -18810,17 +18810,12 @@ byReason[k].n++; byReason[k].amt += Number(f.amount || 0); });
 const certs = opRecords('certificate').filter(r => inYear((r.values || {}).date));
 const certTotal = certs.reduce((s, r) => s + Number((r.values || {}).amount || 0), 0);
 
-// --- vendor-reported, unconfirmed
-const reported = ((vpCache && vpCache.items) || []).filter(it => inYear(it.date));
-const reportedTotal = reported.reduce((s, it) => s + Number(it.amount || 0), 0);
-
 return {
 renewCount: renewCount, renewTotal: round(renewTotal), renewFull: renewFull, renewEE: renewEE,
 vendorCount: (cache.vendors || []).length,
 dayCount: dayCount, dayTotal: round(dayTotal), dayDates: dayDates,
 fines: finesLive, finesTotal: round(finesTotal), finesWaived: finesWaived, byReason: byReason,
 certs: certs, certTotal: round(certTotal),
-reported: reported, reportedTotal: round(reportedTotal),
 receivedTotal: round(renewTotal + dayTotal + finesTotal)
 };
 }
@@ -18845,8 +18840,7 @@ const row = (t, n) => '<div class="tracker-row"><div class="t-title">' + t +
 '</div><div class="t-note"><b>$' + fmtMoney(n) + '</b></div></div>';
 el.innerHTML =
 row('Recorded as received', d.receivedTotal) +
-row('Membership shares \u2014 equity, not income', d.certTotal) +
-row('Vendor-reported, unconfirmed', d.reportedTotal);
+row('Membership shares \u2014 equity, not income', d.certTotal);
 }
 function openYearEnd() {
 if (!requireManager()) return;
@@ -18889,12 +18883,6 @@ H += '<p style="font-size:13.5px; line-height:1.55; margin:0 0 6px;"><b>This is 
 'income and understate what it owes its members. ' + d.certs.length + ' payment' +
 (d.certs.length === 1 ? '' : 's') + ' recorded in ' + year + '.</p>';
 
-H += '<p class="pr-h2">3 &nbsp;Vendor-reported, unconfirmed &nbsp;&mdash;&nbsp; ' + m(d.reportedTotal) + '</p>';
-H += '<p style="font-size:13.5px; line-height:1.55; margin:0;">' + d.reported.length + ' payment' +
-(d.reported.length === 1 ? '' : 's') + ' that vendors told the app they had made. The app cannot see a check, ' +
-'a cheque, or cash across the desk, so <b>none of these has been matched to a transfer</b>. They may overlap ' +
-'with section 1, or be duplicates, or be settled another way. They are listed for chasing, not for counting.</p>';
-
 if (Object.keys(d.byReason).length) {
 H += '<p class="pr-h2">Fines by reason</p>';
 H += '<table class="pr-list"><thead><tr><th>Reason</th><th>Count</th><th>Amount</th></tr></thead><tbody>';
@@ -18917,7 +18905,7 @@ H += '<tr><td>' + esc(formatDisplayDate(x.date)) + '</td><td>' + x.n + '</td><td
 H += '</tbody></table>';
 }
 
-H += '<p class="pr-h2">4 &nbsp;What this app has never seen</p>';
+H += '<p class="pr-h2">3 &nbsp;What this app has never seen</p>';
 H += '<p style="font-size:13.5px; margin:0 0 4px;">For a tax return this list matters more than the figures above.</p>';
 H += '<ul style="font-size:13.5px; line-height:1.6; margin:0; padding-left:18px;">' +
 '<li><b>Every expense.</b> Rent, utilities, wages, insurance, repairs, equipment, printing. The app records ' +
@@ -21551,7 +21539,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-66';
+const BUILD_ID = '17-67';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
