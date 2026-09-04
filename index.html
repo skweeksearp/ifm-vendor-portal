@@ -2156,7 +2156,8 @@ color: inherit; opacity: 0.7; text-decoration: underline; cursor: pointer;
    notice by a fixed number of pixels only moved the collision; putting it at
    the other end of the screen removes it. */
 .offline-note {
-position: fixed; left: 50%; top: 10px; transform: translateX(-50%);
+position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top, 0px));
+transform: translateX(-50%);
 background: #FFF7E6; border: 1px solid #D9A441; border-radius: 12px;
 padding: 10px 16px; z-index: 997; max-width: 90%; text-align: center;
 }
@@ -3175,10 +3176,11 @@ Recording it here puts that notice in front of every vendor when they open the a
 <li>a vendor who cannot scan &mdash; no phone, flat battery, no signal &mdash; who brings it to the window</li>
 <li>a customer paying a daily stall fee with it</li>
 <li>somebody asking what is left on one</li>
-<li>voiding one that is lost, stolen or sold in error</li>
+<li>voiding one, if you have its serial</li>
 <li>cashing out the last few dollars, which New York requires under $5 on request</li>
 </ul>
 <p class="empty-note">Scan it, or type the code printed on it.</p>
+<p class="empty-note"><b>The serial is the only way in.</b> A certificate records its number, amount and date &mdash; not who bought it &mdash; so if somebody has lost one and cannot tell you the serial, there is nothing here to look it up by. Ask whether they photographed it or kept the receipt. <b>Whether the market replaces a lost certificate at all is a question for the Board, not something this screen decides.</b></p>
 <div id="gcLookScanRow"></div>
 <div id="gcLookScanBox" style="display:none;" class="card gcv-scanbox">
 <div class="gcv-frame"><video id="gcLookVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
@@ -3484,14 +3486,6 @@ announces any change.</p>
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'snaplog')">
 <span class="fold-title">SNAP Tokens In &amp; Out</span>
 <span class="fold-sub">Who turned in how many tokens, on which market day</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="st-dayfees">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'dayfees')">
-<span class="fold-title">Day-Fee Collection Log</span>
-<span class="fold-sub"><span class="soon-tag">Not built</span> &middot; Who paid the daily selling fee</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -5790,6 +5784,8 @@ comes from.</p>
 <div class="screen-head" id="head-dayfees"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Day-Fee Collection<button type="button" class="help-dot" onclick="showPlanned('dayfees')" aria-label="What are the rules here?">?</button></h2>
+<div class="status-msg" id="dfMsg"></div>
+<p class="empty-note" id="dfWhose" style="display:none;"><b>This log is the Market Manager&rsquo;s.</b> You can read who has paid, but recording a payment says money changed hands, and that is theirs to record.</p>
 <label for="dfDate">Market day</label>
 <select id="dfDate" onchange="renderDayFees()"></select>
 <label for="dfSearch" style="margin-top:10px;">Find a vendor</label>
@@ -13373,7 +13369,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "A Certificate Came Back",
-"body": "<p>When a vendor turns in a certificate, point the phone camera at its QR code. The camera opens this screen with the serial already filled in; one tap marks it redeemed. No camera, no problem \u2014 the serial printed under the code types in just as well.</p><p>A certificate can come back once. If the book says it was already redeemed, the screen says so in red with the date, because the same paper appearing twice is exactly what this system exists to catch.</p><p>Voiding is for certificates that are lost, misprinted, or refunded before use \u2014 a voided serial can never be redeemed. Old handwritten certificates are not in this book and stay with the paper system until they age out.</p>"
+"body": "<p>When a vendor turns in a certificate, point the phone camera at its QR code. The camera opens this screen with the serial already filled in; one tap marks it redeemed. No camera, no problem \u2014 the serial printed under the code types in just as well.</p><p>A certificate can come back once. If the book says it was already redeemed, the screen says so in red with the date, because the same paper appearing twice is exactly what this system exists to catch.</p><p>Voiding is for a certificate you can name: misprinted, refunded before use, or lost <em>where the customer still has the serial</em>. A voided serial can never be redeemed.</p><p><b>A certificate whose serial nobody has cannot be found.</b> The book records the number, the amount, the date and how it was paid for \u2014 it does not record who bought it, so there is no name or phone number to search on. If a customer photographed the sticker or kept the receipt, the serial is on both. If not, tell them plainly that the market cannot identify it, and refer the question of whether it can be replaced at all to the Board \u2014 that is a policy nobody has set, and not one this screen should invent.</p><p>Old handwritten certificates are not in this book and stay with the paper system until they age out.</p>"
 },
 {
 "title": "Post a Task to the Work Hours Board",
@@ -21454,7 +21450,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-60';
+const BUILD_ID = '17-64';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26481,6 +26477,10 @@ if (s.date === date && s.status === 'allowed') add(s.vendorId, 'Sharing a booth'
 return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 function initDayFeesScreen() {
+// Read by anyone who gets here; recorded by the manager. Said on the way in
+// rather than discovered at the tap.
+const whose = document.getElementById('dfWhose');
+if (whose) whose.style.display = isDeskAdmin() ? 'none' : '';
 const sel = document.getElementById('dfDate');
 sel.innerHTML = '';
 const past = allMarketDatesInSeason(seasonYear())
@@ -26541,6 +26541,11 @@ document.getElementById('dfResults').innerHTML = '';
 await toggleDayFee(date, vendorId);
 }
 async function toggleDayFee(date, vendorId) {
+// Marking a day fee paid is a claim that money changed hands, so it is the
+// manager's to make. This had no guard at all -- the drawer on the desk was
+// the only thing in the way, and a drawer is not a permission: anybody who
+// reached the screen by any other route could mark fees paid or unpaid.
+if (!requireManager('dfMsg')) { renderDayFees(); return; }
 cache.ops.dayfees[date] = cache.ops.dayfees[date] || [];
 const list = cache.ops.dayfees[date];
 const i = list.indexOf(vendorId);
@@ -27462,7 +27467,16 @@ showMsg('mdMsg', 'err', 'It did not go through \u2014 nothing was recorded. ' +
 'Check your signal and try again, or post it the old way. (' + esc(String(err && err.message || err)) + ')');
 }
 }
+// Kept so an old call cannot silently do something surprising, and does
+// nothing. A vendor saying they posted a document put them in the office's
+// review queue on their word alone, with nothing attached to review.
 async function reportDocumentSent(reqId, vendorId, sentOn) {
+showMsg('mdMsg', 'ok', '<b>There is nothing to send here.</b> Bring the document to the office ' +
+'window, post it, or email it \u2014 it shows as on file once the office has it. To send it ' +
+'through the app instead, scan it below.');
+return;
+}
+async function reportDocumentSentRetired(reqId, vendorId, sentOn) {
 const key = reqStatusKey(reqId, vendorId);
 const rec = cache.requirements.status[key] || { state: 'missing', expiry: '', ref: '' };
 rec.state = 'pending';
@@ -27748,7 +27762,9 @@ if (req.issuer) bits.push(esc(req.issuer));
 if (req.due) bits.push((st === 'overdue' ? 'was due ' : 'due ') + esc(formatDisplayDate(req.due)));
 if (rec.state === 'onfile' && rec.expiry) bits.push('expires ' + esc(formatDisplayDate(rec.expiry)));
 if (rec.state === 'pending' && rec.via === 'upload' && rec.uploadedOn) bits.push('you sent a scan of it ' + esc(formatDisplayDate(rec.uploadedOn)));
-else if (rec.state === 'pending' && rec.sentOn) bits.push('you posted it ' + esc(formatDisplayDate(rec.sentOn)));
+// Only for records made before the self-report was removed; nothing writes
+// this state now except a scan.
+else if (rec.state === 'pending' && rec.sentOn) bits.push('you told us you posted it ' + esc(formatDisplayDate(rec.sentOn)) + ' \u2014 the office will mark it on file when it arrives');
 if (rec.state === 'onfile' && rec.receivedOn) bits.push('received ' + esc(formatDisplayDate(rec.receivedOn)));
 main.innerHTML =
 '<div class="req-name">' + esc(req.name) + '</div>' +
@@ -27763,19 +27779,15 @@ esc(reqStateLabel(st)) + '</span></div>' +
 (req.detail ? '<p class="req-detail">' + esc(req.detail) + '</p>' : '');
 card.appendChild(main);
 if (rec.state !== 'exempt') {
-const when = document.createElement('input');
-when.type = 'date';
-when.id = 'md_' + req.id.replace(/[^A-Za-z0-9]/g, '_');
-when.value = rec.sentOn || todayISO();
-card.appendChild(when);
-const btn = document.createElement('button');
-btn.type = 'button';
-btn.className = rec.state === 'onfile' ? 'ghost-btn' : 'primary-btn';
-btn.textContent = rec.state === 'onfile' ? 'Tell them I have sent a new one'
-: rec.state === 'pending' ? 'Change the date I sent it'
-: 'Tell the office I have posted it';
-btn.onclick = () => reportDocumentSent(req.id, vendor.vendorId, when.value);
-card.appendChild(btn);
+// No "tell the office I have posted it". Saying so changed nothing -- the
+// office marks a document received when it arrives, and that is the record
+// -- while putting the vendor in a review queue with no document in it.
+// What a vendor needs here is where to send it.
+const how = document.createElement('p');
+how.className = 'req-example-note';
+how.innerHTML = '<b>Send it to the office</b> \u2014 bring it to the window, post it, or email it. ' +
+'It appears here as on file once the office has it; there is nothing to tell us in the app.';
+card.appendChild(how);
 if (vaultReady()) {
 const or = document.createElement('p');
 or.className = 'req-example-note';
@@ -29552,7 +29564,9 @@ t: c.req.name, m: 'Was due ' + formatDisplayDate(c.req.due) + ' and nothing has 
 const rec = reqStatusFor(req.id, me);
 if (rec.state === 'pending') {
 out.push({ key: 'doc:' + req.id + ':pending', state: 'waiting', go: 'mydocs', t: req.name,
-m: 'Reported posted ' + (rec.sentOn ? formatDisplayDate(rec.sentOn) : '') + ' \u00b7 waiting on the office' });
+m: (rec.via === 'upload'
+? 'Scan sent ' + (rec.uploadedOn ? formatDisplayDate(rec.uploadedOn) : '') + ' \u00b7 waiting on the office'
+: 'Waiting on the office to receive it') });
 } else if (rec.state === 'returned') {
 out.push({ key: 'doc:' + req.id + ':returned:' + (rec.reviewedAt || ''), state: 'no', label: 'Returned', go: 'mydocs',
 t: req.name, m: 'Returned \u00b7 ' + (rec.reviewNote || 'No reason given.') });
