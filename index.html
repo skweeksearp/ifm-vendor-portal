@@ -248,6 +248,10 @@ display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 background: #FFFDF6; color: var(--ink, #23231B); border-color: #FFFDF6; }
 .sw-update .link-btn { color: #CFC9B4; }
 .sw-update span { flex: 1 1 100%; }
+/* Where to take the money, said once, where the buttons were. */
+.pay-how { font-size: 14px; line-height: 1.5; color: var(--ink);
+background: #F4F2E8; border: 1px solid var(--paper-dim, #D8D2BE); border-radius: 12px;
+padding: 12px 14px; margin: 10px 0 4px; }
 .fold-empty-note { margin: 4px 2px 10px; }
 .stmt-jobs { margin-top: 6px; }
 .stmt-job { font-size: 14px; padding: 5px 0; border-bottom: 1px solid #E8E3D2; }
@@ -2460,7 +2464,7 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <div class="card" id="lottoNotice" style="display:none;"></div>
 <div class="card" id="pavUpcoming" style="display:none;"></div>
 <div class="card" id="vendorAttn" style="display:none;">
-<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Needs Attention</h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Notifications</h2>
 <p class="empty-note" id="vendorAttnSub" style="margin-top:0;"></p>
 <div id="vendorAttnList"></div>
 </div>
@@ -3362,7 +3366,7 @@ announces any change.</p>
 <div id="mgrVenuePicker"></div>
 <div class="dash-fold" id="mgrAlerts" data-fold="mgrattn" style="display:none; margin-bottom:14px;">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title">Needs Attention</span>
+<span class="fold-title">Notifications</span>
 <span class="fold-sub" id="mgrAlertSub"></span>
 <span class="fold-chev">›</span>
 </button>
@@ -3650,7 +3654,7 @@ Nothing is drawn at random: the Operations Manager calls vendors in ranked order
 <section id="screen-leaves" class="screen">
 <div class="screen-head" id="head-leaves"></div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Needs Attention</h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Notifications</h2>
 <div id="loaIssues"></div>
 </div>
 <div class="card">
@@ -11540,7 +11544,14 @@ out += '<label for="payAmt">How much</label>' +
 'value="' + (owed > 0 && !ahead ? fmtMoney(owed) : '') + '" oninput="renderPayTotals()"></div>' +
 '<div id="payTotals"></div>' +
 '<button type="button" class="primary-btn" id="payCardBtn" onclick="payByCard()">Pay by card</button>' +
-'<button type="button" class="ghost-btn" onclick="payTellOffice()">I paid by cash or check \u2014 tell the office</button>';
+// Not a way to tell anybody. Telling the office was a message asking them
+// to do the thing they were going to do anyway -- the office recording the
+// money is what moves the balance, and the app always said so. What a
+// vendor needs here is where to take it.
+'<div class="pay-how"><b>Paying by cash or check instead?</b> Bring it to the office window, ' +
+'or post a check to Ithaca Farmers Market. <b>What counts is the postmark, not the day it ' +
+'arrives.</b> It appears on your account when the office records it \u2014 there is nothing to ' +
+'send us here.</div>';
 host.innerHTML = out;
 renderPayTotals();
 }
@@ -11588,7 +11599,16 @@ showMsg('payMsg', 'ok', 'If Square did not open, its app may not be on this phon
 // A vendor saying they paid is a REPORT, not a settlement. The office
 // recording it is what moves the balance, and the wording says so rather
 // than letting a vendor leave believing the matter is closed.
+// Kept only so an old call cannot silently do nothing surprising. A vendor
+// telling the app they paid changed no balance and never did; the office
+// recording the money is what does.
 async function payTellOffice() {
+showMsg('payMsg', 'ok', '<b>There is nothing to send.</b> Bring cash or a check to the office ' +
+'window, or post a check \u2014 the postmark is what counts. It appears on your account when ' +
+'the office records it.');
+return;
+}
+async function payTellOfficeRetired() {
 const vendor = currentVendor();
 const t = payCardTotal((document.getElementById('payAmt') || {}).value);
 if (!vendor) return;
@@ -13446,7 +13466,7 @@ body: '<p>Removed from the app in the 15-series: a mock-up that moved no money w
 myattend: { built: true, t: 'Attendance', when: 'Through the season \u2014 on your desk, under Points',
 body: () => '<p>What your booth asks of you this season, and how far along you are \u2014 measured while there is still season left to make it up.</p>' +
 '<p>A reserved Saturday booth asks ' + ruleNum('attSat') + ' Saturdays, a corner Ag booth ' + ruleNum('attCorner') + '. A reserved Sunday booth asks ' + ruleNum('attSun') + ' Sundays. Full Members generally owe ' + ruleNum('attFull') + ' days at the pavilion. Falling short costs up to $100 per market at Board discretion, or the reservation itself.</p>' +
-'<p>If the arithmetic stops working \u2014 or is about to \u2014 it is said plainly here and again under Needs Attention at the top of your desk. Nobody has to wait until December to find out. If life is getting in the way, the Exception Request under Communicate with the Market exists for exactly that, and the Board decides.</p>' },
+'<p>If the arithmetic stops working \u2014 or is about to \u2014 it is said plainly here and again under Notifications at the top of your desk. Nobody has to wait until December to find out. If life is getting in the way, the Exception Request under Communicate with the Market exists for exactly that, and the Board decides.</p>' },
 pointsroll: { built: true, t: 'Annual Points Rollover', when: 'Annual &mdash; start of season',
 body: () => '<p>The once-a-year batch that turns last season into this season&rsquo;s standing. Points rank every Booth Selection, but they do not move on their own &mdash; this posting is what moves them.</p>' +
 '<p><b>What to do, in order:</b></p>' +
@@ -14992,7 +15012,8 @@ card.style.display = '';
 wrap.innerHTML = '';
 if (!open.length) {
 wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 8px;">' +
-'<b>No vendor has queried a line.</b> This fills when one does. ' +
+'<b>No vendor has queried a line.</b> This fills when one does \u2014 a vendor raises it from ' +
+'<b>Something looks wrong</b> on the month in question, on their own Statements screen. ' +
 'To correct something the office has spotted itself, find the vendor below and use ' +
 '<b>Correct a line</b> on the month it is in \u2014 you do not have to wait to be told.</p>';
 }
@@ -15963,6 +15984,32 @@ const answered = mine.filter(q => q.state !== 'open').length;
 el.textContent = open ? open + ' with the office'
 : answered ? answered + ' answered' : 'Tell the office and they will look';
 }
+// Opening the query form from a month, with that month already chosen.
+//
+// This is the only route anybody will actually use. The drawer at the foot
+// of the screen is for somebody who arrives knowing what they want to say;
+// a vendor who notices a wrong line notices it while reading ONE month, and
+// the control has to be there, not nine hundred pixels below.
+function vqStart(ym) {
+const fold = document.getElementById('vqCard');
+if (!fold) return;
+fold.classList.add('open');
+vqFillMonths();
+const m = document.getElementById('vqMonth');
+if (m && ym && [...m.options].some(o => o.value === ym)) { m.value = ym; vqFillLines(); }
+renderVqMine();
+// Scrolled to, not just opened: opening something below the fold looks
+// exactly like nothing happening.
+const bar = fold.querySelector('.fold-bar');
+if (bar && bar.scrollIntoView) bar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+const says = document.getElementById('vqSays');
+// Not focused straight away -- on a phone the keyboard would cover the
+// month and line pickers the vendor still has to check.
+if (says) says.value = '';
+showMsg('vqMsg', 'ok', 'Tell the office what looks wrong about ' +
+esc(ymLabel(ym)) + '. Pick the line if you know which one it is.');
+}
+
 function vqFillMonths() {
 const sel = document.getElementById('vqMonth');
 if (!sel || !currentVendorId) return;
@@ -16069,7 +16116,14 @@ return '<div class="req-row"><div class="req-row-main">' +
 '<div class="req-meta">' +
 esc(s.charged.length + s.received.length) + ' line' + (s.charged.length + s.received.length === 1 ? '' : 's') +
 (s.paid ? ' \u00b7 $' + fmtMoney(s.paid) + ' paid' : '') + '</div>' +
-'<button type="button" class="ghost-btn" style="margin-top:6px;" onclick="showMyStatement(\'' + s.ym + '\')">Read it</button>' +
+'<div class="stmt-actions">' +
+'<button type="button" class="ghost-btn" onclick="showMyStatement(\'' + s.ym + '\')">Read it</button>' +
+// Only where the vendor can actually do something about it. A manager
+// looking at somebody else's statements must not raise a query as them.
+(currentRole === 'vendor'
+? '<button type="button" class="ghost-btn" onclick="vqStart(\'' + s.ym + '\')">Something looks wrong</button>'
+: '') +
+'</div>' +
 '</div></div>';
 }).join('') + '<div id="myStmtText" style="display:none; margin-top:12px;"></div>';
 }
@@ -21386,7 +21440,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-57';
+const BUILD_ID = '17-59';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25578,7 +25632,7 @@ const VERDICT_CLASS = { met: 'onfile', short: 'submitted', risk: 'expiring', imp
 function attendanceStanding(vendorId) {
 // One vendor's attendance, judged as a whole. Returns the obligations with a
 // verdict each, plus the worst verdict across them -- which is what the desk
-// summary and the Needs Attention card both key off.
+// summary and the Notifications card both key off.
 const obs = attendanceObligations(vendorId).map(o => {
 const r = Object.assign({}, o);
 r.verdict = obligationVerdict(o);
@@ -27862,7 +27916,7 @@ note.placeholder = 'e.g. nothing arrived, or IFM is not named as additionally in
 wrap.appendChild(note);
 }
 }
-// ---- Needs Attention: inline one-tap handling -------------------------
+// ---- Notifications: inline one-tap handling -------------------------
 // Any alert category can declare an item provider here. Categories with a
 // provider expand in place with Approve/Deny-style buttons; categories
 // without one keep the old behavior of opening their tool screen.
@@ -29402,7 +29456,7 @@ acts: [
 };
 const mgrAttnOpen = new Set();
 // ---- What the vendor is waiting on ------------------------------------
-// The manager's desk has Needs Attention; this is its other half. Everything a
+// The manager's desk has Notifications; this is its other half. Everything a
 // vendor submits sits somewhere until somebody rules on it, and until now the
 // only way to learn the answer was to go and look in the tool you submitted
 // from. Each source reports the same three things: what it was, where it stands,
@@ -29719,7 +29773,7 @@ function renderManagerAlerts() {
 const card = document.getElementById('mgrAlerts');
 const wrap = document.getElementById('mgrAlertList');
 if (!card || !wrap) return;
-// Needs Attention lives on the manager's front page alone. Inside a
+// Notifications lives on the manager's front page alone. Inside a
 // drawer it steps aside -- the manager went there to do one thing.
 if (typeof mgrOpenFolder !== 'undefined' && mgrOpenFolder) {
 card.style.display = 'none';
@@ -29772,13 +29826,10 @@ t: hoursWaiting + (hoursWaiting === 1 ? ' logged hour awaiting sign-off' : ' log
 d: 'Work a vendor did and recorded themselves \u2014 the Guide has these approved by the Market Managers',
 cls: 'submitted', go: 'taskmanager' });
 }
-const paysWaiting = reportedPayments().length;
-if (paysWaiting) {
-alerts.push({ id: 'payments', topic: 'Fees', n: paysWaiting,
-t: paysWaiting + (paysWaiting === 1 ? ' reported payment awaiting confirmation' : ' reported payments awaiting confirmation'),
-d: 'A vendor says they have paid \u2014 confirm it against the market\u2019s account',
-cls: 'submitted', go: 'account' });
-}
+// No alert for reported payments. Vendors no longer report them: the
+// office's record is the record, and an alert about a queue nobody can add
+// to would sit at zero for ever or at a number nobody can clear. Anything
+// reported before this is still readable on the vendor's own screen.
 const pending = pendingSubmissions();
 if (pending.length) {
 alerts.push({ id: 'docs', topic: 'Documents', n: pending.length, t: pending.length + (pending.length === 1 ? ' document awaiting review' : ' documents awaiting review'),
@@ -43079,7 +43130,7 @@ tiles: [
 // The desk knows whose it is. One renderer, two lists.
 function deskFolders() { return currentRole === 'president' ? PRES_FOLDERS : MGR_FOLDERS; }
 function renderManagerFolders() {
-// The log is the President's supervisory view; it sits under Needs Attention.
+// The log is the President's supervisory view; it sits under Notifications.
 const act = document.getElementById('presActivity');
 if (act) {
 act.style.display = currentRole === 'president' ? 'block' : 'none';
