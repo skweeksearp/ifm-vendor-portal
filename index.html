@@ -2769,17 +2769,18 @@ I sell food (prepared food or produce)
 </div>
 <div id="shareHostMode" style="display:none;">
 <p class="empty-note" id="shareOwnBoothLine" style="margin-bottom:0;"></p>
-<div id="shareOfferBox" style="margin-top:12px;">
+
+<label for="shareGuest">Who Is Sharing Your Booth?</label>
+<select id="shareGuest"></select>
+<p class="empty-note" style="margin-bottom:0;">The list is vendors without a booth that day — no reservation of their own, and nothing assigned to them in that day’s Booth Selection.</p>
+</div>
+<div id="shareOfferBox" style="margin-top:12px; display:none;">
 <label>Would you take somebody into your booth this season?</label>
 <div class="tone-switch">
 <button type="button" class="tone-btn" id="shareOfferYes" onclick="setShareOffer(true)">Happy to be asked</button>
 <button type="button" class="tone-btn" id="shareOfferNo" onclick="setShareOffer(false)">Not that day</button>
 </div>
 <p class="empty-note" style="margin:6px 0 0;">Saying yes puts your name on a list that vendors left without a booth can see after each Booth Selection, on any day you have a booth. <b>Your answer stands for the season until you change it</b>, and it is an invitation to be asked, not a promise &mdash; you still decide each time somebody asks.</p>
-</div>
-<label for="shareGuest">Who Is Sharing Your Booth?</label>
-<select id="shareGuest"></select>
-<p class="empty-note" style="margin-bottom:0;">The list is vendors without a booth that day — no reservation of their own, and nothing assigned to them in that day’s Booth Selection.</p>
 </div>
 <label for="shareFamily" style="margin-top:12px;">Are the two businesses owned by the same family?</label>
 <select id="shareFamily">
@@ -2815,14 +2816,14 @@ I sell food (prepared food or produce)
 <option value="own">Say it in your own words</option>
 </select>
 <div id="promoValPercent" style="margin-top:8px;">
-<input type="number" id="promoPercent" min="1" max="90" step="1" placeholder="Percent off, e.g. 10">
+<input type="text" inputmode="decimal" id="promoPercent" placeholder="Percent off, e.g. 10">
 </div>
 <div id="promoValDollars" style="display:none; margin-top:8px;">
-<input type="number" id="promoDollars" min="0.5" step="0.5" placeholder="Dollars off, e.g. 2">
+<input type="text" inputmode="decimal" id="promoDollars" placeholder="Dollars off, e.g. 2">
 </div>
 <div id="promoValBundle" style="display:none; margin-top:8px; gap:8px;">
-<input type="number" id="promoBundleN" min="2" step="1" placeholder="How many, e.g. 2" style="margin-bottom:8px;">
-<input type="number" id="promoBundlePrice" min="0.5" step="0.5" placeholder="For how much, e.g. 9">
+<input type="text" inputmode="decimal" id="promoBundleN" placeholder="How many, e.g. 2" style="margin-bottom:8px;">
+<input type="text" inputmode="decimal" id="promoBundlePrice" placeholder="For how much, e.g. 9">
 </div>
 <div id="promoValBogo" style="display:none; margin-top:8px;">
 <select id="promoBogoWhat" onchange="onPromoBogoChange()">
@@ -2830,7 +2831,7 @@ I sell food (prepared food or produce)
 <option value="half">the second one half price</option>
 <option value="percent">the second one at a discount</option>
 </select>
-<input type="number" id="promoBogoPct" min="1" max="90" step="1" placeholder="Percent off the second, e.g. 25" style="display:none; margin-top:8px;">
+<input type="text" inputmode="decimal" id="promoBogoPct" placeholder="Percent off the second, e.g. 25" style="display:none; margin-top:8px;">
 </div>
 <div id="promoValFree" style="display:none; margin-top:8px;">
 <input type="text" id="promoFreeItem" maxlength="40" placeholder="What is free, e.g. a cup of cider">
@@ -21597,7 +21598,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-75';
+const BUILD_ID = '17-77';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24704,6 +24705,21 @@ function vendorAssignedOn(vendorId, date) {
 const rec = (cache.lottery || {})[date];
 return !!(rec && rec.assignments && rec.assignments[vendorId]);
 }
+// Could this vendor ever host this season? A reserved booth, or anything they
+// have won in a Booth Selection. Deliberately NOT "do they have a booth on
+// the date in the picker": the offer stands for the season, so the question
+// belongs to the vendor rather than to whichever day happens to be showing.
+function shareCouldHost(vendorId) {
+if (!vendorId) return false;
+if ((cache.booths || []).some(b => b.reservedBy === vendorId || b.sundaySeasonalBy === vendorId)) return true;
+const lot = cache.lottery || {};
+return Object.keys(lot).some(d => {
+if (String(d).slice(0, 4) !== String(seasonYear())) return false;
+const a = lot[d] && lot[d].assignments;
+return !!(a && a[vendorId]);
+});
+}
+
 function shareIsHostMode() {
 const v = currentVendor();
 if (!v) return false;
@@ -24780,7 +24796,15 @@ return o ? o.textContent : formatDisplayDate(date);
 }
 function renderShareOffer() {
 const v = currentVendor();
-if (!v) return;
+const box = document.getElementById('shareOfferBox');
+if (!v || !box) return;
+// Shown to anybody who could host at some point this season, whatever day
+// is in the picker. A vendor who can never host is not asked, because an
+// offer they could not honour would send somebody to a booth they do not
+// have.
+const could = shareCouldHost(v.vendorId);
+box.style.display = could ? '' : 'none';
+if (!could) return;
 const on = shareOfferOn(v.vendorId);
 const told = shareOfferAnswered(v.vendorId);
 [['Yes', true], ['No', false]].forEach(([k, val]) => {
@@ -24843,12 +24867,15 @@ document.getElementById('shareOwnBoothLine').textContent = own
 ? 'Your booth that day: Booth ' + own.num + (own.won ? ' \u2014 won in that day\u2019s Booth Selection.' : '.')
 : 'No booth of yours is on the books for that day.';
 populateShareGuests();
-renderShareOffer();
 } else {
 populateShareBooths();
 renderShareHost();
 renderShareOpenTo();
 }
+// Both of these decide for themselves, because they answer different
+// questions. The offer is about the season and goes to anyone who could
+// host; the list is about one day and shows only who is there on it.
+renderShareOffer();
 }
 function populateShareGuests() {
 const sel = document.getElementById('shareGuest');
@@ -25114,6 +25141,28 @@ const s = document.getElementById('promoBogoWhat');
 const pct = document.getElementById('promoBogoPct');
 if (s && pct) pct.style.display = s.value === 'percent' ? 'block' : 'none';
 }
+// What a person actually types into a number box. The unit is the thing they
+// are most likely to include -- "10%" in a field labelled percent, "$2" in a
+// field labelled dollars -- and Number() turns every one of those into NaN,
+// which then fails a range check and reports itself as a range problem.
+function promoNum(id) {
+const el = document.getElementById(id);
+const raw = el ? String(el.value || '') : '';
+const cleaned = raw.replace(/[%$,\s]/g, '');
+return { raw: raw.trim(), n: cleaned === '' ? NaN : Number(cleaned) };
+}
+// Says what is wrong with THIS value rather than restating the rule. A vendor
+// who typed something sensible and was told the range is 1 to 90 has been
+// told nothing they did not know.
+function promoBadNum(v, what, low, high) {
+if (!v.raw) return 'Put a number in for ' + what + '.';
+// `what` already reads "the percent off", so no article here.
+if (isNaN(v.n)) return 'We could not read \u201c' + esc(v.raw) + '\u201d as a number. ' +
+'Just the digits \u2014 ' + what + ' is understood.';
+return what.replace(/^the /, 'The ') + ' has to be between ' + low + ' and ' + high +
+'. You put \u201c' + esc(v.raw) + '\u201d.';
+}
+
 async function addVendorPromo() {
 const vendor = currentVendor();
 if (!vendor) return;
@@ -25127,33 +25176,40 @@ return;
 }
 let text = '';
 if (ptype === 'percent') {
-const pc = Math.round(Number(document.getElementById('promoPercent').value));
+const v = promoNum('promoPercent');
+const pc = Math.round(v.n);
 if (!(pc >= 1 && pc <= 90)) {
-showMsg('promoMsg', 'err', 'A star needs a real deal \u2014 a percent off between 1 and 90.');
+showMsg('promoMsg', 'err', promoBadNum(v, 'the percent off', 1, 90));
 return;
 }
 text = pc + '% off ' + item;
 } else if (ptype === 'dollars') {
-const d = Number(document.getElementById('promoDollars').value);
+const v = promoNum('promoDollars');
+const d = v.n;
 if (!(d > 0)) {
-showMsg('promoMsg', 'err', 'A star needs a real deal \u2014 dollars off must be more than zero.');
+showMsg('promoMsg', 'err', v.raw && !isNaN(d)
+? 'Dollars off has to be more than zero. You put \u201c' + esc(v.raw) + '\u201d.'
+: promoBadNum(v, 'the dollars off', 0.5, 100));
 return;
 }
 text = '$' + fmtMoney(d) + ' off ' + item;
 } else if (ptype === 'bundle') {
-const n = Math.round(Number(document.getElementById('promoBundleN').value));
-const pr = Number(document.getElementById('promoBundlePrice').value);
+const vn = promoNum('promoBundleN'), vp = promoNum('promoBundlePrice');
+const n = Math.round(vn.n), pr = vp.n;
 if (!(n >= 2) || !(pr > 0)) {
-showMsg('promoMsg', 'err', 'A bundle needs at least 2 for a price above zero \u2014 that is what makes it a deal.');
+showMsg('promoMsg', 'err', (isNaN(vn.n) && vn.raw) || (isNaN(vp.n) && vp.raw)
+? promoBadNum(isNaN(vn.n) && vn.raw ? vn : vp, 'the bundle', 2, 99)
+: 'A bundle needs at least 2 for a price above zero \u2014 that is what makes it a deal.');
 return;
 }
 text = n + ' for $' + fmtMoney(pr) + ' \u2014 ' + item;
 } else if (ptype === 'bogo') {
 const what = document.getElementById('promoBogoWhat').value;
 if (what === 'percent') {
-const pc = Math.round(Number(document.getElementById('promoBogoPct').value));
+const v = promoNum('promoBogoPct');
+const pc = Math.round(v.n);
 if (!(pc >= 1 && pc <= 90)) {
-showMsg('promoMsg', 'err', 'Say how much off the second one \u2014 between 1 and 90 percent.');
+showMsg('promoMsg', 'err', promoBadNum(v, 'the percent off the second one', 1, 90));
 return;
 }
 text = 'Buy one ' + item + ', get one ' + pc + '% off';
