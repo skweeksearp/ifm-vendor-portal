@@ -1658,13 +1658,21 @@ body.kiosk-mode button.kiosk-snap-row {
 display: flex; align-items: center; justify-content: space-between; gap: 8px;
 width: 100%; box-sizing: border-box; font-family: inherit; cursor: pointer;
 font-size: clamp(16px, 1.4vw, 22px); font-weight: 400; text-align: left;
-line-height: normal;
+line-height: 1.25;
 padding: clamp(6px, 0.7vw, 10px) clamp(10px, 1vw, 16px);
-border-radius: 999px; border: 1px solid #B9AF92;
+/* Not 999px: on two lines a full stadium radius eats the corners of the
+   text. Large enough to stay a pill on one line, sane on two. */
+border-radius: 22px; border: 1px solid #B9AF92;
 background: rgba(255,255,255,0.35); color: #A59C82; outline: none;
 -webkit-appearance: none; appearance: none;
-white-space: nowrap; transition: color .15s ease;
+/* The label wraps rather than running out of its own pill. "Accepts
+   SNAP-Tokens" just fitted the 210px bar; "SNAP/FreshConnect eligible" does
+   not, and used to put the toggle 45px outside the border. */
+white-space: normal; transition: color .15s ease;
 }
+/* A flex child will not go narrower than its content unless told it may, so
+   without this the text refuses to wrap however much room it is given. */
+.kiosk-snap-row > span:not(.ksw) { min-width: 0; flex: 1 1 auto; overflow-wrap: break-word; }
 body.kiosk-mode button.kiosk-snap-row.on { color: #3A382C; font-weight: 600; }
 .ksw {
 flex: 0 0 auto; width: 2.1em; height: 1.15em; border-radius: 999px;
@@ -21598,7 +21606,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-77';
+const BUILD_ID = '17-79';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21937,21 +21945,45 @@ function kioskDealWords(p) {
 const booth = kioskDealBooth(p);
 const v = cache.vendors.find(x => x.vendorId === p.vendorId);
 const head = 'New: ';
-const tail = booth ? ' at booth ' + booth
-: (v && v.businessName ? ' at ' + v.businessName : '');
+// No fallback to the business name. A shopper cannot walk to a name, and
+// the vendors who reach this banner all have a booth now -- so if the booth
+// has gone missing between the check and here, saying nothing about where
+// is better than sending somebody to look for a stall.
+const tail = booth ? ' at booth ' + booth : '';
+void v;
 let words = String(p.text || '').replace(/\s+/g, ' ').trim();
 const room = Math.max(12, KIOSK_DEAL_CHARS - head.length - tail.length);
 if (words.length > room) words = words.slice(0, room - 1).replace(/[\s,;:.-]+$/, '') + '\u2026';
 return (head + words + tail).trim();
 }
+// Only deals from vendors who are actually at market today. The banner is
+// the one place a deal reaches the public without a shopper tapping a booth,
+// so it is the one place that has to check for itself: the map cannot mark a
+// vendor with no booth, but the banner will happily name one.
+function kioskDealVendorIsHere(p) {
+if (!p) return false;
+const occ = kioskOccupancy();
+return Object.values(occ.byBooth || {}).indexOf(p.vendorId) !== -1;
+}
 function newestKioskDeal() {
-const list = (cache.promos || []).filter(p => p && p.createdAt);
+const today = todayISO();
+const list = (cache.promos || []).filter(p => p && p.createdAt &&
+// For today, and from somebody who is here. A deal posted for next Saturday
+// is not news on the screen this Saturday, and a deal from a vendor who
+// stayed home is not news at all.
+(p.dates || []).indexOf(today) !== -1 &&
+kioskDealVendorIsHere(p));
 if (!list.length) return null;
 return list.reduce((a, b) => (Number(b.createdAt) > Number(a.createdAt) ? b : a));
 }
 function hideKioskDeal() {
 const el = document.getElementById('kioskNewDeal');
 if (el) el.style.display = 'none';
+// Emptied, not just hidden. A hidden element still holds its text, so a
+// stale deal stays in the page where a screen reader can reach it and where
+// a moment's style glitch would flash it back.
+const t = document.getElementById('kioskNewDealText');
+if (t) t.textContent = '';
 if (kioskDealTimer) { clearTimeout(kioskDealTimer); kioskDealTimer = null; }
 kioskDealShownId = null;
 }
@@ -21991,13 +22023,24 @@ if (!el) return;
 if (currentRole !== 'kiosk') { hideKioskDeal(); return; }
 const p = newestKioskDeal();
 if (!p) { hideKioskDeal(); return; }
+// The deal on screen has stopped qualifying -- its vendor called out, or the
+// day turned over. Take it down now rather than at the end of its timer.
+if (kioskDealShownId && kioskDealShownId !== p.id) {
+const still = (cache.promos || []).find(x => x.id === kioskDealShownId);
+if (!still || !kioskDealVendorIsHere(still)) hideKioskDeal();
+}
 // First sight of the kiosk: whatever was posted before we started watching is
 // old news. Without this, standing the kiosk up would flash a deal from last
 // Tuesday at whoever walked past.
 if (kioskDealSeenAt === null) { kioskDealSeenAt = Date.now(); }
 const age = Date.now() - Number(p.createdAt);
 if (age > tune('kioskDealMs')) { hideKioskDeal(); return; }
-if (p.id === kioskDealShownId) return;         // already up; leave it be
+// Already up, but still true? A vendor can call out after their deal has
+// gone on the banner, and "leave it be" would keep advertising them for the
+// rest of the two minutes. newestKioskDeal only returns deals from vendors
+// who are here, so if the one showing is no longer the one it picks, the one
+// showing is stale.
+if (p.id === kioskDealShownId) return;         // already up, and still valid
 kioskDealShownId = p.id;
 document.getElementById('kioskNewDealText').textContent = kioskDealWords(p);
 el.style.display = 'block';
@@ -23371,6 +23414,11 @@ renderKioskClock(occ, n);
 renderKioskSearch();
 renderKioskMap(occ);
 renderKioskDetail(occ);
+// The banner is part of the screen, so a redraw re-checks it. Without this
+// only the two-second watcher did, and a vendor who called out kept their
+// deal on the public screen until the next tick even though the map had
+// already dropped them -- a redraw that disagreed with itself.
+if (typeof refreshKioskDeal === 'function') refreshKioskDeal();
 }
 function positionKioskResults() {
 const results = document.getElementById('kioskResults');
