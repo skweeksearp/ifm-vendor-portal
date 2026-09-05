@@ -2765,9 +2765,18 @@ I sell food (prepared food or produce)
 <label for="shareBooth">Whose Booth Are You In?</label>
 <select id="shareBooth" onchange="renderShareHost()"></select>
 <p class="empty-note" id="shareHostNote" style="margin-bottom:0;"></p>
+<div id="shareOpenTo" style="margin-top:12px;"></div>
 </div>
 <div id="shareHostMode" style="display:none;">
 <p class="empty-note" id="shareOwnBoothLine" style="margin-bottom:0;"></p>
+<div id="shareOfferBox" style="margin-top:12px;">
+<label>Would you take somebody into your booth this season?</label>
+<div class="tone-switch">
+<button type="button" class="tone-btn" id="shareOfferYes" onclick="setShareOffer(true)">Happy to be asked</button>
+<button type="button" class="tone-btn" id="shareOfferNo" onclick="setShareOffer(false)">Not that day</button>
+</div>
+<p class="empty-note" style="margin:6px 0 0;">Saying yes puts your name on a list that vendors left without a booth can see after each Booth Selection, on any day you have a booth. <b>Your answer stands for the season until you change it</b>, and it is an invitation to be asked, not a promise &mdash; you still decide each time somebody asks.</p>
+</div>
 <label for="shareGuest">Who Is Sharing Your Booth?</label>
 <select id="shareGuest"></select>
 <p class="empty-note" style="margin-bottom:0;">The list is vendors without a booth that day — no reservation of their own, and nothing assigned to them in that day’s Booth Selection.</p>
@@ -7998,6 +8007,7 @@ const ACT_KEYS = {
 'ifm-prepay':          { t: 'Money paid in advance', k: 'money', w: 'notable' },
 'ifm-corrections':     { t: 'Queried lines and corrections', k: 'money', w: 'notable' },
 'ifm-exceptions':      { t: 'Exception Requests to the Board', k: 'board', w: 'notable' },
+'ifm-shareoffers':     { t: 'Vendors open to sharing their booth', k: 'booth', w: 'routine' },
 'ifm-hours':           { t: 'Work hours', k: 'records' },
 'ifm-tasks':           { t: 'Work-hour tasks', k: 'records' },
 'ifm-attendance':      { t: 'Attendance', k: 'day' },
@@ -8683,6 +8693,7 @@ try { await loadFc(); } catch (e) { fcCache = fcCache || { accepts: {}, entries:
 try { await loadPrepay(); } catch (e) { prepayCache = prepayCache || []; }
 try { await loadCorrections(); } catch (e) { correctCache = correctCache || { queries: [], adjustments: [] }; }
 try { await loadExceptions(); } catch (e) { exrCache = exrCache || []; }
+try { await loadShareOffers(); } catch (e) { shareOfferCache = shareOfferCache || {}; }
 cache.ops.fines = cache.ops.fines || [];
 cache.ops.noshow = cache.ops.noshow || {};
 cache.ops.fines = cache.ops.fines || [];
@@ -13740,6 +13751,7 @@ await storageSet('ifm-requirements', { reqs: reqs, status: {} });
 { g: 'traffic', k: 'ifm-prepay', t: 'Money a vendor put on account in advance', v: () => [] },
 { g: 'traffic', k: 'ifm-corrections', t: 'Lines a vendor has queried, and the corrections made', v: () => ({ queries: [], adjustments: [] }) },
 { g: 'traffic', k: 'ifm-exceptions', t: 'Exception Requests waiting on the Board, and what it decided', v: () => [] },
+{ g: 'traffic', k: 'ifm-shareoffers', t: 'Who has said they would take somebody into their booth, by market day', v: () => ({}) },
 { g: 'config', k: 'ifm-reset-log', t: 'When the beta reset was pressed, and from which phone', v: () => [] },
 { g: 'traffic', k: 'ifm-wedlist', t: 'Who was at the Wednesday market, week by week', v: () => ({}) },
 { g: 'traffic', k: 'ifm-season-flags', t: 'Season flags', v: () => ({ shoulderDeclared: false }) },
@@ -16565,15 +16577,30 @@ kind: f.auto ? 'Fine (assessed by rule)' : 'Fine', amount: Number(f.amount || 0)
 });
 
 // The membership share: Full Members only, in annual installments.
-const isFull = /full/i.test(String(v && v.membership || ''));
+//
+// Counted from the season the share STARTS, which is not the year the vendor
+// joined the market. A vendor promoted in 2026 after twenty years as an Easy
+// Entry vendor does not owe twenty installments -- they owe the first one.
+//
+// And it starts the January AFTER the promotion, not the promotion itself:
+// somebody promoted mid-season has already missed the auction where a Full
+// Member bids for a reserved booth, so they take on the obligation when the
+// benefit arrives, not before. Promoted at any point in 2026, first $100 due
+// 1 January 2027.
+const isFull = isFullMember(v);
 if (isFull) {
 const instal = ruleNum('certInstal') || 100;
 const total = ruleNum('certTotal') || 300;
-const joined = Number(v.joinYear) || year;
-const yearsIn = Math.max(0, Math.min(Math.ceil(total / instal), year - joined + 1));
-if (yearsIn > 0) {
+const startYear = memberShareStartYear(v);
+const parts = Math.ceil(total / instal);
+// Which installment this year is. NOT clamped to the last one: Math.min
+// would have charged "installment 3 of 3" every year for ever, so a Full
+// Member of twenty years would owe $2,000 against a $300 certificate. Past
+// the last installment there is simply nothing to charge.
+const yearsIn = year - startYear + 1;
+if (yearsIn > 0 && yearsIn <= parts) {
 charged.push({ date: year + '-01-01', what: 'Membership share installment ' + yearsIn +
-' of ' + Math.ceil(total / instal), kind: 'Membership share (equity, not income)', amount: instal });
+' of ' + parts, kind: 'Membership share (equity, not income)', amount: instal });
 }
 unseen.push('What has already been paid toward the $' + total + ' membership share. That history ' +
 'lives with the bookkeeper and is on the Records Needed list.');
@@ -21570,7 +21597,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-72';
+const BUILD_ID = '17-75';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24295,10 +24322,34 @@ return Math.round(opRecords('certificate')
 .filter(r => r.subject === vendorId)
 .reduce((s, r) => s + Number((r.values || {}).amount || 0), 0) * 100) / 100;
 }
+// The first season a Full Member's share is charged for.
+//
+// promotedOn is written by the class changer when the Board's decision is
+// recorded, so a promotion in any month of 2026 starts the share in 2027 --
+// the beginning of a full season, since a vendor promoted mid-year has
+// already missed the auction where Full Members bid for a reserved booth.
+//
+// Without a promotion date the vendor has been a Full Member since before
+// the app existed, and joinYear is the only thing to go on. That is right
+// for the market's long-standing members and wrong for nobody, because
+// anybody promoted from now on gets a date.
+// Is this a Full Member? Written once because it was written twice and the
+// two disagreed: accountData tested only `membership`, a field no vendor
+// record has ever carried, so the $300 certificate was charged to nobody at
+// all. memberEquity tested both and was right.
+function isFullMember(v) {
+if (!v) return false;
+return /full/i.test(String(v.membership || '')) || /Full/.test(String(v.category || ''));
+}
+function memberShareStartYear(v) {
+if (!v) return seasonYear();
+if (v.promotedOn) return Number(String(v.promotedOn).slice(0, 4)) + 1;
+return Number(v.joinYear) || seasonYear();
+}
+
 function memberEquity(vendorId) {
 const v = (cache.vendors || []).find(x => x.vendorId === vendorId);
-const full = /full/i.test(String((v && v.membership) || '')) ||
-String((v && v.category) || '').endsWith('Full');
+const full = isFullMember(v);
 const total = ruleNum('certTotal') || 300;
 const equity = ruleNum('certEquity') || 100;
 const paid = memberSharePaid(vendorId);
@@ -24659,6 +24710,111 @@ if (!v) return false;
 const date = document.getElementById('shareDate') ? document.getElementById('shareDate').value : '';
 return !!vendorBoothOn(v.vendorId, date) || vendorAssignedOn(v.vendorId, date);
 }
+// ---- who would take somebody in ------------------------------------------
+// One answer for the season, standing until the vendor changes it. It used to
+// be asked per market day, which meant answering the same question every week
+// and having the answer lapse whenever they looked at another date.
+//
+// Stored on the shared record because the whole point is that other vendors
+// can see it. Nothing else about a vendor is published this way, so the
+// wording on both sides is careful to say it is an invitation to be asked.
+//
+// Keyed by season rather than by date. The old per-date shape is read as
+// nothing rather than migrated: the feature is a build old, nobody has a
+// standing answer yet, and guessing a season from a scatter of dates would
+// invent consent nobody gave.
+const SHARE_OFFER_KEY = 'ifm-shareoffers';
+let shareOfferCache = null;
+async function loadShareOffers() {
+const v = await storageGetShared(SHARE_OFFER_KEY);
+shareOfferCache = (v !== STORAGE_MISSING && v && typeof v === 'object') ? v : {};
+return shareOfferCache;
+}
+async function saveShareOffers() { await storageSetShared(SHARE_OFFER_KEY, shareOfferCache || {}); }
+function shareOfferSeasonKey() { return 'season:' + seasonYear(); }
+function shareOfferOn(vendorId) {
+const s = (shareOfferCache || {})[shareOfferSeasonKey()] || {};
+return s[vendorId] === true;
+}
+function shareOfferAnswered(vendorId) {
+const s = (shareOfferCache || {})[shareOfferSeasonKey()] || {};
+return s[vendorId] !== undefined;
+}
+// Everybody offering on that day who actually has a booth to offer. The
+// second half matters: a vendor may say yes in the morning and then lose
+// their own booth, and an offer from somebody with nowhere to sit would send
+// a person across the pavilion for nothing.
+function shareOffersFor(date, exceptVendorId) {
+const day = (shareOfferCache || {})[shareOfferSeasonKey()] || {};
+return Object.keys(day).filter(vid => day[vid] === true && vid !== exceptVendorId)
+.map(vid => {
+const booth = vendorBoothOn(vid, date) || vendorAssignedOn(vid, date);
+return booth ? { vendorId: vid, booth: booth } : null;
+})
+.filter(Boolean)
+.sort((a, b) => String(boothVendorName(a.vendorId) || '')
+.localeCompare(String(boothVendorName(b.vendorId) || '')));
+}
+async function setShareOffer(yes) {
+const v = currentVendor();
+if (!v) return;
+await loadShareOffers();
+const key = shareOfferSeasonKey();
+shareOfferCache[key] = shareOfferCache[key] || {};
+shareOfferCache[key][v.vendorId] = !!yes;
+await saveShareOffers();
+renderShareOffer();
+actAs(yes ? 'Offered to share their booth this season' : 'Withdrew their offer to share',
+{ kind: 'booth', weight: 'routine', vendorId: v.vendorId });
+showMsg('shareMsg', 'ok', yes
+? '<svg class="ico"><use href="#i-checkmark"></use></svg> <b>You are on the list for the rest of ' +
+'the ' + seasonYear() + ' season.</b> On any market day you have a booth, vendors left without one ' +
+'can see your name and booth number. They will come and ask; <b>you still decide, every time</b>. ' +
+'Change it here whenever you like.'
+: 'Taken off the list. Nobody will be sent to you for the rest of the season.');
+}
+function shareDateLabel(date) {
+const sel = document.getElementById('shareDate');
+const o = sel && [...sel.options].find(x => x.value === date);
+return o ? o.textContent : formatDisplayDate(date);
+}
+function renderShareOffer() {
+const v = currentVendor();
+if (!v) return;
+const on = shareOfferOn(v.vendorId);
+const told = shareOfferAnswered(v.vendorId);
+[['Yes', true], ['No', false]].forEach(([k, val]) => {
+const b = document.getElementById('shareOffer' + k);
+// Unanswered lights neither. A default of "no" would look like a decision
+// somebody made, and this is a question nobody has been asked before.
+if (b) b.className = 'tone-btn' + (told && on === val ? ' on' : '');
+});
+}
+// The other side of it: for a vendor with no booth, who has said they would
+// take somebody in.
+function renderShareOpenTo() {
+const wrap = document.getElementById('shareOpenTo');
+const v = currentVendor();
+const date = (document.getElementById('shareDate') || {}).value;
+if (!wrap || !v || !date) return;
+const list = shareOffersFor(date, v.vendorId);
+if (!list.length) {
+wrap.innerHTML = '<p class="empty-note" style="margin:0;"><b>Nobody with a booth on ' +
+esc(shareDateLabel(date)) + ' has offered.</b> Vendors are asked once a season, in this same ' +
+'drawer, whether they would take somebody in \u2014 so this fills as they answer, and shows only ' +
+'those who actually have a booth that day. Asking around the pavilion still works.</p>';
+return;
+}
+wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 6px;"><b>' + list.length +
+' vendor' + (list.length === 1 ? '' : 's') + ' with a booth on ' + esc(shareDateLabel(date)) +
+' said this season they are happy to be asked.</b> Go and speak to them \u2014 <b>this is not a ' +
+'booking</b>, they said it in advance rather than about today, and they decide.</p>' +
+list.map(x => '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(boothVendorName(x.vendorId) || x.vendorId) + '</div>' +
+'<div class="req-meta">Booth ' + esc(String(x.booth)) + '</div>' +
+'</div></div>').join('');
+}
+
 function shareOwnBoothFor(vendorId, date) {
 const rec = (cache.lottery || {})[date];
 if (rec && rec.assignments && rec.assignments[vendorId]) {
@@ -24687,9 +24843,11 @@ document.getElementById('shareOwnBoothLine').textContent = own
 ? 'Your booth that day: Booth ' + own.num + (own.won ? ' \u2014 won in that day\u2019s Booth Selection.' : '.')
 : 'No booth of yours is on the books for that day.';
 populateShareGuests();
+renderShareOffer();
 } else {
 populateShareBooths();
 renderShareHost();
+renderShareOpenTo();
 }
 }
 function populateShareGuests() {
@@ -24749,6 +24907,9 @@ dsel.appendChild(o);
 const live = kioskMarketDate();
 if ([...dsel.options].some(o => o.value === live.date)) dsel.value = live.date;
 }
+// The offers are shared between vendors, so they have to arrive before
+// either side of this card means anything. Drawn again when they land.
+loadShareOffers().then(() => updateShareMode()).catch(() => {});
 updateShareMode();
 renderShareList();
 }
@@ -26370,8 +26531,14 @@ if (target === v.category) { showMsg('ccMsg', 'err', 'That is the class they are
 if (!when) { showMsg('ccMsg', 'err', 'Record the date the Board decided. Without it there is no decision, only a change.'); return; }
 confirmTap(btn, async () => {
 const from = v.category;
+const promoting = !isFullClass(from) && isFullClass(target);
 v.category = target;
 v.classSince = String(when).slice(0, 4);
+// Only a promotion starts a share. Moving the other way leaves the date
+// alone: a vendor who returns to Full Membership later has already bought
+// a certificate, and the Guide is explicit that one is only repurchased
+// after the equity has been redeemed on leaving the market.
+if (promoting && !v.promotedOn) v.promotedOn = when;
 v.classHistory = (v.classHistory || []).concat([{ from: from, to: target, on: when, note: note }]);
 await storageSet('ifm-vendors-v1', cache.vendors);
 // A membership change is a Board decision, so it is written where the Board's
@@ -26386,9 +26553,17 @@ await storageSet('ifm-amendments', amendmentsCache);
 document.getElementById('ccNote').value = '';
 sel.dataset.filled = '';
 renderComposition();
+// What it costs them, said at the moment it is recorded rather than
+// discovered on a statement a year later.
+const shareNote = promoting
+? ' <b>The $' + ruleNum('certTotal') + ' membership share starts ' +
+'1 January ' + (Number(String(when).slice(0, 4)) + 1) + '</b> \u2014 $' + ruleNum('certInstal') +
+' a year for three years. It begins at the start of a full season because they have ' +
+'already missed this year\u2019s auction for a reserved booth.'
+: '';
 showMsg('ccMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
 esc(v.businessName) + ' is now ' + esc(target) + ', since ' + esc(v.classSince) +
-'. Recorded in Board Decisions.');
+'. Recorded in Board Decisions.' + shareNote);
 });
 }
 function renderClassHistory() {
@@ -29962,6 +30137,29 @@ const me = currentVendorId;
 wrap.innerHTML = '';
 if (!me) { card.style.display = 'none'; return; }
 const items = [];
+
+// A promotion the vendor has not yet been billed for. The share starts at
+// the beginning of the next full season, so there is a stretch of months
+// where they are a Full Member and nothing has appeared on their account.
+// Better they know it is coming than meet it in January.
+const meV = (cache.vendors || []).find(x => x.vendorId === me);
+if (meV && meV.promotedOn && /Full/.test(meV.category || '')) {
+const startY = Number(String(meV.promotedOn).slice(0, 4)) + 1;
+if (seasonYear() < startY && !corrSeen('promo:' + meV.promotedOn)) {
+items.push({
+t: 'You are a Full Member',
+m: 'Recorded ' + formatDisplayDate(meV.promotedOn) + '. The $' + (ruleNum('certTotal') || 300) +
+' membership share begins 1 January ' + startY + ' at $' + (ruleNum('certInstal') || 100) +
+' a year for three years \u2014 it starts at the beginning of a full season, since this year\u2019s ' +
+'auction for a reserved booth has already been held. Once it is fully paid the certificate is ' +
+'worth $' + (ruleNum('certEquity') || 100) + ' in equity, repayable if you leave the market.',
+label: 'New',
+cls: 'onfile',
+go: 'account',
+dismiss: 'promo:' + meV.promotedOn,
+});
+}
+}
 
 // The office's answer to a line this vendor queried. Shown here because
 // Notifications is where a vendor looks; the Statements screen carries the
