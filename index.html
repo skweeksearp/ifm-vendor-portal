@@ -3746,7 +3746,7 @@ oninput="kioskTyped('product')" onkeydown="kioskProductKey(event)"
 onfocus="if (foolGuardFocus(this)) return; noteKioskActivity();">
 <button type="button" id="kioskSnapBtn" class="kiosk-search kiosk-snap-row" role="switch"
 aria-checked="false" onclick="toggleKioskSnap()">
-<span>Accepts SNAP-Tokens</span>
+<span>SNAP/FreshConnect eligible</span>
 <span class="ksw" aria-hidden="true"><span class="ksw-knob"></span></span>
 </button>
 </div>
@@ -21570,7 +21570,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-70';
+const BUILD_ID = '17-72';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22864,11 +22864,11 @@ return { said: said, told: told };
 function kioskSnapStripText() {
 if (!kioskSnapOn) return '';
 const n = kioskSnapBooths.size;
-if (!n) return '<span class="ksnap-strip">no stall here today is listed as taking SNAP</span>';
+if (!n) return '<span class="ksnap-strip">no stall here today is listed as SNAP/FreshConnect eligible</span>';
 if (kioskSearchTextPresent()) {
-return '<span class="ksnap-strip">showing only stalls that accept SNAP-Tokens \u2014 worth asking to be sure</span>';
+return '<span class="ksnap-strip">showing only SNAP/FreshConnect eligible stalls \u2014 worth asking to be sure</span>';
 }
-return '<span class="ksnap-strip">SNAP stalls in blue \u2014 worth asking to be sure</span>';
+return '<span class="ksnap-strip">eligible stalls in blue \u2014 worth asking to be sure</span>';
 }
 function kioskSearchTextPresent() {
 const v = document.getElementById('kioskVendorSearch');
@@ -30327,6 +30327,21 @@ wrap.appendChild(row);
 });
 }
 const BOARD_FLAGS = [
+{ id: 'BF56', kind: 'question', cat: 'Market', src: 'Raised when the kiosk switch was relabeled at the market administrator\u2019s request',
+t: 'The kiosk now says \u201cSNAP/FreshConnect eligible\u201d but filters on SNAP alone',
+d: 'WHAT CHANGED. The public kiosk\u2019s switch used to read \u201cAccepts SNAP-Tokens\u201d, the market\u2019s own name for a thing a shopper does not hold. It now reads \u201cSNAP/FreshConnect eligible\u201d, which is what somebody standing at the gate with an EBT card or a State check is actually looking for. ' +
+'WHAT DID NOT CHANGE. The filter still reads one flag: whether the vendor said they take SNAP tokens. It does not read the FreshConnect answer, which vendors record separately on their own desk. So a vendor who takes FreshConnect Checks but not SNAP tokens is currently NOT shown when the switch is on, and a shopper holding only a FreshConnect check is being sent past them. ' +
+'WHY THE APP HAS NOT SIMPLY WIDENED IT. Changing the filter to \u201ceither one\u201d changes who appears on the map in front of the public, and that is the market\u2019s decision about how it describes its vendors, not a wording fix. It also cuts the other way: a shopper with SNAP tokens would then be shown stalls that take only FreshConnect. Either behavior disappoints somebody at the stall, which is the worst place to find out. ' +
+'THE THIRD OPTION is two switches, or one switch that says which of the two each highlighted stall takes. That is more honest and more work, and it is only worth building if the market wants the kiosk to carry that much detail. ' +
+'WHAT THE APP DOES MEANWHILE: the new wording, the old filter, and this note. Every strip under the switch already tells the shopper it is \u201cworth asking to be sure\u201d, which is the honest hedge either way. ' +
+'WHAT THE MARKET NEEDS TO DECIDE: whether the switch means SNAP, or either, or both shown separately \u2014 and, either way, that the words on the button match what the map does.' },
+{ id: 'BF55', kind: 'question', cat: 'Board', src: 'Agricultural Guidelines, Suspected Violations \u2014 not in the Vendor Guide',
+t: 'The $25 complaint fee: who can be reported, and can a payer stay anonymous?',
+d: 'THE RULE, AND WHERE IT IS. Not in the Vendor Guide and not part of the grievance procedure \u2014 the grievance form carries no fee at all. It is in the Agricultural Guidelines, under Suspected Violations: \u201cMarket members who suspect that another vendor is purchasing products for resale at market can request that the farm be inspected \u2026 The member filing a complaint MAY BE ASKED to pay a $25 fee to cover the cost of the investigation, which may include an inspection. If the complaint is found to be justified the $25 fee will be refunded.\u201d The Committee also reserves the right not to inspect at all, and the same passage promises that \u201cthe member filing the complaint will remain anonymous.\u201d ' +
+'THE FIRST CONFLICT: ANONYMITY AGAINST PAYMENT. The Guidelines promise the complainant anonymity and in the same breath charge them $25. Money in this market leaves a trail: a $25 charge appears on a vendor\u2019s monthly statement, in the day-fee and fines records, and in whatever the office writes down when it takes the payment. Anyone with access to the books can see who paid $25 in the week a farm was inspected. On paper that trail is thin enough to overlook; in an app it is a search. So the promise cannot be kept by an app that also takes the money, and the Board has to choose. Options, none of which the app should pick for itself: take the fee outside the app entirely, in cash, with no record tied to the vendor; drop the fee and fund investigations from general funds; keep both and tell complainants plainly that anonymity means the ACCUSED will not be told who complained, not that the office cannot know; or charge only after an outcome, so the payment is not simultaneous with the complaint. ' +
+'THE SECOND CONFLICT: WHO CAN BE REPORTED THIS WAY. Every word of the rule is agricultural \u2014 farm inspection, crops grown, quantities compared against the market application. The offense it describes, buying goods for resale, is not agricultural at all: a craft vendor reselling bought-in goods, or a baker selling somebody else\u2019s bread, is the same wrong. But the rule sits in the AGRICULTURAL Guidelines, is administered by the AGRICULTURE Committee, and its only test is a farm visit. So it is unclear whether a member may lodge a $25 complaint about a non-Ag vendor at all, who would investigate if they did, and what an inspection would even look like where there is no farm to walk. The Artisan and Food Guidelines describe jurying but no equivalent complaint route. ' +
+'WHAT THE APP DOES MEANWHILE: nothing. There is no way to file such a complaint, no $25 charge, no refund path, and no record of an inspection prompted by one. The random-inspection tool draws four farms a year and says on its own screen that complaint-driven inspections are not part of it. The app should not build a route to a fee whose anonymity it cannot honor and whose scope nobody has settled. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: whether the fee survives at all; if it does, how anonymity and payment are reconciled; and whether the complaint route covers every vendor or only Ag vendors \u2014 and if only Ag, what a member does about a non-Ag vendor they believe is reselling.' },
 { id: 'BF54', kind: 'question', cat: 'Board', src: 'Guide p.8, footnote under the annual fee table; found while checking whether a reserved stall holder also pays daily fees',
 t: 'Which Saturday is the free one, and who declares it each year?',
 d: 'THE RULE IS PLAIN AND THE DATE IS NOT. A footnote under the fee table on page 8 says: \u201cSelling fees are waived on the final Saturday of the Steamboat Landing season.\u201d It is the only selling-fee waiver anywhere in the Guide. Nothing in the Guide, and nothing the app holds, says which Saturday that is. ' +
