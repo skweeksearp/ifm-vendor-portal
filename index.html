@@ -7955,16 +7955,18 @@ const off = ifmBackendUnreachable();
 if (n === ifmUnsentSeen && off === ifmUnsentOffline) return;
 ifmUnsentOffline = off;
 ifmUnsentSeen = n;
-if (!n) { bar.style.display = 'none'; return; }
-// Only claim unreachability when a write has actually failed. ifmQueueStuck
-// answers a different question -- how long the queue has been busy -- and on
-// a market morning a busy queue is the normal state.
-const offline = ifmBackendUnreachable();
-bar.innerHTML = '<b>' + n + ' change' + (n === 1 ? '' : 's') + ' not saved yet.</b> ' +
-(offline
-? 'The market\u2019s records cannot be reached. <b>Nothing is lost</b> \u2014 it is held on this ' +
-'phone and goes up as soon as there is a signal, even if you close the app.'
-: 'Saving\u2026');
+// Nothing waiting, or waiting normally on a connection that works: say
+// nothing at all. A queue with something in it is the ORDINARY state of a
+// working app -- every tap puts something there for a fraction of a second --
+// and a bar that appears for all of them is a bar nobody reads on the morning
+// it matters.
+if (!n || !off) { bar.style.display = 'none'; return; }
+// Only ever shown when the records genuinely cannot be reached, so the
+// wording does not have to hedge. It says the one thing somebody about to
+// put their phone in their pocket is actually asking.
+bar.innerHTML = '<b>Offline \u2014 ' + n + ' change' + (n === 1 ? '' : 's') +
+' waiting to save.</b> <b>Nothing is lost</b>: they are held on this phone and go up as soon ' +
+'as there is a signal, even if you close the app.';
 bar.style.display = 'block';
 }
 
@@ -21735,7 +21737,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-82';
+const BUILD_ID = '17-83';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
