@@ -253,6 +253,18 @@ display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 background: #FFFDF6; color: var(--ink, #23231B); border-color: #FFFDF6; }
 .sw-update .link-btn { color: #CFC9B4; }
 .sw-update span { flex: 1 1 100%; }
+/* Unsent work. Top of the screen beside the offline notice, because both say
+   the same kind of thing: something is not where you think it is. Amber
+   rather than red -- nothing is lost, it is waiting. */
+.unsent-bar { position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top, 0px));
+transform: translateX(-50%); z-index: 998;
+background: #FFF7E6; border: 1px solid #D9A441; border-radius: 12px;
+padding: 8px 14px; max-width: 90%; text-align: center;
+font-size: 14px; line-height: 1.4; color: #23231B; }
+/* On a wall display it steps aside like the offline notice: nothing centered
+   over what the public came to read. */
+body.kiosk-mode .unsent-bar { display: none !important; }
+
 /* Where to take the money, said once, where the buttons were. */
 .pay-how { font-size: 14px; line-height: 1.5; color: var(--ink);
 background: #F4F2E8; border: 1px solid var(--paper-dim, #D8D2BE); border-radius: 12px;
@@ -2433,6 +2445,7 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
 </svg>
 <div id="app">
 <div id="loading" class="loading"></div>
+<div id="ifmUnsentBar" class="unsent-bar" style="display:none;" role="status" aria-live="polite"></div>
 <div id="swUpdateBar" class="sw-update" style="display:none;">
 <span id="swUpdateText">A newer version of the app is ready.</span>
 <button type="button" class="ghost-btn" onclick="swTakeUpdate(this)">Load it</button>
@@ -7428,6 +7441,40 @@ let ifmBackendDownUntil = 0;       // circuit breaker: skip cold fetches while d
 const ifmMem = new Map();          // key -> value string (or null = known-missing)
 const ifmInFlight = new Map();     // key -> pending fetch promise (dedupe)
 const ifmWriteQueue = new Map();   // key -> latest value awaiting POST (coalesced)
+// The queue, mirrored on the device. Without this a reload loses every change
+// that had not yet reached the sheet -- and on iOS a reload is what happens
+// when somebody puts their phone in their pocket.
+const IFM_QUEUE_KEY = 'ifm-unsent-v1';
+let ifmQueueSaveTimer = null;
+function ifmSaveQueue() {
+// Debounced: a burst of edits writes once, not once each. 400ms is short
+// enough that nothing realistic gets between the last edit and a pocket.
+if (ifmQueueSaveTimer) return;
+ifmQueueSaveTimer = setTimeout(() => {
+ifmQueueSaveTimer = null;
+try {
+if (!ifmWriteQueue.size) { localStorage.removeItem(IFM_QUEUE_KEY); return; }
+const out = [];
+ifmWriteQueue.forEach((v, k) => out.push([k, v]));
+localStorage.setItem(IFM_QUEUE_KEY, JSON.stringify({ at: Date.now(), q: out }));
+} catch (e) { /* a full or disabled store must not stop the app working */ }
+}, 400);
+}
+function ifmRestoreQueue() {
+try {
+const raw = localStorage.getItem(IFM_QUEUE_KEY);
+if (!raw) return 0;
+const box = JSON.parse(raw);
+const rows = (box && box.q) || [];
+// Anything the current session has already queued wins: it is newer than
+// what was on disk when the page died.
+rows.forEach(([k, v]) => { if (!ifmWriteQueue.has(k)) ifmWriteQueue.set(k, v); });
+// Reads must see the restored values too, or the screen shows the old
+// figure while the new one sits waiting to be sent.
+rows.forEach(([k, v]) => { if (!ifmMem.has(k)) ifmMem.set(k, v); });
+return rows.length;
+} catch (e) { return 0; }
+}
 let ifmPosting = false;
 let ifmPendingGets = 0, ifmSpinTimer = null;
 // The whole arrangement of the waiting screen, in one place so it can be
@@ -7624,6 +7671,7 @@ if (ifmSpinTimer) { clearTimeout(ifmSpinTimer); ifmSpinTimer = null; }
 ifmSpinSettle();
 }
 async function ifmPump() {
+renderUnsentBar();
 if (ifmPosting) return;
 ifmPosting = true;
 try {
@@ -7631,21 +7679,32 @@ let posted = false;
 while (ifmWriteQueue.size) {
 const [key, value] = ifmWriteQueue.entries().next().value;
 ifmWriteQueue.delete(key);
+ifmSaveQueue();
 try {
 await ifmFetch(IFM_BACKEND_URL, { method: 'POST',
 headers: { 'Content-Type': 'text/plain' },
 body: JSON.stringify({ key: key, value: value }) }, 10000);
 posted = true;
-} catch (e) { noteStorageFailure(key, e); ifmWriteQueue.set(key, value); setTimeout(ifmPump, 30000); break; }
+} catch (e) { noteStorageFailure(key, e); ifmWriteQueue.set(key, value); ifmSaveQueue();
+setTimeout(ifmPump, 30000); break; }
 }
 // The radio is already up from the posts above; a poll in the same breath is
 // nearly free, and it is the moment freshness matters most -- right after
 // this person changed something other devices may be watching.
 if (posted && !ifmWriteQueue.size && !document.hidden) ifmPollChanges();
-} finally { ifmPosting = false; }
+} finally { ifmPosting = false; renderUnsentBar(); }
 }
+// A queue that fails keeps retrying on a thirty-second timer, so without a
+// tick of its own the bar would sit unchanged between attempts and never
+// notice it had become stuck.
+setInterval(renderUnsentBar, 3000);
 if (typeof window.storage === 'undefined') {
 let ifmPrimed = false, ifmPriming = null;
+// Anything the last session could not send. Restored before the first read,
+// so a screen never shows the old figure while the new one waits on disk, and
+// pumped immediately in case the signal is back.
+const ifmRestored = ifmRestoreQueue();
+if (ifmRestored) setTimeout(ifmPump, 800);
 // WHY THE APP USED TO SIT THERE FOR TEN SECONDS.
 //
 // The whole market's records come down in ONE request -- that part was always
@@ -7795,6 +7854,7 @@ return v === null || v === undefined ? null : { key: key, value: v };
 async set(key, value) {
 ifmMem.set(key, value);            // UI reads are instant from here on
 ifmWriteQueue.set(key, value);     // latest write wins; queue drains in order
+ifmSaveQueue();                    // and on the device, in case the page dies
 ifmPump();
 return { key: key, value: value };
 }
@@ -7861,6 +7921,32 @@ let ifmUpdating = false;
 // than never noticing an update at all.
 let ifmFileStamp = null, ifmStampless = false;
 let ifmQueueSeen = -1, ifmQueueSince = 0, ifmQueueBusySince = 0;
+// What has not reached the sheet yet, said plainly and continuously.
+//
+// The queue survives a reload now, but somebody still has to know there is
+// something in it -- otherwise they walk away from the phone believing a day
+// fee is recorded when it is sitting on the device waiting for a signal.
+//
+// A count, not a state. "3 changes not saved yet" says how much is at stake;
+// "offline" does not, and an office that has taken forty fees needs the
+// difference.
+let ifmUnsentSeen = -1;
+function renderUnsentBar() {
+const bar = document.getElementById('ifmUnsentBar');
+if (!bar) return;
+const n = ifmWriteQueue.size;
+if (n === ifmUnsentSeen) return;      // no churn: only redraw on a change
+ifmUnsentSeen = n;
+if (!n) { bar.style.display = 'none'; return; }
+const stuck = ifmQueueStuck();
+bar.innerHTML = '<b>' + n + ' change' + (n === 1 ? '' : 's') + ' not saved yet.</b> ' +
+(stuck
+? 'The market\u2019s records cannot be reached. <b>Nothing is lost</b> \u2014 it is held on this ' +
+'phone and goes up as soon as there is a signal, even if you close the app.'
+: 'Saving\u2026');
+bar.style.display = 'block';
+}
+
 function ifmQueueStuck() {
 const n = ifmWriteQueue.size;
 if (n === 0) { ifmQueueBusySince = 0; return false; }
@@ -21615,7 +21701,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-80';
+const BUILD_ID = '17-81';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
