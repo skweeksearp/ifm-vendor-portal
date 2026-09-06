@@ -7476,6 +7476,18 @@ return rows.length;
 } catch (e) { return 0; }
 }
 let ifmPosting = false;
+// What the last POST actually did. Busy is not broken, and until now the app
+// could not tell the two apart: a queue that never empties on a busy morning
+// looked exactly like a queue that cannot reach the server.
+let ifmPostFailedAt = 0, ifmPostOkAt = 0;
+function ifmBackendUnreachable() {
+// The radio being off is decisive. It being on is not, so it only rules the
+// question out, never in.
+try { if (navigator.onLine === false) return true; } catch (e) {}
+// A failure with nothing successful after it. One landed write clears this,
+// which is the difference between a slow morning and a dead connection.
+return ifmPostFailedAt > 0 && ifmPostFailedAt > ifmPostOkAt;
+}
 let ifmPendingGets = 0, ifmSpinTimer = null;
 // The whole arrangement of the waiting screen, in one place so it can be
 // changed without hunting. Real orbital data -- a is distance from the sun in
@@ -7685,7 +7697,9 @@ await ifmFetch(IFM_BACKEND_URL, { method: 'POST',
 headers: { 'Content-Type': 'text/plain' },
 body: JSON.stringify({ key: key, value: value }) }, 10000);
 posted = true;
+ifmPostOkAt = Date.now();
 } catch (e) { noteStorageFailure(key, e); ifmWriteQueue.set(key, value); ifmSaveQueue();
+ifmPostFailedAt = Date.now();
 setTimeout(ifmPump, 30000); break; }
 }
 // The radio is already up from the posts above; a poll in the same breath is
@@ -7930,17 +7944,24 @@ let ifmQueueSeen = -1, ifmQueueSince = 0, ifmQueueBusySince = 0;
 // A count, not a state. "3 changes not saved yet" says how much is at stake;
 // "offline" does not, and an office that has taken forty fees needs the
 // difference.
-let ifmUnsentSeen = -1;
+let ifmUnsentSeen = -1, ifmUnsentOffline = null;
 function renderUnsentBar() {
 const bar = document.getElementById('ifmUnsentBar');
 if (!bar) return;
 const n = ifmWriteQueue.size;
-if (n === ifmUnsentSeen) return;      // no churn: only redraw on a change
+const off = ifmBackendUnreachable();
+// Redraw when EITHER changes. Keying on the count alone left the alarming
+// wording up after the connection came back, because the count had not moved.
+if (n === ifmUnsentSeen && off === ifmUnsentOffline) return;
+ifmUnsentOffline = off;
 ifmUnsentSeen = n;
 if (!n) { bar.style.display = 'none'; return; }
-const stuck = ifmQueueStuck();
+// Only claim unreachability when a write has actually failed. ifmQueueStuck
+// answers a different question -- how long the queue has been busy -- and on
+// a market morning a busy queue is the normal state.
+const offline = ifmBackendUnreachable();
 bar.innerHTML = '<b>' + n + ' change' + (n === 1 ? '' : 's') + ' not saved yet.</b> ' +
-(stuck
+(offline
 ? 'The market\u2019s records cannot be reached. <b>Nothing is lost</b> \u2014 it is held on this ' +
 'phone and goes up as soon as there is a signal, even if you close the app.'
 : 'Saving\u2026');
@@ -8088,9 +8109,22 @@ function noteStorageFailure(key, e) {
 storageBroken = true;
 lastStorageError = { key, message: (e && e.message) || String(e), at: Date.now() };
 }
+// A read or write that worked. Without this, storageBroken meant "failed at
+// some point since the page loaded" -- and since a cold Apps Script start
+// often times out on the very first request, it latched at boot and stayed
+// latched, putting "Offline, some details may be out of date" on the kiosk
+// for the rest of the day while everything worked.
+function noteStorageWorking() {
+if (!storageBroken) return;
+storageBroken = false;
+try { document.body.classList.remove('ifm-offline'); } catch (e) {}
+const n = document.querySelector('.offline-note');
+if (n) n.remove();
+}
 async function storageGet(key) {
 try {
 const res = await window.storage.get(key);
+noteStorageWorking();
 return res ? JSON.parse(res.value) : STORAGE_MISSING;
 } catch (e) {
 return STORAGE_MISSING;
@@ -8176,7 +8210,7 @@ dropMoneyMemo();
 noteActivity(key);
 try {
 const res = await window.storage.set(key, JSON.stringify(value));
-if (!res) storageBroken = true;
+if (!res) storageBroken = true; else noteStorageWorking();
 } catch (e) {
 noteStorageFailure(key, e);
 }
@@ -8193,7 +8227,7 @@ async function storageSetShared(key, value) {
 dropMoneyMemo();
 try {
 const res = await window.storage.set(key, JSON.stringify(value), true);
-if (!res) storageBroken = true;
+if (!res) storageBroken = true; else noteStorageWorking();
 } catch (e) {
 noteStorageFailure(key, e);
 }
@@ -21701,7 +21735,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-81';
+const BUILD_ID = '17-82';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
