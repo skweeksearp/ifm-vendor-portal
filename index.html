@@ -1229,11 +1229,18 @@ body.pretending { padding-top: 42px; }
   font-weight: 900;
   font-size: clamp(19px, 3.4vw, 34px);
   letter-spacing: 0.01em;
-  line-height: 1.15;
+  line-height: 1.2;
   text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Two lines rather than a truncation. A long offer used to arrive as
+     "...late summe... at booth 60" -- a sentence stopping mid-word, on the
+     one part of the kiosk a shopper is meant to act on. The browser knows
+     the real width and the real font; a character count never did. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  /* No max-height and no hidden overflow. A cap here cut the last line off
+     silently -- worse than the ellipsis it replaced, because at least the
+     ellipsis admitted something was missing. The length is bounded by
+     KIOSK_DEAL_CHARS instead, which cuts with an ellipsis and says so. */
   color: #FF3D9A;
   -webkit-text-stroke: 1.6px #FF7A18;
   paint-order: stroke fill;
@@ -1248,7 +1255,9 @@ body.pretending { padding-top: 42px; }
     0 0 3px rgba(20,22,16,0.95), 0 0 3px rgba(20,22,16,0.95),
     0 1px 2px rgba(20,22,16,0.9), 0 2px 10px rgba(20,22,16,0.7),
     0 0 18px rgba(255,122,24,0.45);
-  animation: kioskDealPulse 1.6s ease-in-out infinite;
+  /* Slower. At 1.6s this blinked; on a wall display facing a queue that
+     reads as an alarm rather than an announcement. */
+  animation: kioskDealPulse 3.4s ease-in-out infinite;
 }
 @keyframes kioskDealPulse {
   /* The BAND holds still and the LETTERS pulse. Fading the whole strip in and
@@ -21606,7 +21615,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-79';
+const BUILD_ID = '17-80';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -21913,7 +21922,12 @@ kioskResizeBound = true;
 // was posted, not by which day it applies to. A deal posted now for tomorrow
 // is still news now.
 
-const KIOSK_DEAL_CHARS = 58;               // one line, at kiosk size, on any screen
+// Two lines' worth, at kiosk size, on any screen. This was 58 -- one line --
+// and the CSS wrapped nothing, so the cut WAS the layout. Now the browser
+// does the wrapping and this is only a backstop against a vendor who types a
+// paragraph: enough for a real offer, short of anything that would push the
+// banner over the map it sits on.
+const KIOSK_DEAL_CHARS = 116;
 let kioskDealShownId = null, kioskDealTimer = null, kioskDealSeenAt = null;
 
 // WHICH DAY'S BOOTH.
@@ -21939,9 +21953,10 @@ return vendorBoothOn(p.vendorId, today);
 }
 function kioskDealWords(p) {
 // "NEW: buy one get one free flowers at booth 34" -- the vendor's own words,
-// cut to one line, with the booth on the end because that is the part a
-// shopper acts on. If it will not fit, the booth stays and the words give way;
-// a banner that says what the offer is but not where is no use to anybody.
+// with the booth on the end because that is the part a shopper acts on. Over
+// two lines if it needs them; if it still will not fit, the booth stays and
+// the words give way, because a banner that says what the offer is but not
+// where is no use to anybody.
 const booth = kioskDealBooth(p);
 const v = cache.vendors.find(x => x.vendorId === p.vendorId);
 const head = 'New: ';
