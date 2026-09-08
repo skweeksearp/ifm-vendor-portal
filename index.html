@@ -2150,6 +2150,10 @@ font-size: clamp(14px, 1.5vw, 17px); font-weight: 700; padding: 0 0 8px; cursor:
 .ab-head { display: flex; align-items: center; gap: 11px; }
 .ab-thumb { width: 64px; height: 46px; object-fit: cover; border-radius: 7px;
 flex-shrink: 0; border: 1px solid var(--paper-dim); }
+.kl-hero-empty { width: 100%; aspect-ratio: 16/9; border-radius: 12px;
+background: var(--paper-dim, #EDE8D8); color: var(--ink-dim, #8A8268);
+display: flex; align-items: center; justify-content: center;
+font-size: 14px; margin-bottom: 10px; }
 .ab-thumb.empty { display: flex; align-items: center; justify-content: center;
 background: #EFE9D6; font-size: 10px; color: #8A8266; }
 .ab-text { flex: 1; min-width: 0; }
@@ -2876,6 +2880,14 @@ I sell food (prepared food or produce)
 <div id="promoList" style="margin-top:12px;"></div>
 </div>
 </div>
+</div>
+<div class="dash-fold" data-fold="fEvac">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'evacuation')">
+<span class="fold-title">Emergency Evacuation Plan</span>
+<span class="fold-sub">Where to go and what to do &mdash; from the market&rsquo;s own procedure</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
 </div>
 <div class="dash-fold" data-fold="fComplaint">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'complaint')">
@@ -10719,6 +10731,12 @@ document.getElementById('btnAnnualFull').classList.add('selected');
 // Login is never persisted or synced. A quick app-switch keeps your place because
 // the page stays alive; a cold open always lands on the sign-in screen.
 // One exception: a device set up as the kiosk resumes kiosk mode after any reload.
+// If a role has already been chosen by the time this runs, the person acted
+// while the data was still loading -- which the app is built to allow -- and
+// this must not undo their choice. Without this check, a tap fast enough to
+// land before loadAllData() resolves showed the right desk for a moment and
+// then silently reverted to the sign-in screen a fraction of a second later.
+if (currentRole) return;
 let kioskDevice = false;
 try { kioskDevice = localStorage.getItem('ifm-kiosk-device') === '1'; } catch (e) {}
 if (kioskDevice) {
@@ -10885,7 +10903,12 @@ const evac = document.getElementById('evacBar');
 // months on the reasoning that it describes the Steamboat pavilion -- but a
 // fire plan withheld because of the date is the wrong side of that argument,
 // and the months it judged by were a guess in the first place.
-if (evac) evac.style.display = (role === 'vendor' || role === 'manager' || role === 'staff') ? 'flex' : 'none';
+// Not on the vendor's desk. It was the loudest thing on every screen, every
+// time, for people who open the app to check a fee -- and a warning that is
+// always there stops being read. Vendors reach the plan through a drawer,
+// like everything else. The office and staff keep the bar, because they are
+// the ones who act on it.
+if (evac) evac.style.display = (role === 'manager' || role === 'staff') ? 'flex' : 'none';
 if (role === 'manager') {
 document.getElementById('bizName').textContent = 'Market Manager';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 full admin toolkit';
@@ -12809,7 +12832,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'ftender', 'mydocs',
+'fMerch', 'fSeasonRes', 'account', 'fGiftCert', 'ftender', 'mydocs', 'fEvac',
 // Raising something that needs looking into sits with reaching the office.
 'fComplaint',
 // Your part in the market: the committees you sit on, and how to reach the office.
@@ -21737,7 +21760,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '17-83';
+const BUILD_ID = '17-86';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -22488,7 +22511,8 @@ const photo = aboutPhoto(p);
 const head = document.createElement('div');
 head.className = 'ab-head';
 head.innerHTML =
-(photo ? '<img class="ab-thumb" src="' + photo + '" alt="">'
+(photo ? '<img class="ab-thumb" src="' + photo + '" alt="" ' +
+'onerror="this.outerHTML=\'<div class=\\\'ab-thumb empty\\\'>no photo</div>\'">'
 : '<div class="ab-thumb empty">no photo</div>') +
 '<div class="ab-text"><div class="ab-title"></div><div class="ab-sub"></div>' +
 '<div class="ab-tags"></div></div>';
@@ -23004,7 +23028,12 @@ const page = pages.find(p => p.id === kioskLearnPage) || pages[0];
 if (!page) { wrap.style.display = 'none'; return; }
 let inner = '<button type="button" class="kiosk-learn-close" onclick="closeKioskLearn()">\u00D7</button>';
 const photo = aboutPhoto(page);
-if (photo) inner += '<img class="kl-hero" src="' + photo + '" alt="">';
+// onerror swaps a broken source for the same placeholder a subject with no
+// photo at all would show. Without this, a seed path nobody has fulfilled
+// -- history, farming, the dish program, live music -- shows the browser's
+// own broken-image icon to a shopper reading about the market.
+if (photo) inner += '<img class="kl-hero" src="' + photo + '" alt="" ' +
+'onerror="this.outerHTML=\'<div class=\\\'kl-hero-empty\\\'>Photo coming soon</div>\'">';
 inner += '<h3>' + esc(page.title) + '</h3>' +
 '<div class="klsub">' + esc(page.sub || '') + (page.credit ? ' \u00b7 ' + esc(page.credit) : '') + '</div>' +
 page.body +
