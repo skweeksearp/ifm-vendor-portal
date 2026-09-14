@@ -3450,6 +3450,15 @@ announces any change.</p>
 </section>
 <section id="screen-directory" class="screen">
 <div class="screen-head" id="head-directory"></div>
+<div class="card" id="eeStandingCard" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-list"></use></svg></span>Easy Entry Standing</h2>
+<p class="empty-note" style="margin-top:0;">How you and other Easy Entry vendors compare on points &mdash; the number the Guide uses to sort each Booth Selection and next year&rsquo;s stall auction.</p>
+<div style="display:flex; gap:8px; margin-bottom:10px;">
+<button type="button" class="tone-btn on" id="eeViewThis" onclick="setEasyEntryView('this')">This Year&rsquo;s Points <span style="opacity:.75; font-weight:400;">&mdash; sorts next year</span></button>
+<button type="button" class="tone-btn" id="eeViewLast" onclick="setEasyEntryView('last')">Last Year&rsquo;s Points <span style="opacity:.75; font-weight:400;">&mdash; sorts this year</span></button>
+</div>
+<div id="eeList"></div>
+</div>
 <div class="card">
 <input type="text" id="dirSearch" class="find-field" placeholder="Search by business or last name" oninput="renderDirectory(this.value)">
 <div id="dirCount" class="empty-note" style="margin-top:8px;"></div>
@@ -17939,7 +17948,7 @@ if (name === 'fclog') initFcLogScreen();
 if (name === 'tender') initTenderScreen();
 if (name === 'communicate') initCommunicateScreen();
 if (name === 'booths') { renderBooths(); centerLiveMap('boothCanvasWrap'); }
-if (name === 'directory') renderDirectory('');
+if (name === 'directory') { renderDirectory(''); renderEasyEntryStanding(); }
 if (name === 'lottery') { initLotteryScreen(); centerLiveMap('lottoMapWrap'); }
 if (name === 'satlottery') { initSatLotteryScreen(); centerLiveMap('satLottoMapWrap'); }
 if (name === 'boothlayout') initBoothLayoutScreen();
@@ -18474,6 +18483,53 @@ if (!el) return;
 const more = el.scrollHeight - el.clientHeight;
 el.classList.toggle('has-above', el.scrollTop > 4);
 el.classList.toggle('has-below', more > 4 && el.scrollTop < more - 4);
+}
+// ---- Easy Entry standing: how the class compares on points -----------
+// Two different numbers answer two different questions, and the Guide
+// uses both. What is CURRENTLY sorting this year's Booth Selections and
+// the stall auction is whatever was posted at the last season rollover --
+// a frozen number, unchanged until the next posting. What WILL sort next
+// year is that same number plus this season's membership point and
+// whatever attendance has been earned so far -- a moving number, since
+// attendance keeps happening between now and the day it is actually
+// posted. Neither is stored anywhere as its own field; both are computed
+// here the same way the Board's own posting screen already projects them,
+// so a vendor sees exactly what management would see, not an approximation.
+let eeView = 'this';
+function projectedPointsForVendor(vendorId, year) {
+const current = vendorPoints(vendorId);
+const attended = attendedMarketDates(vendorId, year).length;
+const priorEntry = cache.ledger.filter(r =>
+r.vendorId === vendorId && r.rollover === (year - 1) && r.type === 'Attendance')
+.reduce((s, r) => s + Number(r.points || 0), 0);
+return current + ruleNum('ptsYear') + attended * ruleNum('ptsDay') - priorEntry;
+}
+function setEasyEntryView(which) {
+eeView = which;
+document.getElementById('eeViewThis').className = 'tone-btn' + (which === 'this' ? ' on' : '');
+document.getElementById('eeViewLast').className = 'tone-btn' + (which === 'last' ? ' on' : '');
+renderEasyEntryStanding();
+}
+function renderEasyEntryStanding() {
+const card = document.getElementById('eeStandingCard');
+const wrap = document.getElementById('eeList');
+if (!card || !wrap) return;
+const me = currentVendor();
+// Shown only to vendors this actually applies to. A Full member has no
+// standing to check here -- the Guide's Easy Entry ordering is not what
+// governs their booth, so a list built for a different rule would just
+// be confusing noise on their own directory screen.
+if (!me || !/Easy Entry/.test(me.category || '')) { card.style.display = 'none'; return; }
+card.style.display = '';
+const year = seasonYear();
+const rows = cache.vendors
+.filter(v => /Easy Entry/.test(v.category || ''))
+.map(v => ({ v: v, pts: eeView === 'this' ? projectedPointsForVendor(v.vendorId, year) : vendorPoints(v.vendorId) }))
+.sort((a, b) => b.pts - a.pts || byBusinessName(a.v, b.v));
+wrap.innerHTML = rows.map(r => '<div class="req-row"><div class="req-row-main">' +
+'<div class="req-name">' + esc(r.v.businessName) + (r.v.vendorId === me.vendorId ? ' <b>(you)</b>' : '') + '</div>' +
+'</div><div class="req-tally"><span class="req-state onfile">' + r.pts + ' pts</span></div></div>').join('');
+if (!rows.length) wrap.innerHTML = '<p class="empty-note">No other Easy Entry vendors on record yet.</p>';
 }
 function renderDirectory(filterText) {
 const list = document.getElementById('dirList');
@@ -21963,7 +22019,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-12';
+const BUILD_ID = '18-13';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
