@@ -2556,11 +2556,36 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <div class="fold-body"></div>
 </div>
 <div class="dash-fold" data-fold="guide">
-<div class="fold-bar" style="flex-direction:column; align-items:stretch; cursor:default; gap:10px;">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Bylaws and Vendor Guide</span>
-<a id="bylawsLink" href="#" target="_blank" rel="noopener" style="text-decoration:none; display:flex; align-items:center; color:inherit;"><span style="font-weight:700;">Bylaws</span><span class="fold-sub" id="bylawsLinkSub">Opens on the market&rsquo;s site &#8599;</span></a>
-<a href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener" style="text-decoration:none; display:flex; align-items:center; color:inherit;"><span style="font-weight:700;">Vendor Guide</span><span class="fold-sub">Opens on the market&rsquo;s site &#8599;</span></a>
-<button type="button" onclick="showScreen('bylawssearch')" style="text-decoration:none; display:flex; align-items:center; color:inherit; background:none; border:none; padding:0; font:inherit; text-align:left; width:100%; cursor:pointer;"><span style="font-weight:700;">Search the Bylaws</span><span class="fold-sub">Find a section by word or phrase</span></button>
+<span class="fold-sub">The market&rsquo;s governing rules, and the full Vendor Guide</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<div class="dash-fold" data-fold="bylawsInner">
+<button type="button" class="fold-bar" onclick="toggleFold(this); renderBylawsSearch('');">
+<span class="fold-title">Bylaws</span>
+<span class="fold-sub">Search every Article and Section, or open the full PDF</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<a id="bylawsLink" href="#" target="_blank" rel="noopener" class="comm-btn" style="margin-bottom:14px;"><svg class="ico"><use href="#i-document"></use></svg> <span id="bylawsLinkSub">Open the full PDF</span></a>
+<p class="empty-note" style="margin:-4px 0 14px;">Every Article and Section of the market&rsquo;s Bylaws, searchable by word or phrase. A match anywhere in a section&rsquo;s text shows the whole section, not just the matching line.</p>
+<input type="text" id="bylawsSearchBox" class="find-field" placeholder="e.g. quorum, removal, vote" oninput="renderBylawsSearch(this.value)">
+<div id="bylawsSearchCount" class="empty-note" style="margin-top:8px;"></div>
+<div id="bylawsSearchList" class="drawer-list"></div>
+</div>
+</div>
+<div class="dash-fold" data-fold="vendorGuideInner">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Vendor Guide</span>
+<span class="fold-sub">The market&rsquo;s full guide, kept on Google Docs</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<a class="comm-btn" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><svg class="ico"><use href="#i-link"></use></svg> Open the Vendor Guide</a>
+</div>
+</div>
 </div>
 </div>
 
@@ -3395,15 +3420,6 @@ announces any change.</p>
 <div id="dirCount" class="empty-note" style="margin-top:8px;"></div>
 </div>
 <div id="dirList" class="drawer-list"></div>
-</section>
-<section id="screen-bylawssearch" class="screen">
-<div class="screen-head" id="head-bylawssearch"></div>
-<p class="empty-note" style="margin:-4px 0 14px;">Every Article and Section of the market&rsquo;s Bylaws, searchable by word or phrase. A match anywhere in a section&rsquo;s text shows the whole section, not just the matching line.</p>
-<div class="card">
-<input type="text" id="bylawsSearchBox" class="find-field" placeholder="e.g. quorum, removal, vote" oninput="renderBylawsSearch(this.value)">
-<div id="bylawsSearchCount" class="empty-note" style="margin-top:8px;"></div>
-</div>
-<div id="bylawsSearchList" class="drawer-list"></div>
 </section>
 <section id="screen-managerdash" class="screen">
 <div class="screen-head" id="head-managerdash"></div>
@@ -17676,12 +17692,12 @@ if (BYLAWS_URL) {
 a.href = BYLAWS_URL;
 a.style.opacity = '';
 a.style.pointerEvents = '';
-if (sub) sub.textContent = 'Opens the bylaws PDF';
+if (sub) sub.textContent = 'Open the full PDF';
 } else {
 a.removeAttribute('href');
 a.style.opacity = '0.45';
 a.style.pointerEvents = 'none';
-if (sub) { sub.textContent = 'Link not set yet'; sub.style.color = '#8A3B2E'; }
+if (sub) { sub.textContent = 'PDF not available yet'; sub.style.color = '#8A3B2E'; }
 }
 }
 let wlCache = null;
@@ -18038,7 +18054,6 @@ if (name === 'tender') initTenderScreen();
 if (name === 'communicate') initCommunicateScreen();
 if (name === 'booths') { renderBooths(); centerLiveMap('boothCanvasWrap'); }
 if (name === 'directory') { renderDirectory(''); renderEasyEntryStanding(); }
-if (name === 'bylawssearch') { document.getElementById('bylawsSearchBox').value = ''; renderBylawsSearch(''); }
 if (name === 'lottery') { initLotteryScreen(); centerLiveMap('lottoMapWrap'); }
 if (name === 'satlottery') { initSatLotteryScreen(); centerLiveMap('satLottoMapWrap'); }
 if (name === 'boothlayout') initBoothLayoutScreen();
@@ -18192,7 +18207,6 @@ dashboard:         { title: () => vendorClassLine(currentVendor()), home: true }
 managerdash:       { title: () => currentRole === 'president' ? 'Board of Directors' : 'Market Manager', home: true },
 staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
-bylawssearch:      { title: 'Search the Bylaws' },
 winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
@@ -22109,7 +22123,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-16';
+const BUILD_ID = '18-17';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
