@@ -753,6 +753,24 @@ font-size: 13px; font-weight: 800; letter-spacing: 0.04em;
 text-transform: uppercase; opacity: 0.6; margin-bottom: 6px;
 }
 .ruling-line { font-size: 15px; line-height: 1.4; padding: 3px 0; }
+.bf-ruling { flex: 1 0 100%; margin-top: 10px; border: 1px solid var(--paper-dim); border-radius: 12px; background: rgba(255,255,255,0.55); }
+.bf-ruling-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; background: none; border: 0;
+  font-family: inherit; font-size: 15px; text-align: left; color: var(--ink); cursor: pointer; flex-wrap: wrap; }
+.bf-ruling-title { font-weight: 700; margin-right: auto; }
+.bf-ruling-head .req-state { margin-top: 0; }
+.bf-ruling-head .fold-chev { font-size: 18px; }
+.bf-ruling-sum { padding: 0 12px 10px; }
+.bf-ruling-text { font-size: 15px; line-height: 1.4; white-space: pre-wrap; margin-bottom: 4px; }
+.bf-ruling-form { padding: 0 12px 12px; }
+.bf-ruling-form label { margin-top: 10px; }
+.bf-ruling-form textarea, .bf-ruling-form input[type=text], .bf-ruling-form select { width: 100%; box-sizing: border-box; font-size: 16px; }
+.bf-ruling-form textarea { font-family: inherit; padding: 10px; border: 1px solid var(--paper-dim); border-radius: 10px; resize: vertical; }
+.bf-ruling-hint { font-size: 14px; margin: 8px 0 0; }
+.bf-ruling-done { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-size: 15px; opacity: 1; margin-top: 12px; }
+.bf-ruling-done input { width: 22px; height: 22px; }
+.bf-ruling-acts { display: flex; gap: 8px; margin-top: 12px; }
+.bf-ruling-acts .primary-btn, .bf-ruling-acts .ghost-btn { margin-top: 0; }
+.bf-inline-btn { width: auto; display: inline-block; margin: 6px 0 0; padding: 6px 12px; font-size: 14px; }
 .bf-ask {
 flex: 1 0 100%; margin-top: 10px; font-size: 15px; font-style: italic;
 opacity: 0.75; line-height: 1.35;
@@ -5959,6 +5977,7 @@ comes from.</p>
 <label for="bfStatus">Show</label>
 <select id="bfStatus" onchange="renderBoardFlags()">
 <option value="open">Nothing decided yet</option>
+<option value="todo">Decided, still to update in the app</option>
 <option value="all">Everything</option>
 <option value="lapsed">The time I set has run out</option>
 <option value="agenda">Going to the Board</option>
@@ -22659,7 +22678,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-34';
+const BUILD_ID = '18-35';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -31973,6 +31992,12 @@ alerts.push({ topic: 'Board', n: forBoard.length, t: forBoard.length + (forBoard
 d: 'Flagged for Attention \u2014 export the list from Data Export',
 cls: 'submitted', go: 'boardflags' });
 }
+const toCarry = flagsToCarryOut();
+if (toCarry.length) {
+alerts.push({ topic: 'Board', n: toCarry.length, t: toCarry.length + (toCarry.length === 1 ? ' Board decision still to put into the app' : ' Board decisions still to put into the app'),
+d: toCarry.slice(0, 3).map(f => f.id + ': ' + (flagDecision(f.id).decision || '')).join(' \u00b7 ').slice(0, 160),
+cls: 'expiring', go: 'boardflags', pre: () => { bfNextFilter = 'todo'; } });
+}
 const lapsedFlags = allBoardFlags().filter(f => flagStatus(f.id) === 'lapsed');
 if (lapsedFlags.length) {
 alerts.push({ topic: 'Board', n: lapsedFlags.length, t: lapsedFlags.length + ' standing decisions have run out',
@@ -32009,7 +32034,7 @@ main.innerHTML = '<div class="req-name">' + esc(a.t) + '</div>' +
 '<div class="req-tally"><span class="req-state ' + a.cls + '">' +
 (canAct ? (isOpen ? 'Close' : 'Handle') : 'Open') + '</span></div>';
 main.onclick = () => {
-if (!canAct) { showScreen(a.go); return; }
+if (!canAct) { if (a.pre) a.pre(); showScreen(a.go); return; }
 if (mgrAttnOpen.has(a.id)) mgrAttnOpen.delete(a.id); else mgrAttnOpen.add(a.id);
 renderManagerAlerts();
 };
@@ -32044,7 +32069,7 @@ const link = document.createElement('button');
 link.type = 'button';
 link.className = 'attn-toollink';
 link.textContent = 'Open the full tool \u203a';
-link.onclick = () => showScreen(a.go);
+link.onclick = () => { if (a.pre) a.pre(); showScreen(a.go); };
 panel.appendChild(link);
 row.appendChild(panel);
 }
@@ -32329,6 +32354,40 @@ const d = flagDecision(id);
 if (d.until && d.until < todayISO()) return 'lapsed';
 return d.action;
 }
+// THE BOARD'S DECISION (18-35). The status above says what the Board chose
+// to DO about a question; this records the ruling itself, where it was
+// minuted, and what has to change in the app because of it, so whoever
+// updates the app after the meeting has a list rather than a memory.
+// Stored on the same record as the status (cache.ops.flags.status[id]):
+//   decision  the ruling, in the Board's words
+//   minutes   where it is minuted
+//   follow    '' | 'none' | 'rules' | 'build'   what the app needs
+//   done      true once the app reflects it
+//   decidedAt the date the decision was first written down
+const FLAG_FOLLOW = [
+{ v: 'none', t: 'Nothing \u2014 recording it is enough' },
+{ v: 'rules', t: 'A figure on the Market Rules screen' },
+{ v: 'build', t: 'A change to how the app works (a new build)' },
+];
+function flagHasDecision(id) { return !!(flagDecision(id).decision || '').trim(); }
+function flagNeedsUpdate(id) {
+const d = flagDecision(id);
+return flagHasDecision(id) && (d.follow === 'rules' || d.follow === 'build') && !d.done;
+}
+function flagsToCarryOut() { return allBoardFlags().filter(f => flagNeedsUpdate(f.id)); }
+async function saveFlagRuling(id, fields) {
+cache.ops.flags = cache.ops.flags || { status: {}, custom: [] };
+cache.ops.flags.status = cache.ops.flags.status || {};
+const prev = flagDecision(id);
+const next = Object.assign({}, prev, fields);
+if ((next.decision || '').trim() && !prev.decidedAt) next.decidedAt = todayISO();
+if (!(next.decision || '').trim()) { delete next.decidedAt; next.done = false; }
+if (next.follow === 'none') next.done = false;
+cache.ops.flags.status[id] = next;
+await saveOps();
+}
+let bfOpenRuling = null;       // which question's decision box is open
+let bfNextFilter = null;       // set by the Manager alert: open straight onto the to-do list
 function flagStatusLabel(id) {
 const d = flagDecision(id);
 const st = flagStatus(id);
@@ -32345,11 +32404,12 @@ async function setFlagDecision(id, action, period) {
 cache.ops.flags = cache.ops.flags || { status: {}, custom: [] };
 cache.ops.flags.status = cache.ops.flags.status || {};
 const opt = FLAG_STATUS.find(s => s.v === action);
-cache.ops.flags.status[id] = {
+const prev = flagDecision(id);
+cache.ops.flags.status[id] = Object.assign({}, prev, {
 action: action,
 until: opt && opt.timed ? flagUntil(period || 'season') : '',
 setAt: todayISO(),
-};
+});
 renderBoardFlags();
 await saveOps();
 }
@@ -32381,7 +32441,8 @@ const o = document.createElement('option');
 o.value = cat; o.textContent = cat;
 sel.appendChild(o);
 });
-document.getElementById('bfStatus').value = 'open';
+document.getElementById('bfStatus').value = bfNextFilter || 'open';
+bfNextFilter = null;
 document.getElementById('bfMsg').className = 'status-msg';
 renderBoardFlags();
 }
@@ -32402,9 +32463,12 @@ if (counts.agenda) bits.push(counts.agenda + ' going to the Board');
 if (counts.enforce) bits.push(counts.enforce + ' being enforced');
 if (counts.ignore) bits.push(counts.ignore + ' knowingly left alone');
 if (counts.lapsed) bits.push(counts.lapsed + ' where the time you set has run out');
+const todo = all.filter(f => flagNeedsUpdate(f.id)).length;
+if (todo) bits.push(todo + ' decided and still to update in the app');
 document.getElementById('bfSummary').textContent = bits.join(' \u00b7 ') + '.';
 let shown = all;
-if (status !== 'all') shown = shown.filter(f => flagStatus(f.id) === status);
+if (status === 'todo') shown = shown.filter(f => flagNeedsUpdate(f.id));
+else if (status !== 'all') shown = shown.filter(f => flagStatus(f.id) === status);
 if (cat) shown = shown.filter(f => f.cat === cat);
 const order = { dormant: 0, discrepancy: 1, gap: 2 };
 shown = shown.slice().sort((a, b) => order[a.kind] - order[b.kind] || a.id.localeCompare(b.id));
@@ -32456,8 +32520,79 @@ setFlagDecision(f.id, sel.value, '');
 per.onchange = () => setFlagDecision(f.id, sel.value, per.value);
 row.appendChild(sel);
 row.appendChild(per);
+row.appendChild(buildFlagRuling(f));
 wrap.appendChild(row);
 });
+}
+function buildFlagRuling(f) {
+const d = flagDecision(f.id);
+const box = document.createElement('div');
+box.className = 'bf-ruling';
+const has = flagHasDecision(f.id);
+const open = bfOpenRuling === f.id;
+const head = document.createElement('button');
+head.type = 'button';
+head.className = 'bf-ruling-head';
+const followT = (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t;
+let state = '';
+if (has) {
+  state = flagNeedsUpdate(f.id) ? '<span class="req-state expiring">Still to update in the app</span>'
+    : (d.follow === 'rules' || d.follow === 'build') && d.done ? '<span class="req-state onfile">Done in the app</span>'
+    : '<span class="req-state exempt">Recorded</span>';
+}
+head.innerHTML = '<span class="bf-ruling-title">' + (has ? 'The Board\u2019s decision' : 'Record the Board\u2019s decision') +
+  '</span>' + state + '<span class="fold-chev">' + (open ? '\u2304' : '\u203a') + '</span>';
+head.onclick = () => { bfOpenRuling = open ? null : f.id; renderBoardFlags(); };
+box.appendChild(head);
+if (has && !open) {
+  const sum = document.createElement('div');
+  sum.className = 'bf-ruling-sum';
+  sum.innerHTML = '<div class="bf-ruling-text">' + esc(d.decision) + '</div>' +
+    '<div class="req-meta">' + [d.minutes ? 'Minuted: ' + esc(d.minutes) : 'No minutes reference yet',
+      d.decidedAt ? 'Recorded ' + esc(formatDisplayDate(d.decidedAt)) : '',
+      followT ? 'App: ' + esc(followT) : 'What the app needs: not said yet'].filter(Boolean).join(' \u00b7 ') + '</div>';
+  box.appendChild(sum);
+}
+if (!open) return box;
+const form = document.createElement('div');
+form.className = 'bf-ruling-form';
+const idp = 'bfr-' + f.id;
+form.innerHTML =
+  '<label for="' + idp + '-t">What the Board decided</label>' +
+  '<textarea id="' + idp + '-t" rows="3" placeholder="In the Board\u2019s words, e.g. \u201cFour or more years counts.\u201d"></textarea>' +
+  '<label for="' + idp + '-m">Minutes reference</label>' +
+  '<input type="text" id="' + idp + '-m" placeholder="e.g. Board meeting 12 Nov 2026, item 4">' +
+  '<label for="' + idp + '-f">What has to change in the app</label>' +
+  '<select id="' + idp + '-f"><option value="">Not decided yet</option>' +
+  FLAG_FOLLOW.map(x => '<option value="' + x.v + '">' + esc(x.t) + '</option>').join('') + '</select>' +
+  '<p class="empty-note bf-ruling-hint" id="' + idp + '-h"></p>' +
+  '<label class="bf-ruling-done" id="' + idp + '-dl"><input type="checkbox" id="' + idp + '-d"> Done \u2014 the app now reflects this</label>' +
+  '<div class="bf-ruling-acts"><button type="button" class="primary-btn" id="' + idp + '-s">Save decision</button>' +
+  '<button type="button" class="ghost-btn" id="' + idp + '-c">Close</button></div>';
+box.appendChild(form);
+const t = form.querySelector('#' + idp + '-t'), m = form.querySelector('#' + idp + '-m');
+const fs = form.querySelector('#' + idp + '-f'), dn = form.querySelector('#' + idp + '-d');
+const hint = form.querySelector('#' + idp + '-h'), dl = form.querySelector('#' + idp + '-dl');
+t.value = d.decision || ''; m.value = d.minutes || ''; fs.value = d.follow || ''; dn.checked = !!d.done;
+const paint = () => {
+  const v = fs.value;
+  dl.style.display = (v === 'rules' || v === 'build') ? '' : 'none';
+  hint.innerHTML = v === 'rules'
+    ? 'Change the figure on <b>Market Rules</b>, and put the same minutes reference in its What Changed box. Then tick Done. <button type="button" class="ghost-btn bf-inline-btn" onclick="showScreen(\'marketrules\')">Open Market Rules</button>'
+    : v === 'build'
+    ? 'Pass this to whoever builds the app, quoting <b>' + esc(f.id) + '</b> and the decision above. Tick Done once a build carries it.'
+    : v === 'none' ? 'Nothing further: the decision is on record here and in the Board export.' : '';
+  hint.style.display = hint.innerHTML ? '' : 'none';
+};
+fs.onchange = paint; paint();
+form.querySelector('#' + idp + '-s').onclick = async () => {
+  await saveFlagRuling(f.id, { decision: t.value.trim(), minutes: m.value.trim(), follow: fs.value, done: dn.checked });
+  bfOpenRuling = null;
+  renderBoardFlags();
+  showMsg('bfMsg', 'ok', t.value.trim() ? 'Decision saved for ' + f.id + '.' : 'Decision cleared for ' + f.id + '.');
+};
+form.querySelector('#' + idp + '-c').onclick = () => { bfOpenRuling = null; renderBoardFlags(); };
+return box;
 }
 const FLAG_SCREENS = {
 'Fines': ['fines'],
@@ -32544,10 +32679,13 @@ function exportBoardReviewCSV() {
 const rows = boardReviewList().map(f => {
 const d = flagDecision(f.id);
 const kind = FLAG_KIND[f.kind] || FLAG_KIND.gap;
-return [f.id, f.t, kind.t, f.cat, f.src, f.d, d.setAt || '', 'For Board review'];
+const fol = (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t || '';
+return [f.id, f.t, kind.t, f.cat, f.src, f.d, d.setAt || '', 'For Board review',
+d.decision || '', d.minutes || '', fol, d.follow === 'rules' || d.follow === 'build' ? (d.done ? 'Done' : 'Still to do') : ''];
 });
 downloadCSV('ifm-board-review.csv',
-['Ref', 'Topic', 'Why flagged', 'Area', 'Where the rule lives', 'Detail', 'Sent on', 'Status'],
+['Ref', 'Topic', 'Why flagged', 'Area', 'Where the rule lives', 'Detail', 'Sent on', 'Status',
+'Board decision', 'Minutes', 'What the app needs', 'App updated'],
 rows);
 }
 const RULE_DEFS = [
