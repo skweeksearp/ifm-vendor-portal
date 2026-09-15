@@ -8702,7 +8702,12 @@ return true;
 async function storageSet(key, value) {
 if (boardDeskRefuses(key)) return;
 dropMoneyMemo();
-noteActivity(key);
+// Only a save that will reach the market's records is a change worth
+// logging. A save to a record the sheet has not yet confirmed is held and
+// may never be sent (see "A FAILED READ IS NOT AN EMPTY RECORD"); logging
+// it wrote "Points ledger changed \u00b7 Unrecorded" for starter data that
+// went nowhere (18-38).
+if (!IFM_BACKEND_URL || ifmKeyConfirmed(key)) noteActivity(key);
 try {
 const res = await window.storage.set(key, JSON.stringify(value));
 if (!res) storageBroken = true; else noteStorageWorking();
@@ -22768,7 +22773,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-37';
+const BUILD_ID = '18-38';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -30183,7 +30188,7 @@ if (fv) { fv.value = ''; }
 setActScope('notable');
 }
 const ACT_WHO = { manager: 'Market Manager', president: 'Board President', staff: 'Staff',
-vendor: 'A vendor', volunteer: 'Volunteer', kiosk: 'Kiosk', developer: 'Developer', unknown: 'Unrecorded' };
+vendor: 'A vendor', volunteer: 'Volunteer', kiosk: 'Kiosk', developer: 'Developer', board: 'Board of Directors', unknown: 'No one signed in (the app itself)' };
 function actFiltered() {
 const q = (document.getElementById('actSearch') || {}).value || '';
 const days = Number((document.getElementById('actWindow') || {}).value || 7);
