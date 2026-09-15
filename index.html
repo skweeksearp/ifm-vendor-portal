@@ -639,6 +639,19 @@ border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .picker { padding: 24px 18px; }
+.landing-login { margin-top: 22px; }
+.landing-login select,
+.landing-login input[type=password] {
+width: 100%; box-sizing: border-box; padding: 13px 12px; border: 1px solid var(--paper-dim);
+background: #fff; font-size: 16px; border-radius: 10px; color: var(--ink); font-family: inherit;
+}
+.landing-login select:disabled,
+.landing-login input:disabled { opacity: 0.5; }
+.landing-login .vfind { margin: 0; }
+.landing-login .vfind-input { font-size: 16px; padding: 13px 12px; }
+.landing-login .primary-btn { margin-top: 18px; }
+.landing-kiosk { margin-top: 14px; padding: 11px 16px; border-radius: 999px; line-height: 1.3; }
+.landing-kiosk-hint { display: block; font-size: 13px; font-weight: 400; opacity: 0.75; }
 .help-dot {
 display: inline-flex; align-items: center; justify-content: center;
 width: 20px; height: 20px; margin-left: 7px; padding: 0; vertical-align: middle;
@@ -2468,12 +2481,18 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
 <div id="landing" class="picker" style="display:none;">
 <img id="landingLogo" class="picker-logo" alt="Ithaca Farmers Market">
 <div style="text-align:center; margin: 2px 0 0;"><button type="button" class="help-dot" onclick="showHelp(59)" aria-label="About this build">?</button></div>
-<button class="primary-btn" style="margin-top:22px; width:100%;" id="landingVendorBtn" onclick="enterAsVendor()"><svg class="ico"><use href="#i-basket"></use></svg> Members / Vendors</button>
-<button class="primary-btn" style="width:100%;" id="landingManagerBtn" onclick="enterAsManager()"><svg class="ico"><use href="#i-toolbox"></use></svg> Market Manager</button>
-<button class="primary-btn" style="width:100%;" id="landingPresidentBtn" onclick="enterAsPresident()"><svg class="ico"><use href="#i-gavel"></use></svg> Board of Directors</button>
-<button class="primary-btn" style="width:100%;" id="landingStaffBtn" onclick="enterAsStaff()"><svg class="ico"><use href="#i-clipboard"></use></svg> Staff</button>
-<button class="primary-btn" style="width:100%;" id="landingVolunteerBtn" onclick="enterAsVolunteer()"><svg class="ico"><use href="#i-sun-rays"></use></svg> Volunteers / Partners</button>
-<button class="primary-btn" style="width:100%;" id="landingKioskBtn" onclick="enterAsKiosk()"><svg class="ico"><use href="#i-search"></use></svg> Kiosk <span style="opacity:.7; font-weight:400;">(tap six times rapidly to exit)</span></button>
+<div class="landing-login" id="landingLogin">
+<label for="landingRole">Sign in as</label>
+<select id="landingRole" data-no-find="1" onchange="landingRefresh()"><option value="">Choose a login</option></select>
+<label for="landingWho" id="landingWhoLabel">Business or name</label>
+<select id="landingWhoDesk" data-no-find="1" disabled><option value="">Choose a login first</option></select>
+<div id="landingWhoVendor" style="display:none;"><select id="landingWho" data-lead-row="hide" onchange="landingRefresh()"><option value="">Choose a vendor</option></select></div>
+<label for="landingPass">Password</label>
+<input type="password" id="landingPass" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Not needed in this demo" onkeydown="if (event.key === 'Enter') landingSignIn()">
+<p class="empty-note" id="landingNote" style="margin:8px 2px 0;"></p>
+<button type="button" class="primary-btn" id="landingSignInBtn" onclick="landingSignIn()" disabled>Sign in</button>
+</div>
+<button type="button" class="ghost-btn landing-kiosk" id="landingKioskBtn" onclick="enterAsKiosk()"><svg class="ico"><use href="#i-search"></use></svg> Information Kiosk<span class="landing-kiosk-hint" id="landingKioskHint"></span></button>
 <button class="ghost-btn" id="landingDevBtn" style="width:auto; margin:16px auto 0; display:block; padding:7px 16px; font-size:13px; opacity:.75;" onclick="enterAsDeveloper()"><svg class="ico"><use href="#i-wrench"></use></svg> Developer</button>
 <p class="empty-note" id="landingBuild" style="margin:10px 0 0; text-align:center; opacity:.6;"></p>
 </div>
@@ -10426,7 +10445,7 @@ const TUNING_UI = [
 { k: 'unsentGraceMs', t: 'Offline bar waits this long before showing', u: 's', div: 1000, min: 0, max: 60, step: 1,
   d: 'A fresh app opening with something still queued gets this long to quietly succeed before the Offline message appears. Once shown, it still clears itself the moment a save gets through.' },
 { k: 'kioskExitTaps', t: 'Taps to leave kiosk mode', u: '', div: 1, min: 2, max: 15, step: 1,
-  d: 'On the Kiosk button at the bottom of the sign-in screen.' },
+  d: 'Anywhere on the kiosk screen, to get back to the sign-in screen.' },
 { k: 'kioskExitWindowMs', t: 'Those taps must land within', u: 's', div: 1000, min: 1, max: 20, step: 0.5,
   d: 'Longer is easier to do by accident; shorter is harder to do on purpose.' }
 ];
@@ -10738,13 +10757,107 @@ const DESKS_LIVE = {
   volunteer:  true,
   kiosk:      true,
 };
+// The sign-in screen is two menus and a password box. It stands in for the
+// real login that is designed but not built -- per-vendor for members,
+// shared per desk for everyone else -- so it is laid out the way that login
+// will be, and checks nothing. The password box is there to show where a
+// password will go; whatever is typed is thrown away on sign-in, and an
+// empty one is fine.
+//
+// The second menu is a vendor only for Members / Vendors, and it is the same
+// type-to-find chooser every other vendor list in the app uses, not a
+// scrolling list of all of them. Desks sign in AS the desk: no individual
+// names are recorded in the app, and inventing some would be inventing
+// records. So for a desk the second menu is shown, greyed, saying so --
+// greyed rather than hidden, because "not for this login" and "missing"
+// are different answers.
+const LANDING_ROLES = [
+  { k: 'vendor',    t: 'Members / Vendors' },
+  { k: 'manager',   t: 'Market Manager' },
+  { k: 'president', t: 'Board of Directors' },
+  { k: 'staff',     t: 'Staff' },
+  { k: 'volunteer', t: 'Volunteers / Partners' },
+];
+// The kiosk is not a login -- nobody signs in to it -- so it is its own
+// button under the sign-in box rather than a choice in the menu.
+// DESKS_LIVE decides which logins the first menu offers at all. A restricted
+// build removes the others from the menu, exactly as it used to remove their
+// buttons.
 function applyDeskAccess() {
-  const map = { vendor: 'landingVendorBtn', manager: 'landingManagerBtn', president: 'landingPresidentBtn',
-                staff: 'landingStaffBtn', volunteer: 'landingVolunteerBtn', kiosk: 'landingKioskBtn' };
-  Object.keys(map).forEach(k => {
-    const btn = document.getElementById(map[k]);
-    if (btn) btn.style.display = DESKS_LIVE[k] ? '' : 'none';
-  });
+  const sel = document.getElementById('landingRole');
+  if (!sel) return;
+  const was = sel.value;
+  const live = LANDING_ROLES.filter(r => DESKS_LIVE[r.k]);
+  sel.innerHTML = '<option value="">Choose a login</option>' +
+    live.map(r => '<option value="' + r.k + '">' + esc(r.t) + '</option>').join('');
+  sel.value = live.some(r => r.k === was) ? was : '';
+  const kb = document.getElementById('landingKioskBtn');
+  if (kb) kb.style.display = DESKS_LIVE.kiosk ? '' : 'none';
+  const kh = document.getElementById('landingKioskHint');
+  if (kh) kh.textContent = 'Tap ' + tune('kioskExitTaps') + ' times quickly to exit';
+  fillLandingWho();
+  landingRefresh();
+}
+// Refilled only when the vendor list itself changes, so a choice survives a
+// background refresh of the records.
+function fillLandingWho() {
+  const sel = document.getElementById('landingWho');
+  if (!sel || typeof cache === 'undefined') return;
+  const vs = (cache.vendors || []).slice().sort(byBusinessName);
+  const sig = vs.map(v => v.vendorId).join(',');
+  if (sel.dataset.sig === sig) return;
+  const was = sel.value;
+  sel.innerHTML = '<option value="">Choose a vendor</option>' +
+    vs.map(v => '<option value="' + esc(v.vendorId) + '">' + esc(v.businessName) + '</option>').join('');
+  sel.dataset.sig = sig;
+  sel.value = vs.some(v => v.vendorId === was) ? was : '';
+  mountVendorFinder(sel);
+}
+function landingRefresh() {
+  const role = (document.getElementById('landingRole') || {}).value || '';
+  const who = document.getElementById('landingWho');
+  const whoWrap = document.getElementById('landingWhoVendor');
+  const desk = document.getElementById('landingWhoDesk');
+  const pass = document.getElementById('landingPass');
+  const note = document.getElementById('landingNote');
+  const btn = document.getElementById('landingSignInBtn');
+  if (!who || !whoWrap || !desk || !pass || !note || !btn) return;
+  const r = LANDING_ROLES.find(x => x.k === role);
+  const isVendor = role === 'vendor';
+  whoWrap.style.display = isVendor ? '' : 'none';
+  desk.style.display = isVendor ? 'none' : '';
+  let ready = false;
+  if (!r) {
+    desk.innerHTML = '<option value="">Choose a login first</option>';
+    note.textContent = 'This is a demo: pick any login to see that desk. No password is checked.';
+  } else if (isVendor) {
+    const n = (cache.vendors || []).length;
+    ready = !!who.value;
+    note.textContent = !n
+      ? 'Fetching the market\u2019s records\u2026 this is only slow the first time on a new phone.'
+      : 'No password is checked in this demo \u2014 leave it empty if you like.';
+  } else {
+    desk.innerHTML = '<option value="">' + esc(r.t) + ' \u2014 one shared desk login</option>';
+    ready = true;
+    note.textContent = 'Desks sign in as the desk, not by name. No password is checked in this demo.';
+  }
+  btn.disabled = !ready;
+}
+function landingSignIn() {
+  const role = (document.getElementById('landingRole') || {}).value || '';
+  const who = (document.getElementById('landingWho') || {}).value || '';
+  const pass = document.getElementById('landingPass');
+  if (pass) pass.value = '';
+  if (pass && pass.blur) pass.blur();
+  if (role === 'vendor') {
+    if (!who || !(cache.vendors || []).some(v => v.vendorId === who)) { landingRefresh(); return; }
+    document.body.classList.remove('kiosk-mode');
+    document.getElementById('landing').style.display = 'none';
+    selectVendor(who);
+  } else if (role === 'manager') enterAsManager();
+  else if (role === 'president') enterAsPresident();
+  else if (role === 'staff') enterAsStaff();
+  else if (role === 'volunteer') enterAsVolunteer();
 }
 // Switching it off has to UNDO it, not merely skip it. A phone that
 // registered the worker while it was on keeps that worker, and it keeps
@@ -10858,6 +10971,8 @@ if (ifmChainFrom) ifmChainMs = Date.now() - ifmChainFrom;
 
 ifmDataReady = loadAllData();
 await ifmDataReady;
+fillLandingWho();
+landingRefresh();
 ifmRecordsMs = Date.now() - bootStarted;
 if (storageBroken && IFM_BACKEND_URL) {
 const n = document.createElement('div');
@@ -12379,6 +12494,8 @@ st.note.textContent = matches.length === 0
 function vfindNonVendorOptions(sel) {
 return Array.from(sel.options)
 .filter(o => !(cache.vendors || []).some(v => v.vendorId === o.value))
+// data-lead-row="hide": the placeholder only means 'nobody yet', not a pick.
+.filter(o => o.value || sel.dataset.leadRow !== 'hide')
 .map(o => ({ value: o.value, label: o.textContent }));
 }
 function vfindRenderList(sel) {
@@ -13653,7 +13770,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Ithaca Farmers Market",
-"body": "<p>This is a demo/beta build. The four buttons at the top — Members/Vendors, Market Manager, Staff, Volunteers/Partners — stand in for a real login; pick the role you want to preview. <b>Kiosk</b> is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
+"body": "<p>This is a demo/beta build, and the sign-in is a stand-in for a real one. Choose a login in the first menu. For <b>Members / Vendors</b>, type a few letters of a business or last name in the second and pick one; the desks — Market Manager, Board of Directors, Staff, Volunteers / Partners — sign in as the desk, not by name. The password box shows where a password will go. Nothing is checked here, so leave it empty if you like.</p><p><b>Information Kiosk</b>, the button under Sign in, is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
 },
 {
 "title": "Recent Entries",
@@ -22135,7 +22252,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-18';
+const BUILD_ID = '18-20';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
