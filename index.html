@@ -14,7 +14,7 @@
 <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
 <meta name="color-scheme" content="light">
 <title>IFM</title>
-<style>@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Righteous&display=swap');
+<style>@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 :root {
 --paper: #F0EEE2;
 --paper-dim: #E1DDC9;
@@ -2405,62 +2405,17 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
    chosen it falls back to the default on its next open.
    ======================================================================== */
 
-/* -- Supergraphic ---------------------------------------------------------
-   The rainbow stripe of the 1970s: orange, gold, brown and teal. A thin
-   stripe runs across the top of every screen, bends, and runs down the
-   right. Rounded groovy display type (Righteous); body text unchanged. */
-html[data-look="stripe"] {
-  --paper: #F4E9CF; --paper-dim: #E6D7B4; --line: #E6D7B4; --ink: #2B1D14;
-  --tomato: #E5602B; --tomato-dark: #B9471C; --sunflower: #E0A526;
-  --leaf: #2E8B8B; --leaf-dark: #22696A; --sky: #6B3A1E; --berry: #6B3A1E;
-  --debit: #B9471C; --credit: #22696A;
-  --s1: #E5602B; --s2: #F0B429; --s3: #6B3A1E; --s4: #2E8B8B;
-}
-html[data-look="stripe"] .display, html[data-look="stripe"] header.market-header h1,
-html[data-look="stripe"] .card h2, html[data-look="stripe"] .picker h2, html[data-look="stripe"] .stat .num,
-html[data-look="stripe"] .primary-btn, html[data-look="stripe"] .switch-btn, html[data-look="stripe"] .landing-kiosk,
-html[data-look="stripe"] .mgr-drawer-head h2 {
-  font-family: 'Righteous', 'Avenir Next', -apple-system, sans-serif; font-weight: 400; letter-spacing: 0.01em;
-}
-html[data-look="stripe"] #app { position: relative; overflow-x: clip; }
-html[data-look="stripe"] #app::before, html[data-look="stripe"] #app::after {
-  content: ""; position: absolute; pointer-events: none; z-index: 0;
-}
-/* the stripe: across the top, then a bend into a short run down the right */
-html[data-look="stripe"] #app::before {
-  left: 0; top: 0; right: 84px; height: 24px;
-  background: linear-gradient(180deg, var(--s1) 0 25%, var(--s2) 25% 50%, var(--s3) 50% 75%, var(--s4) 75%);
-}
-html[data-look="stripe"] #app::after {
-  right: 0; top: 0; width: 84px; height: 150px;
-  background:
-    radial-gradient(circle at 0 100%, transparent 60px, var(--s4) 60px 66px, var(--s3) 66px 72px, var(--s2) 72px 78px, var(--s1) 78px 84px, transparent 84px) 0 0 / 84px 84px no-repeat,
-    linear-gradient(90deg, transparent 60px, var(--s4) 60px 66px, var(--s3) 66px 72px, var(--s2) 72px 78px, var(--s1) 78px) 0 84px / 84px 66px no-repeat;
-  -webkit-mask: linear-gradient(#000 0 126px, transparent 150px); mask: linear-gradient(#000 0 126px, transparent 150px);
-}
-html[data-look="stripe"] #app > * { position: relative; z-index: 1; }
-html[data-look="stripe"] header.market-header { padding-top: 34px; }
-html[data-look="stripe"] .picker { padding-top: 40px; }
-html[data-look="stripe"] .card {
-  border: 0; border-radius: 16px; padding-left: 30px;
-  background: linear-gradient(90deg, var(--s1) 0 4px, var(--s2) 4px 8px, var(--s3) 8px 12px, var(--s4) 12px 16px, #fff 16px);
-  box-shadow: 0 2px 6px rgba(43,29,20,0.10);
-}
-html[data-look="stripe"] .fold-bar { border: 0; border-left: 6px solid var(--s1); border-radius: 16px; box-shadow: 0 2px 6px rgba(43,29,20,0.10); }
-html[data-look="stripe"] .mgr-tile { border: 0; border-top: 6px solid var(--s4); border-radius: 16px; }
-html[data-look="stripe"] .stat { background: #FBF3E2; border-color: var(--s2); border-radius: 14px; }
-html[data-look="stripe"] .primary-btn {
-  border-radius: 18px; padding-bottom: 24px; color: var(--paper); box-shadow: none;
-  background: linear-gradient(180deg, var(--s3) 0 calc(100% - 12px), var(--s1) 0 calc(100% - 9px), var(--s2) 0 calc(100% - 6px), var(--s4) 0 calc(100% - 3px), var(--paper) 0);
-}
-html[data-look="stripe"] .primary-btn:disabled { background: #C2B6A2; color: #F4EEE0; }
-html[data-look="stripe"] .ghost-btn, html[data-look="stripe"] .landing-kiosk { border-radius: 18px; }
-html[data-look="stripe"] .switch-btn { background: var(--s3); color: var(--paper); box-shadow: none; }
-html[data-look="stripe"] input[type=number], html[data-look="stripe"] input[type=text], html[data-look="stripe"] select,
-html[data-look="stripe"] .landing-login select, html[data-look="stripe"] .landing-login input[type=password], html[data-look="stripe"] .landing-login .vfind-input {
-  border: 0; border-radius: 14px; box-shadow: inset 0 0 0 3px var(--s2);
-}
-html[data-look="stripe"] .logo-badge { border-radius: 14px; box-shadow: 3px 3px 0 var(--s1), 6px 6px 0 var(--s4); border: 0; }
+/* No optional looks are installed right now. Supergraphic was tried in
+   18-25 and taken back out in 18-26; it lives in the design sandbox
+   (design-lab.html) with the other candidates.
+
+   One rule for any look added here: never set position, z-index or
+   transform on #app's direct children. Several of them are pinned to the
+   screen (the offline bar, the update bar, the loading screen), and a look
+   that gave every child position:relative in 18-25 unpinned them -- the
+   offline bar dropped into the page and scrolled away with it. Decorate
+   #app::before/::after or the cards themselves instead. */
+
 /* the picker on the sign-in screen */
 .look-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 12px 0 0; }
 .look-row .look-lbl { width: 100%; text-align: center; font-size: 12px; opacity: .6; margin-bottom: 2px; }
@@ -10844,7 +10799,6 @@ let swWaiting = null;
 const LOOK_DEFAULT = 'market';
 const LOOKS = [
   { k: 'market', t: 'Market',       swatch: '#4C6B41', d: 'The look the app has always had: paper, leaf and sunflower.' },
-  { k: 'stripe', t: 'Supergraphic', swatch: '#E5602B', d: 'The 1970s rainbow stripe: orange, gold, brown and teal, with rounded display type.' },
 ];
 function currentLook() {
   let k = null;
@@ -11704,7 +11658,7 @@ const APP_GLOSSARY = [
 { t: 'Fit map', d: 'The kiosk button that steps the map back out until the whole site is in frame.' },
 { t: 'Records', d: 'The desk holding the rule as written: On the Books, Flagged for Attention, Plain Words.' },
 { t: 'Build', d: 'One delivered version of the app, numbered like 12-115 and shown on the login screen.' },
-{ t: 'Look', d: 'A coat of paint for the whole app: colours, type and a few shapes, chosen on the sign-in screen and kept on that phone only. Every screen and every rule is the same under every look.' },
+{ t: 'Look', d: 'A coat of paint for the whole app: colours, type and a few shapes, kept on one phone only. When more than one is installed, the sign-in screen offers a choice; right now only the standard look is installed. Every screen and every rule is the same under every look.' },
 ];
 function initAppGlossaryScreen() {
 const wrap = document.getElementById('agBody');
@@ -13892,7 +13846,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Ithaca Farmers Market",
-"body": "<p>This is a demo/beta build, and the sign-in is a stand-in for a real one. Choose a login in the first menu. For <b>Members / Vendors</b>, type a few letters of a business or last name in the second and pick one; the desks — Market Manager, Board of Directors, Staff, Volunteers / Partners — sign in as the desk, not by name. The password box shows where a password will go. Nothing is checked here, so leave it empty if you like.</p><p><b>Information Kiosk</b>, the button under Sign in, is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Look</b>, at the very bottom, repaints the app in a different style on this phone only; nothing about how it works changes.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
+"body": "<p>This is a demo/beta build, and the sign-in is a stand-in for a real one. Choose a login in the first menu. For <b>Members / Vendors</b>, type a few letters of a business or last name in the second and pick one; the desks — Market Manager, Board of Directors, Staff, Volunteers / Partners — sign in as the desk, not by name. The password box shows where a password will go. Nothing is checked here, so leave it empty if you like.</p><p><b>Information Kiosk</b>, the button under Sign in, is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
 },
 {
 "title": "Recent Entries",
@@ -22374,7 +22328,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-25';
+const BUILD_ID = '18-26';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
