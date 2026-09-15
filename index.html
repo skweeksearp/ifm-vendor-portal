@@ -22252,7 +22252,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-20';
+const BUILD_ID = '18-21';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -31236,57 +31236,6 @@ cls: q.state === 'adjusted' ? 'onfile' : 'expiring',
 go: 'mystatements',
 dismiss: q.id,
 });
-});
-
-// SNAP tokens taken in by the office. Settled the moment it is recorded --
-// there is no decision pending, the market simply owes the money -- so it
-// is news to read and dismiss, not something to wait on. Moved here from
-// Waiting on the Market (17-101): that card is for a genuine back-and-forth
-// -- something the vendor did, and a decision that came back -- and this
-// was never that.
-snapEntriesFor(me, null).slice(0, 12).forEach(e => {
-if (corrSeen('snap:' + e.id)) return;
-items.push({
-t: e.tokens + ' SNAP token' + (e.tokens === 1 ? '' : 's') + ' taken in',
-m: formatDisplayDate(e.date) + ' \u00b7 $' + fmtMoney(snapMoney(e.tokens)) +
-' \u00b7 recorded by the office ' + shortDate(e.recordedAt),
-label: 'Recorded',
-cls: 'onfile',
-go: 'snaptokens',
-dismiss: 'snap:' + e.id,
-});
-});
-
-// A permit, certificate or insurance approaching its expiry, already
-// expired, or never received at all. A calendar fact, not a decision
-// anyone made -- the same reasoning that keeps attendance risk here rather
-// than on Waiting on the Market -- so it is not dismissible either: it
-// belongs on screen for as long as it is actually true, the same as the
-// attendance risk just below.
-docClocksFor(me).forEach(c => {
-if (c.kind === 'expiring') {
-items.push({
-t: c.req.name,
-m: 'Expires ' + formatDisplayDate(c.expiry) + ' \u2014 ' + c.days +
-' day' + (c.days === 1 ? '' : 's') + ' left' +
-(c.req.blocking ? '. You may not sell once it lapses.' : ''),
-label: 'Expiring', cls: 'expiring', go: 'mydocs',
-});
-} else if (c.kind === 'expired') {
-items.push({
-t: c.req.name,
-m: 'Expired ' + formatDisplayDate(c.expiry) +
-(c.req.blocking ? ' \u2014 you may not sell until a current one is on file.' : ''),
-label: 'Expired', cls: 'expired', go: 'mydocs',
-});
-} else if (c.kind === 'overdue') {
-items.push({
-t: c.req.name,
-m: 'Was due ' + formatDisplayDate(c.req.due) + ' and nothing has been received' +
-(c.req.blocking ? ' \u2014 you may not sell without it.' : '.'),
-label: 'Overdue', cls: 'missing', go: 'mydocs',
-});
-}
 });
 
 // SNAP tokens taken in by the office. Settled the moment it is recorded --
