@@ -753,6 +753,9 @@ font-size: 13px; font-weight: 800; letter-spacing: 0.04em;
 text-transform: uppercase; opacity: 0.6; margin-bottom: 6px;
 }
 .ruling-line { font-size: 15px; line-height: 1.4; padding: 3px 0; }
+.board-ro-note { font-size: 14px; line-height: 1.4; margin: 0 0 12px; padding: 8px 12px; border-radius: 10px;
+  background: rgba(255,251,241,0.9); border: 1px solid var(--paper-dim); color: var(--ink); }
+body.role-board main .screen [data-board-ro] { opacity: 0.55; }
 .bf-ruling { flex: 1 0 100%; margin-top: 10px; border: 1px solid var(--paper-dim); border-radius: 12px; background: rgba(255,255,255,0.55); }
 .bf-ruling-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; background: none; border: 0;
   font-family: inherit; font-size: 15px; text-align: left; color: var(--ink); cursor: pointer; flex-wrap: wrap; }
@@ -2541,6 +2544,8 @@ html[data-look="rainshine"] body:not(.kiosk-mode) .ghost-btn {
 }
 /* words that sit straight on the photograph */
 html[data-look="rainshine"] body:not(.kiosk-mode) header.market-header :is(h1, .biz-line),
+html[data-look="rainshine"] body:not(.kiosk-mode) #mgrFolders > .mgr-drawer-head,
+html[data-look="rainshine"] body:not(.kiosk-mode) #mgrFolders > .mgr-drawer-head *,
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(#screen-dashboard, #screen-managerdash, #screen-staff, #screen-volunteer) > :is(.screen-head > h1.screen-title, h1.screen-title, #menuTailorNote),
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(#screen-dashboard, #screen-managerdash, #screen-staff, #screen-volunteer) > .screen-head > :is(h1.screen-title, .screen-title-quiet) {
   color: #fff; opacity: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.55), 0 2px 12px rgba(0,0,0,0.35);
@@ -4837,7 +4842,7 @@ this side of it.</p>
 <label for="yeYear">Which year</label>
 <select id="yeYear" onchange="renderYearEndPreview()"></select>
 <div id="yePreview" style="margin-top:10px;"></div>
-<button type="button" class="primary-btn" style="margin-top:10px;" onclick="openYearEnd()">View printable page</button>
+<button type="button" class="primary-btn" style="margin-top:10px;" data-board-view onclick="openYearEnd()">View printable page</button>
 </div>
 </section>
 <section id="screen-winterpaperwork" class="screen">
@@ -8682,14 +8687,20 @@ v: (ctx && ctx.vendorId) || null,
 const log = activityLog();
 log.push(e);
 if (log.length > ACT_MAX) log.splice(0, log.length - ACT_MAX);
-if (typeof renderActivity === 'function' && currentRole === 'president') renderActivity();
+if (typeof renderActivity === 'function' && (currentRole === 'president' || currentRole === 'board')) renderActivity();
 // Written back on a delay: a busy Saturday would otherwise save the log once
 // per entry, which is the sort of thing that makes an audit trail cost more
 // than it is worth.
 if (actSaveTimer) clearTimeout(actSaveTimer);
 actSaveTimer = setTimeout(() => { actSaveTimer = null; storageSet('ifm-activity', cache.activity); }, 4000);
 }
+function boardDeskRefuses(key) {
+if (currentRole !== 'board') return false;
+try { console.warn('Board of Directors desk is read-only; not saved: ' + key); } catch (e) {}
+return true;
+}
 async function storageSet(key, value) {
+if (boardDeskRefuses(key)) return;
 dropMoneyMemo();
 noteActivity(key);
 try {
@@ -8708,6 +8719,7 @@ return STORAGE_MISSING;
 }
 }
 async function storageSetShared(key, value) {
+if (boardDeskRefuses(key)) return;
 dropMoneyMemo();
 try {
 const res = await window.storage.set(key, JSON.stringify(value), true);
@@ -11179,6 +11191,7 @@ const DESKS_LIVE = {
   vendor:     true,
   manager:    true,
   president:  true,
+  board:      true,
   staff:      true,
   volunteer:  true,
   kiosk:      true,
@@ -11201,7 +11214,8 @@ const DESKS_LIVE = {
 const LANDING_ROLES = [
   { k: 'vendor',    t: 'Members / Vendors' },
   { k: 'manager',   t: 'Market Manager' },
-  { k: 'president', t: 'Board of Directors' },
+  { k: 'president', t: 'Board President' },
+  { k: 'board',     t: 'Board of Directors' },
   { k: 'staff',     t: 'Staff' },
   { k: 'volunteer', t: 'Volunteers / Partners' },
 ];
@@ -11281,6 +11295,7 @@ function landingSignIn() {
     selectVendor(who);
   } else if (role === 'manager') enterAsManager();
   else if (role === 'president') enterAsPresident();
+  else if (role === 'board') enterAsBoard();
   else if (role === 'staff') enterAsStaff();
   else if (role === 'volunteer') enterAsVolunteer();
 }
@@ -11589,10 +11604,11 @@ el.value = '';
 // is not a desk hand-over and must not wipe what somebody is in the middle of.
 let deskHandoverQuiet = false;
 function setRoleHeader(role) {
+if (role !== 'board') clearBoardReadOnly();
 document.documentElement.dataset.photo = 'desk';
 scrollAppToTop();
 if (!deskHandoverQuiet) clearDeskState();
-['vendor', 'manager', 'president', 'staff', 'volunteer', 'developer', 'kiosk'].forEach(r =>
+['vendor', 'manager', 'president', 'board', 'staff', 'volunteer', 'developer', 'kiosk'].forEach(r =>
 document.body.classList.toggle('role-' + r, role === r));
 paintHeaderBadge();
 const evac = document.getElementById('evacBar');
@@ -11610,8 +11626,11 @@ if (role === 'manager') {
 document.getElementById('bizName').textContent = 'Market Manager';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 full admin toolkit';
 } else if (role === 'president') {
-document.getElementById('bizName').textContent = 'Board of Directors';
+document.getElementById('bizName').textContent = 'Board President';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 no officer is recorded in the app yet';
+} else if (role === 'board') {
+document.getElementById('bizName').textContent = 'Board of Directors';
+document.getElementById('bizMeta').textContent = 'Demo login \u2014 read-only: the Board decides at its meetings';
 } else if (role === 'staff') {
 document.getElementById('bizName').textContent = 'Staff';
 document.getElementById('bizMeta').textContent = 'Demo login \u2014 basic day-of tools';
@@ -13940,6 +13959,30 @@ document.getElementById('main').style.display = 'block';
 setRoleHeader('president');
 showScreen('managerdash');
 }
+// THE BOARD OF DIRECTORS DESK (18-37). Every director, one shared login,
+// READ-ONLY. The Board acts as a body, by majority at a meeting; no director
+// acts alone, so nothing on this desk changes a record. What the Board
+// decides is recorded afterwards on the Board President's desk, which keeps
+// the powers the Bylaws give that office alone: appointing committee chairs
+// (VI \u00a72) and signing off points. This desk shows the numbers the Board
+// should know, the agenda and the decisions on record, the rules as written,
+// committees, membership, the Treasurer's figures, and the activity log.
+//
+// Read-only is enforced twice: storageSet refuses every write while this desk
+// is signed in, and screens opened from it have their editing controls
+// switched off (applyBoardReadOnly), so nobody types into something that
+// cannot save.
+async function enterAsBoard() {
+document.body.classList.remove('kiosk-mode');
+currentRole = 'board';
+homeScreen = 'managerdash';
+currentVendorId = null;
+mgrOpenFolder = null;
+document.getElementById('landing').style.display = 'none';
+document.getElementById('main').style.display = 'block';
+setRoleHeader('board');
+showScreen('managerdash');
+}
 async function enterAsStaff() {
 document.body.classList.remove('kiosk-mode');
 currentRole = 'staff';
@@ -14199,7 +14242,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Ithaca Farmers Market",
-"body": "<p>This is a demo/beta build, and the sign-in is a stand-in for a real one. Choose a login in the first menu. For <b>Members / Vendors</b>, type a few letters of a business or last name in the second and pick one; the desks — Market Manager, Board of Directors, Staff, Volunteers / Partners — sign in as the desk, not by name. The password box shows where a password will go. Nothing is checked here, so leave it empty if you like.</p><p><b>Information Kiosk</b>, the button under Sign in, is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
+"body": "<p>This is a demo/beta build, and the sign-in is a stand-in for a real one. Choose a login in the first menu. For <b>Members / Vendors</b>, type a few letters of a business or last name in the second and pick one; the desks — Market Manager, Board President, Board of Directors, Staff, Volunteers / Partners — sign in as the desk, not by name. The Board of Directors desk is read-only: the Board decides at its meetings, and the Board President’s desk records what it decided. The password box shows where a password will go. Nothing is checked here, so leave it empty if you like.</p><p><b>Information Kiosk</b>, the button under Sign in, is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
 },
 {
 "title": "Recent Entries",
@@ -18576,6 +18619,50 @@ sel.value = keep && dates.includes(keep) ? keep : nearest;
 }
 renderWedList();
 }
+// Controls that only change what is shown stay live on the Board desk.
+const BOARD_VIEW_OK = '.back-link, .help-dot, .fold-bar, .bf-ruling-head, .find-field, .vfind-input, .vfind-row, ' +
+  '.vfind-chosen button, .switch-btn, .evac-bar, #bfStatus, #bfCat, #cmteSelect, #whRateYear, #yeYear, ' +
+  '#presActivity button, #presActivity input, #presActivity select, [data-board-view], .mgr-tile';
+let boardRoTimer = null;
+function applyBoardReadOnly() {
+if (currentRole !== 'board') return;
+document.querySelectorAll('main .screen').forEach(sec => {
+  if (sec.id === 'screen-managerdash') return;
+  sec.querySelectorAll('input, select, textarea, button').forEach(el => {
+    if (el.matches(BOARD_VIEW_OK) || el.closest('.vfind')) return;
+    if (!el.disabled) { el.disabled = true; el.dataset.boardRo = '1'; }
+  });
+  sec.querySelectorAll('.desk-form').forEach(f => { if (f.style.display !== 'none') { f.style.display = 'none'; f.dataset.boardRo = '1'; } });
+  if (!sec.querySelector(':scope > .board-ro-note')) {
+    const note = document.createElement('p');
+    note.className = 'board-ro-note';
+    note.textContent = 'Read-only on the Board of Directors desk. The Board decides at its meetings; decisions are recorded on the Board President\u2019s desk.';
+    const head = sec.querySelector(':scope > .screen-head');
+    if (head) head.after(note); else sec.prepend(note);
+  }
+});
+}
+// Undone when somebody signs in to another desk on the same phone.
+function clearBoardReadOnly() {
+document.querySelectorAll('[data-board-ro]').forEach(el => {
+  if (el.matches('input, select, textarea, button')) el.disabled = false;
+  else el.style.display = '';
+  delete el.dataset.boardRo;
+});
+document.querySelectorAll('.board-ro-note').forEach(n => n.remove());
+}
+(function watchForBoardDesk() {
+const start = () => {
+  const main = document.getElementById('main');
+  if (!main) return;
+  new MutationObserver(() => {
+    if (currentRole !== 'board') return;
+    clearTimeout(boardRoTimer);
+    boardRoTimer = setTimeout(applyBoardReadOnly, 30);
+  }).observe(main, { childList: true, subtree: true });
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
 function runScreenInit(name) {
 clearFindFields(name);
 if (name === 'bootreport') initBootReportScreen();
@@ -18762,7 +18849,7 @@ if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
 }
 const SCREEN_META = {
 dashboard:         { title: () => vendorClassLine(currentVendor()), home: true },
-managerdash:       { title: () => currentRole === 'president' ? 'Board of Directors' : 'Market Manager', home: true },
+managerdash:       { title: () => currentRole === 'president' ? 'Board President' : currentRole === 'board' ? 'Board of Directors' : 'Market Manager', home: true },
 staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
 winter:            { title: 'Winter Market' },
@@ -22681,7 +22768,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-36';
+const BUILD_ID = '18-37';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -32012,6 +32099,15 @@ alerts.push({ topic: 'Documents', n: soon, t: soon + ' expiring within 30 days',
 d: 'The Guide asks management to warn vendors ahead of expiry',
 cls: 'expiring', go: 'requirements' });
 }
+if (currentRole === 'board') {
+  // The numbers the Board should know; the chasing stays with the office.
+  const keep = alerts.filter(a => a.topic === 'Board' || /may not lawfully sell/.test(a.t));
+  alerts.length = 0;
+  keep.forEach(a => {
+    const onDesk = BOARD_FOLDERS.some(f => f.tiles.some(t => t.s === a.go));
+    alerts.push(Object.assign({}, a, { id: null, go: onDesk ? a.go : null }));
+  });
+}
 card.style.display = alerts.length ? 'block' : 'none';
 const sub = document.getElementById('mgrAlertSub');
 if (sub) {
@@ -32031,7 +32127,7 @@ main.innerHTML = '<div class="req-name">' + esc(a.t) + '</div>' +
 '<div class="req-tally"><span class="req-state ' + a.cls + '">' +
 (canAct ? (isOpen ? 'Close' : 'Handle') : 'Open') + '</span></div>';
 main.onclick = () => {
-if (!canAct) { if (a.pre) a.pre(); showScreen(a.go); return; }
+if (!canAct) { if (!a.go) return; if (a.pre) a.pre(); showScreen(a.go); return; }
 if (mgrAttnOpen.has(a.id)) mgrAttnOpen.delete(a.id); else mgrAttnOpen.add(a.id);
 renderManagerAlerts();
 };
@@ -32529,7 +32625,8 @@ box.className = 'bf-ruling';
 const has = flagHasDecision(f.id);
 const st = flagStatus(f.id);
 const acted = st !== 'open';
-const open = bfOpenRuling === f.id;
+const readOnly = currentRole === 'board';
+const open = !readOnly && bfOpenRuling === f.id;
 const head = document.createElement('button');
 head.type = 'button';
 head.className = 'bf-ruling-head';
@@ -32540,9 +32637,9 @@ if (has) {
     : (d.follow === 'rules' || d.follow === 'build') && d.done ? '<span class="req-state onfile">Done in the app</span>'
     : '<span class="req-state exempt">Recorded</span>';
 }
-head.innerHTML = '<span class="bf-ruling-title">' + (has || acted ? 'The Board\u2019s decision' : 'Record the Board\u2019s decision') +
-  '</span>' + state + '<span class="fold-chev">' + (open ? '\u2304' : '\u203a') + '</span>';
-head.onclick = () => { bfOpenRuling = open ? null : f.id; renderBoardFlags(); };
+head.innerHTML = '<span class="bf-ruling-title">' + (has || acted ? 'The Board\u2019s decision' : readOnly ? 'No decision recorded yet' : 'Record the Board\u2019s decision') +
+  '</span>' + state + (readOnly ? '' : '<span class="fold-chev">' + (open ? '\u2304' : '\u203a') + '</span>');
+head.onclick = () => { if (readOnly) return; bfOpenRuling = open ? null : f.id; renderBoardFlags(); };
 box.appendChild(head);
 if ((has || acted) && !open) {
   const sum = document.createElement('div');
@@ -45160,14 +45257,42 @@ tiles: [
 { s: 'presplanned', i: 'i-list', t: 'What the App Could Offer', d: 'Tools the Board may want someday, may take in pieces, or may never want at all \u2014 with the reasoning either way' },
 ] },
 ];
-// The desk knows whose it is. One renderer, two lists.
-function deskFolders() { return currentRole === 'president' ? PRES_FOLDERS : MGR_FOLDERS; }
+const BOARD_FOLDERS = [
+{ key: 'bdboard', title: 'The Board', icon: 'i-columns',
+sub: 'Meetings, the questions in front of the Board, and what it has decided',
+tiles: [
+{ s: 'boardflags', i: 'i-scale', t: 'To Discuss with the Board', d: 'The questions only the Board can settle, and the decisions on record', nav: true },
+{ s: 'boardcycle', i: 'i-calendar', t: 'Board Meeting Cycle', d: 'Second Wednesday, and December cutoffs' },
+{ s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Where each proposal stands' },
+{ s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'Rules changed since the Guide printed' },
+{ s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision' },
+] },
+{ key: 'bdcommittees', title: 'Committees', icon: 'i-columns',
+sub: 'Who serves and who chairs \u2014 the President appoints the chairs (Bylaws VI \u00a72)',
+tiles: [
+{ s: 'committees', i: 'i-columns', t: 'Committees', d: 'Who serves, who chairs, and what is in front of them' },
+] },
+{ key: 'bdrules', title: 'Rules & Rates', icon: 'i-scale',
+sub: 'What the market charges and requires, as written',
+tiles: [
+{ s: 'marketrules', i: 'i-scale', t: 'Market Wide Rates', nav: true, d: 'Every fee, fine, deadline and minimum, and where each comes from' },
+{ s: 'whrate', i: 'i-gem', t: 'Work Hour Rate', d: 'Dollar value of an hour owed, season by season' },
+] },
+{ key: 'bdmarket', title: 'The Market in Numbers', icon: 'i-document',
+sub: 'Membership, and the Treasurer\u2019s figures (Bylaws VI \u00a77)',
+tiles: [
+{ s: 'composition', i: 'i-columns', t: 'Membership', d: 'Full Members against the cap, and the 60/40 agriculture share' },
+{ s: 'yearend', i: 'i-document', t: 'Year-End Money Worksheet', d: 'Every figure the app holds for a year, and what it does not' },
+] },
+];
+// The desk knows whose it is. One renderer, three lists.
+function deskFolders() { return currentRole === 'president' ? PRES_FOLDERS : currentRole === 'board' ? BOARD_FOLDERS : MGR_FOLDERS; }
 function renderManagerFolders() {
 // The log is the President's supervisory view; it sits under Notifications.
 const act = document.getElementById('presActivity');
 if (act) {
-act.style.display = currentRole === 'president' ? 'block' : 'none';
-if (currentRole === 'president') initActivity();
+act.style.display = (currentRole === 'president' || currentRole === 'board') ? 'block' : 'none';
+if (currentRole === 'president' || currentRole === 'board') initActivity();
 }
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
