@@ -6311,7 +6311,7 @@ const TUNING_DEFAULTS = {
   kioskExitTaps:      6,   // taps to leave kiosk mode
   kioskExitWindowMs: 2000, // ...within this long
   spinFloorMs:     1800,   // shortest the loader will show, to stop it flickering
-  unsentGraceMs:  15000,   // how long a fresh connection problem stays quiet before the Offline bar shows
+  unsentGraceMs:  40000,   // how long a fresh connection problem stays quiet before the bar shows -- kept comfortably past the 30s retry cycle below, so a problem that clears on its own next attempt never has to announce itself at all
   pollMs:         11000,   // asks the sheet for news this often while being used
   pollSlowMs:     30000,   // after pollFastForMs of quiet, this often
   pollRestMs:     60000,   // after pollSlowForMs of quiet, this often (touch = instant)
@@ -8003,8 +8003,20 @@ if (!show) { bar.style.display = 'none'; return; }
 // Only ever shown when the records genuinely cannot be reached, so the
 // wording does not have to hedge. It says the one thing somebody about to
 // put their phone in their pocket is actually asking.
-bar.innerHTML = '<b>Offline \u2014 ' + n + ' change' + (n === 1 ? '' : 's') +
-' waiting to save.</b> <b>Nothing is lost</b>: they are held on this phone and go up as soon ' +
+//
+// "Offline" is only said when the radio itself is verifiably off -- that
+// word means something specific, and saying it while a phone shows full
+// bars reads as the app not knowing what it is talking about. When the
+// radio is on but the market's records still cannot be reached (a slow
+// Apps Script wake-up, a dropped request), the wording says that instead:
+// still true, still says nothing is lost, but does not claim a dead
+// connection that plainly is not dead.
+let trulyOffline = false;
+try { trulyOffline = navigator.onLine === false; } catch (e) {}
+const headline = trulyOffline
+? 'Offline \u2014 ' + n + ' change' + (n === 1 ? '' : 's') + ' waiting to save.'
+: 'Still trying to save \u2014 ' + n + ' change' + (n === 1 ? '' : 's') + ' waiting.';
+bar.innerHTML = '<b>' + headline + '</b> <b>Nothing is lost</b>: they are held on this phone and go up as soon ' +
 'as there is a signal, even if you close the app.';
 bar.style.display = 'block';
 }
@@ -22123,7 +22135,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-17';
+const BUILD_ID = '18-18';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
