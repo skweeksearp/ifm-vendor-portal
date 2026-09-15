@@ -3,13 +3,24 @@
 <head>
 <meta charset="utf-8">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#F3EDDD">
+<meta name="theme-color" content="#F6E7C4">
 <link rel="apple-touch-icon" sizes="180x180" href="ifm-icon-180.png">
 <link rel="icon" type="image/png" href="ifm-icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="IFM">
-<meta name="theme-color" content="#F0EEE2">
+<meta name="theme-color" content="#F6E7C4">
+<script>
+// Paint the chosen colours before anything draws, so opening the app never
+// flashes the Original palette first. Mirrors LOOK_DEFAULT / LOOK_KEY below;
+// if either changes, change it here too.
+(function () {
+  var k = null;
+  try { k = localStorage.getItem('ifm-look-v2'); } catch (e) {}
+  if (k !== 'market' && k !== 'harvest') k = 'harvest';
+  if (k !== 'market') document.documentElement.setAttribute('data-look', k);
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
 <meta name="color-scheme" content="light">
@@ -2405,9 +2416,12 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
    chosen it falls back to the default on its next open.
    ======================================================================== */
 
-/* No optional looks are installed right now. Supergraphic was tried in
-   18-25 and taken back out in 18-26; it lives in the design sandbox
-   (design-lab.html) with the other candidates.
+/* The base stylesheet above is the Original look ('market'). Harvest is
+   the default from 18-27: colour only, the 1973 co-op poster palette of
+   harvest orange, gold, avocado and brown on cream. Fonts, shapes and
+   layout are the Original's. Supergraphic was tried in 18-25 and taken
+   back out in 18-26; it and the other candidates live in the design
+   sandbox (design-lab.html, palette-lab.html).
 
    One rule for any look added here: never set position, z-index or
    transform on #app's direct children. Several of them are pinned to the
@@ -2416,13 +2430,26 @@ color: #4A3B12; font-size: 15px; line-height: 1.35; min-height: 44px;
    offline bar dropped into the page and scrolled away with it. Decorate
    #app::before/::after or the cards themselves instead. */
 
+/* -- Harvest --------------------------------------------------------------
+   Every value was checked for contrast: white text on --leaf is 6.0:1 and on
+   --sunflower 4.6:1; ink on paper is 11.9:1. */
+html[data-look="harvest"] {
+  --paper: #F6E7C4; --paper-dim: #E8D3A6; --line: #E8D3A6; --ink: #3A2412;
+  --tomato: #8E3A1C; --tomato-dark: #6E2C14; --sunflower: #9E6C16;
+  --leaf: #A8441A; --leaf-dark: #823412; --sky: #5E6B24; --berry: #4E2E1A;
+  --debit: #9A2E14; --credit: #56631F; --card: #FFFBF1;
+}
+html[data-look="harvest"] .card, html[data-look="harvest"] .mgr-tile, html[data-look="harvest"] .menu-card { background: #FFFBF1; }
+html[data-look="harvest"] .fold-bar { border-color: #E8D3A6; }
+html[data-look="harvest"] .stat { background: #F3E3BD; }
+
 /* the picker on the sign-in screen */
 .look-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 12px 0 0; }
 .look-row .look-lbl { width: 100%; text-align: center; font-size: 12px; opacity: .6; margin-bottom: 2px; }
 .look-btn { border: 1.5px solid var(--paper-dim); background: #fff; color: var(--ink); border-radius: 999px;
   padding: 5px 12px; font-family: inherit; font-size: 13px; font-weight: 600; }
 .look-btn[aria-pressed="true"] { background: var(--leaf); border-color: var(--leaf); color: #fff; }
-.look-btn .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.look-btn .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 0 1.5px #fff; }
 </style>
 </head>
 <body>
@@ -10796,22 +10823,30 @@ let swWaiting = null;
 // See the LOOKS section at the end of the stylesheet for what a look is and
 // how to add one. Each entry here is what the sign-in screen offers; the
 // swatch is the look's own key colour so the buttons read at a glance.
-const LOOK_DEFAULT = 'market';
+const LOOK_DEFAULT = 'harvest';
 const LOOKS = [
-  { k: 'market', t: 'Market',       swatch: '#4C6B41', d: 'The look the app has always had: paper, leaf and sunflower.' },
+  { k: 'harvest', t: 'Harvest',  swatch: '#A8441A', bar: '#F6E7C4', d: 'Harvest orange, gold, avocado and brown on cream: the 1973 co-op poster colours.' },
+  { k: 'market',  t: 'Original', swatch: '#4C6B41', bar: '#F0EEE2', d: 'The app as it was through build 18-26: paper, leaf green and sunflower.' },
 ];
+// The key was 'ifm-look' until 18-26. It was renamed when Harvest became the
+// default so a phone that tapped "Market" while Supergraphic was on trial is
+// not left on the old colours without anyone having chosen them.
+const LOOK_KEY = 'ifm-look-v2';
 function currentLook() {
   let k = null;
-  try { k = localStorage.getItem('ifm-look'); } catch (e) {}
+  try { k = localStorage.getItem(LOOK_KEY); } catch (e) {}
   return LOOKS.some(l => l.k === k) ? k : LOOK_DEFAULT;
 }
 // Applied to <html> so the stylesheet can key everything off one attribute.
-// The default look has no attribute at all: the base stylesheet IS that look.
+// 'market' has no attribute at all: the base stylesheet IS the Original look,
+// whichever look is the default.
 function applyLook(k, remember) {
   if (!LOOKS.some(l => l.k === k)) k = LOOK_DEFAULT;
-  if (k === LOOK_DEFAULT) delete document.documentElement.dataset.look;
+  if (k === 'market') delete document.documentElement.dataset.look;
   else document.documentElement.dataset.look = k;
-  if (remember) { try { localStorage.setItem('ifm-look', k); } catch (e) {} }
+  const look = LOOKS.find(l => l.k === k);
+  if (look && look.bar) document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', look.bar));
+  if (remember) { try { localStorage.setItem(LOOK_KEY, k); } catch (e) {} }
   renderLookPicker();
 }
 function renderLookPicker() {
@@ -10819,7 +10854,7 @@ function renderLookPicker() {
   if (!row) return;
   if (LOOKS.length < 2) { row.style.display = 'none'; return; }
   const cur = currentLook();
-  row.innerHTML = '<span class="look-lbl">Look</span>' + LOOKS.map(l =>
+  row.innerHTML = '<span class="look-lbl">Colours</span>' + LOOKS.map(l =>
     '<button type="button" class="look-btn" aria-pressed="' + (l.k === cur) + '" title="' + esc(l.d) + '" onclick="applyLook(\'' + l.k + '\', true)">' +
     '<span class="swatch" style="background:' + l.swatch + '"></span>' + esc(l.t) + '</button>').join('');
 }
@@ -11658,7 +11693,7 @@ const APP_GLOSSARY = [
 { t: 'Fit map', d: 'The kiosk button that steps the map back out until the whole site is in frame.' },
 { t: 'Records', d: 'The desk holding the rule as written: On the Books, Flagged for Attention, Plain Words.' },
 { t: 'Build', d: 'One delivered version of the app, numbered like 12-115 and shown on the login screen.' },
-{ t: 'Look', d: 'A coat of paint for the whole app: colours, type and a few shapes, kept on one phone only. When more than one is installed, the sign-in screen offers a choice; right now only the standard look is installed. Every screen and every rule is the same under every look.' },
+{ t: 'Look', d: 'A coat of paint for the whole app: colours, type and a few shapes, kept on one phone only. The sign-in screen offers a choice under Colours: Harvest (the default) or Original. Every screen and every rule is the same under every look.' },
 ];
 function initAppGlossaryScreen() {
 const wrap = document.getElementById('agBody');
@@ -13846,7 +13881,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Ithaca Farmers Market",
-"body": "<p>This is a demo/beta build, and the sign-in is a stand-in for a real one. Choose a login in the first menu. For <b>Members / Vendors</b>, type a few letters of a business or last name in the second and pick one; the desks — Market Manager, Board of Directors, Staff, Volunteers / Partners — sign in as the desk, not by name. The password box shows where a password will go. Nothing is checked here, so leave it empty if you like.</p><p><b>Information Kiosk</b>, the button under Sign in, is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
+"body": "<p>This is a demo/beta build, and the sign-in is a stand-in for a real one. Choose a login in the first menu. For <b>Members / Vendors</b>, type a few letters of a business or last name in the second and pick one; the desks — Market Manager, Board of Directors, Staff, Volunteers / Partners — sign in as the desk, not by name. The password box shows where a password will go. Nothing is checked here, so leave it empty if you like.</p><p><b>Information Kiosk</b>, the button under Sign in, is the customer-facing screen that runs on the touchscreen during market hours, and it takes over the whole display: six rapid taps anywhere brings you back here.</p><p><b>Colours</b>, at the very bottom, switches this phone between Harvest and the Original palette. Nothing about how the app works changes.</p><p><b>Developer</b>, small at the bottom, is the app looking at itself — what it is made of, what it still gets wrong, and the questions waiting on the market. Nobody needs it to run a market day.</p><p>Vendor names, points and booth assignments throughout are invented placeholders, not market records.</p><p class=\"planned-when\">Build <span id=\"aboutBuildId\"></span></p>"
 },
 {
 "title": "Recent Entries",
@@ -22328,7 +22363,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-26';
+const BUILD_ID = '18-27';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
