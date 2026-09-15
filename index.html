@@ -760,6 +760,8 @@ text-transform: uppercase; opacity: 0.6; margin-bottom: 6px;
 .bf-ruling-head .req-state { margin-top: 0; }
 .bf-ruling-head .fold-chev { font-size: 18px; }
 .bf-ruling-sum { padding: 0 12px 10px; }
+.bf-ruling-status { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.bf-ruling-period { margin-top: 8px; }
 .bf-ruling-text { font-size: 15px; line-height: 1.4; white-space: pre-wrap; margin-bottom: 4px; }
 .bf-ruling-form { padding: 0 12px 12px; }
 .bf-ruling-form label { margin-top: 10px; }
@@ -771,10 +773,6 @@ text-transform: uppercase; opacity: 0.6; margin-bottom: 6px;
 .bf-ruling-acts { display: flex; gap: 8px; margin-top: 12px; }
 .bf-ruling-acts .primary-btn, .bf-ruling-acts .ghost-btn { margin-top: 0; }
 .bf-inline-btn { width: auto; display: inline-block; margin: 6px 0 0; padding: 6px 12px; font-size: 14px; }
-.bf-ask {
-flex: 1 0 100%; margin-top: 10px; font-size: 15px; font-style: italic;
-opacity: 0.75; line-height: 1.35;
-}
 .req-row > select,
 .req-row > input,
 .req-row > .ghost-btn,
@@ -5002,6 +5000,11 @@ this side of it.</p>
 <div class="card" id="volRoleCard"></div>
 </section>
 <section id="screen-developer" class="screen">
+<div class="card" id="devBoardCard" style="display:none;">
+<h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>Board Decisions to Put into the App</h2>
+<p class="empty-note" style="margin-top:0;">Recorded in To Discuss with the Board, and not yet reflected in the app.</p>
+<div id="devBoardList"></div>
+</div>
 <div id="devFolders">
 <div class="dash-fold" data-fold="dev-principles">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'principles')">
@@ -18705,7 +18708,7 @@ if (name === 'improve') initImproveScreen();
 if (name === 'recordsneeded') initRecordsNeededScreen();
 if (name === 'handover') initHandoverScreen();
 if (name === 'aboutedit') renderAboutEditor();
-if (name === 'developer') { const t = document.getElementById('betaResetTile'); if (t) t.style.display = BETA_RESET_TOOLS ? '' : 'none';
+if (name === 'developer') { renderDevBoardDecisions(); const t = document.getElementById('betaResetTile'); if (t) t.style.display = BETA_RESET_TOOLS ? '' : 'none';
 const dt = document.getElementById('demoStmtTile'); if (dt) dt.style.display = BETA_RESET_TOOLS ? '' : 'none';
 renderDemoStatements(); updateTunerTile(); }
 if (name === 'volunteer') initVolunteerScreen();
@@ -22678,7 +22681,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-35';
+const BUILD_ID = '18-36';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -31992,12 +31995,6 @@ alerts.push({ topic: 'Board', n: forBoard.length, t: forBoard.length + (forBoard
 d: 'Flagged for Attention \u2014 export the list from Data Export',
 cls: 'submitted', go: 'boardflags' });
 }
-const toCarry = flagsToCarryOut();
-if (toCarry.length) {
-alerts.push({ topic: 'Board', n: toCarry.length, t: toCarry.length + (toCarry.length === 1 ? ' Board decision still to put into the app' : ' Board decisions still to put into the app'),
-d: toCarry.slice(0, 3).map(f => f.id + ': ' + (flagDecision(f.id).decision || '')).join(' \u00b7 ').slice(0, 160),
-cls: 'expiring', go: 'boardflags', pre: () => { bfNextFilter = 'todo'; } });
-}
 const lapsedFlags = allBoardFlags().filter(f => flagStatus(f.id) === 'lapsed');
 if (lapsedFlags.length) {
 alerts.push({ topic: 'Board', n: lapsedFlags.length, t: lapsedFlags.length + ' standing decisions have run out',
@@ -32386,8 +32383,43 @@ if (next.follow === 'none') next.done = false;
 cache.ops.flags.status[id] = next;
 await saveOps();
 }
+// The to-do list lives on the Developer desk (18-36): whoever changes the
+// app is who has to act on these, and the Manager desk is for running the day.
+function renderDevBoardDecisions() {
+const card = document.getElementById('devBoardCard');
+const list = document.getElementById('devBoardList');
+if (!card || !list) return;
+const todo = flagsToCarryOut();
+card.style.display = todo.length ? '' : 'none';
+list.innerHTML = '';
+todo.forEach(f => {
+  const d = flagDecision(f.id);
+  const followT = (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t || '';
+  const row = document.createElement('div');
+  row.className = 'req-row';
+  row.innerHTML = '<div class="req-row-main">' +
+    '<div class="req-name">' + esc(f.id) + ' \u00b7 ' + esc(f.t) + '</div>' +
+    '<div class="bf-ruling-text" style="margin-top:4px;">' + esc(d.decision) + '</div>' +
+    '<div class="req-meta">' + [followT, d.minutes ? 'Minuted: ' + esc(d.minutes) : '', d.decidedAt ? 'Recorded ' + esc(formatDisplayDate(d.decidedAt)) : ''].filter(Boolean).join(' \u00b7 ') + '</div>' +
+    '</div>';
+  const acts = document.createElement('div');
+  acts.className = 'bf-ruling-acts';
+  if (d.follow === 'rules') {
+    const go = document.createElement('button');
+    go.type = 'button'; go.className = 'ghost-btn'; go.textContent = 'Open Market Rules';
+    go.onclick = () => showScreen('marketrules');
+    acts.appendChild(go);
+  }
+  const done = document.createElement('button');
+  done.type = 'button'; done.className = 'primary-btn'; done.textContent = 'Mark done';
+  done.onclick = async () => { done.disabled = true; await saveFlagRuling(f.id, { done: true }); renderDevBoardDecisions(); };
+  acts.appendChild(done);
+  row.appendChild(acts);
+  list.appendChild(row);
+});
+}
 let bfOpenRuling = null;       // which question's decision box is open
-let bfNextFilter = null;       // set by the Manager alert: open straight onto the to-do list
+let bfNextFilter = null;       // lets another screen open this one straight onto a filter
 function flagStatusLabel(id) {
 const d = flagDecision(id);
 const st = flagStatus(id);
@@ -32486,40 +32518,6 @@ main.innerHTML =
 '<p class="req-detail">' + esc(f.d) + '</p>' +
 '<div class="req-meta">' + esc(f.src) + '</div>';
 row.appendChild(main);
-const d = flagDecision(f.id);
-const st = flagStatus(f.id);
-const ask = document.createElement('div');
-ask.className = 'bf-ask';
-ask.textContent = st === 'lapsed'
-? 'The time you set on this has run out. What now?'
-: d.action === 'open'
-? 'What would you like to do about this for now?'
-: 'Currently: ' + flagStatusLabel(f.id) + '. Change it?';
-row.appendChild(ask);
-const sel = document.createElement('select');
-FLAG_STATUS.forEach(s => {
-const o = document.createElement('option');
-o.value = s.v; o.textContent = s.t;
-sel.appendChild(o);
-});
-sel.value = st === 'lapsed' ? 'open' : d.action;
-const per = document.createElement('select');
-FLAG_PERIODS.forEach(s => {
-const o = document.createElement('option');
-o.value = s.v; o.textContent = s.t;
-per.appendChild(o);
-});
-per.value = 'season';
-const timed = () => (FLAG_STATUS.find(s => s.v === sel.value) || {}).timed;
-per.style.display = timed() ? '' : 'none';
-sel.onchange = () => {
-if (timed()) { per.style.display = ''; return; }
-per.style.display = 'none';
-setFlagDecision(f.id, sel.value, '');
-};
-per.onchange = () => setFlagDecision(f.id, sel.value, per.value);
-row.appendChild(sel);
-row.appendChild(per);
 row.appendChild(buildFlagRuling(f));
 wrap.appendChild(row);
 });
@@ -32529,28 +32527,31 @@ const d = flagDecision(f.id);
 const box = document.createElement('div');
 box.className = 'bf-ruling';
 const has = flagHasDecision(f.id);
+const st = flagStatus(f.id);
+const acted = st !== 'open';
 const open = bfOpenRuling === f.id;
 const head = document.createElement('button');
 head.type = 'button';
 head.className = 'bf-ruling-head';
 const followT = (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t;
-let state = '';
+let state = st === 'lapsed' ? '<span class="req-state expired">Time ran out</span>' : '';
 if (has) {
   state = flagNeedsUpdate(f.id) ? '<span class="req-state expiring">Still to update in the app</span>'
     : (d.follow === 'rules' || d.follow === 'build') && d.done ? '<span class="req-state onfile">Done in the app</span>'
     : '<span class="req-state exempt">Recorded</span>';
 }
-head.innerHTML = '<span class="bf-ruling-title">' + (has ? 'The Board\u2019s decision' : 'Record the Board\u2019s decision') +
+head.innerHTML = '<span class="bf-ruling-title">' + (has || acted ? 'The Board\u2019s decision' : 'Record the Board\u2019s decision') +
   '</span>' + state + '<span class="fold-chev">' + (open ? '\u2304' : '\u203a') + '</span>';
 head.onclick = () => { bfOpenRuling = open ? null : f.id; renderBoardFlags(); };
 box.appendChild(head);
-if (has && !open) {
+if ((has || acted) && !open) {
   const sum = document.createElement('div');
   sum.className = 'bf-ruling-sum';
-  sum.innerHTML = '<div class="bf-ruling-text">' + esc(d.decision) + '</div>' +
-    '<div class="req-meta">' + [d.minutes ? 'Minuted: ' + esc(d.minutes) : 'No minutes reference yet',
+  sum.innerHTML = '<div class="bf-ruling-status">' + esc(flagStatusLabel(f.id)) + '</div>' +
+    (has ? '<div class="bf-ruling-text">' + esc(d.decision) + '</div>' : '') +
+    (has ? '<div class="req-meta">' + [d.minutes ? 'Minuted: ' + esc(d.minutes) : 'No minutes reference yet',
       d.decidedAt ? 'Recorded ' + esc(formatDisplayDate(d.decidedAt)) : '',
-      followT ? 'App: ' + esc(followT) : 'What the app needs: not said yet'].filter(Boolean).join(' \u00b7 ') + '</div>';
+      followT ? 'App: ' + esc(followT) : 'What the app needs: not said yet'].filter(Boolean).join(' \u00b7 ') + '</div>' : '');
   box.appendChild(sum);
 }
 if (!open) return box;
@@ -32558,6 +32559,10 @@ const form = document.createElement('div');
 form.className = 'bf-ruling-form';
 const idp = 'bfr-' + f.id;
 form.innerHTML =
+  (st === 'lapsed' ? '<p class="empty-note bf-ruling-hint">The time set on this has run out: ' + esc(flagStatusLabel(f.id)) + '. What now?</p>' : '') +
+  '<label for="' + idp + '-a">What to do about it for now</label>' +
+  '<select id="' + idp + '-a">' + FLAG_STATUS.map(x => '<option value="' + x.v + '">' + esc(x.t) + '</option>').join('') + '</select>' +
+  '<select id="' + idp + '-p" class="bf-ruling-period">' + FLAG_PERIODS.map(x => '<option value="' + x.v + '">' + esc(x.t) + '</option>').join('') + '</select>' +
   '<label for="' + idp + '-t">What the Board decided</label>' +
   '<textarea id="' + idp + '-t" rows="3" placeholder="In the Board\u2019s words, e.g. \u201cFour or more years counts.\u201d"></textarea>' +
   '<label for="' + idp + '-m">Minutes reference</label>' +
@@ -32573,7 +32578,14 @@ box.appendChild(form);
 const t = form.querySelector('#' + idp + '-t'), m = form.querySelector('#' + idp + '-m');
 const fs = form.querySelector('#' + idp + '-f'), dn = form.querySelector('#' + idp + '-d');
 const hint = form.querySelector('#' + idp + '-h'), dl = form.querySelector('#' + idp + '-dl');
+const as = form.querySelector('#' + idp + '-a'), ps = form.querySelector('#' + idp + '-p');
 t.value = d.decision || ''; m.value = d.minutes || ''; fs.value = d.follow || ''; dn.checked = !!d.done;
+as.value = st === 'lapsed' ? 'open' : (d.action || 'open');
+ps.value = 'season';
+const timedNow = () => !!(FLAG_STATUS.find(x => x.v === as.value) || {}).timed;
+const paintPeriod = () => { ps.style.display = timedNow() ? '' : 'none'; };
+as.onchange = paintPeriod; paintPeriod();
+ps.onchange = () => { ps.dataset.touched = '1'; };
 const paint = () => {
   const v = fs.value;
   dl.style.display = (v === 'rules' || v === 'build') ? '' : 'none';
@@ -32586,7 +32598,16 @@ const paint = () => {
 };
 fs.onchange = paint; paint();
 form.querySelector('#' + idp + '-s').onclick = async () => {
-  await saveFlagRuling(f.id, { decision: t.value.trim(), minutes: m.value.trim(), follow: fs.value, done: dn.checked });
+  const fields = { decision: t.value.trim(), minutes: m.value.trim(), follow: fs.value, done: dn.checked };
+  // The status only moves when it was actually changed (or a lapsed one is re-set),
+  // so saving a ruling does not quietly restart a time limit.
+  const statusChanged = as.value !== (d.action || 'open') || st === 'lapsed' || (timedNow() && ps.dataset.touched);
+  if (statusChanged) {
+    fields.action = as.value;
+    fields.until = timedNow() ? flagUntil(ps.value || 'season') : '';
+    fields.setAt = todayISO();
+  }
+  await saveFlagRuling(f.id, fields);
   bfOpenRuling = null;
   renderBoardFlags();
   showMsg('bfMsg', 'ok', t.value.trim() ? 'Decision saved for ' + f.id + '.' : 'Decision cleared for ' + f.id + '.');
