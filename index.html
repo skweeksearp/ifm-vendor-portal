@@ -2499,7 +2499,7 @@ html[data-look="rainshine"] {
   --tomato: #8E3A1C; --tomato-dark: #6E2C14; --sunflower: #9E6C16;
   --leaf: #A8441A; --leaf-dark: #823412; --sky: #5E6B24; --berry: #4E2E1A;
   --debit: #9A2E14; --credit: #56631F;
-  --glass: rgba(255,251,241,0.60); --glass-sheet: rgba(255,251,241,0.72); --glass-edge: rgba(255,255,255,0.45);
+  --glass: rgba(255,251,241,0.60); --glass-card: rgba(255,251,241,0.66); --glass-sheet: rgba(255,251,241,0.78); --glass-edge: rgba(255,255,255,0.45);
   --soft-text: #423328;
   background: #2B2418;
 }
@@ -2515,9 +2515,20 @@ html[data-look="rainshine"]:not([data-photo="signin"]) { --photo: url("data:imag
 html[data-look="rainshine"] body.kiosk-mode { background: var(--paper); }
 
 /* see-through panels */
-html[data-look="rainshine"] body:not(.kiosk-mode) :is(.card, .fold-bar, .mgr-tile, .menu-card, .stat) {
+/* BLUR ONLY WHAT IS ALWAYS SMALL (18-39). A backdrop blur costs graphics
+   memory in proportion to the blurred area. On an iPhone, To Discuss with the
+   Board made one blurred sheet 33,000px tall -- about 100 megapixels at 3x --
+   and Safari killed the page ("A problem repeatedly occurred"). So the blur
+   stays on drawer bars, tiles, stat boxes and small buttons, which never grow,
+   and cards and sheets, which can be any height, get a firmer cream and no
+   blur. Checked by a test that fails if any blurred element on the busiest
+   screens is taller than a phone screen. */
+html[data-look="rainshine"] body:not(.kiosk-mode) :is(.fold-bar, .mgr-tile, .stat) {
   background: var(--glass); border-color: var(--glass-edge);
   -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15);
+}
+html[data-look="rainshine"] body:not(.kiosk-mode) :is(.card, .menu-card) {
+  background: var(--glass-card); border-color: var(--glass-edge);
 }
 html[data-look="rainshine"] body:not(.kiosk-mode) .fold-sub { color: var(--soft-text); }
 html[data-look="rainshine"] body:not(.kiosk-mode) .fold-chev { color: var(--soft-text); }
@@ -2526,7 +2537,6 @@ html[data-look="rainshine"] body:not(.kiosk-mode) :is(.req-meta, .empty-note, .m
 html[data-look="rainshine"] body:not(.kiosk-mode) .dash-fold.open > .fold-body,
 html[data-look="rainshine"] body:not(.kiosk-mode) main > .screen.active:not(#screen-dashboard):not(#screen-managerdash):not(#screen-staff):not(#screen-volunteer):not(#screen-kiosk) {
   background: var(--glass-sheet); border: 1px solid var(--glass-edge); border-radius: 16px;
-  -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1);
   padding: 12px 12px 14px; margin-top: 6px;
 }
 /* fields */
@@ -22773,7 +22783,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-38';
+const BUILD_ID = '18-39';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
