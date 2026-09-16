@@ -2838,47 +2838,6 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 
 
 
-<div class="dash-fold" data-fold="homescreen">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'homescreen')">
-<span class="fold-title">Put IFM App on Your Device</span>
-<span class="fold-sub">Add the market to your home screen &mdash; takes about twenty seconds</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="guide">
-<button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title">Bylaws and Vendor Guide</span>
-<span class="fold-sub">The market&rsquo;s governing rules, and the full Vendor Guide</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<div class="dash-fold" data-fold="bylawsInner">
-<button type="button" class="fold-bar" onclick="toggleFold(this); renderBylawsSearch('');">
-<span class="fold-title">Bylaws</span>
-<span class="fold-sub">Search every Article and Section, or open the full PDF</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<a id="bylawsLink" href="#" target="_blank" rel="noopener" class="comm-btn" style="margin-bottom:14px;"><svg class="ico"><use href="#i-document"></use></svg> <span id="bylawsLinkSub">Open the full PDF</span></a>
-<p class="empty-note" style="margin:-4px 0 14px;">Every Article and Section of the market&rsquo;s Bylaws, searchable by word or phrase. A match anywhere in a section&rsquo;s text shows the whole section, not just the matching line.</p>
-<input type="text" id="bylawsSearchBox" class="find-field" placeholder="e.g. quorum, removal, vote" oninput="renderBylawsSearch(this.value)">
-<div id="bylawsSearchCount" class="empty-note" style="margin-top:8px;"></div>
-<div id="bylawsSearchList" class="drawer-list"></div>
-</div>
-</div>
-<div class="dash-fold" data-fold="vendorGuideInner">
-<button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title">Vendor Guide</span>
-<span class="fold-sub">The market&rsquo;s full guide, kept on Google Docs</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<a class="comm-btn" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><svg class="ico"><use href="#i-link"></use></svg> Open the Vendor Guide</a>
-</div>
-</div>
-</div>
-</div>
 
 <div class="dash-fold" data-fold="fProfile" data-fixed="1">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
@@ -3052,6 +3011,54 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
+<div class="dash-fold" data-fold="reference">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Reference</span>
+<span class="fold-sub">The Bylaws and Vendor Guide, the app on your phone, and every vendor</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<div class="dash-fold" data-fold="guide">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Bylaws and Vendor Guide</span>
+<span class="fold-sub">The market&rsquo;s governing rules, and the full Vendor Guide</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<div class="dash-fold" data-fold="bylawsInner">
+<button type="button" class="fold-bar" onclick="toggleFold(this); renderBylawsSearch('');">
+<span class="fold-title">Bylaws</span>
+<span class="fold-sub">Search every Article and Section, or open the full PDF</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<a id="bylawsLink" href="#" target="_blank" rel="noopener" class="comm-btn" style="margin-bottom:14px;"><svg class="ico"><use href="#i-document"></use></svg> <span id="bylawsLinkSub">Open the full PDF</span></a>
+<p class="empty-note" style="margin:-4px 0 14px;">Every Article and Section of the market&rsquo;s Bylaws, searchable by word or phrase. A match anywhere in a section&rsquo;s text shows the whole section, not just the matching line.</p>
+<input type="text" id="bylawsSearchBox" class="find-field" placeholder="e.g. quorum, removal, vote" oninput="renderBylawsSearch(this.value)">
+<div id="bylawsSearchCount" class="empty-note" style="margin-top:8px;"></div>
+<div id="bylawsSearchList" class="drawer-list"></div>
+</div>
+</div>
+<div class="dash-fold" data-fold="vendorGuideInner">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Vendor Guide</span>
+<span class="fold-sub">The market&rsquo;s full guide, kept on Google Docs</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<a class="comm-btn" href="https://docs.google.com/document/d/1IjYppAKuH4CglYJxw8MuLLUTlpeSsIh-l785xnO92yI/edit?usp=sharing" target="_blank" rel="noopener"><svg class="ico"><use href="#i-link"></use></svg> Open the Vendor Guide</a>
+</div>
+</div>
+</div>
+</div>
+<div class="dash-fold" data-fold="homescreen">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'homescreen')">
+<span class="fold-title">Put IFM App on Your Device</span>
+<span class="fold-sub">Add the market to your home screen &mdash; takes about twenty seconds</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="directory">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'directory')">
 <span class="fold-title">Rolodex</span>
@@ -3059,6 +3066,8 @@ I sell food (prepared food or produce)
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
+</div>
+</div>
 </div>
 <div class="dash-fold" data-fold="communicate">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'communicate')">
@@ -3255,19 +3264,26 @@ I sell food (prepared food or produce)
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="winter">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
-<span class="fold-title">Winter Market</span>
-<span class="fold-sub">Jan–Mar Saturdays at Triphammer &middot; earns a point a day</span>
-<span class="fold-chev">›</span>
+<div class="dash-fold" data-fold="satellites">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Satellite Markets</span>
+<span class="fold-sub">Wednesdays at East Hill Plaza, winter Saturdays at Triphammer, and pop-up events</span>
+<span class="fold-chev">&rsaquo;</span>
 </button>
-<div class="fold-body"></div>
-</div>
+<div class="fold-body">
 <div class="dash-fold" data-fold="wednesday">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'wednesday')">
 <span class="fold-title">Wednesday Market</span>
 <span class="fold-sub">East Hill Plaza &middot; May&ndash;October, 3&ndash;6&nbsp;PM &middot; earns a point a day</span>
 <span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="winter">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'winter')">
+<span class="fold-title">Winter Market</span>
+<span class="fold-sub">Jan–Mar Saturdays at Triphammer &middot; earns a point a day</span>
+<span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
 </div>
@@ -3278,6 +3294,8 @@ I sell food (prepared food or produce)
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body"></div>
+</div>
+</div>
 </div>
 <p class="empty-note" id="menuTailorNote" style="margin: 14px 0 4px; text-align:center;"></p>
 <button type="button" class="ghost-btn" id="deskOrderReset" style="display:none;" onclick="resetDeskOrder(this)">Put the drawers back in their usual order</button>
@@ -13563,14 +13581,18 @@ const DESK_STABLE_ORDER = [
 'fMerch', 'account', 'fGiftCert', 'ftender', 'mydocs',
 // Your part in the market: the committees you sit on, and how to reach the office.
 'mycommittees', 'communicate',
-// Things you look up rather than do.
-'directory', 'guide', 'homescreen'];
+// Things you look up rather than do, in one drawer since 18-40: the Bylaws and
+// Vendor Guide, putting the app on your phone, and the Rolodex.
+'reference'];
 // Steamboat's day-to-day tools, on top while Steamboat is running.
 const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos'];
-// The other three markets, always adjacent and always in this order, so a
-// vendor learns one place to look for all of them. Which are running is said
-// on each bar rather than by moving them about.
-const DESK_OTHER_MARKETS = ['winter', 'wednesday', 'popupsvendor'];
+// The other markets, in one drawer since 18-40 (Wednesday, Winter Market,
+// PopUp Events, in that order) so a vendor learns one place to look for all of
+// them. Which are running is said on each bar rather than by moving them about.
+// A vendor order saved before 18-40 names the six drawers that moved; they are
+// no longer top-level, so applyDeskOrder skips them, and the two new drawers
+// join the end of that saved order until the vendor moves them.
+const DESK_OTHER_MARKETS = ['satellites'];
 // One order, every day of the year. This used to put the file cabinet above
 // the Steamboat tools out of season, so a vendor's desk was arranged
 // differently in February than in July -- for no reason they asked for, off a
@@ -22783,7 +22805,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-39';
+const BUILD_ID = '18-40';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
