@@ -2702,6 +2702,38 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .ans-switch:disabled { opacity: 0.6; }
 @media (prefers-reduced-motion: reduce) { .ans-switch, .ans-switch .ans-thumb { transition: none; } }
 .md-answers-link.md-waiting { border-color: var(--tomato); }
+/* ===== MESSAGES (18-50) ===== */
+.msg-as { margin-bottom: 12px; }
+.msg-as label { margin-top: 0; }
+.msg-new { margin: 0 0 12px; }
+.msg-threads { display: flex; flex-direction: column; gap: 8px; }
+.msg-thread { position: relative; display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; padding: 12px 44px 12px 14px;
+  border-radius: 12px; border: 1px solid var(--paper-dim); background: rgba(255,255,255,0.7); font: inherit; color: var(--ink); cursor: pointer; }
+.msg-thread-top { display: flex; justify-content: space-between; gap: 8px; }
+.msg-thread-top b { font-size: 16px; }
+.msg-thread-when { font-size: 12.5px; opacity: 0.7; white-space: nowrap; }
+.msg-thread-last { font-size: 14px; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-thread.unread .msg-thread-last { opacity: 1; font-weight: 600; }
+.msg-unread { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  display: grid; place-items: center; background: var(--leaf); color: #fff; font-size: 12px; font-weight: 700; }
+.msg-back { margin-bottom: 8px; }
+.msg-with { font-family: 'Manrope', -apple-system, sans-serif; font-size: 19px; margin: 4px 0 10px; }
+.msg-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; padding: 4px 2px 8px; }
+.msg-bubble { max-width: 82%; align-self: flex-start; padding: 9px 12px; border-radius: 16px 16px 16px 4px; background: #fff; border: 1px solid var(--paper-dim); }
+.msg-bubble.mine { align-self: flex-end; background: var(--leaf); border-color: var(--leaf); color: #fff; border-radius: 16px 16px 4px 16px; }
+.msg-body { font-size: 15.5px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg-meta { font-size: 11.5px; opacity: 0.75; margin-top: 3px; }
+.msg-compose { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 10px; }
+.msg-compose textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid var(--paper-dim); resize: vertical; min-height: 46px; }
+.msg-send { width: auto; margin: 0; padding: 12px 18px; }
+.msg-pick { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 55vh; overflow-y: auto; }
+.msg-person { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 11px 12px;
+  border-radius: 10px; border: 1px solid var(--paper-dim); background: rgba(255,255,255,0.75); font: inherit; color: var(--ink); cursor: pointer; }
+.msg-person span { font-size: 12.5px; opacity: 0.7; white-space: nowrap; }
+.msg-private { font-size: 12.5px; margin-top: 14px; }
+.msg-sub-new { color: var(--leaf) !important; font-weight: 700; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* ===== VENDOR DESK TABS (18-41) ======================================== */
 .vtab-bar { display: none; }
 .fold-cta { display: none; }
@@ -3201,6 +3233,14 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 </div>
 </div>
 </div>
+<div class="dash-fold" data-fold="messages">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'messages')">
+<span class="fold-title">Messages</span>
+<span class="fold-sub" id="msgFoldSub">Write to the office, a committee, staff or another vendor</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="communicate">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'communicate')">
 <span class="fold-title">Communicate with the Market</span>
@@ -3531,6 +3571,10 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p class="empty-note" style="margin-top:0;">What you take goes straight onto <b>your account with the market</b> as money the market owes you, the same as any payment the office records for you. The certificate was paid for at the office window when it was sold, so you are not waiting on the customer for anything. You do not need to bring the certificate to the office &mdash; the customer keeps it until it is empty.</p>
 <p class="empty-note">The app records what you enter here. Nothing checks it against the customer, so enter what they actually spent.</p>
 </div>
+</section>
+<section id="screen-messages" class="screen">
+<div class="screen-head" id="head-messages"></div>
+<div id="msgApp"></div>
 </section>
 <section id="screen-demostmt" class="screen">
 <div class="screen-head" id="head-demostmt"></div>
@@ -3913,6 +3957,14 @@ announces any change.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-toolbox"></use></svg></span>Staff<button type="button" class="help-dot" onclick="showHelp(9)" aria-label="What are the rules here?">?</button></h2>
 </div>
 <div id="staffFolders">
+<div class="dash-fold" data-fold="st-messages">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'messages')">
+<span class="fold-title">Messages</span>
+<span class="fold-sub" id="msgFoldSubStaff">Market Staff&rsquo;s inbox</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="st-lottery">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'lottery')">
 <span class="fold-title">Sunday Booth Selection</span>
@@ -5135,6 +5187,14 @@ this side of it.</p>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-sun-rays"></use></svg></span>Supporting the Market</h2>
 <p class="empty-note" style="margin-top:0;">The market runs on more hands than vendors and staff. These are the roles the market&rsquo;s own documents name &mdash; pick yours.</p>
+</div>
+<div class="dash-fold" data-fold="vol-messages">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'messages')">
+<span class="fold-title">Messages</span>
+<span class="fold-sub" id="msgFoldSubVol">The Volunteers &amp; Partners inbox</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
 </div>
 <div id="volFolders"></div>
 </section>
@@ -8402,6 +8462,13 @@ ifmWriteQueue.set(key, value);     // latest write wins; queue drains in order
 ifmSaveQueue();                    // and on the device, in case the page dies
 ifmPump();
 return { key: key, value: value };
+},
+// Every key this phone knows under a prefix: the sheet's (from the whole-sheet
+// read, the device copy and the change poll) plus anything written here and
+// not yet sent. Messages use it (18-50); one record per message.
+async list(prefix) {
+const p = String(prefix || '');
+return { keys: [...ifmMem.keys()].filter(k => k.startsWith(p) && ifmMem.get(k) !== null) };
 }
 } : {
 async get(key) {
@@ -8411,6 +8478,14 @@ return v === null ? null : { key: key, value: v };
 async set(key, value) {
 localStorage.setItem('ifm:' + key, value);
 return { key: key, value: value };
+},
+async list(prefix) {
+const out = [];
+for (let i = 0; i < localStorage.length; i++) {
+  const k = localStorage.key(i);
+  if (k && k.startsWith('ifm:' + (prefix || ''))) out.push(k.slice(4));
+}
+return { keys: out };
 }
 };
 }
@@ -8437,6 +8512,7 @@ else j.items.forEach(it => ifmConfirmKey(String(it.key), true));
 ifmLastSync = j.now || Date.now();
 if (!touched.length) return;
 await loadAllData();
+if (touched.some(k => k.startsWith('ifm-msg'))) { msgReadCache = {}; try { await renderMessageBadges(); if (ifmCurrentScreen === 'managerdash') renderManagerAlerts(); } catch (e) {} }
 const ae = document.activeElement;
 const typing = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
 if (!typing) {
@@ -11762,6 +11838,8 @@ el.value = '';
 // is not a desk hand-over and must not wipe what somebody is in the middle of.
 let deskHandoverQuiet = false;
 function setRoleHeader(role) {
+if (typeof msgState !== 'undefined') { msgState = { as: null, thread: null, picking: false, q: '', draft: '' }; msgReadCache = {}; }
+setTimeout(() => { if (typeof renderMessageBadges === 'function') renderMessageBadges().catch(() => {}); }, 60);
 try { if (typeof stopQrScan === 'function') stopQrScan(); } catch (e) {}
 document.body.classList.toggle('vendor-tabs', role === 'vendor');
 if (role === 'vendor') { buildVendorTabs(); setVendorTab('home'); }
@@ -13711,7 +13789,7 @@ const DESK_STABLE_ORDER = [
 'mycommittees', 'communicate',
 // Things you look up rather than do, in one drawer since 18-40: the Bylaws and
 // Vendor Guide, putting the app on your phone, and the Rolodex.
-'reference'];
+'reference', 'messages'];
 // Steamboat's day-to-day tools, on top while Steamboat is running.
 const DESK_STEAMBOAT_ORDER = ['boothassign', 'fPromos'];
 // The other markets, in one drawer since 18-40 (Wednesday, Winter Market,
@@ -14762,7 +14840,7 @@ const VENDOR_TABS = [
   { fold: 'boothassign', flat: true, nohead: true }, { fold: 'satellites', flat: true } ] },
 { k: 'upload', t: 'Upload', title: 'Upload Forms', icon: 'i-vtab-upload', open: 'mydocs', parts: [ { fold: 'mydocs' } ] },
 { k: 'communicate', t: 'Communicate', title: 'Communicate', icon: 'i-vtab-talk', parts: [
-  { fold: 'communicate' }, { fold: 'reference', flat: true } ] },
+  { fold: 'messages' }, { fold: 'communicate' }, { fold: 'reference', flat: true } ] },
 ];
 let vendorTab = 'home';
 let vtabBuilt = false;
@@ -14863,6 +14941,7 @@ try {
 } catch (e) { due = false; }
 b.classList.toggle('has-dot', due);
 b.setAttribute('aria-label', 'Upload' + (due ? ', something needs attention' : ''));
+if (typeof renderMessageBadges === 'function') renderMessageBadges().catch(() => {});
 }
 async function selectVendor(vendorId) {
 currentRole = 'vendor';
@@ -18059,6 +18138,7 @@ updatePaySub();
 }
 function renderAll() {
 paintHeaderBadge();
+if (typeof renderMessageBadges === 'function') renderMessageBadges().catch(() => {});
 if (currentRole === 'vendor' && typeof renderAnswersTraits === 'function') { try { renderAnswersTraits(); renderShareOffer(); renderTenderSub(); } catch (e) {} }
 if (typeof paintVendorTabDots === 'function') paintVendorTabDots();
 updatePaySub();
@@ -19019,6 +19099,7 @@ if (name === 'vprofile') initVpScreen();
 if (name === 'vreset') initVresetScreen();
 if (name === 'presplanned') initPresPlanned();
 if (name === 'aginspect') initAgInspect();
+if (name === 'messages') renderMessages();
 if (name === 'gcvendor') {
 renderGcvScanRow();
 gcvStopScan();
@@ -19143,6 +19224,7 @@ idea:              { title: 'A Good Idea' },
 ptssignoff:        { title: 'Points Sign-Off' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Scan a Gift Certificate' },
+messages:          { title: 'Messages' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
 homescreen:        { title: 'Put IFM App on Your Device' },
@@ -23049,7 +23131,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-49';
+const BUILD_ID = '18-50';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -32545,6 +32627,10 @@ if (currentRole === 'board') {
     alerts.push(Object.assign({}, a, { id: null, go: onDesk ? a.go : null }));
   });
 }
+if (currentRole === 'manager' && msgUnreadForAlerts > 0) {
+  alerts.unshift({ topic: 'Messages', n: msgUnreadForAlerts, t: msgUnreadForAlerts + ' unread message' + (msgUnreadForAlerts === 1 ? '' : 's'),
+    d: 'In the Market Manager\u2019s inbox', cls: 'submitted', go: 'messages' });
+}
 card.style.display = alerts.length ? 'block' : 'none';
 const sub = document.getElementById('mgrAlertSub');
 if (sub) {
@@ -34324,6 +34410,11 @@ const MGR_OTHER_MARKETS = ['winter', 'wednesday', 'popups'];
 const MGR_DESK_STYLE = 'grid';
 let mgrOpenFolder = null;
 const MGR_FOLDERS = [
+{ key: 'messages', title: 'Messages', icon: 'i-vtab-talk',
+sub: 'Write to and hear from vendors, committees, staff and volunteers',
+tiles: [
+{ s: 'messages', i: 'i-vtab-talk', t: 'Messages', d: 'The Market Manager\u2019s inbox' },
+] },
 { key: 'answering', title: 'Answering Machine', icon: 'i-phone',
 sub: 'The market\u2019s phone line \u2014 what callers hear, and what they leave',
 tiles: [
@@ -45075,6 +45166,243 @@ if (out) out.scrollIntoView({ behavior: 'smooth', block: 'center' });
 } });
 }
 function gcvStopScan() { stopQrScan(); }
+// MESSAGES (18-50). Vendors, the Market Manager, committees, and the two
+// coordinator desks (Market Staff; Volunteers & Partners) can all write to
+// each other. A Board member writes as their business: the Board has no
+// identity here, and the Board desk (read-only) has no inbox.
+//
+// Who is who. A participant id is 'v:<vendorId>', 'office', 'c:<committee
+// key>', 'staff' or 'vol'. A vendor also reads and writes for every
+// committee they serve on; a committee message says which business sent it.
+//
+// Storage. ONE RECORD PER MESSAGE, key ifm-msg-<thread>-<time><random>, never
+// a shared list: a save replaces a whole record, so two people replying at
+// once would otherwise overwrite each other. A thread is the sorted pair of
+// participant ids. What each participant has read is one small record,
+// ifm-msgread-<id>, written only by that participant.
+//
+// NOT PRIVATE. The market's records are one shared sheet and the app has no
+// real sign-in yet, so anyone with the app could read any message. The tool
+// says so under every conversation.
+//
+// No push notifications: they need the service worker (off) and a sending
+// service the sheet does not have. New messages arrive with the ordinary
+// change poll; unread counts show on the Communicate tab, the Messages
+// drawers and the Manager's notifications.
+const MSG_PREFIX = 'ifm-msg-';
+const MSG_READ_PREFIX = 'ifm-msgread-';
+const MSG_MAX = 1000;
+const MSG_FIXED = [
+{ id: 'office', name: 'Market Manager', kind: 'office' },
+{ id: 'staff', name: 'Market Staff', kind: 'coordinator' },
+{ id: 'vol', name: 'Volunteers & Partners', kind: 'coordinator' },
+];
+let msgState = { as: null, thread: null, picking: false, q: '', draft: '' };
+let msgReadCache = {};
+function msgCommitteeName(cm) { return /committee/i.test(cm.name) ? cm.name : cm.name + ' Committee'; }
+function msgParticipants() {
+const list = MSG_FIXED.slice();
+COMMITTEES.forEach(cm => list.push({ id: 'c:' + cm.key, name: msgCommitteeName(cm), kind: 'committee' }));
+(cache.vendors || []).filter(v => v && v.vendorId && v.businessName)
+  .sort((a, b) => a.businessName.localeCompare(b.businessName))
+  .forEach(v => list.push({ id: 'v:' + v.vendorId, name: v.businessName, kind: 'vendor' }));
+return list;
+}
+function msgName(pid) {
+const f = MSG_FIXED.find(x => x.id === pid);
+if (f) return f.name;
+if (pid.startsWith('c:')) { const cm = COMMITTEES.find(c => c.key === pid.slice(2)); return cm ? msgCommitteeName(cm) : 'A committee'; }
+if (pid.startsWith('v:')) { const v = (cache.vendors || []).find(x => x.vendorId === pid.slice(2)); return v ? v.businessName : 'A vendor'; }
+return pid;
+}
+// The inboxes this desk reads, first one first.
+function msgIdentities() {
+if (currentRole === 'vendor' && currentVendorId) {
+  let cms = [];
+  try { cms = committeesFor(currentVendorId); } catch (e) {}
+  return ['v:' + currentVendorId].concat(cms.map(c => 'c:' + c.key));
+}
+if (currentRole === 'manager') return ['office'];
+if (currentRole === 'staff') return ['staff'];
+if (currentRole === 'volunteer') return ['vol'];
+return [];
+}
+function msgThreadId(a, b) { return [a, b].sort().join('~'); }
+function msgSafe(s) { return String(s).replace(/[^A-Za-z0-9~:_.-]/g, '_'); }
+async function msgAll() {
+if (!window.storage || typeof window.storage.list !== 'function') return [];
+let keys = [];
+try { keys = (await window.storage.list(MSG_PREFIX)).keys || []; } catch (e) { return []; }
+const out = [];
+for (const k of keys) {
+  try {
+    const r = await window.storage.get(k);
+    if (!r || r.value == null) continue;
+    const m = JSON.parse(r.value);
+    if (m && m.from && m.to && m.at && typeof m.body === 'string') { m.key = k; out.push(m); }
+  } catch (e) {}
+}
+return out.sort((a, b) => a.at - b.at);
+}
+async function msgLoadRead(pid) {
+if (msgReadCache[pid]) return msgReadCache[pid];
+let map = {};
+try { const r = await window.storage.get(MSG_READ_PREFIX + msgSafe(pid)); if (r && r.value) map = JSON.parse(r.value) || {}; } catch (e) {}
+msgReadCache[pid] = map;
+return map;
+}
+async function msgMarkRead(pid, thread, at) {
+const map = await msgLoadRead(pid);
+if ((map[thread] || 0) >= at) return;
+map[thread] = at;
+await storageSet(MSG_READ_PREFIX + msgSafe(pid), map);
+}
+// Conversations for one inbox, newest first, with unread counts.
+async function msgThreads(pid, all) {
+const read = await msgLoadRead(pid);
+const by = {};
+(all || []).filter(m => m.from === pid || m.to === pid).forEach(m => {
+  const other = m.from === pid ? m.to : m.from;
+  const t = by[other] || (by[other] = { other: other, thread: msgThreadId(pid, other), last: null, unread: 0 });
+  t.last = m;
+  if (m.to === pid && m.at > (read[t.thread] || 0)) t.unread++;
+});
+return Object.values(by).sort((a, b) => b.last.at - a.last.at);
+}
+async function msgUnreadTotal(pids) {
+const all = await msgAll();
+let n = 0;
+for (const pid of pids) (await msgThreads(pid, all)).forEach(t => { n += t.unread; });
+return n;
+}
+function msgWhen(at) {
+const d = new Date(at), now = new Date();
+const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+if (d.toDateString() === now.toDateString()) return time;
+return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + time;
+}
+async function msgSend(from, to, body) {
+const text = String(body || '').trim();
+if (!text) return false;
+if (text.length > MSG_MAX) { showMsg('msgStatus', 'err', 'That is longer than a message can be (' + MSG_MAX + ' characters). Split it in two.'); return false; }
+if (currentRole === 'board') return false;
+const thread = msgThreadId(from, to);
+const m = { from: from, to: to, body: text, at: Date.now(), thread: thread };
+if (from.startsWith('c:') && currentVendorId) m.by = currentVendorId;
+const key = MSG_PREFIX + msgSafe(thread) + '-' + m.at.toString(36) + Math.random().toString(36).slice(2, 7);
+await storageSet(key, m);
+await msgMarkRead(from, thread, m.at);
+return true;
+}
+async function renderMessages() {
+const host = document.getElementById('msgApp');
+if (!host) return;
+const ids = msgIdentities();
+if (!ids.length) {
+  host.innerHTML = '<p class="empty-note">Messages are for vendors, the Market Manager, committees, Market Staff, and Volunteers &amp; Partners.</p>';
+  return;
+}
+if (!ids.includes(msgState.as)) { msgState = { as: ids[0], thread: null, picking: false, q: '', draft: '' }; }
+const me = msgState.as;
+const all = await msgAll();
+const threads = await msgThreads(me, all);
+const ae = document.activeElement;
+const hadFocus = ae && ae.id === 'msgDraft';
+let html = '';
+if (ids.length > 1) {
+  html += '<div class="msg-as"><label for="msgAs">Messages for</label><select id="msgAs">' +
+    await Promise.all(ids.map(async id => { const n = (await msgThreads(id, all)).reduce((s, t) => s + t.unread, 0);
+      return '<option value="' + esc(id) + '"' + (id === me ? ' selected' : '') + '>' + esc(msgName(id)) + (n ? ' (' + n + ' new)' : '') + '</option>'; })).then(a => a.join('')) +
+    '</select></div>';
+}
+if (msgState.thread) {
+  const other = msgState.thread;
+  const thread = msgThreadId(me, other);
+  const msgs = all.filter(m => m.thread === thread);
+  html += '<button type="button" class="back-link msg-back" id="msgBack">\u2039 All messages</button>' +
+    '<h2 class="msg-with">' + esc(msgName(other)) + '</h2>' +
+    '<div class="msg-list" id="msgList">' +
+    (msgs.length ? msgs.map(m => {
+      const mine = m.from === me;
+      const by = m.by && m.from.startsWith('c:') ? ' \u00b7 sent by ' + esc(msgName('v:' + m.by)) : '';
+      return '<div class="msg-bubble' + (mine ? ' mine' : '') + '"><div class="msg-body">' + esc(m.body) + '</div>' +
+        '<div class="msg-meta">' + esc(msgWhen(m.at)) + by + '</div></div>';
+    }).join('') : '<p class="empty-note">No messages yet. Say hello.</p>') +
+    '</div>' +
+    '<div class="msg-compose"><label for="msgDraft" class="sr-only">Message to ' + esc(msgName(other)) + '</label>' +
+    '<textarea id="msgDraft" rows="2" maxlength="' + MSG_MAX + '" placeholder="Message ' + esc(msgName(other)) + '"></textarea>' +
+    '<button type="button" class="primary-btn msg-send" id="msgSendBtn">Send</button></div>' +
+    '<div class="status-msg" id="msgStatus"></div>';
+  if (msgs.length) await msgMarkRead(me, thread, msgs[msgs.length - 1].at);
+} else if (msgState.picking) {
+  const q = msgState.q.trim().toLowerCase();
+  const people = msgParticipants().filter(p => !ids.includes(p.id) && (!q || p.name.toLowerCase().includes(q)));
+  html += '<button type="button" class="back-link msg-back" id="msgBack">\u2039 All messages</button>' +
+    '<label for="msgFind">Who to write to</label>' +
+    '<input type="text" id="msgFind" class="find-field" autocomplete="off" placeholder="The office, a committee, or a business">' +
+    '<div class="msg-pick" id="msgPick">' +
+    (people.length ? people.slice(0, 60).map(p => '<button type="button" class="msg-person" data-pid="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><span>' +
+      ({ office: 'The office', coordinator: 'Coordinator', committee: 'Committee', vendor: 'Vendor' })[p.kind] + '</span></button>').join('')
+      : '<p class="empty-note">Nobody matches that.</p>') +
+    (people.length > 60 ? '<p class="empty-note">Type more of a name to narrow the list.</p>' : '') +
+    '</div>';
+} else {
+  html += '<button type="button" class="primary-btn msg-new" id="msgNew">New message</button>';
+  html += threads.length ? '<div class="msg-threads">' + threads.map(t =>
+    '<button type="button" class="msg-thread' + (t.unread ? ' unread' : '') + '" data-pid="' + esc(t.other) + '">' +
+    '<span class="msg-thread-top"><b>' + esc(msgName(t.other)) + '</b><span class="msg-thread-when">' + esc(msgWhen(t.last.at)) + '</span></span>' +
+    '<span class="msg-thread-last">' + (t.last.from === me ? 'You: ' : '') + esc(t.last.body.slice(0, 90)) + '</span>' +
+    (t.unread ? '<span class="msg-unread">' + t.unread + '</span>' : '') + '</button>').join('') + '</div>'
+    : '<p class="empty-note">No messages yet.</p>';
+}
+html += '<p class="empty-note msg-private">Messages are kept in the market&rsquo;s shared records, and the app has no private sign-in yet. Don&rsquo;t send anything you would not want others to read.</p>';
+host.innerHTML = html;
+const as = document.getElementById('msgAs');
+if (as) as.onchange = () => { msgState = { as: as.value, thread: null, picking: false, q: '', draft: '' }; renderMessages(); };
+const back = document.getElementById('msgBack');
+if (back) back.onclick = () => { msgState.thread = null; msgState.picking = false; msgState.q = ''; renderMessages(); renderMessageBadges(); };
+const nw = document.getElementById('msgNew');
+if (nw) nw.onclick = () => { msgState.picking = true; msgState.q = ''; renderMessages(); setTimeout(() => { const f = document.getElementById('msgFind'); if (f) f.focus(); }, 60); };
+host.querySelectorAll('.msg-thread, .msg-person').forEach(b => b.onclick = () => {
+  msgState.thread = b.dataset.pid; msgState.picking = false; msgState.draft = ''; renderMessages().then(renderMessageBadges);
+});
+const find = document.getElementById('msgFind');
+if (find) {
+  find.value = msgState.q;
+  find.oninput = () => { msgState.q = find.value; const pos = find.selectionStart; renderMessages().then(() => { const f = document.getElementById('msgFind'); if (f) { f.focus(); try { f.setSelectionRange(pos, pos); } catch (e) {} } }); };
+}
+const draft = document.getElementById('msgDraft');
+if (draft) {
+  draft.value = msgState.draft;
+  draft.oninput = () => { msgState.draft = draft.value; };
+  if (hadFocus) draft.focus();
+  const list = document.getElementById('msgList');
+  if (list) list.scrollTop = list.scrollHeight;
+}
+const send = document.getElementById('msgSendBtn');
+if (send) send.onclick = async () => {
+  send.disabled = true;
+  const ok = await msgSend(me, msgState.thread, (document.getElementById('msgDraft') || {}).value);
+  if (ok) msgState.draft = '';
+  await renderMessages();
+  renderMessageBadges();
+  const d = document.getElementById('msgDraft');
+  if (d && ok) d.focus();
+};
+}
+// Unread counts wherever this desk can see them.
+async function renderMessageBadges() {
+const ids = msgIdentities();
+const n = ids.length ? await msgUnreadTotal(ids) : 0;
+const say = n ? n + ' unread' : null;
+const subs = { msgFoldSub: 'Write to the office, a committee, staff or another vendor', msgFoldSubStaff: 'Market Staff\u2019s inbox', msgFoldSubVol: 'The Volunteers & Partners inbox' };
+Object.keys(subs).forEach(id => { const el = document.getElementById(id); if (el) { el.textContent = say || subs[id]; el.classList.toggle('msg-sub-new', !!n); } });
+const tab = document.querySelector('#vendorTabList .vtab[data-tab="communicate"]');
+if (tab) tab.classList.toggle('has-dot', currentRole === 'vendor' && n > 0);
+msgUnreadForAlerts = currentRole === 'manager' ? n : 0;
+return n;
+}
+let msgUnreadForAlerts = 0;
 // SCAN FROM HOME (18-48). On the vendor desk's Home tab, Scan a Gift
 // Certificate opens the camera straight away, full screen, rather than a
 // drawer with a scan button in it. A good read hands the code to the gift
