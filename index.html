@@ -2645,6 +2645,29 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
   opacity: 0; transition: opacity 0.4s;
 }
 .ifm-spin-note.show { opacity: 1; }
+/* ===== BUSINESS PROFILE SECTIONS AND KIOSK LINKS (18-42) ===== */
+.prof-section { margin-top: 14px; padding: 12px 12px 14px; border-radius: 14px; border: 1px solid var(--paper-dim); background: rgba(255,255,255,0.55); }
+.prof-section.prof-kiosk { border-color: var(--sunflower); }
+.prof-sec-title { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-family: 'Manrope', -apple-system, sans-serif; font-size: 16px; font-weight: 700; }
+.prof-sec-note { font-size: 14px; margin: 0 0 6px; }
+.prof-link-count { font-weight: 600; opacity: 0.7; text-transform: none; letter-spacing: 0; }
+.prof-link-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--paper-dim); }
+.prof-link-row select { grid-column: 1; grid-row: 1; width: auto; max-width: 160px; font-size: 16px; padding: 6px 8px; }
+.prof-link-rm { grid-column: 2; grid-row: 1; }
+.prof-link-value { grid-column: 1 / -1; grid-row: 2; font-size: 15px; overflow-wrap: anywhere; min-width: 0; }
+.prof-link-rm { width: auto; margin: 0; padding: 6px 12px; font-size: 14px; }
+.prof-link-row.over .prof-link-value { opacity: 0.55; text-decoration: line-through; }
+.prof-link-over { grid-column: 1 / -1; font-size: 13px; color: var(--tomato); }
+.prof-link-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 8px; }
+.prof-link-add input { min-width: 0; }
+.prof-link-add button { width: auto; margin: 0; padding: 0 16px; }
+.prof-link-add.full { opacity: 0.5; }
+.prof-link-note { font-size: 14px; margin: 6px 0 0; }
+.prof-link-note:empty { display: none; }
+.prof-link-offer { width: auto; display: inline-block; margin: 4px 6px 0 0; padding: 6px 12px; font-size: 14px; text-align: left; overflow-wrap: anywhere; }
+.prof-preview-card { margin-top: 14px; background: #F5F2E7; }
+.answers-intro { margin: 0 0 8px; }
+.md-answers-link.md-waiting { border-color: var(--tomato); }
 /* ===== VENDOR DESK TABS (18-41) ======================================== */
 .vtab-bar { display: none; }
 .fold-cta { display: none; }
@@ -2908,7 +2931,7 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <div class="dash-fold" data-fold="fProfile" data-fixed="1">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title">Business Profile</span>
-<span class="fold-sub" id="foldSubProfile">Your photo, contact details, products and links</span>
+<span class="fold-sub" id="foldSubProfile">What shoppers see at the kiosk, and your details for the office</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body">
@@ -2927,23 +2950,40 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <button type="button" class="ghost-btn" id="profileEditBtn" onclick="toggleProfileEdit(true)">
 <svg class="ico"><use href="#i-pencil-plus"></use></svg> Edit Profile</button>
 <div id="profileEditForm" style="display:none;">
+<div class="prof-section prof-kiosk">
+<h3 class="prof-sec-title"><svg class="ico"><use href="#i-search"></use></svg> Shown on the kiosk</h3>
+<p class="empty-note prof-sec-note">Everything in this box is what shoppers see about you at the information kiosk, along with your photo above.</p>
 <label for="profBiz">Business Name</label>
 <input type="text" id="profBiz">
+<label for="profProducts">What you sell</label>
+<textarea id="profProducts" placeholder="e.g. Carved and painted original artwork, prints, magnets." style="width:100%; min-height:80px; padding:12px; border:1px solid var(--paper-dim); border-radius:10px; font-family:inherit; font-size:16px; color:var(--ink); background:#fff;"></textarea>
+<label for="profLinkInput">Links <span class="prof-link-count" id="profLinkCount"></span></label>
+<p class="empty-note prof-sec-note" style="margin-top:0;">Up to three: your website, social media pages, or anything else you want shoppers to find. Share as many as you have, or none.</p>
+<div id="profLinks"></div>
+<div class="prof-link-add" id="profLinkAdd">
+<input type="text" id="profLinkInput" placeholder="e.g. www.yourfarm.com or instagram.com/yourfarm" autocomplete="off" autocapitalize="off" spellcheck="false" onkeydown="if (event.key === 'Enter') { event.preventDefault(); addProfileLink(); }">
+<button type="button" class="ghost-btn" id="profLinkAddBtn" onclick="addProfileLink()">Add</button>
+</div>
+<p class="empty-note prof-link-note" id="profLinkNote"></p>
+<div id="profLinkSuggest"></div>
+<div class="card prof-preview-card">
+<h2 style="margin-top:0;"><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What Shoppers Will See</h2>
+<div id="profPublicPreview"></div>
+</div>
+</div>
+<div class="prof-section prof-private">
+<h3 class="prof-sec-title"><svg class="ico"><use href="#i-key"></use></svg> For the market office only</h3>
+<p class="empty-note prof-sec-note">Never shown on the kiosk.</p>
 <label for="profContact">Primary Contact</label>
 <input type="text" id="profContact" placeholder="e.g. Mary Shelley">
-<label class="pub-toggle"><input type="checkbox" id="profContactPub"> Show on the public Kiosk</label>
 <label for="profPhone">Phone</label>
 <input type="text" id="profPhone" placeholder="e.g. 607-555-0100">
-<label class="pub-toggle"><input type="checkbox" id="profPhonePub"> Show on the public Kiosk</label>
 <label for="profEmail">Email</label>
 <input type="text" id="profEmail" placeholder="e.g. you@email.com">
-<label class="pub-toggle"><input type="checkbox" id="profEmailPub"> Show on the public Kiosk</label>
 <label for="profAddress">Address</label>
 <input type="text" id="profAddress" placeholder="e.g. Ithaca, NY 14850">
-<label class="pub-toggle"><input type="checkbox" id="profAddressPub"> Show on the public Kiosk</label>
 <label for="profSecondContact" style="margin-top:14px;">Spouse or family member who also acts for the business</label>
 <input type="text" id="profSecondContact" placeholder="e.g. Sam Tarantelli">
-<label class="pub-toggle"><input type="checkbox" id="profSecondContactPub"> Show on the public Kiosk</label>
 <p class="empty-note" style="margin:6px 0 0;">Somebody who may stand the booth, ring the office, or use this app on the business&rsquo;s behalf. The market takes what they say as coming from you, so only add somebody you would trust to speak for the business.</p>
 <label for="profSecondRelation" style="margin-top:10px;">How they are connected</label>
 <select id="profSecondRelation">
@@ -2956,35 +2996,10 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <option>Business partner</option>
 <option>Employee</option>
 </select>
-<label class="pub-toggle"><input type="checkbox" id="profSecondRelationPub"> Show on the public Kiosk</label>
 <label for="profSecondPhone" style="margin-top:10px;">Their phone</label>
 <input type="text" id="profSecondPhone" placeholder="e.g. 607-555-0142">
-<label class="pub-toggle"><input type="checkbox" id="profSecondPhonePub"> Show on the public Kiosk</label>
 <label for="profBooth">Weekend Pavilion Booth ID</label>
 <input type="text" id="profBooth" placeholder="e.g. 23B, or 3 (SAT ONLY)">
-<label class="pub-toggle"><input type="checkbox" id="profBoothPub"> Show on the public Kiosk</label>
-<label for="profWebsite">Website</label>
-<input type="text" id="profWebsite" placeholder="e.g. www.yourbusiness.com">
-<label class="pub-toggle"><input type="checkbox" id="profWebsitePub"> Show on the public Kiosk</label>
-<label for="profFacebook">Facebook</label>
-<input type="text" id="profFacebook" placeholder="e.g. @yourbusiness">
-<label class="pub-toggle"><input type="checkbox" id="profFacebookPub"> Show on the public Kiosk</label>
-<label for="profInstagram">Instagram</label>
-<input type="text" id="profInstagram" placeholder="e.g. @yourbusiness">
-<label class="pub-toggle"><input type="checkbox" id="profInstagramPub"> Show on the public Kiosk</label>
-<label for="profEtsy">Etsy</label>
-<input type="text" id="profEtsy" placeholder="e.g. etsy.com/shop/yourbusiness">
-<label class="pub-toggle"><input type="checkbox" id="profEtsyPub"> Show on the public Kiosk</label>
-<label style="display:flex; align-items:center; gap:10px; margin-top:14px;">
-<input type="checkbox" id="profSellsFood" style="width:20px; height:20px;">
-I sell food (prepared food or produce)
-<button type="button" class="help-dot" onclick="showHelp(3)" aria-label="What are the rules here?">?</button></label>
-<label for="profProducts">What you sell</label>
-<textarea id="profProducts" placeholder="e.g. Carved and painted original artwork, prints, magnets." style="width:100%; min-height:80px; padding:12px; border:1px solid var(--paper-dim); border-radius:10px; font-family:inherit; font-size:16px; color:var(--ink); background:#fff;"></textarea>
-<div class="card" style="margin-top:16px; background:#F5F2E7;">
-<h2 style="margin-top:0;"><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What Shoppers Will See</h2>
-<p class="empty-note" style="margin:0 0 10px;">Your photo, business name, and what you sell always show on the public Kiosk. Everything else shows only where you&rsquo;ve checked &ldquo;Show on the public Kiosk&rdquo; above &mdash; this updates as you check and uncheck boxes.</p>
-<div id="profPublicPreview"></div>
 </div>
 <div style="display:flex; gap:10px; margin-top:14px;">
 <button class="primary-btn" style="margin:0;" onclick="saveProfile()"><svg class="ico"><use href="#i-checkmark"></use></svg> Save</button>
@@ -3055,6 +3070,60 @@ I sell food (prepared food or produce)
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mystatements')">
 <span class="fold-title">Statements</span>
 <span class="fold-sub" id="menuStmtSub">Each closed month, as a record of what was owed</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+</div>
+</div>
+<div class="dash-fold" data-fold="answers">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Your Answers</span>
+<span class="fold-sub" id="answersSub">What you do at market, what you take, and whether you would share a booth</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<p class="empty-note answers-intro">Questions about your business, all in one place. None of them is a promise to the market; change any answer whenever you like.</p>
+<div class="dash-fold" id="mdTraitCard" data-fold="mdtraits">
+<button type="button" class="fold-bar" onclick="toggleFold(this); renderAnswersTraits();">
+<span class="fold-title">What You Do at Market</span>
+<span class="fold-sub" id="mdTraitSub">The questions that decide which permits apply</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<p class="empty-note" style="margin-top:0;">Which permits the market needs from you depends on what you sell, not on your membership class. Six questions. Change an answer whenever what you do changes. <b>Change an answer and the list below changes with it.</b></p>
+<div class="req-row" id="sellsFoodRow">
+<div class="req-row-main"><div class="req-name">Do you sell any food at all &mdash; prepared food or produce?</div>
+<div class="req-meta">Decides whether you can be placed in a booth marked No Food on the pavilion map.</div></div>
+<div class="tone-switch" style="margin-top:6px;">
+<button type="button" class="tone-btn" id="sellsFoodYes" onclick="setSellsFood(true)">Yes</button>
+<button type="button" class="tone-btn" id="sellsFoodNo" onclick="setSellsFood(false)">No</button>
+</div>
+</div>
+<div id="mdTraits"></div>
+<div class="status-msg" id="mdTraitMsg"></div>
+</div>
+</div>
+<div class="dash-fold" data-fold="fShareOffer" id="foldShareOffer" style="display:none;">
+<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<span class="fold-title">Open to Sharing Your Booth?</span>
+<span class="fold-sub" id="foldSubShareOffer"></span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body">
+<div class="card">
+<label>Would you take somebody into your booth this season?</label>
+<div class="tone-switch">
+<button type="button" class="tone-btn" id="shareOfferYes" onclick="setShareOffer(true)">Yes</button>
+<button type="button" class="tone-btn" id="shareOfferNo" onclick="setShareOffer(false)">No</button>
+</div>
+</div>
+</div>
+</div>
+<div class="dash-fold" data-fold="ftender">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'tender')">
+<span class="fold-title">SNAP &amp; FreshConnect</span>
+<span class="fold-sub" id="foldSubTender">Whether you take them &mdash; the kiosk tells shoppers</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -3201,22 +3270,6 @@ I sell food (prepared food or produce)
 <div class="fold-body"></div>
 </div>
 
-<div class="dash-fold" data-fold="fShareOffer" id="foldShareOffer" style="display:none;">
-<button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title">Open to Sharing Your Booth?</span>
-<span class="fold-sub" id="foldSubShareOffer"></span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<div class="card">
-<label>Would you take somebody into your booth this season?</label>
-<div class="tone-switch">
-<button type="button" class="tone-btn" id="shareOfferYes" onclick="setShareOffer(true)">Yes</button>
-<button type="button" class="tone-btn" id="shareOfferNo" onclick="setShareOffer(false)">No</button>
-</div>
-</div>
-</div>
-</div>
 <div class="dash-fold" data-fold="fShare">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
 <span class="fold-title" id="foldTitleShare">Sharing a Booth</span>
@@ -3320,14 +3373,6 @@ I sell food (prepared food or produce)
 <span class="fold-title">Scan a Gift Certificate</span>
 <span class="fold-sub">Scan a customer&rsquo;s certificate &middot; the money comes to you</span>
 <span class="fold-cta scan" aria-hidden="true"><svg class="ico"><use href="#i-vtab-scan"></use></svg>Scan</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="ftender">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'tender')">
-<span class="fold-title">SNAP &amp; FreshConnect</span>
-<span class="fold-sub" id="foldSubTender">Whether you take them &mdash; the kiosk tells shoppers</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -6123,17 +6168,9 @@ comes from.</p>
 <section id="screen-mydocs" class="screen">
 <div class="screen-head" id="head-mydocs"></div>
 <p class="empty-note" id="mdSummary" style="margin-top:0;"></p>
-<div class="dash-fold" id="mdTraitCard" data-fold="mdtraits">
-<button type="button" class="fold-bar" onclick="mdTraitToggle(this)">
-<span class="fold-title">What You Do at Market</span>
-<span class="fold-sub" id="mdTraitSub">Five questions that decide which permits apply</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<p class="empty-note" style="margin-top:0;">Which permits the market needs from you depends on what you sell, not on your membership class. Five questions, answered once. <b>Change an answer and the list below changes with it.</b></p>
-<div id="mdTraits"></div>
-<div class="status-msg" id="mdTraitMsg"></div>
-</div>
+<div class="card md-answers-link" id="mdAnswersLink">
+<p class="empty-note" style="margin:0;" id="mdAnswersText">Which permits apply depends on your answers to <b>What You Do at Market</b>, in My Account.</p>
+<button type="button" class="ghost-btn" style="margin-top:10px;" onclick="openAnswer('mdtraits')">See or change your answers</button>
 </div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>What the Market Needs From You<button type="button" class="help-dot" onclick="showHelp(62)" aria-label="What are the rules here?">?</button></h2>
@@ -10062,33 +10099,66 @@ products: 'A cottage farm and microbakery in Ithaca, NY, with a small flock of R
 const PROFILE_FIELDS = ['primaryContact', 'phone', 'email', 'address',
 'secondContact', 'secondRelation', 'secondPhone',
 'boothDisplay', 'website', 'facebook', 'instagram', 'etsy', 'products'];
-// Every line of the Business Profile a vendor can individually let the
-// public Kiosk show. Photo, business name, and what-you-sell are not on
-// this list on purpose -- the Board's decision was that those three always
-// show, everything else is the vendor's call, off until they turn it on.
-// kioskLabel is the shopper-facing wording, deliberately plainer than the
-// form label a vendor fills the field in under (e.g. "Contact" rather than
-// "Primary Contact"), since a shopper reading a kiosk card is a stranger to
-// the business, not the vendor filling out their own paperwork.
-const KIOSK_TOGGLE_FIELDS = [
-{ k: 'primaryContact', inputId: 'profContact', kioskLabel: 'Contact' },
-{ k: 'phone', inputId: 'profPhone', kioskLabel: 'Phone' },
-{ k: 'email', inputId: 'profEmail', kioskLabel: 'Email' },
-{ k: 'address', inputId: 'profAddress', kioskLabel: 'Address' },
-{ k: 'secondContact', inputId: 'profSecondContact', kioskLabel: 'Also acts for this business' },
-{ k: 'secondRelation', inputId: 'profSecondRelation', kioskLabel: 'Relationship' },
-{ k: 'secondPhone', inputId: 'profSecondPhone', kioskLabel: 'Their phone' },
-{ k: 'boothDisplay', inputId: 'profBooth', kioskLabel: 'Weekend Booth' },
-{ k: 'website', inputId: 'profWebsite', kioskLabel: 'Website' },
-{ k: 'facebook', inputId: 'profFacebook', kioskLabel: 'Facebook' },
-{ k: 'instagram', inputId: 'profInstagram', kioskLabel: 'Instagram' },
-{ k: 'etsy', inputId: 'profEtsy', kioskLabel: 'Etsy' },
-];
+// The per-line kiosk checkboxes (KIOSK_TOGGLE_FIELDS) were replaced in 18-42
+// by the two-section profile and the three kiosk links below; pubFields is
+// still read, once, for vendors who have not saved since.
 // A field is private unless the vendor has explicitly turned it on. This
 // keeps the default exactly where it already was for every one of these
 // fields before the toggle existed -- none of them (except products,
 // already always shown) ever appeared on the Kiosk, so nothing changes for
 // anybody who never opens the toggle.
+// KIOSK LINKS (18-42). The kiosk shows a vendor's photo, business name, what
+// they sell, and up to three links of their choosing: a website, social
+// media pages, or anything else they want found. Nothing else on the profile
+// is shown; phone, email and the rest are for the office. A vendor who wants
+// an email address or phone number on the kiosk adds it as one of the three.
+//
+// Stored as vendor.kioskLinks = [{ label, value }]. A vendor who has not
+// saved since 18-42 has no kioskLinks; for them the kiosk shows whatever
+// website and social lines they had already turned on under the old
+// one-checkbox-per-line scheme (pubFields), so nothing appears or vanishes
+// until they choose. Three is a hard limit for adding; a vendor who arrives
+// with more than three from the old scheme keeps them listed, the kiosk shows
+// the first three, and nothing more can be added until one is removed.
+const KIOSK_LINK_MAX = 3;
+const KIOSK_LINK_LEGACY = [
+{ k: 'website', label: 'Website' }, { k: 'instagram', label: 'Instagram' },
+{ k: 'facebook', label: 'Facebook' }, { k: 'etsy', label: 'Etsy' },
+];
+const KIOSK_LINK_LABELS = ['Website', 'Instagram', 'Facebook', 'Etsy', 'TikTok', 'YouTube', 'X', 'Threads', 'Bluesky', 'Pinterest', 'Linktree', 'Email', 'Phone', 'Other'];
+function kioskLinkLabel(val) {
+const s = String(val || '').trim().toLowerCase();
+if (/instagram\.com|instagr\.am/.test(s)) return 'Instagram';
+if (/facebook\.com|(^|\/\/|\.)fb\.(com|me)/.test(s)) return 'Facebook';
+if (/etsy\.com/.test(s)) return 'Etsy';
+if (/tiktok\.com/.test(s)) return 'TikTok';
+if (/youtube\.com|youtu\.be/.test(s)) return 'YouTube';
+if (/(^|\/\/|\.)x\.com|twitter\.com/.test(s)) return 'X';
+if (/threads\.net/.test(s)) return 'Threads';
+if (/bsky\.app/.test(s)) return 'Bluesky';
+if (/pinterest\./.test(s)) return 'Pinterest';
+if (/linktr\.ee/.test(s)) return 'Linktree';
+if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return 'Email';
+if (/^[+(]?\d[\d\s().-]{6,}$/.test(s)) return 'Phone';
+if (/^@\w/.test(s)) return 'Other';
+return 'Website';
+}
+function vendorKioskLinks(v) {
+if (!v) return [];
+if (Array.isArray(v.kioskLinks)) {
+  return v.kioskLinks.filter(x => x && String(x.value || '').trim())
+    .map(x => ({ label: x.label || kioskLinkLabel(x.value), value: String(x.value).trim() }));
+}
+return KIOSK_LINK_LEGACY.filter(f => isFieldPublic(v, f.k) && String(vField(v, f.k) || '').trim())
+  .map(f => ({ label: f.label, value: String(vField(v, f.k)).trim() }));
+}
+// What the kiosk shows: at most three, whatever the record holds.
+function kioskLinksShown(v) { return vendorKioskLinks(v).slice(0, KIOSK_LINK_MAX); }
+function kioskLinksHTML(links) {
+return links.slice(0, KIOSK_LINK_MAX).map(l => l.label === 'Website'
+  ? '<p class="site">' + esc(l.value) + '</p>'
+  : '<p class="kiosk-field"><b>' + esc(l.label === 'Other' ? 'Also' : l.label) + ':</b> ' + esc(l.value) + '</p>').join('');
+}
 function isFieldPublic(vendor, key) {
 return !!(vendor && Array.isArray(vendor.pubFields) && vendor.pubFields.indexOf(key) !== -1);
 }
@@ -13648,7 +13718,7 @@ document.getElementById('volRoleCard').innerHTML =
 // The file cabinet: a vendor's own records, same order every day of the year.
 const DESK_STABLE_ORDER = [
 // Where you stand with the market: money first, then what you owe it.
-'fMerch', 'account', 'fGiftCert', 'ftender', 'mydocs',
+'fMerch', 'account', 'answers', 'fGiftCert', 'mydocs',
 // Your part in the market: the committees you sit on, and how to reach the office.
 'mycommittees', 'communicate',
 // Things you look up rather than do, in one drawer since 18-40: the Bylaws and
@@ -14698,7 +14768,8 @@ const VENDOR_TABS = [
   { fold: 'fPromos', cta: true }, { fold: 'fGiftCert', cta: true } ] },
 { k: 'account', t: 'My<br>Account', title: 'My Account', icon: 'i-vtab-person', parts: [
   { fold: 'fProfile' }, { fold: 'account', flat: true, nohead: true },
-  { heading: 'Your part in the market' }, { fold: 'mycommittees' }, { fold: 'ftender' }, { fold: 'fMerch' } ] },
+  { fold: 'answers', flat: true },
+  { heading: 'Your part in the market' }, { fold: 'mycommittees' }, { fold: 'fMerch' } ] },
 { k: 'booths', t: 'Booth<br>Assignments', title: 'Booth Assignments', icon: 'i-vtab-booth', parts: [
   { fold: 'boothassign', flat: true, nohead: true }, { fold: 'satellites', flat: true } ] },
 { k: 'upload', t: 'Upload', title: 'Upload Forms', icon: 'i-vtab-upload', open: 'mydocs', parts: [ { fold: 'mydocs' } ] },
@@ -15120,17 +15191,22 @@ const rows = [
 ['Also acts for this business', secondPersonLabel(vendor)],
 ['Their phone', vField(vendor, 'secondPhone')],
 ['Weekend Pavilion Booth ID', vField(vendor, 'boothDisplay')],
-['Website', vField(vendor, 'website')],
-['Facebook', vField(vendor, 'facebook')],
-['Instagram', vField(vendor, 'instagram')],
-['What you sell', vField(vendor, 'products')]
 ];
-view.innerHTML = rows.map(([label, val]) =>
+const links = vendorKioskLinks(vendor);
+const kioskRows = [
+['Business Name', vendor.businessName || ''],
+['What you sell', vField(vendor, 'products')],
+].concat(links.length ? links.map((l, i) => [(i < KIOSK_LINK_MAX ? '' : 'Not shown \u00b7 ') + l.label, l.value])
+  : [['Links', '']]);
+const rowHTML = ([label, val]) =>
 '<div class="profile-row" style="padding:8px 0; border-bottom:1px solid var(--paper-dim);">' +
 '<div style="font-size:12px; letter-spacing:.02em; color:var(--ink-dim,#8a8a86); text-transform:uppercase;">' + esc(label) + '</div>' +
 '<div style="font-size:15px;">' + (val ? esc(val) : '<span class="empty-note" style="margin:0;">Not added yet</span>') + '</div>' +
-'</div>'
-).join('');
+'</div>';
+view.innerHTML = '<h3 class="prof-sec-title"><svg class="ico"><use href="#i-search"></use></svg> Shown on the kiosk</h3>' +
+  kioskRows.map(rowHTML).join('') +
+  '<h3 class="prof-sec-title" style="margin-top:16px;"><svg class="ico"><use href="#i-key"></use></svg> For the market office only</h3>' +
+  rows.map(rowHTML).join('');
 }
 function toggleProfileEdit(show) {
 const vendor = currentVendor();
@@ -15148,18 +15224,12 @@ document.getElementById('profSecondPhone').value = vField(vendor, 'secondPhone')
 document.getElementById('profEmail').value = vField(vendor, 'email');
 document.getElementById('profAddress').value = vField(vendor, 'address');
 document.getElementById('profBooth').value = vField(vendor, 'boothDisplay');
-document.getElementById('profWebsite').value = vField(vendor, 'website');
-document.getElementById('profFacebook').value = vField(vendor, 'facebook');
-document.getElementById('profInstagram').value = vField(vendor, 'instagram');
-document.getElementById('profEtsy').value = vField(vendor, 'etsy');
 document.getElementById('profProducts').value = vField(vendor, 'products');
-document.getElementById('profSellsFood').checked = vendorSellsFood(vendor);
-KIOSK_TOGGLE_FIELDS.forEach(f => {
-const box = document.getElementById(f.inputId + 'Pub');
-if (box) box.checked = isFieldPublic(vendor, f.k);
-});
+profLinksDraft = vendorKioskLinks(vendor).map(l => ({ label: l.label, value: l.value }));
+const li = document.getElementById('profLinkInput');
+if (li) li.value = '';
 wireProfilePreviewLive();
-renderProfilePublicPreview();
+renderProfileLinks();
 }
 }
 async function saveProfile() {
@@ -15179,25 +15249,14 @@ secondContact: document.getElementById('profSecondContact').value.trim(),
 secondRelation: document.getElementById('profSecondRelation').value,
 secondPhone: document.getElementById('profSecondPhone').value.trim(),
 boothDisplay: document.getElementById('profBooth').value.trim(),
-website: document.getElementById('profWebsite').value.trim(),
-facebook: document.getElementById('profFacebook').value.trim(),
-instagram: document.getElementById('profInstagram').value.trim(),
-etsy: document.getElementById('profEtsy').value.trim(),
 products: document.getElementById('profProducts').value.trim()
 };
-vendor.sellsFood = document.getElementById('profSellsFood').checked;
-// Kiosk visibility, one flag per line, read straight from the checkboxes
-// beside each field. A field a vendor never opened this form to see still
-// defaults to off -- checked() on a box that was never rendered is simply
-// false, the same as any other line nobody has touched yet.
-const pub = [];
-KIOSK_TOGGLE_FIELDS.forEach(f => {
-const box = document.getElementById(f.inputId + 'Pub');
-if (box && box.checked) pub.push(f.k);
-});
-if (pub.length) vendor.pubFields = pub; else delete vendor.pubFields;
+// A link typed but not yet added is added on Save rather than lost.
+const pending = (document.getElementById('profLinkInput') || {}).value;
+if (pending && pending.trim() && profLinksDraft.length < KIOSK_LINK_MAX) addProfileLink();
+vendor.kioskLinks = profLinksDraft.map(l => ({ label: l.label, value: l.value }));
 const harvested = HARVESTED_DIRECTORY_DATA[vendor.vendorId] || {};
-PROFILE_FIELDS.forEach(key => {
+Object.keys(entered).forEach(key => {
 const val = entered[key];
 if (val === (harvested[key] || '') || (val === '' && !harvested[key])) delete vendor[key];
 else vendor[key] = val;
@@ -18010,6 +18069,7 @@ updatePaySub();
 }
 function renderAll() {
 paintHeaderBadge();
+if (currentRole === 'vendor' && typeof renderAnswersTraits === 'function') { try { renderAnswersTraits(); renderShareOffer(); renderTenderSub(); } catch (e) {} }
 if (typeof paintVendorTabDots === 'function') paintVendorTabDots();
 updatePaySub();
 const mt = document.getElementById('merchTile');
@@ -23000,7 +23060,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-41';
+const BUILD_ID = '18-42';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25770,20 +25830,9 @@ return Object.keys(by).filter(k => by[k].length > 1).map(k => ({ key: k, shares:
 // Shared by the real Kiosk card and the vendor's own "What Shoppers Will
 // See" preview, so the two can never quietly drift apart -- one function
 // decides what a toggle-eligible line renders as, and both callers use it.
-function kioskOptionalFieldsHTML(v) {
-let html = '';
-KIOSK_TOGGLE_FIELDS.forEach(f => {
-if (f.k === 'website') return; // website keeps its own distinct styling below
-if (!isFieldPublic(v, f.k)) return;
-const val = String(vField(v, f.k) || '');
-if (!val) return;
-html += '<p class="kiosk-field"><b>' + esc(f.kioskLabel) + ':</b> ' + esc(val) + '</p>';
-});
-return html;
-}
+function kioskOptionalFieldsHTML(v) { return kioskLinksHTML(kioskLinksShown(v)); }
 function kioskVendorCard(v, occ, withClose) {
 const what = String(vField(v, 'products') || '');
-const site = isFieldPublic(v, 'website') ? String(vField(v, 'website') || '') : '';
 const deals = promosForVendorOn(v.vendorId, occ.md.date);
 const dealHtml = deals.length
 ? '<div class="kiosk-deal">' +
@@ -25797,7 +25846,6 @@ avatarHTML(v, 'kiosk-avatar') +
 '<h3>' + esc(v.businessName) + '</h3>' +
 '<p class="meta">Booth ' + esc(kioskSelectedBooth) + '</p>' +
 (what ? '<p class="body">' + esc(what) + '</p>' : '') +
-(site ? '<p class="site">' + esc(site) + '</p>' : '') +
 kioskOptionalFieldsHTML(v) +
 '</div>';
 }
@@ -25813,24 +25861,88 @@ const vendor = currentVendor();
 if (!vendor) return;
 const biz = document.getElementById('profBiz').value.trim() || vendor.businessName || '';
 const what = document.getElementById('profProducts').value.trim();
-const liveVal = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-const liveChecked = id => { const el = document.getElementById(id); return !!(el && el.checked); };
-let extra = '';
-let site = '';
-KIOSK_TOGGLE_FIELDS.forEach(f => {
-if (!liveChecked(f.inputId + 'Pub')) return;
-const val = liveVal(f.inputId);
-if (!val) return;
-if (f.k === 'website') { site = val; return; }
-extra += '<p class="kiosk-field"><b>' + esc(f.kioskLabel) + ':</b> ' + esc(val) + '</p>';
-});
 host.innerHTML = '<div class="kiosk-detail kiosk-preview">' +
 avatarHTML(vendor, 'kiosk-avatar') +
 '<h3>' + esc(biz) + '</h3>' +
 (what ? '<p class="body">' + esc(what) + '</p>' : '') +
-(site ? '<p class="site">' + esc(site) + '</p>' : '') +
-extra +
+kioskLinksHTML(profLinksDraft) +
 '</div>';
+}
+// ---- the links tool on the profile form ----
+let profLinksDraft = [];
+function renderProfileLinks() {
+const host = document.getElementById('profLinks');
+if (!host) return;
+const n = profLinksDraft.length;
+host.innerHTML = '';
+profLinksDraft.forEach((l, i) => {
+  const row = document.createElement('div');
+  row.className = 'prof-link-row' + (i >= KIOSK_LINK_MAX ? ' over' : '');
+  const sel = document.createElement('select');
+  sel.setAttribute('aria-label', 'What this link is');
+  KIOSK_LINK_LABELS.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
+  sel.value = KIOSK_LINK_LABELS.includes(l.label) ? l.label : 'Other';
+  sel.onchange = () => { profLinksDraft[i].label = sel.value; renderProfilePublicPreview(); };
+  const val = document.createElement('div');
+  val.className = 'prof-link-value';
+  val.textContent = l.value;
+  const rm = document.createElement('button');
+  rm.type = 'button';
+  rm.className = 'ghost-btn prof-link-rm';
+  rm.textContent = 'Remove';
+  rm.setAttribute('aria-label', 'Remove ' + l.value);
+  rm.onclick = () => { profLinksDraft.splice(i, 1); renderProfileLinks(); };
+  row.appendChild(sel); row.appendChild(val); row.appendChild(rm);
+  if (i >= KIOSK_LINK_MAX) {
+    const w = document.createElement('div');
+    w.className = 'prof-link-over';
+    w.textContent = 'Not shown: the kiosk shows three. Remove one to choose which.';
+    row.appendChild(w);
+  }
+  host.appendChild(row);
+});
+const full = n >= KIOSK_LINK_MAX;
+const input = document.getElementById('profLinkInput');
+const btn = document.getElementById('profLinkAddBtn');
+const add = document.getElementById('profLinkAdd');
+if (input) input.disabled = full;
+if (btn) btn.disabled = full;
+if (add) add.classList.toggle('full', full);
+const count = document.getElementById('profLinkCount');
+if (count) count.textContent = '(' + Math.min(n, 99) + ' of ' + KIOSK_LINK_MAX + ')';
+const note = document.getElementById('profLinkNote');
+if (note) note.textContent = full ? 'That\u2019s three, the most the kiosk shows. Remove one to add a different link.' : '';
+// Lines already on the record that are not among the links: one tap to add.
+const sug = document.getElementById('profLinkSuggest');
+const v = currentVendor();
+if (sug && v) {
+  const have = new Set(profLinksDraft.map(x => x.value.toLowerCase()));
+  const offers = KIOSK_LINK_LEGACY.map(f => ({ label: f.label, value: String(vField(v, f.k) || '').trim() }))
+    .filter(x => x.value && !have.has(x.value.toLowerCase()));
+  sug.innerHTML = offers.length ? '<p class="empty-note prof-sec-note" style="margin:8px 0 4px;">Already on your record, not on the kiosk:</p>' : '';
+  offers.forEach(o => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ghost-btn prof-link-offer';
+    b.disabled = full;
+    b.textContent = '+ ' + o.label + ': ' + o.value;
+    b.onclick = () => addProfileLink(o.value, o.label);
+    sug.appendChild(b);
+  });
+}
+renderProfilePublicPreview();
+}
+function addProfileLink(value, label) {
+const input = document.getElementById('profLinkInput');
+const raw = String(value !== undefined ? value : (input ? input.value : '')).trim();
+if (profLinksDraft.length >= KIOSK_LINK_MAX) { renderProfileLinks(); return; }
+if (raw.length < 3) { showMsg('profileStatusMsg', 'err', 'Type a website, a social media page, or whatever you want shoppers to find.'); return; }
+if (raw.length > 200) { showMsg('profileStatusMsg', 'err', 'That is longer than the kiosk can show. Try the shortest address that works.'); return; }
+if (profLinksDraft.some(l => l.value.toLowerCase() === raw.toLowerCase())) { showMsg('profileStatusMsg', 'err', 'That link is already on your list.'); return; }
+profLinksDraft.push({ label: label || kioskLinkLabel(raw), value: raw });
+if (input && value === undefined) input.value = '';
+document.getElementById('profileStatusMsg').className = 'status-msg';
+renderProfileLinks();
 }
 // Wired once per time the edit form opens rather than at page load, since
 // the fields it listens on do not exist until the form is in the DOM.
@@ -29520,6 +29632,49 @@ reqVendors(req).some(v => v.vendorId === vendorId));
 // question -- yes, no, and nobody has said -- because a blank answer is not
 // a no, and treating it as one would quietly excuse a vendor from a permit
 // the law requires of them.
+// YOUR ANSWERS (18-42). Every question a vendor answers about their own
+// business lives in one drawer on My Account, where they can change any of
+// them later: the permit questions (with "do you sell food" first), whether
+// they would share a booth, and SNAP and FreshConnect. The Permits screen
+// points here rather than asking.
+function renderAnswersTraits() { renderSellsFood(); renderVendorTraits(); renderTraitSub(); }
+function renderSellsFood() {
+const v = currentVendor();
+if (!v) return;
+const told = typeof v.sellsFood === 'boolean';
+[['Yes', true], ['No', false]].forEach(([k, val]) => {
+  const b = document.getElementById('sellsFood' + k);
+  if (b) b.className = 'tone-btn' + (told && v.sellsFood === val ? ' on' : '');
+});
+}
+async function setSellsFood(val) {
+const v = currentVendor();
+if (!v) return;
+v.sellsFood = !!val;
+await storageSet('ifm-vendors-v1', cache.vendors);
+renderSellsFood();
+showMsg('mdTraitMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Noted.');
+}
+// Open one of the answer drawers from anywhere (the Permits screen uses it).
+function openAnswer(key) {
+const fold = document.querySelector('.dash-fold[data-fold="' + key + '"]');
+if (!fold) return;
+if (typeof ifmCurrentScreen !== 'undefined' && ifmCurrentScreen !== 'dashboard') showScreen('dashboard');
+const bar = fold.querySelector(':scope > .fold-bar');
+if (!fold.classList.contains('open') && bar) bar.click();
+setTimeout(() => fold.scrollIntoView({ block: 'start', behavior: 'smooth' }), 120);
+}
+function renderMyDocsAnswersLink() {
+const el = document.getElementById('mdAnswersLink');
+const txt = document.getElementById('mdAnswersText');
+const v = currentVendor();
+if (!el || !txt || !v) return;
+const missing = VENDOR_TRAITS.filter(t => vendorTrait(v.vendorId, t.key) === undefined).length;
+el.classList.toggle('md-waiting', missing > 0);
+txt.innerHTML = missing
+  ? '<b>' + missing + ' of ' + VENDOR_TRAITS.length + ' questions about what you do are unanswered</b>, so this list may be missing a permit or showing one you do not need. They are in My Account, under Your Answers.'
+  : 'Which permits apply depends on your answers to <b>What You Do at Market</b>, in My Account.';
+}
 function mdTraitToggle(bar) {
 const fold = bar.closest('.dash-fold');
 const open = !fold.classList.contains('open');
@@ -29575,7 +29730,8 @@ renderVendorTraits();
 renderTraitSub();
 renderMyDocs();
 showMsg('mdTraitMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Noted. ' +
-'The list below now matches what you do.');
+'Your permit list under Upload now matches what you do.');
+renderMyDocsAnswersLink();
 };
 bar.appendChild(b);
 });
@@ -29608,7 +29764,7 @@ box.style.opacity = '0.6';
 box.innerHTML = '<div class="req-row-main">' +
 '<div class="req-name">Not needed from you</div>' +
 '<div class="req-meta">' + none.map(r => esc(r.name)).join(' \u00b7 ') + '</div>' +
-'<p class="req-detail">Based on your answers above. If any of that changes, ' +
+'<p class="req-detail">Based on your answers in My Account (Your Answers). If any of that changes, ' +
 'change the answer and the document appears here.</p></div>';
 wrap.appendChild(box);
 }
@@ -29902,18 +30058,8 @@ mine.slice(0, 6).map(x =>
 
 function initMyDocsScreen() {
 renderTraitSub();
-// Unanswered, the questions are the point of this screen: the list of
-// permits below them cannot be right until they are answered, so opening
-// it to a shut drawer and two documents tells a vendor something untrue.
-// Answered, they fold away and the documents come first -- which is what
-// somebody returning to check an expiry wants.
-const fold = document.getElementById('mdTraitCard');
-const v = currentVendor();
-if (fold && v) {
-const unanswered = VENDOR_TRAITS.some(t => vendorTrait(v.vendorId, t.key) === undefined);
-fold.classList.toggle('open', unanswered);
-if (unanswered) renderVendorTraits();
-}
+renderMyDocsAnswersLink();
+// The questions themselves live in My Account (Your Answers) since 18-42.
 renderMyDocs();
 }
 function renderMyDocs() {
@@ -29947,7 +30093,7 @@ if (sumEl) sumEl.className = 'empty-note' + (unanswered === VENDOR_TRAITS.length
 document.getElementById('mdSummary').textContent = all.length
 ? accepted + ' on file \u00b7 ' + pending + ' posted and not yet marked received \u00b7 ' +
 outstanding + ' still to send' +
-(unknown ? ' \u00b7 ' + unknown + ' waiting on your answers above' : '') +
+(unknown ? ' \u00b7 ' + unknown + ' waiting on your answers in My Account' : '') +
 (notApplicable.length ? ' \u00b7 ' + notApplicable.length + ' do not apply to you' : '') + '.'
 : '';
 reqs.forEach(req => {
