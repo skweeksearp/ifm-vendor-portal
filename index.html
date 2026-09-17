@@ -2645,6 +2645,65 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
   opacity: 0; transition: opacity 0.4s;
 }
 .ifm-spin-note.show { opacity: 1; }
+/* ===== VENDOR DESK TABS (18-41) ======================================== */
+.vtab-bar { display: none; }
+.fold-cta { display: none; }
+body.vendor-tabs .vtab-bar {
+  display: flex; justify-content: center; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  padding: 6px 6px calc(env(safe-area-inset-bottom) + 6px);
+  background: rgba(255,251,241,0.94); border-top: 1px solid rgba(78,46,26,0.15);
+  box-shadow: 0 -4px 16px rgba(20,12,4,0.10);
+}
+body.vendor-tabs.kiosk-mode .vtab-bar { display: none; }
+body.vendor-tabs main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.vtab-inner { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 560px; }
+.vtab { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 4px;
+  color: #7A6450; position: relative; font-family: inherit; cursor: pointer; }
+.vtab .ico { width: 24px; height: 24px; }
+.vtab-label { font-family: 'Manrope', -apple-system, sans-serif; font-size: 11px; font-weight: 700; line-height: 1.1; text-align: center; letter-spacing: -0.01em; }
+.vtab[aria-selected="true"] { color: var(--leaf); }
+.vtab[aria-selected="true"]::before { content: ""; position: absolute; top: -6px; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--leaf); }
+.vtab-dot { position: absolute; top: 3px; right: calc(50% - 18px); width: 9px; height: 9px; border-radius: 50%; background: var(--leaf); box-shadow: 0 0 0 2px #FFFBF1; display: none; }
+.vtab.has-dot .vtab-dot { display: block; }
+body.vendor-tabs #screen-dashboard.active { display: flex; flex-direction: column; }
+body.vendor-tabs #screen-dashboard > * { flex: none; }
+body.vendor-tabs #screen-dashboard > .vtab-off { display: none !important; }
+.vtab-title, .vtab-heading { display: none; }
+body.vendor-tabs #screen-dashboard > .vtab-title { display: block; font-family: 'Manrope', -apple-system, sans-serif; font-size: 24px; font-weight: 800;
+  margin: 2px 2px 12px; letter-spacing: -0.01em; }
+body.vendor-tabs #screen-dashboard > .vtab-heading { display: block; font-family: 'Manrope', -apple-system, sans-serif; font-size: 15px; font-weight: 700; margin: 12px 4px 8px; }
+/* a drawer that holds drawers is laid open on its tab, its bar a heading */
+body.vendor-tabs .dash-fold.vtab-flat > .fold-body { display: block; padding-top: 0; }
+body.vendor-tabs .dash-fold.vtab-flat > .fold-bar { pointer-events: none; background: none; border: 0; box-shadow: none; padding: 12px 4px 8px;
+  -webkit-backdrop-filter: none; backdrop-filter: none; min-height: 0; }
+body.vendor-tabs .dash-fold.vtab-flat > .fold-bar .fold-title { font-size: 15px; }
+body.vendor-tabs .dash-fold.vtab-flat > .fold-bar :is(.fold-sub, .fold-chev) { display: none; }
+body.vendor-tabs .dash-fold.vtab-flat.vtab-nohead > .fold-bar { display: none; }
+/* Home: Post a Sale and Scan a Gift Certificate read as cards with a button */
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar {
+  display: grid; grid-template-columns: 1fr auto; column-gap: 12px; row-gap: 4px; padding: 16px; align-items: center; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-title { grid-column: 1; grid-row: 1; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-sub { grid-column: 1; grid-row: 2; text-align: left; margin: 0; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar :is(.fold-cta, .fold-chev) { grid-column: 2; grid-row: 1 / span 2; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-title { font-size: 18px; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-chev { display: none; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-cta {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; flex: none;
+  border-radius: 12px; padding: 10px 16px; font-family: 'Manrope', -apple-system, sans-serif; font-size: 15px; font-weight: 700; color: #fff; background: var(--sky); }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-cta.scan {
+  width: 76px; height: 76px; padding: 8px 0 6px; border-radius: 18px; background: var(--leaf); font-size: 12px; box-shadow: 0 4px 12px rgba(168,68,26,0.3); }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-cta.scan .ico { width: 32px; height: 32px; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta.open > .fold-bar .fold-cta { display: none; }
+body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta.open > .fold-bar .fold-chev { display: inline; }
+/* Home panels, firmer under Rain or Shine */
+html[data-look="rainshine"] body.vendor-tabs:not(.kiosk-mode) #screen-dashboard[data-tab="home"] > :is(.card, .dash-fold > .fold-bar) {
+  background: rgba(255,251,241,0.90); box-shadow: 0 4px 16px rgba(20,12,4,0.16);
+}
+html[data-look="rainshine"] body.vendor-tabs:not(.kiosk-mode) #screen-dashboard > :is(.vtab-title, .vtab-heading),
+html[data-look="rainshine"] body.vendor-tabs:not(.kiosk-mode) #screen-dashboard > .dash-fold.vtab-flat > .fold-bar .fold-title {
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.55), 0 2px 12px rgba(0,0,0,0.35);
+}
+
 /* the picker on the sign-in screen */
 .look-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 12px 0 0; }
 .look-row .look-lbl { width: 100%; text-align: center; font-size: 12px; opacity: .6; margin-bottom: 2px; }
@@ -2656,6 +2715,12 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+<symbol id="i-vtab-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></symbol>
+<symbol id="i-vtab-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></symbol>
+<symbol id="i-vtab-booth" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M3 9c0 1.7 1.3 3 3 3s3-1.3 3-3c0 1.7 1.3 3 3 3s3-1.3 3-3c0 1.7 1.3 3 3 3s3-1.3 3-3"/><path d="M5 12v8h14v-8"/></symbol>
+<symbol id="i-vtab-upload" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6M9.5 13.5 12 11l2.5 2.5"/></symbol>
+<symbol id="i-vtab-talk" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/></symbol>
+<symbol id="i-vtab-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/></symbol>
 <symbol id="i-menu-lines" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
 <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6 3c1 2 1.6 3.8 1.6 5.2 0 1-1.6 1.6-1.6 2.4 0 2.6 3.4 6 6 6 .8 0 1.4-1.6 2.4-1.6 1.4 0 3.2.6 5.2 1.6-.2 2-1.8 4.4-3.8 4.4C10.4 21 3 13.6 3 8.4 3 6.4 5.4 4.8 6 3z"/></symbol>
 <symbol id="i-shovel" viewBox="0 0 24 24"><path d="M15 3l6 6-2.5 2.5L16 9M9 15l-4.5 4.5a2 2 0 0 1-3-3L6 12M9 15L16 8M9 15l2 2"/></symbol>
@@ -2787,6 +2852,7 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 </div>
 </div>
 <div id="main" style="display:none;">
+<nav class="vtab-bar" id="vendorTabBar" aria-label="Vendor desk sections"><div class="vtab-inner" role="tablist" id="vendorTabList"></div></nav>
 <header class="market-header" id="marketHeader">
 <div class="switch-row">
 <button class="switch-btn" id="headerSwitchBtn" onclick="showLanding()"><svg class="ico"><use href="#i-sign-out"></use></svg> Sign out</button>
@@ -3190,8 +3256,9 @@ I sell food (prepared food or produce)
 </div>
 <div class="dash-fold" data-fold="fPromos">
 <button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title" id="foldTitlePromos">Sales &amp; Promotions</span>
-<span class="fold-sub" id="foldSubPromos">A sale for today&rsquo;s market, straight to the kiosk</span>
+<span class="fold-title" id="foldTitlePromos">Post a Sale</span>
+<span class="fold-sub" id="foldSubPromos">Sales &amp; Promotions: a sale for today&rsquo;s market, straight to the kiosk</span>
+<span class="fold-cta" aria-hidden="true">Post</span>
 <span class="fold-chev">›</span>
 </button>
 <div class="fold-body">
@@ -3250,8 +3317,9 @@ I sell food (prepared food or produce)
 </div>
 <div class="dash-fold" data-fold="fGiftCert">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'gcvendor')">
-<span class="fold-title">Take a Gift Certificate</span>
+<span class="fold-title">Scan a Gift Certificate</span>
 <span class="fold-sub">Scan a customer&rsquo;s certificate &middot; the money comes to you</span>
+<span class="fold-cta scan" aria-hidden="true"><svg class="ico"><use href="#i-vtab-scan"></use></svg>Scan</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -11637,6 +11705,8 @@ el.value = '';
 // is not a desk hand-over and must not wipe what somebody is in the middle of.
 let deskHandoverQuiet = false;
 function setRoleHeader(role) {
+document.body.classList.toggle('vendor-tabs', role === 'vendor');
+if (role === 'vendor') { buildVendorTabs(); setVendorTab('home'); }
 if (role !== 'board') clearBoardReadOnly();
 document.documentElement.dataset.photo = 'desk';
 scrollAppToTop();
@@ -13666,6 +13736,7 @@ dash.addEventListener('pointerdown', e => {
 const bar = e.target.closest('.fold-bar');
 if (!bar) return;
 const fold = bar.closest('.dash-fold');
+if (document.body.classList.contains('vendor-tabs')) return;
 if (!fold || fold.parentElement !== dash || fold.dataset.fixed) return;
 startY = e.clientY; startX = e.clientX; moved = false; pid = e.pointerId;
 pressTimer = setTimeout(() => {
@@ -13843,6 +13914,7 @@ const now = bar.getBoundingClientRect().top;
 if (now < floor) window.scrollBy(0, now - floor);
 }
 function toggleFold(btn) {
+vtabFollow(btn);
 armBackGesture();
 const fold = btn.parentElement;
 const wasOpen = fold.classList.contains('open');
@@ -13900,6 +13972,7 @@ body.appendChild(why);
 fold.classList.add('open');
 }
 function toggleToolFold(btn, name) {
+vtabFollow(btn);
 armBackGesture();
 const fold = btn.parentElement;
 const wasOpen = fold.classList.contains('open');
@@ -14608,6 +14681,127 @@ avatarHTML(v, 'avatar') +
 btn.onclick = () => selectVendor(v.vendorId);
 list.appendChild(btn);
 }, () => renderVendorList(filterText), document.getElementById('vendorCount'));
+}
+// VENDOR DESK TABS (18-41). The desk's cards and drawers are unchanged; a
+// bar along the bottom shows one group at a time. Each part of the desk is
+// assigned to a tab below, in the order it appears there (CSS order, so the
+// saved drawer order and everything that reorders the DOM leaves it alone).
+// A drawer that only holds drawers is laid open on its tab with its bar as a
+// heading; the Upload tab opens its one tool by itself. Opening any drawer --
+// from a notification, a summary link, anywhere -- first switches to the tab
+// that drawer lives on (vtabFollow, called from toggleFold/toggleToolFold).
+// Dragging drawers into a personal order is off while the tabs are showing:
+// the tabs are the order now.
+const VENDOR_TABS = [
+{ k: 'home', t: 'Home', icon: 'i-vtab-home', parts: [
+  { sel: '#chairAlertBar' }, { sel: '#vendorAttn' }, { sel: '#vendorAlerts' }, { sel: '#lottoNotice' }, { sel: '#pavUpcoming' },
+  { fold: 'fPromos', cta: true }, { fold: 'fGiftCert', cta: true } ] },
+{ k: 'account', t: 'My<br>Account', title: 'My Account', icon: 'i-vtab-person', parts: [
+  { fold: 'fProfile' }, { fold: 'account', flat: true, nohead: true },
+  { heading: 'Your part in the market' }, { fold: 'mycommittees' }, { fold: 'ftender' }, { fold: 'fMerch' } ] },
+{ k: 'booths', t: 'Booth<br>Assignments', title: 'Booth Assignments', icon: 'i-vtab-booth', parts: [
+  { fold: 'boothassign', flat: true, nohead: true }, { fold: 'satellites', flat: true } ] },
+{ k: 'upload', t: 'Upload', title: 'Upload Forms', icon: 'i-vtab-upload', open: 'mydocs', parts: [ { fold: 'mydocs' } ] },
+{ k: 'communicate', t: 'Communicate', title: 'Communicate', icon: 'i-vtab-talk', parts: [
+  { fold: 'communicate' }, { fold: 'reference', flat: true } ] },
+];
+let vendorTab = 'home';
+let vtabBuilt = false;
+function vtabDash() { return document.getElementById('screen-dashboard'); }
+function buildVendorTabs() {
+if (vtabBuilt) return;
+const dash = vtabDash(), list = document.getElementById('vendorTabList');
+if (!dash || !list) return;
+vtabBuilt = true;
+const head = dash.querySelector(':scope > .screen-head');
+if (head) head.style.order = '0';
+const title = document.createElement('h2');
+title.className = 'vtab-title';
+title.id = 'vendorTabTitle';
+title.style.order = '1';
+dash.insertBefore(title, head ? head.nextSibling : dash.firstChild);
+let order = 10;
+VENDOR_TABS.forEach(tab => {
+  tab.parts.forEach(pt => {
+    let el = null;
+    if (pt.sel) el = dash.querySelector(':scope > ' + pt.sel);
+    else if (pt.fold) el = dash.querySelector(':scope > .dash-fold[data-fold="' + pt.fold + '"]');
+    else if (pt.heading) {
+      el = document.createElement('p');
+      el.className = 'vtab-heading';
+      el.textContent = pt.heading;
+      dash.appendChild(el);
+    }
+    if (!el) return;
+    el.dataset.vtab = tab.k;
+    el.style.order = String(order++);
+    if (pt.flat) el.classList.add('vtab-flat');
+    if (pt.nohead) el.classList.add('vtab-nohead');
+    if (pt.cta) el.classList.add('vtab-cta');
+  });
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'vtab';
+  b.setAttribute('role', 'tab');
+  b.dataset.tab = tab.k;
+  b.innerHTML = '<svg class="ico"><use href="#' + tab.icon + '"></use></svg><span class="vtab-label">' + tab.t + '</span><span class="vtab-dot"></span>';
+  b.onclick = () => openVendorTab(tab.k);
+  list.appendChild(b);
+});
+}
+function tabOfFold(fold) {
+const dash = vtabDash();
+let top = fold;
+while (top && top.parentElement !== dash) top = top.parentElement && top.parentElement.closest('.dash-fold');
+return top && top.dataset.vtab;
+}
+// Show one tab. keepFolds: a drawer is about to open on it, so leave the folds be.
+function setVendorTab(k, keepFolds) {
+const dash = vtabDash();
+if (!dash) return;
+buildVendorTabs();
+const tab = VENDOR_TABS.find(t => t.k === k) || VENDOR_TABS[0];
+vendorTab = tab.k;
+dash.dataset.tab = tab.k;
+if (!keepFolds) closeAllFolds();
+[...dash.children].forEach(el => {
+  if (el.classList.contains('screen-head') || el.id === 'vendorTabTitle') return;
+  el.classList.toggle('vtab-off', el.dataset.vtab !== tab.k);
+});
+const t = document.getElementById('vendorTabTitle');
+if (t) { t.textContent = tab.title || ''; t.classList.toggle('vtab-off', !tab.title); }
+document.querySelectorAll('#vendorTabList .vtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab.k)));
+paintVendorTabDots();
+if (tab.open && !keepFolds) {
+  const f = dash.querySelector(':scope > .dash-fold[data-fold="' + tab.open + '"]');
+  if (f && !f.classList.contains('open')) { const bar = f.querySelector(':scope > .fold-bar'); if (bar) bar.click(); }
+}
+}
+function openVendorTab(k) {
+if (typeof ifmCurrentScreen !== 'undefined' && ifmCurrentScreen !== 'dashboard') showScreen('dashboard');
+setVendorTab(k);
+window.scrollTo(0, 0);
+}
+// Called at the start of every drawer toggle on the vendor desk.
+function vtabFollow(btn) {
+if (!document.body.classList.contains('vendor-tabs')) return;
+const fold = btn && btn.closest && btn.closest('.dash-fold');
+if (!fold || !fold.closest('#screen-dashboard')) return;
+const k = tabOfFold(fold);
+if (k && k !== vendorTab) setVendorTab(k, true);
+}
+// The Upload tab carries a dot while a document is missing, expired or due soon.
+function paintVendorTabDots() {
+const b = document.querySelector('#vendorTabList .vtab[data-tab="upload"]');
+if (!b) return;
+let due = false;
+try {
+  due = !!(currentVendorId && cache.requirements && (cache.requirements.reqs || []).some(req =>
+    reqVendors(req).some(v => v.vendorId === currentVendorId) &&
+    ['missing', 'expired', 'expiring'].includes(reqEffectiveState(req.id, currentVendorId))));
+} catch (e) { due = false; }
+b.classList.toggle('has-dot', due);
+b.setAttribute('aria-label', 'Upload' + (due ? ', something needs attention' : ''));
 }
 async function selectVendor(vendorId) {
 currentRole = 'vendor';
@@ -17816,6 +18010,7 @@ updatePaySub();
 }
 function renderAll() {
 paintHeaderBadge();
+if (typeof paintVendorTabDots === 'function') paintVendorTabDots();
 updatePaySub();
 const mt = document.getElementById('merchTile');
 if (mt) {
@@ -18898,7 +19093,7 @@ merch:             { title: 'Merch Mansion Stock and Till' },
 idea:              { title: 'A Good Idea' },
 ptssignoff:        { title: 'Points Sign-Off' },
 demostmt:          { title: 'Demo Statement Records' },
-gcvendor:          { title: 'Take a Gift Certificate' },
+gcvendor:          { title: 'Scan a Gift Certificate' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
 homescreen:        { title: 'Put IFM App on Your Device' },
@@ -22805,7 +23000,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-40';
+const BUILD_ID = '18-41';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
