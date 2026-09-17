@@ -2666,7 +2666,22 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .prof-link-note:empty { display: none; }
 .prof-link-offer { width: auto; display: inline-block; margin: 4px 6px 0 0; padding: 6px 12px; font-size: 14px; text-align: left; overflow-wrap: anywhere; }
 .prof-preview-card { margin-top: 14px; background: #F5F2E7; }
-.answers-intro { margin: 0 0 8px; }
+.ans-group { padding: 4px 16px; margin-bottom: 12px; }
+.ans-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--paper-dim); }
+.ans-row:last-child { border-bottom: 0; }
+.ans-q { font-size: 16px; font-weight: 600; line-height: 1.25; }
+@media (max-width: 359px) { .ans-group { padding: 4px 12px; } .ans-q { font-size: 15px; letter-spacing: -0.01em; } }
+.ans-switch { flex: none; position: relative; width: 52px; height: 32px; border-radius: 999px; border: 0; padding: 0; cursor: pointer;
+  background: #8F8574; transition: background-color 0.18s; }
+.ans-switch .ans-thumb { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: left 0.18s; }
+.ans-switch.on { background: var(--leaf); }
+.ans-switch.on .ans-thumb { left: 23px; }
+.ans-switch.unset { background: rgba(255,255,255,0.75); border: 2px dashed #8F8574; }
+.ans-switch.unset .ans-thumb { top: 1px; left: 11px; background: #CFC6B4; box-shadow: none; }
+.ans-switch:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.ans-switch:disabled { opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .ans-switch, .ans-switch .ans-thumb { transition: none; } }
 .md-answers-link.md-waiting { border-color: var(--tomato); }
 /* ===== VENDOR DESK TABS (18-41) ======================================== */
 .vtab-bar { display: none; }
@@ -3077,57 +3092,14 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 </div>
 </div>
 <div class="dash-fold" data-fold="answers">
-<button type="button" class="fold-bar" onclick="toggleFold(this)">
+<button type="button" class="fold-bar" onclick="toggleFold(this); renderAnswers();">
 <span class="fold-title">Your Answers</span>
-<span class="fold-sub" id="answersSub">What you do at market, what you take, and whether you would share a booth</span>
+<span class="fold-sub" id="answersSub">What you sell, your booth, and what you accept</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body">
-<p class="empty-note answers-intro">Questions about your business, all in one place. None of them is a promise to the market; change any answer whenever you like.</p>
-<div class="dash-fold" id="mdTraitCard" data-fold="mdtraits">
-<button type="button" class="fold-bar" onclick="toggleFold(this); renderAnswersTraits();">
-<span class="fold-title">What You Do at Market</span>
-<span class="fold-sub" id="mdTraitSub">The questions that decide which permits apply</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<p class="empty-note" style="margin-top:0;">Which permits the market needs from you depends on what you sell, not on your membership class. Six questions. Change an answer whenever what you do changes. <b>Change an answer and the list below changes with it.</b></p>
-<div class="req-row" id="sellsFoodRow">
-<div class="req-row-main"><div class="req-name">Do you sell any food at all &mdash; prepared food or produce?</div>
-<div class="req-meta">Decides whether you can be placed in a booth marked No Food on the pavilion map.</div></div>
-<div class="tone-switch" style="margin-top:6px;">
-<button type="button" class="tone-btn" id="sellsFoodYes" onclick="setSellsFood(true)">Yes</button>
-<button type="button" class="tone-btn" id="sellsFoodNo" onclick="setSellsFood(false)">No</button>
-</div>
-</div>
-<div id="mdTraits"></div>
-<div class="status-msg" id="mdTraitMsg"></div>
-</div>
-</div>
-<div class="dash-fold" data-fold="fShareOffer" id="foldShareOffer" style="display:none;">
-<button type="button" class="fold-bar" onclick="toggleFold(this)">
-<span class="fold-title">Open to Sharing Your Booth?</span>
-<span class="fold-sub" id="foldSubShareOffer"></span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body">
-<div class="card">
-<label>Would you take somebody into your booth this season?</label>
-<div class="tone-switch">
-<button type="button" class="tone-btn" id="shareOfferYes" onclick="setShareOffer(true)">Yes</button>
-<button type="button" class="tone-btn" id="shareOfferNo" onclick="setShareOffer(false)">No</button>
-</div>
-</div>
-</div>
-</div>
-<div class="dash-fold" data-fold="ftender">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'tender')">
-<span class="fold-title">SNAP &amp; FreshConnect</span>
-<span class="fold-sub" id="foldSubTender">Whether you take them &mdash; the kiosk tells shoppers</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
+<div id="answerList"></div>
+<div class="status-msg" id="answerMsg"></div>
 </div>
 </div>
 <div class="dash-fold" data-fold="mydocs">
@@ -6155,22 +6127,12 @@ comes from.</p>
 <div class="status-msg" id="bfMsg"></div>
 </div>
 </section>
-<section id="screen-tender" class="screen">
-<div class="screen-head" id="head-tender"></div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>What You Take at the Stall</h2>
-<p class="empty-note" style="margin-top:0;">Two questions, and they are yours to answer. <b>The information kiosk in the pavilion tells shoppers which stalls take SNAP</b>, so a shopper looking for somewhere to spend their tokens is sent by what you say here.</p>
-<p class="empty-note">Neither is a promise to the market and neither is recorded against you. Change an answer whenever you like &mdash; when you turn tokens or checks in at the office, the credit reaches your bill either way.</p>
-<div id="tenderList"></div>
-<div class="status-msg" id="tenderMsg"></div>
-</div>
-</section>
 <section id="screen-mydocs" class="screen">
 <div class="screen-head" id="head-mydocs"></div>
 <p class="empty-note" id="mdSummary" style="margin-top:0;"></p>
 <div class="card md-answers-link" id="mdAnswersLink">
 <p class="empty-note" style="margin:0;" id="mdAnswersText">Which permits apply depends on your answers to <b>What You Do at Market</b>, in My Account.</p>
-<button type="button" class="ghost-btn" style="margin-top:10px;" onclick="openAnswer('mdtraits')">See or change your answers</button>
+<button type="button" class="ghost-btn" style="margin-top:10px;" onclick="openAnswer('answers')">See or change your answers</button>
 </div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-key"></use></svg></span>What the Market Needs From You<button type="button" class="help-dot" onclick="showHelp(62)" aria-label="What are the rules here?">?</button></h2>
@@ -14843,6 +14805,7 @@ const t = document.getElementById('vendorTabTitle');
 if (t) { t.textContent = tab.title || ''; t.classList.toggle('vtab-off', !tab.title); }
 document.querySelectorAll('#vendorTabList .vtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab.k)));
 paintVendorTabDots();
+if (tab.k === 'account') renderAnswers();
 if (tab.open && !keepFolds) {
   const f = dash.querySelector(':scope > .dash-fold[data-fold="' + tab.open + '"]');
   if (f && !f.classList.contains('open')) { const bar = f.querySelector(':scope > .fold-bar'); if (bar) bar.click(); }
@@ -18987,7 +18950,6 @@ if (name === 'homescreen') initHomeScreenScreen();
 if (name === 'wedlist') initWedListScreen();
 if (name === 'snaplog') initSnapLogScreen();
 if (name === 'fclog') initFcLogScreen();
-if (name === 'tender') initTenderScreen();
 if (name === 'communicate') initCommunicateScreen();
 if (name === 'booths') { renderBooths(); centerLiveMap('boothCanvasWrap'); }
 if (name === 'directory') { renderDirectory(''); renderEasyEntryStanding(); }
@@ -23060,7 +23022,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-46';
+const BUILD_ID = '18-47';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -29637,7 +29599,76 @@ reqVendors(req).some(v => v.vendorId === vendorId));
 // them later: the permit questions (with "do you sell food" first), whether
 // they would share a booth, and SNAP and FreshConnect. The Permits screen
 // points here rather than asking.
-function renderAnswersTraits() { renderSellsFood(); renderVendorTraits(); renderTraitSub(); }
+// Since 18-47 every answer is a one-line switch in Your Answers, in three
+// groups: what you sell, your booth, what you accept. A question nobody has
+// answered shows its switch in a neutral middle position rather than "off",
+// because off would read as "no"; the first tap turns it on.
+function answerGroups(v) {
+const vid = v.vendorId;
+const tri = x => (x === true || x === false) ? x : undefined;
+const sell = [
+  { id: 'food', q: 'Sell food?', get: () => tri(v.sellsFood), set: async val => { v.sellsFood = val; await storageSet('ifm-vendors-v1', cache.vendors); } },
+].concat(VENDOR_TRAITS.map(t => ({
+  id: 'trait-' + t.key, q: ANSWER_SHORT[t.key] || t.short,
+  get: () => vendorTrait(vid, t.key),
+  set: async val => { await setVendorTrait(vid, t.key, val); renderMyDocsAnswersLink(); },
+})));
+const booth = shareCouldHost(vid) ? [
+  { id: 'share', q: 'Open to booth sharing?', get: () => shareOfferAnswered(vid) ? !!shareOfferOn(vid) : undefined, set: async val => { await setShareOffer(val); } },
+] : [];
+const pay = TENDERS.map(t => ({
+  id: 'tender-' + t.key, q: t.key === 'snap' ? 'Accept SNAP tokens?' : 'Accept FreshConnect?',
+  get: () => t.chosen(vid) ? !!t.accepts(vid) : undefined,
+  set: async val => { await setTenderFlag(t.key, vid, val); },
+}));
+return [sell, booth, pay].filter(g => g.length);
+}
+const ANSWER_SHORT = {
+  preparedFood: 'Sell prepared food?',
+  homeProcess: 'Use a home kitchen?',
+  alcohol: 'Sell wine or cider?',
+  openFlame: 'Use propane or flame?',
+  scales: 'Weigh items to price them?',
+};
+function renderAnswers() {
+const host = document.getElementById('answerList');
+const v = currentVendor();
+if (!host || !v) return;
+host.innerHTML = '';
+answerGroups(v).forEach(group => {
+  const box = document.createElement('div');
+  box.className = 'card ans-group';
+  group.forEach(item => {
+    const val = item.get();
+    const row = document.createElement('div');
+    row.className = 'ans-row';
+    const label = document.createElement('span');
+    label.className = 'ans-q';
+    label.id = 'ans-' + item.id + '-q';
+    label.textContent = item.q;
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'ans-switch' + (val === true ? ' on' : val === false ? ' off' : ' unset');
+    sw.id = 'ans-' + item.id;
+    sw.setAttribute('role', 'switch');
+    sw.setAttribute('aria-checked', val === true ? 'true' : 'false');
+    sw.setAttribute('aria-labelledby', label.id);
+    if (val === undefined) sw.setAttribute('aria-description', 'not answered');
+    sw.innerHTML = '<span class="ans-thumb"></span>';
+    sw.onclick = async () => {
+      sw.disabled = true;
+      try { await item.set(val !== true); }
+      catch (e) { showMsg('answerMsg', 'err', e.message || String(e)); }
+      renderAnswers();
+    };
+    row.appendChild(label);
+    row.appendChild(sw);
+    box.appendChild(row);
+  });
+  host.appendChild(box);
+});
+}
+function renderAnswersTraits() { renderAnswers(); }
 function renderSellsFood() {
 const v = currentVendor();
 if (!v) return;
@@ -29657,6 +29688,7 @@ showMsg('mdTraitMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></s
 }
 // Open one of the answer drawers from anywhere (the Permits screen uses it).
 function openAnswer(key) {
+renderAnswers();
 const fold = document.querySelector('.dash-fold[data-fold="' + key + '"]');
 if (!fold) return;
 if (typeof ifmCurrentScreen !== 'undefined' && ifmCurrentScreen !== 'dashboard') showScreen('dashboard');
