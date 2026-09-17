@@ -2542,6 +2542,13 @@ html[data-look="rainshine"] body:not(.kiosk-mode) :is(.fold-bar, .mgr-tile, .sta
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(.card, .menu-card) {
   background: var(--glass-card); border-color: var(--glass-edge);
 }
+/* Two cards on My Account that never grow past a few hundred pixels get the
+   drawer bars' look, so the tab reads like Communicate (18-49): the account
+   summary and the Your Answers boxes. The memory test holds them to it. */
+html[data-look="rainshine"] body:not(.kiosk-mode) :is(#acctRecent, .ans-group) {
+  background: var(--glass); border-color: var(--glass-edge);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15);
+}
 html[data-look="rainshine"] body:not(.kiosk-mode) .fold-sub { color: var(--soft-text); }
 html[data-look="rainshine"] body:not(.kiosk-mode) .fold-chev { color: var(--soft-text); }
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(.req-meta, .empty-note, .mt-sub) { opacity: 0.88; }
@@ -23042,7 +23049,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-48';
+const BUILD_ID = '18-49';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
