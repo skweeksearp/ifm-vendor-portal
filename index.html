@@ -23060,7 +23060,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-42';
+const BUILD_ID = '18-46';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27076,7 +27076,7 @@ effective: '2026-01-01', renewal: 'annual', blocking: true, link: '',
 due: '' },
 { id: 'REQ-scales', name: 'Scale Certification',
 issuer: 'Tompkins County Weights & Measures',
-detail: 'A scale used to price goods must be sealed and certified. <b>The Guide does not name this</b> \u2014 it comes from New York law rather than from the market\u2019s own documents, and is listed here because the Guide\u2019s list is \u201cincluding but not limited to\u201d. Confirm with the office before treating it as a market requirement.',
+detail: 'Agriculture Guidelines, Weights and Measures: a scale used to price goods must be checked annually and sealed by an official of the county Bureau of Weights and Measures. The Vendor Guide does not repeat it. Whether the rule still fits how members sell is in front of the Board (BF59).',
 appliesTo: 'trait', categories: [], vendorIds: [], traits: ['scales'],
 effective: '2026-01-01', renewal: 'annual', blocking: false, link: '',
 due: '' },
@@ -32547,7 +32547,24 @@ row.appendChild(panel);
 wrap.appendChild(row);
 });
 }
+// Not on this list, deliberately: the paper bag fee (was BF21, removed in
+// 18-46). The Guide mentions it, but it is a tax matter between each vendor
+// and the state; the market neither charges, collects nor enforces it, so
+// there is nothing for the Board to decide.
 const BOARD_FLAGS = [
+{ id: 'BF59', kind: 'question', cat: 'Agriculture', src: 'Agriculture Guidelines, Weights and Measures; reported from the market floor',
+t: 'Does the sealed-scale rule still fit how members sell?',
+d: 'WHAT THE RULES SAY. The Agriculture Guidelines, under Weights and Measures: scales must be checked annually and sealed by an official of the Bureau of Weights and Measures, through the county department; members selling by volume must use standard containers (pint, quart, peck, bushel). The Vendor Guide does not repeat it. Next to it, under Price Fixing: produce should be priced at a reasonable level, and price fixing is not permitted. ' +
+'WHAT IS BEING SEEN. The certification requirement appears to have put members off using scales at all. Pricing by weight has become rare at this market; items are priced by the piece, the bunch or the container, and sliding-scale pricing is probably not uncommon. The rules say nothing about sliding scales. ' +
+'WHAT THE APP DOES MEANWHILE. It asks every vendor \u201cDo you weigh anything to price it?\u201d A yes adds Scale Certification (Tompkins County Weights & Measures, renews annually) to their permits list; it is not marked as stopping them from selling. A no leaves it off, and an unanswered question shows it as depending on the answer. ' +
+'WORTH KNOWING. State weights-and-measures law generally governs any scale used to price goods for sale, so the market may not be free to waive a seal for members who do sell by weight; the county office can confirm what applies. The question for the market is whether its own rule, and the way the app asks about it, is scaring members away from something they would otherwise do, or is simply describing something few now do. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: whether to keep the Weights and Measures rule as written, reword it so it plainly applies only to members who price by weight, or leave scales to state law and drop the market\u2019s own version; whether the app should keep asking the weighing question and listing Scale Certification; and whether the market wants to say anything about sliding-scale pricing \u2014 encourage it, permit it, or stay silent \u2014 and how that sits beside the rule against price fixing.' },
+{ id: 'BF58', kind: 'question', cat: 'Board', src: 'Vendor Guide, Board of Directors and Work Hour Program',
+t: 'Should Board members get work hours for monthly meetings automatically?',
+d: 'WHAT THE GUIDE SAYS. Board members are not compensated but receive one work hour for every hour served at Board meetings and in conducting Board business outside them (Board of Directors section), and vendors who serve on the Board or committees may use that time toward their work-hour requirement (Work Hour Program). Meetings are the second Wednesday of each month. ' +
+'WHAT THE APP DOES NOW. Nothing is automatic. Each Board member logs their own meeting time under My Account, Work Hours, Log Hours You Worked, category Board / Committee; the entry waits as submitted until the Market Manager signs it off, and only then counts toward their total. The app cannot do more yet: no Board roster is recorded, and nothing records who attended a meeting or how long it ran. ' +
+'WHAT COULD BE BUILT. A Board roster entered once, and a short attendance form on the Board President\u2019s desk after each meeting: tick who attended, enter how long it ran, and the app adds one work-hour entry for each attendee. Board business outside meetings would still be logged by each member, since only they know it. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: whether meeting hours should be credited from an attendance record at all; who records attendance (the President, the Secretary, or someone else); whether those entries still need the Market Manager\u2019s sign-off or count once recorded; whether credit is the scheduled length or the actual length, and how it is rounded; and whether attending by Zoom, or watching the recording afterward, counts.' },
 { id: 'BF57', kind: 'question', cat: 'Board', src: 'Guide, Ownership Changes -- found while building the reporting tool',
 t: 'When a business re-enters as a "vendor of equal status," what happens to its points?',
 d: 'THE DEFINITION, EXACTLY. The Glossary: "Vendor of equal status: The new owner of a purchased vendor business who retains the membership status of the previous owner." That sentence answers one question -- the new owner keeps the previous owner\u2019s membership CLASS, Full or Easy Entry -- and is silent on a different one: what happens to the business\u2019s accumulated POINTS. ' +
@@ -32732,9 +32749,6 @@ d: 'Anyone in those roles who receives a complaint, observes the behavior, or su
 { id: 'BF20', kind: 'dormant', cat: 'Selling', src: 'Vendor Guide, Daily Selling Guidelines',
 t: 'Nobody may sell for a vendor who is not present',
 d: 'A vendor or their employee must be present in the booth. This bears directly on booth sharing, where two businesses split a booth and each must have someone there for the whole market.' },
-{ id: 'BF21', kind: 'dormant', cat: 'Selling', src: 'Vendor Guide, Daily Selling Guidelines',
-t: 'Bag rules carry a county fee the market does not track',
-d: 'Plastic carry-out bags are barred under NYS law, with narrow exemptions. Vendors offering paper bags must collect $0.05 per bag under Tompkins County law and remit it. That is a tax obligation sitting with individual vendors under the market\u2019s name.' },
 { id: 'BF22', kind: 'dormant', cat: 'Selling', src: 'Vendor Guide, Children\u2019s Sales and Media Policy',
 t: 'Two small permissions nobody asks for',
 d: 'Vendors\u2019 children aged 16 and under must clear their product with the relevant committee before selling. Anyone recording at market for monetization \u2014 including during set-up and take-down \u2014 needs prior permission from a Market Manager. Both are the kind of rule that is only ever remembered after an incident.' },
@@ -32785,12 +32799,21 @@ const FLAG_KIND = {
 discrepancy: { t: 'Disagreement', cls: 'expiring' },
 dormant: { t: 'Rule not enforced', cls: 'submitted' },
 gap: { t: 'Nothing records it', cls: 'missing' },
+// These two used to fall back to "Nothing records it" (18-43).
+question: { t: 'Needs a decision', cls: 'expiring' },
+conflict: { t: 'Rules conflict', cls: 'expired' },
 };
+// "Start enforcing" and "Knowingly leave it unenforced" are offered only on a
+// rule the market has and is not enforcing (kind 'dormant'). On a question,
+// a disagreement or a gap they read as the Board choosing not to charge or
+// not to comply, which is not a choice the Board is being asked (18-45).
+// An item that already carries one of them keeps it.
+const FLAG_ENFORCE_KINDS = ['dormant'];
 const FLAG_STATUS = [
 { v: 'open', t: 'Nothing yet \u2014 leave it here' },
 { v: 'agenda', t: 'Put it to the Board at the next meeting' },
-{ v: 'enforce', t: 'Start enforcing the rule', timed: true },
-{ v: 'ignore', t: 'Knowingly leave it unenforced', timed: true },
+{ v: 'enforce', t: 'Start enforcing the rule', timed: true, dormantOnly: true },
+{ v: 'ignore', t: 'Knowingly leave it unenforced', timed: true, dormantOnly: true },
 { v: 'discussed', t: 'The Board has discussed it' },
 { v: 'resolved', t: 'Settled \u2014 the rule is being followed' },
 { v: 'dismissed', t: 'Not a problem for this market' },
@@ -33036,7 +33059,8 @@ const idp = 'bfr-' + f.id;
 form.innerHTML =
   (st === 'lapsed' ? '<p class="empty-note bf-ruling-hint">The time set on this has run out: ' + esc(flagStatusLabel(f.id)) + '. What now?</p>' : '') +
   '<label for="' + idp + '-a">What to do about it for now</label>' +
-  '<select id="' + idp + '-a">' + FLAG_STATUS.map(x => '<option value="' + x.v + '">' + esc(x.t) + '</option>').join('') + '</select>' +
+  '<select id="' + idp + '-a">' + FLAG_STATUS.filter(x => !x.dormantOnly || FLAG_ENFORCE_KINDS.includes(f.kind) || (d.action || 'open') === x.v)
+    .map(x => '<option value="' + x.v + '">' + esc(x.t) + '</option>').join('') + '</select>' +
   '<select id="' + idp + '-p" class="bf-ruling-period">' + FLAG_PERIODS.map(x => '<option value="' + x.v + '">' + esc(x.t) + '</option>').join('') + '</select>' +
   '<label for="' + idp + '-t">What the Board decided</label>' +
   '<textarea id="' + idp + '-t" rows="3" placeholder="In the Board\u2019s words, e.g. \u201cFour or more years counts.\u201d"></textarea>' +
