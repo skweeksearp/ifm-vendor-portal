@@ -816,6 +816,11 @@ background: #F1E1D5; border: 1px solid var(--tomato); color: #6E2E12;
 }
 .req-tally { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .req-card-open { border: 2px solid var(--leaf); }
+.df-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.df-controls label { margin-top: 0; }
+.df-name { display: flex; align-items: center; gap: 8px; }
+.df-booth { flex: none; min-width: 30px; padding: 2px 7px; border-radius: 8px; background: var(--paper-dim); color: var(--ink);
+  font-family: 'Manrope', -apple-system, sans-serif; font-weight: 800; font-size: 13px; text-align: center; }
 .req-vendor-row {
 display: flex; align-items: center; gap: 8px; padding: 9px 0;
 border-bottom: 1px solid var(--paper-dim);
@@ -6390,16 +6395,27 @@ comes from.</p>
 <label for="dfDate">Market day</label>
 <select id="dfDate" onchange="renderDayFees()"></select>
 <label for="dfSearch" style="margin-top:10px;">Find a vendor</label>
-<input type="text" id="dfSearch" class="find-field" placeholder="Start typing a business or last name" autocomplete="off" oninput="renderDayFeeSuggest(this.value)">
-<div id="dfResults"></div>
-<label for="dfFilter" style="margin-top:10px;">Show</label>
+<input type="text" id="dfSearch" class="find-field" placeholder="Business or last name" autocomplete="off" oninput="renderDayFees()">
+<div class="df-controls">
+<div>
+<label for="dfFilter">Show</label>
 <select id="dfFilter" onchange="renderDayFees()">
 <option value="due">Still to pay</option>
 <option value="all">Everyone expected</option>
 <option value="paid">Already paid</option>
 </select>
+</div>
+<div>
+<label for="dfOrder">In order of</label>
+<select id="dfOrder" onchange="renderDayFees()">
+<option value="booth">Booth number</option>
+<option value="name">Business name</option>
+</select>
+</div>
+</div>
 <p class="empty-note" id="dfSummary"></p>
 <div id="dfList"></div>
+<button type="button" class="ghost-btn" id="dfMore" style="display:none;" onclick="dayFeeShowAll()"></button>
 <div class="empty-note" id="dfEmpty" style="display:none;">Nobody is expected at market that day.</div>
 </div>
 </section>
@@ -23248,7 +23264,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-57';
+const BUILD_ID = '18-58';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -28804,11 +28820,15 @@ sel.appendChild(o);
 });
 if (past.length) sel.value = past[0].date;
 document.getElementById('dfSearch').value = '';
-document.getElementById('dfResults').innerHTML = '';
 document.getElementById('dfFilter').value = 'due';
+const order = document.getElementById('dfOrder');
+if (order) order.value = 'booth';
+dayFeeShowingAll = false;
 renderDayFees();
 }
+// Kept for anything that still calls it; the search filters the list itself now.
 function renderDayFeeSuggest(query) {
+if (!document.getElementById('dfResults')) return;
 const results = document.getElementById('dfResults');
 if (!results) return;
 results.innerHTML = '';
@@ -28865,6 +28885,18 @@ if (!list.length) delete cache.ops.dayfees[date];
 renderDayFees();
 await saveOps();
 }
+// The list is 70-odd people on a Saturday, which is no use held in one hand
+// at the top of the market (18-58). So: the search filters this list rather
+// than adding a second one; rows carry the booth number and can be read in
+// booth order, which is the order somebody walking the market meets them;
+// and only the first stretch is drawn until asked for the rest.
+const DAYFEE_FIRST = 15;
+let dayFeeShowingAll = false;
+function dayFeeShowAll() { dayFeeShowingAll = true; renderDayFees(); }
+function dayFeeBoothNum(why) {
+const m = /booth\s+(\d+)/i.exec(String(why || ''));
+return m ? Number(m[1]) : null;
+}
 function renderDayFees() {
 const date = document.getElementById('dfDate').value;
 const wrap = document.getElementById('dfList');
@@ -28886,23 +28918,56 @@ document.getElementById('dfSummary').textContent =
 (collected * fee) + ' collected, $' + ((expected.length - collected) * fee) + ' outstanding. ' +
 'Fees are due during set-up at Steamboat Landing.';
 const filter = document.getElementById('dfFilter').value;
+const order = (document.getElementById('dfOrder') || {}).value || 'booth';
+const q = String((document.getElementById('dfSearch') || {}).value || '').trim().toLowerCase();
 let shown = expected;
-if (filter === 'due') shown = shown.filter(e => !paid.includes(e.vendorId));
-if (filter === 'paid') shown = shown.filter(e => paid.includes(e.vendorId));
+// A search is a search for a person: it ignores the Show filter, so somebody
+// you just marked paid stays on screen to be seen, and undone if it was a
+// mistake, instead of vanishing out of a "still to pay" list.
+if (!q && filter === 'due') shown = shown.filter(e => !paid.includes(e.vendorId));
+if (!q && filter === 'paid') shown = shown.filter(e => paid.includes(e.vendorId));
+if (q) {
+shown = shown.filter(e => {
+  const v = cache.vendors.find(x => x.vendorId === e.vendorId) || {};
+  return e.name.toLowerCase().includes(q) || String(v.lastName || '').toLowerCase().includes(q);
+});
+}
+if (order === 'booth') {
+shown = shown.slice().sort((a, b) => {
+  const an = dayFeeBoothNum(a.why), bn = dayFeeBoothNum(b.why);
+  if (an === null && bn === null) return a.name.localeCompare(b.name);
+  if (an === null) return 1;
+  if (bn === null) return -1;
+  return an - bn || a.name.localeCompare(b.name);
+});
+}
+const more = document.getElementById('dfMore');
 if (!shown.length) {
 empty.style.display = 'block';
-empty.textContent = filter === 'due' ? 'Everyone expected today has paid.'
+empty.textContent = q ? 'Nobody expected today matches that. They may have reported an absence, or not be down for a booth this market.'
+: filter === 'due' ? 'Everyone expected today has paid.'
 : 'Nobody has paid yet.';
+if (more) more.style.display = 'none';
 return;
 }
 empty.style.display = 'none';
+// A search shows everything it found; an unsearched list stops after the
+// first stretch, because nobody reads seventy rows to find one person.
+const all = shown;
+if (!q && !dayFeeShowingAll && shown.length > DAYFEE_FIRST) shown = shown.slice(0, DAYFEE_FIRST);
+if (more) {
+const hidden = all.length - shown.length;
+more.style.display = hidden > 0 ? 'block' : 'none';
+more.textContent = hidden > 0 ? 'Show the other ' + hidden + (filter === 'due' ? ' still to pay' : '') : '';
+}
 shown.forEach(e => {
 const on = paid.includes(e.vendorId);
 const row = document.createElement('div');
 row.className = 'req-vendor-row';
 const name = document.createElement('div');
 name.className = 'req-vendor-name';
-name.innerHTML = '<div>' + esc(e.name) + '</div>' +
+const bn = dayFeeBoothNum(e.why);
+name.innerHTML = '<div class="df-name">' + (bn !== null ? '<span class="df-booth">' + bn + '</span>' : '') + esc(e.name) + '</div>' +
 '<div class="req-vendor-sub"><span class="req-state ' + (on ? 'onfile' : 'missing') + '">' +
 (on ? 'Paid $' + fee : 'Owes $' + fee) + '</span> ' + esc(e.why) + '</div>';
 row.appendChild(name);
