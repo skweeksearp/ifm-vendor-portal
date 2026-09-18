@@ -2759,8 +2759,7 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .mgr-inline-tool { margin-top: 18px; }
 .mgr-inline-head { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 8px; padding: 4px; background: none; border: 0;
   font-family: 'Manrope', -apple-system, sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); text-align: left; cursor: pointer; }
-.mgr-inline-open { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--berry); }
-.mgr-inline-day { font-size: 13px; font-weight: 600; opacity: 0.85; }
+.mgr-open-h2 { cursor: pointer; }
 .mgr-inline-tool .tool-date { display: none; }
 /* Beats body.role-manager .manager-only, which forces display with
    !important and would otherwise keep these on Home (18-69). */
@@ -6337,10 +6336,7 @@ comes from.</p>
 <button type="button" class="primary-btn" onclick="recordFireLane()">Record it</button>
 <div class="status-msg" id="flMsg"></div>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>This Season</h2>
-<div id="flList"></div>
-</div>
+
 </section>
 <section id="screen-attshort" class="screen">
 <div class="screen-head" id="head-attshort"></div>
@@ -6419,14 +6415,14 @@ comes from.</p>
 </section>
 <section id="screen-optool" class="screen">
 <div class="screen-head" id="head-optool"></div>
-<div class="card">
+<div class="card tool-aside">
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span><span id="otTitle"></span><button type="button" class="help-dot" id="otHelp" aria-label="What are the rules here?">?</button></h2>
 <p class="empty-note" id="otSummary" style="margin-top:0;"></p>
 <div id="otList"></div>
 <div class="empty-note" id="otEmpty" style="display:none;">Nothing recorded yet.</div>
 </div>
 <div class="card" id="otAddCard">
-<h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span>Add a Record</h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-pencil-plus"></use></svg></span><span id="otAddTitle">Add a Record</span></h2>
 <div id="otForm"></div>
 <button class="primary-btn" onclick="addOpRecord()"><svg class="ico"><use href="#i-checkmark"></use></svg> Add</button>
 <div class="status-msg" id="otMsg"></div>
@@ -14987,42 +14983,37 @@ if (document.body.classList.contains('vendor-tabs')) return VENDOR_TABS;
 return null;
 }
 // In the order a market day happens.
-const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'firelane', 'noshow'];
+const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'firelane', 'noshow', 'ot:stallcheck'];
 function mgrInlineTool(grid, tile) {
-const sec = document.getElementById('screen-' + tile.s);
+const screenName = tile.s || 'optool';
+if (tile.ot) otOpenKey = tile.ot;
+const sec = document.getElementById('screen-' + screenName);
 if (!sec) return;
 const wrap = document.createElement('section');
 wrap.className = 'mgr-inline-tool';
-// The name opens the whole tool, where what is set aside here lives: season
-// totals, who takes SNAP, repeated no-shows, the certificate book.
-const head = document.createElement('button');
-head.type = 'button';
-head.className = 'mgr-inline-head';
-head.innerHTML = '<svg class="ico"><use href="#' + (tile.i || 'i-basket') + '"></use></svg>' +
-  '<span>' + (typeof tile.t === 'function' ? tile.t() : tile.t) + '</span><span class="mgr-inline-open">Open</span>';
-head.onclick = () => showScreen(tile.s);
-wrap.appendChild(head);
+// No name above the tool: every tool already says what it is at the top of
+// its own window, and saying it twice was just more to scroll past (18-72).
 // Move the screen here, the same way a drawer borrows one, and put it back
 // when the desk changes (returnFoldedScreens, via closeAllFolds).
-const ph = document.createComment('home-' + tile.s);
+const ph = document.createComment('home-' + screenName);
 sec.parentElement.replaceChild(ph, sec);
-foldedPlaceholders[tile.s] = ph;
+foldedPlaceholders[screenName] = ph;
 wrap.appendChild(sec);
 sec.classList.add('inline-screen', 'active');
 grid.appendChild(wrap);
-runScreenInit(tile.s);
-// Which day this is recording, said once, where the picker used to be. The
-// picker itself is on the tool's own screen, for the Sunday you forgot to
-// write up on Sunday (18-71).
-const day = sec.querySelector('.tool-date select');
-if (day && day.value) {
-  const when = document.createElement('span');
-  when.className = 'mgr-inline-day';
-  when.textContent = formatDisplayDate(day.value);
-  head.querySelector('span').after(when);
+runScreenInit(screenName);
+// The tool's own heading is the way into the whole thing, where what is set
+// aside here lives: season totals, who takes SNAP, the certificate book.
+const own = [...sec.querySelectorAll('.card > h2')].find(x => !x.closest('.tool-aside'));
+if (own && (tile.s || tile.ot)) {
+  own.classList.add('mgr-open-h2');
+  own.onclick = (e) => {
+    if (e.target.closest('.help-dot')) return;
+    if (tile.ot) { otOpenKey = tile.ot; showScreen('optool'); } else showScreen(tile.s);
+  };
 }
 // Standing decisions belong where the rule bites, not on a working surface.
-const banner = document.getElementById('rulings-' + tile.s);
+const banner = document.getElementById('rulings-' + screenName);
 if (banner) banner.remove();
 }
 function buildManagerTabs() {
@@ -23510,7 +23501,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-71';
+const BUILD_ID = '18-72';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -29813,11 +29804,15 @@ sel.appendChild(o);
 form.appendChild(sel);
 }
 tool.fields.forEach(f => {
+// A date field takes today and steps aside on the manager's Home, like
+// every other market-day tool (18-72).
+const holder = f.type === 'date' ? document.createElement('div') : form;
+if (holder !== form) { holder.className = 'tool-date'; form.appendChild(holder); }
 const lab = document.createElement('label');
 lab.setAttribute('for', 'otF_' + f.id);
 lab.style.marginTop = '10px';
 lab.textContent = f.label;
-form.appendChild(lab);
+holder.appendChild(lab);
 let el;
 if (f.type === 'select') {
 el = document.createElement('select');
@@ -29834,7 +29829,7 @@ if (f.type === 'date') el.value = todayISO();
 if (f.value) el.value = f.value;
 }
 el.id = 'otF_' + f.id;
-form.appendChild(el);
+holder.appendChild(el);
 });
 document.getElementById('otMsg').className = 'status-msg';
 renderRulingsBanner('optool');
@@ -29875,6 +29870,10 @@ const wrap = document.getElementById('otList');
 const empty = document.getElementById('otEmpty');
 wrap.innerHTML = '';
 document.getElementById('otSummary').textContent = tool.summary ? tool.summary(all) : '';
+// The form carries the tool's name: on the manager's Home the summary card
+// above it is set aside, so this is the heading somebody actually reads.
+const addTitle = document.getElementById('otAddTitle');
+if (addTitle) addTitle.textContent = tool.title || 'Add a Record';
 empty.style.display = all.length ? 'none' : 'block';
 const sorted = all.slice().sort((a, b) => {
 const ad = a.values.date || a.values.inspected || a.values.approved || a.created;
@@ -46918,7 +46917,7 @@ if (tab.k === 'home' && MGR_HOME_INLINE.length) {
   if (md) {
     // MGR_HOME_INLINE's order, not the folder's: the day's order.
     MGR_HOME_INLINE.forEach(key => {
-      const t = (md.tiles || []).find(x => x.s === key);
+      const t = (md.tiles || []).find(x => (x.s === key) || ('ot:' + x.ot === key));
       if (t) mgrInlineTool(grid, t);
     });
   }
@@ -46928,7 +46927,7 @@ tab.folders.forEach(key => {
   if (!f) return;
   // the market-day tools are already laid out above
   const tiles = (tab.k === 'home' && key === 'marketday')
-    ? (f.tiles || []).filter(t => !t.s || !MGR_HOME_INLINE.includes(t.s))
+    ? (f.tiles || []).filter(t => !MGR_HOME_INLINE.includes(t.s) && !MGR_HOME_INLINE.includes('ot:' + t.ot))
     : (f.tiles || []);
   if (tab.k === 'home' && key === 'marketday' && !tiles.length) return;
   if (!tab.bare) {
