@@ -23435,7 +23435,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-61';
+const BUILD_ID = '18-62';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -34991,7 +34991,10 @@ sub: 'What is in front of the board, and who serves',
 tiles: [
 { s: 'facilitiestracker', i: 'i-wrench', t: 'Send to a Committee or Program', d: 'Put a repair, a proposal, or anything else on their list \u2014 straight to the chair or lead who has to act on it' },
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision \u2014 and which parts of it the Guide actually writes down' },
-{ s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Download CSVs for the board' },
+// Data Export moved to the Board's own desks in 18-60 and left the Market
+// Manager's in 18-62: they are the Board's figures, and the Board fetches
+// them itself now. The office still exports its own monthly statements from
+// Money, which is a different thing.
 ] },
 // Vocabulary sits alone at the absolute foot of the desk.
 { s: 'plainwords', i: 'i-quill', t: 'Vocabulary', foot: true,
