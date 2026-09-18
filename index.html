@@ -5005,7 +5005,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 <div class="card tool-aside" id="snapBalanceCard" style="display:none;"></div>
 <div class="card desk-form">
-<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Tokens Handed Out<button type="button" class="help-dot" onclick="showHelp(78)" aria-label="How does this work?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>SNAP Tokens Handed Out<button type="button" class="help-dot" onclick="showHelp(78)" aria-label="How does this work?">?</button></h2>
 <details class="gc-aside"><summary>What this is</summary>
 <p>After each swipe on the EBT terminal, record how many tokens went out. The app never touches the card &mdash; the terminal does that, and this is only the paper trail on this side of it.</p></details>
 <label for="snapOutCount">How many tokens</label>
@@ -5017,7 +5017,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div id="snapOutList"></div>
 </div>
 <div class="card desk-form">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Tokens Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_MGR)" aria-label="What are the rules here?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>SNAP Tokens Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_SNAP_MGR)" aria-label="What are the rules here?">?</button></h2>
 <label for="snapVendor">Vendor</label>
 <select id="snapVendor" onchange="renderAcceptCard('snap')"></select>
 <label for="snapCount">How many tokens</label>
@@ -5071,7 +5071,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <select id="fcDate" onchange="renderFcDay()"></select></div>
 </div>
 <div class="card desk-form">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Checks Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_FC_MGR)" aria-label="What are the rules here?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>FreshConnect Checks Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_FC_MGR)" aria-label="What are the rules here?">?</button></h2>
 <details class="gc-aside"><summary>What this is</summary>
 <p>New York State issues FreshConnect Checks, not the market, so there is nothing to hand out and nothing to reconcile against. This is the one half that exists: a vendor brings checks back and the market pays them out.</p></details>
 <label for="fcVendor">Vendor</label>
@@ -6310,8 +6310,11 @@ comes from.</p>
 <div class="tool-date"><label for="nsDate">Market day</label>
 <select id="nsDate" onchange="renderNoShow()"></select></div>
 <p class="empty-note" id="nsNote"></p>
+<label for="nsSearch">Find a vendor</label>
+<input type="text" id="nsSearch" class="find-field" placeholder="Business or last name" autocomplete="off" oninput="renderNoShow()">
 <button type="button" class="ghost-btn" id="nsReveal" onclick="noShowToggleList()"></button>
 <div id="nsList"></div>
+<button type="button" class="ghost-btn" id="nsReveal2" onclick="noShowToggleList()" style="display:none;">Hide the list</button>
 <div class="empty-note" id="nsEmpty" style="display:none;"></div>
 </div>
 <div class="card tool-aside">
@@ -23500,7 +23503,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-74';
+const BUILD_ID = '18-75';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -28259,28 +28262,44 @@ return;
 }
 const marked = cache.ops.noshow[date] || [];
 const cands = noShowCandidates(date);
+// A line that is there whether the list is open or not: on a market day with
+// nobody missing, this is the whole tool (18-75).
+const q = String((document.getElementById('nsSearch') || {}).value || '').trim().toLowerCase();
+const note = document.getElementById('nsNote');
+if (note) note.textContent = cands.length + ' expected' +
+  (marked.length ? ' \u00b7 ' + marked.length + ' marked absent' : ' \u00b7 nobody marked absent') +
+  '. Marking one absent takes that market off their attendance.';
+const open = noShowListOpen || !!q;
 const reveal = document.getElementById('nsReveal');
+const reveal2 = document.getElementById('nsReveal2');
 if (reveal) {
-reveal.style.display = 'block';
-reveal.textContent = noShowListOpen ? 'Hide the list'
+reveal.style.display = q ? 'none' : 'block';
+reveal.textContent = open ? 'Hide the list'
   : 'Mark somebody absent with no notice (' + cands.length + ' expected)';
 }
-if (!noShowListOpen) {
+if (reveal2) reveal2.style.display = (open && !q) ? 'block' : 'none';
+if (!open) {
 empty.style.display = 'none';
+wrap.innerHTML = '';
 renderNoShowRepeat();
 return;
 }
-document.getElementById('nsNote').textContent =
-cands.length + ' reserved holders were expected and reported no absence. ' +
-'Marking one absent removes that market from their attendance, so it stops accruing work hours too.';
 if (!cands.length) {
 empty.style.display = 'block';
 empty.textContent = 'Every reserved holder reported an absence, or there are no reservations for that day.';
 renderNoShowRepeat();
 return;
 }
+const shown = q ? cands.filter(cd => (cd.v.businessName || '').toLowerCase().includes(q) ||
+  String(cd.v.lastName || '').toLowerCase().includes(q)) : cands;
+if (!shown.length) {
+empty.style.display = 'block';
+empty.textContent = 'Nobody expected today matches that.';
+renderNoShowRepeat();
+return;
+}
 empty.style.display = 'none';
-cands.forEach(cd => {
+shown.forEach(cd => {
 const on = marked.includes(cd.v.vendorId);
 const row = document.createElement('div');
 row.className = 'req-vendor-row';
