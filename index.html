@@ -2733,6 +2733,17 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .ans-switch:disabled { opacity: 0.6; }
 @media (prefers-reduced-motion: reduce) { .ans-switch, .ans-switch .ans-thumb { transition: none; } }
 .md-answers-link.md-waiting { border-color: var(--tomato); }
+.mgr-inline-tool { margin-top: 18px; }
+.mgr-inline-head { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 8px; padding: 4px; background: none; border: 0;
+  font-family: 'Manrope', -apple-system, sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); text-align: left; cursor: pointer; }
+.mgr-inline-open { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--berry); }
+/* Beats body.role-manager .manager-only, which forces display with
+   !important and would otherwise keep these on Home (18-69). */
+body .mgr-inline-tool .tool-aside,
+body.role-manager .mgr-inline-tool .tool-aside.manager-only { display: none !important; }
+.mgr-inline-head .ico { width: 20px; height: 20px; }
+.mgr-inline-tool > .screen > .screen-head { display: none; }
+.mgr-inline-tool > .screen { padding-top: 0; }
 /* ===== MESSAGES (18-50) ===== */
 .msg-as { margin-bottom: 12px; }
 .msg-as label { margin-top: 0; }
@@ -3771,7 +3782,7 @@ style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (
 <p>Keep scanning to sell more at the same amount. A certificate is loaded with whatever the customer asks for.</p>
 </details>
 </div>
-<details class="card manager-only gc-occasional">
+<details class="card manager-only gc-occasional tool-aside">
 <summary><b>Load a roll of certificate codes</b></summary>
 <p class="empty-note">A code the app has never seen cannot be sold or redeemed. Paste the printer&rsquo;s list of codes if they sent one; otherwise scan the stickers in &mdash; nothing is printed on them to read off.</p>
 <label for="gcRollLabel">Name this batch</label>
@@ -3787,7 +3798,7 @@ style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (
 <button type="button" class="primary-btn" onclick="gcLoadRoll()"><svg class="ico"><use href="#i-checkmark"></use></svg> Load the roll</button>
 <div class="status-msg" id="gcRollMsg"></div>
 </details>
-<details class="card manager-only gc-occasional">
+<details class="card manager-only gc-occasional tool-aside">
 <summary><b>The book</b></summary>
 <p class="empty-note">What is out, what came back, what was voided. Certificate sales sit in the office&rsquo;s books, not here.</p>
 <div id="gcBook"></div>
@@ -4963,7 +4974,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <label for="snapDate">Market day</label>
 <select id="snapDate" onchange="renderSnapDay()"></select>
 </div>
-<div class="card desk-form" id="snapAcceptCard">
+<div class="card desk-form tool-aside" id="snapAcceptCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span><span id="snapAcceptTitle"></span></h2>
 <p class="empty-note" style="margin-top:0;" id="snapAcceptNote"></p>
 <div class="tone-switch">
@@ -4972,12 +4983,11 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 <div class="status-msg" id="snapAcceptMsg"></div>
 </div>
-<div class="card" id="snapBalanceCard" style="display:none;"></div>
+<div class="card tool-aside" id="snapBalanceCard" style="display:none;"></div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Tokens Handed Out<button type="button" class="help-dot" onclick="showHelp(78)" aria-label="How does this work?">?</button></h2>
-<p class="empty-note" style="margin-top:0;">After each swipe on the EBT terminal, record how many tokens went
-out. The app never touches the card &mdash; the terminal does that, and this is only the paper trail on
-this side of it.</p>
+<details class="gc-aside"><summary>What this is</summary>
+<p>After each swipe on the EBT terminal, record how many tokens went out. The app never touches the card &mdash; the terminal does that, and this is only the paper trail on this side of it.</p></details>
 <label for="snapOutCount">How many tokens</label>
 <input type="number" id="snapOutCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 20">
 <label for="snapOutNote" style="margin-top:10px;">Note (optional)</label>
@@ -5000,10 +5010,10 @@ this side of it.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Turned In On This Day</h2>
 <div id="snapDayList" class="drawer-list"></div>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
+<details class="card gc-occasional tool-aside">
+<summary><b>This season</b></summary>
 <div id="snapSeason"></div>
-</div>
+</details>
 </section>
 <section id="screen-mystatements" class="screen">
 <div class="screen-head" id="head-mystatements"></div>
@@ -5046,7 +5056,8 @@ this side of it.</p>
 </div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Checks Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_FC_MGR)" aria-label="What are the rules here?">?</button></h2>
-<p class="empty-note" style="margin-top:0;">New York State issues FreshConnect Checks, not the market, so there is nothing to hand out and nothing to reconcile against. This is the one half that exists: a vendor brings checks back and the market pays them out.</p>
+<details class="gc-aside"><summary>What this is</summary>
+<p>New York State issues FreshConnect Checks, not the market, so there is nothing to hand out and nothing to reconcile against. This is the one half that exists: a vendor brings checks back and the market pays them out.</p></details>
 <label for="fcVendor">Vendor</label>
 <select id="fcVendor" onchange="renderAcceptCard('fc')"></select>
 <label for="fcAmount">Total face value of the checks</label>
@@ -5060,7 +5071,7 @@ this side of it.</p>
 <button type="button" class="primary-btn" onclick="recordFc()">Record and tell the vendor</button>
 <p class="empty-note" id="fcValueNote" style="margin-top:8px;"></p>
 </div>
-<div class="card desk-form" id="fcAcceptCard">
+<div class="card desk-form tool-aside" id="fcAcceptCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span><span id="fcAcceptTitle"></span></h2>
 <p class="empty-note" style="margin-top:0;" id="fcAcceptNote"></p>
 <div class="tone-switch">
@@ -5069,14 +5080,10 @@ this side of it.</p>
 </div>
 <div class="status-msg" id="fcAcceptMsg"></div>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Turned In On This Day</h2>
-<div id="fcDayList" class="drawer-list"></div>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-star"></use></svg></span>This Season</h2>
+<details class="card gc-occasional tool-aside">
+<summary><b>This season</b></summary>
 <div id="fcSeason"></div>
-</div>
+</details>
 </section>
 <section id="screen-yearend" class="screen">
 <div class="screen-head" id="head-yearend"></div>
@@ -6287,10 +6294,11 @@ comes from.</p>
 <label for="nsDate">Market day</label>
 <select id="nsDate" onchange="renderNoShow()"></select>
 <p class="empty-note" id="nsNote"></p>
+<button type="button" class="ghost-btn" id="nsReveal" onclick="noShowToggleList()"></button>
 <div id="nsList"></div>
 <div class="empty-note" id="nsEmpty" style="display:none;"></div>
 </div>
-<div class="card">
+<div class="card tool-aside">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Repeated No-Shows</h2>
 <p class="empty-note" style="margin-top:0;">The Guide sends repeated no-shows to the Board. It does not fix a number; three is used here as a prompt, not a rule.</p>
 <div id="nsRepeat"></div>
@@ -14963,6 +14971,35 @@ if (document.body.classList.contains('manager-tabs')) return MANAGER_TABS;
 if (document.body.classList.contains('vendor-tabs')) return VENDOR_TABS;
 return null;
 }
+// In the order a market day happens.
+const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'firelane', 'noshow'];
+function mgrInlineTool(grid, tile) {
+const sec = document.getElementById('screen-' + tile.s);
+if (!sec) return;
+const wrap = document.createElement('section');
+wrap.className = 'mgr-inline-tool';
+// The name opens the whole tool, where what is set aside here lives: season
+// totals, who takes SNAP, repeated no-shows, the certificate book.
+const head = document.createElement('button');
+head.type = 'button';
+head.className = 'mgr-inline-head';
+head.innerHTML = '<svg class="ico"><use href="#' + (tile.i || 'i-basket') + '"></use></svg>' +
+  '<span>' + (typeof tile.t === 'function' ? tile.t() : tile.t) + '</span><span class="mgr-inline-open">Open</span>';
+head.onclick = () => showScreen(tile.s);
+wrap.appendChild(head);
+// Move the screen here, the same way a drawer borrows one, and put it back
+// when the desk changes (returnFoldedScreens, via closeAllFolds).
+const ph = document.createComment('home-' + tile.s);
+sec.parentElement.replaceChild(ph, sec);
+foldedPlaceholders[tile.s] = ph;
+wrap.appendChild(sec);
+sec.classList.add('inline-screen', 'active');
+grid.appendChild(wrap);
+runScreenInit(tile.s);
+// Standing decisions belong where the rule bites, not on a working surface.
+const banner = document.getElementById('rulings-' + tile.s);
+if (banner) banner.remove();
+}
 function buildManagerTabs() {
 const list = document.getElementById('vendorTabList');
 if (!list || list.dataset.desk === 'manager') return;
@@ -23448,7 +23485,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-68';
+const BUILD_ID = '18-69';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -28188,6 +28225,10 @@ if (!list.length) delete cache.ops.noshow[date];
 renderNoShow();
 await saveOps();
 }
+// Everyone who was expected is a long list, and most market days nobody is
+// missing: it opens when there is a reason to look (18-69).
+let noShowListOpen = false;
+function noShowToggleList() { noShowListOpen = !noShowListOpen; renderNoShow(); }
 function renderNoShow() {
 const sel = document.getElementById('nsDate');
 const date = sel.value;
@@ -28203,6 +28244,17 @@ return;
 }
 const marked = cache.ops.noshow[date] || [];
 const cands = noShowCandidates(date);
+const reveal = document.getElementById('nsReveal');
+if (reveal) {
+reveal.style.display = 'block';
+reveal.textContent = noShowListOpen ? 'Hide the list'
+  : 'Mark somebody absent with no notice (' + cands.length + ' expected)';
+}
+if (!noShowListOpen) {
+empty.style.display = 'none';
+renderNoShowRepeat();
+return;
+}
 document.getElementById('nsNote').textContent =
 cands.length + ' reserved holders were expected and reported no absence. ' +
 'Marking one absent removes that market from their attendance, so it stops accruing work hours too.';
@@ -33761,6 +33813,7 @@ return homes.includes(target) || homes.includes(name);
 function renderRulingsBanner(name) {
 const section = document.getElementById('screen-' + name);
 if (!section) return;
+if (section.closest('.mgr-inline-tool')) { const old = document.getElementById('rulings-' + name); if (old) old.remove(); return; }
 let box = document.getElementById('rulings-' + name);
 const rulings = rulingsForScreen(name, name === 'optool' ? otOpenKey : null);
 if (!rulings.length) { if (box) box.remove(); return; }
@@ -46831,9 +46884,29 @@ if (tab.title) {
   h2.textContent = tab.title;
   grid.appendChild(h2);
 }
+// HOME IS THE TOOLS THEMSELVES (18-69). The market-day tools used to be a
+// row of drawers to tap through. On a market morning the manager wants the
+// tool, not a menu: each one is laid out on Home under its own name, in the
+// order the day happens, so scrolling down finds it. No standing-decision
+// banners here and no screen headings -- this is a working surface.
+if (tab.k === 'home' && MGR_HOME_INLINE.length) {
+  const md = ordered.find(x => x.key === 'marketday');
+  if (md) {
+    // MGR_HOME_INLINE's order, not the folder's: the day's order.
+    MGR_HOME_INLINE.forEach(key => {
+      const t = (md.tiles || []).find(x => x.s === key);
+      if (t) mgrInlineTool(grid, t);
+    });
+  }
+}
 tab.folders.forEach(key => {
   const f = ordered.find(x => x.key === key);
   if (!f) return;
+  // the market-day tools are already laid out above
+  const tiles = (tab.k === 'home' && key === 'marketday')
+    ? (f.tiles || []).filter(t => !t.s || !MGR_HOME_INLINE.includes(t.s))
+    : (f.tiles || []);
+  if (tab.k === 'home' && key === 'marketday' && !tiles.length) return;
   if (!tab.bare) {
     const head = document.createElement('div');
     head.className = 'mgr-drawer-head';
@@ -46843,7 +46916,7 @@ tab.folders.forEach(key => {
     grid.appendChild(head);
   }
   if (f.head) grid.appendChild(f.head());
-  (f.tiles || []).forEach(t => grid.appendChild(buildToolFold(t)));
+  tiles.forEach(t => grid.appendChild(buildToolFold(t)));
 });
 // A tab whose whole content is one tool opens it, rather than leaving a
 // single drawer to tap (the same as the vendor desk's Upload tab).
