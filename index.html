@@ -816,6 +816,12 @@ background: #F1E1D5; border: 1px solid var(--tomato); color: #6E2E12;
 }
 .req-tally { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .req-card-open { border: 2px solid var(--leaf); }
+.df-just { margin-top: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--paper-dim); background: rgba(255,255,255,0.6); }
+.df-just-head { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; margin-bottom: 4px; }
+.df-just-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; padding: 7px 0;
+  background: none; border: 0; border-top: 1px solid var(--paper-dim); font: inherit; font-size: 15px; color: var(--ink); text-align: left; }
+.df-just-row:first-of-type { border-top: 0; }
+.df-just-undo { flex: none; font-weight: 700; color: var(--tomato); }
 .df-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .df-controls label { margin-top: 0; }
 .df-name { display: flex; align-items: center; gap: 8px; }
@@ -6408,12 +6414,13 @@ comes from.</p>
 <div>
 <label for="dfOrder">In order of</label>
 <select id="dfOrder" onchange="renderDayFees()">
-<option value="booth">Booth number</option>
 <option value="name">Business name</option>
+<option value="booth">Booth number</option>
 </select>
 </div>
 </div>
 <p class="empty-note" id="dfSummary"></p>
+<div id="dfJust" class="df-just" style="display:none;"></div>
 <div id="dfList"></div>
 <button type="button" class="ghost-btn" id="dfMore" style="display:none;" onclick="dayFeeShowAll()"></button>
 <div class="empty-note" id="dfEmpty" style="display:none;">Nobody is expected at market that day.</div>
@@ -23264,7 +23271,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-58';
+const BUILD_ID = '18-59';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -28822,7 +28829,8 @@ if (past.length) sel.value = past[0].date;
 document.getElementById('dfSearch').value = '';
 document.getElementById('dfFilter').value = 'due';
 const order = document.getElementById('dfOrder');
-if (order) order.value = 'booth';
+if (order) order.value = 'name';
+dayFeeJustMarked = [];
 dayFeeShowingAll = false;
 renderDayFees();
 }
@@ -28882,16 +28890,24 @@ const list = cache.ops.dayfees[date];
 const i = list.indexOf(vendorId);
 if (i >= 0) list.splice(i, 1); else list.push(vendorId);
 if (!list.length) delete cache.ops.dayfees[date];
+// Keep the last few in reach: at a desk, the wrong name gets tapped.
+dayFeeJustMarked = dayFeeJustMarked.filter(x => x.vendorId !== vendorId);
+if (i < 0) dayFeeJustMarked.unshift({ vendorId: vendorId, date: date });
+dayFeeJustMarked = dayFeeJustMarked.filter(x => x.date === date).slice(0, 4);
 renderDayFees();
 await saveOps();
 }
-// The list is 70-odd people on a Saturday, which is no use held in one hand
-// at the top of the market (18-58). So: the search filters this list rather
-// than adding a second one; rows carry the booth number and can be read in
-// booth order, which is the order somebody walking the market meets them;
-// and only the first stretch is drawn until asked for the rest.
+// Fees are collected AT THE OFFICE: the manager stays put and vendors come
+// to the desk, one at a time, in no order at all (18-59). So the search is
+// the way this screen is used -- type the name of whoever is standing there,
+// mark them, next. The list behind it is alphabetical, because that is how
+// you find a name you have been told; booth order is there for a vendor who
+// says "booth 12" rather than a business name. Only the first stretch is
+// drawn until asked for the rest, and the last few marked stay in reach in
+// case a tap at the desk was the wrong one.
 const DAYFEE_FIRST = 15;
 let dayFeeShowingAll = false;
+let dayFeeJustMarked = [];
 function dayFeeShowAll() { dayFeeShowingAll = true; renderDayFees(); }
 function dayFeeBoothNum(why) {
 const m = /booth\s+(\d+)/i.exec(String(why || ''));
@@ -28918,7 +28934,7 @@ document.getElementById('dfSummary').textContent =
 (collected * fee) + ' collected, $' + ((expected.length - collected) * fee) + ' outstanding. ' +
 'Fees are due during set-up at Steamboat Landing.';
 const filter = document.getElementById('dfFilter').value;
-const order = (document.getElementById('dfOrder') || {}).value || 'booth';
+const order = (document.getElementById('dfOrder') || {}).value || 'name';
 const q = String((document.getElementById('dfSearch') || {}).value || '').trim().toLowerCase();
 let shown = expected;
 // A search is a search for a person: it ignores the Show filter, so somebody
@@ -28939,6 +28955,20 @@ shown = shown.slice().sort((a, b) => {
   if (an === null) return 1;
   if (bn === null) return -1;
   return an - bn || a.name.localeCompare(b.name);
+});
+}
+const just = document.getElementById('dfJust');
+if (just) {
+const mine = dayFeeJustMarked.filter(x => x.date === date && paid.includes(x.vendorId));
+just.style.display = mine.length ? 'block' : 'none';
+just.innerHTML = mine.length ? '<div class="df-just-head">Just marked paid</div>' : '';
+mine.forEach(x => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'df-just-row';
+  b.innerHTML = '<span>' + esc(vendorNameFor(x.vendorId)) + '</span><span class="df-just-undo">Undo</span>';
+  b.onclick = () => toggleDayFee(date, x.vendorId);
+  just.appendChild(b);
 });
 }
 const more = document.getElementById('dfMore');
