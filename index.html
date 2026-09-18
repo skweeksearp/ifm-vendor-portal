@@ -4120,14 +4120,6 @@ announces any change.</p>
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="st-stallcheck">
-<button type="button" class="fold-bar" onclick="otOpenKey='stallcheck'; toggleToolFold(this, 'optool')">
-<span class="fold-title">End-of-Day Booth Check</span>
-<span class="fold-sub"><span class="soon-tag">Not built</span> &middot; Booths left uncleared at close</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
 </div>
 </section>
 <section id="screen-aboutedit" class="screen">
@@ -6355,10 +6347,19 @@ comes from.</p>
 <label for="flKind">What happened</label>
 <select id="flKind" data-no-find="1" onchange="renderViolationRule()"></select>
 <p class="empty-note" style="margin-top:8px;" id="flRule"></p>
+<div class="tool-date"><label for="flDate">When</label>
+<input type="date" id="flDate" onchange="violationBoothPicked()"></div>
+<div id="flBoothRow" style="display:none;">
+<label for="flBooth">Booth</label>
+<select id="flBooth" data-no-find="1" onchange="violationBoothPicked()"></select>
+<p class="empty-note" id="flBoothNote" style="margin:6px 2px 0;"></p>
+</div>
+<div id="flWhatRow" style="display:none;">
+<label for="flWhat">What was left</label>
+<select id="flWhat" data-no-find="1"></select>
+</div>
 <label for="flVendor" style="margin-top:10px;">Vendor</label>
 <select id="flVendor"></select>
-<div class="tool-date"><label for="flDate">When</label>
-<input type="date" id="flDate"></div>
 <div id="flAmountRow" style="display:none;">
 <label for="flAmount">Fine</label>
 <div class="mr-unit-row"><input type="number" id="flAmount" min="0" step="5" inputmode="decimal" placeholder="0"><span class="mr-unit">dollars</span></div>
@@ -12417,7 +12418,7 @@ const APP_GLOSSARY = [
 { t: 'Stamp', d: 'The small inked picture beside a drawer or tile name \u2014 a phone, a snowflake, a shovel. Decoration with a hint of meaning, like a rubber stamp on a paper form. Not a badge (those ride booth chips), not a sprite (those stand on maps), and not a cone. Decided: none. Every desk runs unstamped; the small pictures live on only inside tool screens\u2019 card headers.' },
 { t: 'Section label', d: 'The gray lettering in the walking promenades \u2014 South End, Dock Wing, Circle End \u2014 aligned to the pavilion\u2019s geometry, so it runs along its aisle whichever way the map is turned.' },
 { t: 'Panel (SP)', d: 'An electrical sub-panel marker on the map \u2014 SP1 through SP10 \u2014 showing which panel feeds the outlets nearby.' },
-{ t: 'Op-tool', d: 'A tool built from the shared logging framework: pick a subject, record dated entries, read a summary. End-of-Day Booth Check is one.' },
+{ t: 'Op-tool', d: 'A tool built from the shared logging framework: pick a subject, record dated entries, read a summary. The B&amp;G Walkthrough is one.' },
 { t: 'Crumb', d: 'The back link at the top of a tool naming the desk it came from.' },
 { t: 'Fit map', d: 'The kiosk button that steps the map back out until the whole site is in frame.' },
 { t: 'Records', d: 'The desk holding the rule as written: On the Books, Flagged for Attention, Plain Words.' },
@@ -14766,9 +14767,12 @@ body: '<p>Record which vendors paid the daily selling fee, and what is outstandi
 noshow: { built: true, live: true, t: 'No-Show Log', when: 'Every market day',
 body: '<p>Mark who did not appear and never notified the office, which is a different thing from reporting an absence late.</p>' +
 '<p>The Guide sends repeated no-shows to the Board for review, but does not fix a number. Something has to count them before anyone can say a vendor has reached &ldquo;repeated&rdquo;.</p>' },
-stallcheck: { built: true, live: true, t: 'End-of-Day Booth Check', when: 'Every market day',
-body: '<p>Walk the pavilion at close and log booths left with chains up, tables out, signage standing or waste behind.</p>' +
-'<p>The Booth Improvement Guidelines set a $10 fine for non-permanent items left at the end of a market day, doubling at each occurrence. Neither the log nor the doubling exists yet.</p>' },
+stallcheck: { built: true, live: true, t: 'End-of-Day Booth Check \u2014 now inside Record a Violation', when: 'Every market day',
+body: '<p>Walk the pavilion at close and log booths left with chains up, tables out, signage standing or waste behind. ' +
+'The Booth Improvement Guidelines set a $10 fine for non-permanent items left at the end of a market day, doubling at each occurrence.</p>' +
+'<p><b>This is no longer a tool of its own.</b> It is the &ldquo;Booth or items left at close&rdquo; kind in <b>Record a Violation</b>, ' +
+'which still asks for the booth number and what was left, still resolves the booth to whoever was in it that day, and still doubles the fine each time. ' +
+'Records made by the old tool are kept and still charge; their occurrences count towards the doubling, so nobody starts again at $10.</p>' },
 fines: { built: true, t: 'Fines &amp; Penalties', when: 'Weekly',
 body: '<p>Turn what is already recorded into what is actually owed, and carry the escalation.</p>' +
 '<p>The late-absence fine is $50 for the first occurrence in a year and multiplies with each one after. Fire-lane parking and failure to notify of lateness escalate the same way, and a reserved-booth attendance shortfall runs up to $100 per market at Board discretion.</p>' +
@@ -15016,7 +15020,7 @@ if (document.body.classList.contains('vendor-tabs')) return VENDOR_TABS;
 return null;
 }
 // In the order a market day happens.
-const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'noshow', 'ot:stallcheck', 'firelane'];
+const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'noshow', 'firelane'];
 function mgrInlineTool(grid, tile) {
 const screenName = tile.s || 'optool';
 if (tile.ot) otOpenKey = tile.ot;
@@ -23570,7 +23574,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-81';
+const BUILD_ID = '18-82';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -33893,7 +33897,7 @@ const FLAG_SCREENS = {
 // has anything to do with taking money at the office (18-64).
 'Fines': ['fines'],
 'Fire lane': ['firelane', 'fines'],
-'Booth condition': ['optool:stallcheck', 'fines'],
+'Booth condition': ['firelane', 'fines'],
 'Buildings & Grounds': ['optool:bgwalk', 'optool:compliance', 'facilitiestracker'],
 'Attendance': ['attshort', 'noshow'],
 'Insurance': ['requirements', 'standing'],
@@ -35107,7 +35111,6 @@ tiles: [
 { s: 'fclog', i: 'i-gem', t: 'FreshConnect Checks In', d: 'Checks turned in by vendors \u2014 New York State issues them, so the market only takes them back' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
 { s: 'firelane', i: 'i-flame', t: 'Record a Violation', d: 'Fire lane, items left at close, late notice \u2014 anything that carries a fine' },
-{ ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
 ] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
 sub: 'Who they are and how they are doing \u2014 records, points, absences, fines and discipline',
@@ -45857,7 +45860,8 @@ const VIOLATION_KINDS = [
   fine: n => n === 1 ? 0 : n === 2 ? (ruleNum('fineFire2') || 50) : null,
   over: 'The Guide says it increases after the second but not by how much, so nothing has been charged. ' +
     'Set an amount in Fines &amp; Penalties. The gap is in front of the Board (BF64).' },
-{ k: 'stall', t: 'Booth or items left at close', reason: 'Booth left uncleared',
+{ k: 'stall', t: 'Booth or items left at close', reason: 'Booth left uncleared', booth: true,
+  what: ['Chains up', 'Tables or sawhorses', 'Signage', 'Waste or debris', 'Equipment'],
   rule: () => 'First offense: $' + (ruleNum('fineStall') || 10) + ', charged automatically. ' +
     'Multiplied by ' + (ruleNum('fineStallMult') || 2) + ' each time it happens again. Resets each season.',
   fine: n => Math.round((ruleNum('fineStall') || 10) * Math.pow(ruleNum('fineStallMult') || 2, n - 1) * 100) / 100 },
@@ -45871,6 +45875,26 @@ const VIOLATION_KINDS = [
   fine: null },
 ];
 function violationKind(k) { return VIOLATION_KINDS.find(x => x.k === k) || VIOLATION_KINDS[0]; }
+function violationBoothPicked() {
+const bSel = document.getElementById('flBooth');
+const note = document.getElementById('flBoothNote');
+const vSel = document.getElementById('flVendor');
+if (!bSel || !note || !vSel) return;
+const num = bSel.value;
+if (!num) { note.textContent = 'Pick the booth and the vendor fills in by itself.'; return; }
+const date = (document.getElementById('flDate') || {}).value || todayISO();
+const booth = (cache.booths || []).find(x => String(x.num) === String(num));
+let vid = '';
+try { vid = booth ? (boothOccupant(booth, date) || '') : ''; } catch (e) { vid = ''; }
+if (vid) {
+  vSel.value = vid;
+  note.innerHTML = 'Booth ' + esc(num) + ' on ' + esc(formatDisplayDate(date)) + ': <b>' +
+    esc(vendorNameFor(vid)) + '</b>.';
+} else {
+  note.innerHTML = 'Nobody is recorded in booth ' + esc(num) + ' on ' + esc(formatDisplayDate(date)) +
+    ', so this cannot be charged to anybody by itself \u2014 pick the vendor below if you know who it was.';
+}
+}
 // Records written before 18-81 carry no kind and are all fire lane.
 function violationKindOf(entry) { return violationKind((entry && entry.kind) || 'fire'); }
 function violationPicked() {
@@ -45884,6 +45908,23 @@ if (rule) rule.innerHTML = kind.rule();
 // Only the kinds the Guide gives no figure for ask the office for one.
 const row = document.getElementById('flAmountRow');
 if (row) row.style.display = kind.fine === null ? 'block' : 'none';
+// The End-of-Day Booth Check used to be its own tool, and it was entered by
+// walking the pavilion and writing down booth numbers -- not vendor names.
+// That is the right way to record it, so the booth picker comes with the
+// kind, and it fills the vendor in rather than replacing them: a fine has to
+// land on somebody, and a booth with no occupant on the day would otherwise
+// land it on nobody at all.
+const bRow = document.getElementById('flBoothRow');
+if (bRow) bRow.style.display = kind.booth ? 'block' : 'none';
+const wRow = document.getElementById('flWhatRow');
+const wSel = document.getElementById('flWhat');
+if (wRow) wRow.style.display = kind.what ? 'block' : 'none';
+if (wSel && kind.what) {
+  const keep = wSel.value;
+  wSel.innerHTML = kind.what.map(o => '<option>' + esc(o) + '</option>').join('');
+  if (kind.what.includes(keep)) wSel.value = keep;
+}
+if (kind.booth) violationBoothPicked();
 const note = document.getElementById('flNote');
 if (note) note.placeholder = kind.k === 'fire'
   ? 'e.g. van left in the lane through the 9 o\u2019clock rush'
@@ -45917,11 +45958,20 @@ const all = await fireLaneAll();
 const season = fireLaneSeasonOf(date);
 // Each kind escalates on its own count, so a fire lane offense does not make
 // somebody's next left-behind pallet a second offense.
-const before = all.filter(x => x.vendorId === vendorId && fireLaneSeasonOf(x.date) === season &&
+let before = all.filter(x => x.vendorId === vendorId && fireLaneSeasonOf(x.date) === season &&
   violationKindOf(x).k === kind.k).length;
+// Items left at close was recorded by the End-of-Day Booth Check before this
+// tool absorbed it, and those records still charge. They have to count here
+// too, or a vendor with two of them starts again at the first-offense $10.
+if (kind.k === 'stall') {
+  before += stallCheckFines().filter(f => f.vendorId === vendorId &&
+    fireLaneSeasonOf(f.date) === season).length;
+}
 const offense = before + 1;
+const boothNum = kind.booth ? ((document.getElementById('flBooth') || {}).value || '') : '';
+const what = kind.what ? ((document.getElementById('flWhat') || {}).value || '') : '';
 const entry = { vendorId: vendorId, date: date, note: note, offense: offense, kind: kind.k,
-  at: Date.now(), by: currentRole };
+  booth: boothNum, what: what, at: Date.now(), by: currentRole };
 // A kind with no rule of its own takes whatever the office typed in.
 let charged = kind.fine === null
   ? Math.max(0, Math.round(Number((document.getElementById('flAmount') || {}).value || 0) * 100) / 100)
@@ -45929,8 +45979,12 @@ let charged = kind.fine === null
 const unset = charged === null;      // a rule that runs out past a certain offense
 if (unset) charged = 0;
 if (charged > 0) {
+  const reason = kind.k === 'stall'
+    ? (boothNum ? 'Booth ' + boothNum + ' left at close' : 'Booth left uncleared') +
+      (what ? ' \u2014 ' + what : '') + ' (occurrence ' + offense + ')'
+    : kind.reason + ' \u2014 offense ' + offense;
   cache.ops.fines.push({ id: 'F' + Date.now(), vendorId: vendorId, date: date,
-    reason: kind.reason + ' \u2014 offense ' + offense, note: note, amount: charged });
+    reason: reason, note: note, amount: charged });
   await saveOps();
 }
 entry.fine = charged;
@@ -45959,6 +46013,19 @@ if (kindSel && !kindSel.options.length) {
     kindSel.appendChild(o);
   });
 }
+const bSel = document.getElementById('flBooth');
+if (bSel && !bSel.options.length) {
+  bSel.innerHTML = '<option value="">Pick a booth\u2026</option>';
+  (cache.booths || []).slice()
+    .sort((a, b) => (Number(a.num) || 0) - (Number(b.num) || 0) || String(a.num).localeCompare(String(b.num)))
+    .forEach(bo => {
+      const o = document.createElement('option');
+      o.value = bo.num; o.textContent = 'Booth ' + bo.num + (bo.where ? ' \u00b7 ' + bo.where : '');
+      bSel.appendChild(o);
+    });
+}
+const d0 = document.getElementById('flDate');
+if (d0 && !d0.value) d0.value = todayISO();
 renderViolationRule();
 const d = document.getElementById('flDate');
 if (d && !d.value) d.value = todayISO();
