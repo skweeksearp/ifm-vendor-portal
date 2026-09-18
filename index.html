@@ -830,8 +830,8 @@ details:not([open]) > *:not(summary) { display: none !important; }
 /* Looking one up is green, and it is the only thing in this card (18-71).
    White on #5E6B24 is 5.8:1. */
 .gc-look > h2 { color: #4B5620; font-size: 17px; }
-html body .gc-look .primary-btn.gcv-scan-btn { background: #5E6B24; box-shadow: 0 3px 10px rgba(94,107,36,0.3); }
-html body .gc-look .primary-btn.gcv-scan-btn:active { background: #4B5620; opacity: 1; }
+html body .gc-look .primary-btn.gcv-scan-btn { background: #2F5D8A; box-shadow: 0 3px 10px rgba(47,93,138,0.3); }
+html body .gc-look .primary-btn.gcv-scan-btn:active { background: #244A6F; opacity: 1; }
 .gc-look .gcv-scan-btn { font-size: 16px; padding: 13px; }
 .gc-aside { margin-top: 12px; font-size: 14px; }
 .gc-aside > summary { cursor: pointer; font-weight: 700; font-size: 14px; color: var(--berry); padding: 6px 0; }
@@ -2803,6 +2803,19 @@ html body .primary-btn.gcv-scan-btn:active { background: #244A6F; opacity: 1; }
 /* Send is blue (18-52): white on #2F5D8A is 6.9:1. */
 .primary-btn.msg-send { background: #2F5D8A; box-shadow: 0 3px 10px rgba(47,93,138,0.3); }
 .primary-btn.msg-send:active { background: #244A6F; opacity: 1; }
+/* Manager's tools, inline on the home screen or opened as their own screen. */
+html body .mgr-inline-tool .primary-btn,
+html body #screen-dayfees .primary-btn, html body #screen-giftcerts .primary-btn,
+html body #screen-snaplog .primary-btn, html body #screen-fclog .primary-btn,
+html body #screen-noshow .primary-btn, html body #screen-optool .primary-btn,
+html body #screen-firelane .primary-btn {
+  background: #2F5D8A; box-shadow: 0 3px 10px rgba(47,93,138,0.3);
+}
+html body .mgr-inline-tool .primary-btn:active,
+html body #screen-dayfees .primary-btn:active, html body #screen-giftcerts .primary-btn:active,
+html body #screen-snaplog .primary-btn:active, html body #screen-fclog .primary-btn:active,
+html body #screen-noshow .primary-btn:active, html body #screen-optool .primary-btn:active,
+html body #screen-firelane .primary-btn:active { background: #244A6F; opacity: 1; }
 .msg-pick { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 55vh; overflow-y: auto; }
 .msg-person { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 11px 12px;
   border-radius: 10px; border: 1px solid var(--paper-dim); background: rgba(255,255,255,0.75); font: inherit; color: var(--ink); cursor: pointer; }
@@ -2820,6 +2833,15 @@ body.manager-tabs .vtab-bar, body.vendor-tabs .vtab-bar {
   box-shadow: 0 -4px 16px rgba(20,12,4,0.10);
 }
 body.vendor-tabs.kiosk-mode .vtab-bar, body.manager-tabs.kiosk-mode .vtab-bar { display: none; }
+/* iPhone keyboard (18-80). A position:fixed bar is laid out against the VISUAL
+   viewport on iOS, so when the keyboard opens the bar is shoved up to sit on
+   top of it, and then drifts around as the page is scrolled. There is nowhere
+   good to pin it while the keyboard is up -- the real bottom of the screen is
+   underneath the keyboard -- so it is tucked away while typing and comes back,
+   pinned to the bottom as before, the moment the keyboard closes. The page gets
+   its reserved space back at the same time so nothing jumps. */
+body.vendor-tabs.keyboard-open .vtab-bar, body.manager-tabs.keyboard-open .vtab-bar { display: none !important; }
+body.vendor-tabs.keyboard-open main, body.manager-tabs.keyboard-open main { padding-bottom: 24px; }
 /* six tabs need a little less room each than the vendor desk's five */
 body.manager-tabs .vtab-inner { grid-template-columns: repeat(6, 1fr); }
 body.manager-tabs .vtab { padding-left: 0; padding-right: 0; }
@@ -4036,8 +4058,8 @@ announces any change.</p>
 <div id="staffFolders">
 <div class="dash-fold" data-fold="st-firelane">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'firelane')">
-<span class="fold-title">Fire Lane Warnings</span>
-<span class="fold-sub">Record a blocked lane &mdash; the first is a warning, the second is charged</span>
+<span class="fold-title">Record a Violation</span>
+<span class="fold-sub">Anything that carries a fine &mdash; the rule for each one is applied for you</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -5025,7 +5047,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <label for="snapCount">How many tokens</label>
 <input type="number" id="snapCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 24">
 <div class="status-msg" id="snapMsg"></div>
-<button type="button" class="primary-btn" onclick="recordSnap()">Record and tell the vendor</button>
+<button type="button" class="primary-btn" onclick="recordSnap()">Record and credit the vendor&rsquo;s account</button>
 <p class="empty-note" id="snapValueNote" style="margin-top:8px;"></p>
 </div>
 <details class="card gc-occasional tool-aside">
@@ -5086,7 +5108,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <label for="fcCount" style="margin-top:10px;">How many checks (optional)</label>
 <input type="number" id="fcCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 6">
 <div class="status-msg" id="fcMsg"></div>
-<button type="button" class="primary-btn" onclick="recordFc()">Record and tell the vendor</button>
+<button type="button" class="primary-btn" onclick="recordFc()">Record and credit the vendor&rsquo;s account</button>
 <p class="empty-note" id="fcValueNote" style="margin-top:8px;"></p>
 </div>
 <div class="card desk-form tool-aside" id="fcAcceptCard">
@@ -6329,13 +6351,19 @@ comes from.</p>
 <section id="screen-firelane" class="screen">
 <div class="screen-head" id="head-firelane"></div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-flame"></use></svg></span>Record a Fire Lane Offense</h2>
-<p class="empty-note" style="margin-top:0;" id="flRule"></p>
-<label for="flVendor">Vendor</label>
+<h2><span class="emoji"><svg class="ico"><use href="#i-flame"></use></svg></span>Record a Violation</h2>
+<label for="flKind">What happened</label>
+<select id="flKind" data-no-find="1" onchange="renderViolationRule()"></select>
+<p class="empty-note" style="margin-top:8px;" id="flRule"></p>
+<label for="flVendor" style="margin-top:10px;">Vendor</label>
 <select id="flVendor"></select>
 <div class="tool-date"><label for="flDate">When</label>
 <input type="date" id="flDate"></div>
-<label for="flNote">What happened</label>
+<div id="flAmountRow" style="display:none;">
+<label for="flAmount">Fine</label>
+<div class="mr-unit-row"><input type="number" id="flAmount" min="0" step="5" inputmode="decimal" placeholder="0"><span class="mr-unit">dollars</span></div>
+</div>
+<label for="flNote" style="margin-top:10px;">Details</label>
 <input type="text" id="flNote" placeholder="e.g. van left in the lane through the 9 o&rsquo;clock rush" autocomplete="off">
 <button type="button" class="primary-btn" onclick="recordFireLane()">Record it</button>
 <div class="status-msg" id="flMsg"></div>
@@ -11751,6 +11779,7 @@ const bootStarted = Date.now();
 // over the network and reading it. Measured, not assumed.
 try { ifmParseMs = Math.round(performance.now()); } catch (e) {}
 paintPretendBand();
+ifmKeyboardWatch();
 freeFloatingSheets();
 paintPickerBackHand();
 paintLandingLogo();
@@ -15132,6 +15161,42 @@ setVendorTab(k);
 window.scrollTo(0, 0);
 }
 // Called at the start of every drawer toggle on the vendor desk.
+// ---- On-screen keyboard watch (18-80) ---------------------------------
+// iOS does not tell a page that the keyboard opened. What it does do is shrink
+// the visual viewport, which VisualViewport reports; the layout viewport
+// (window.innerHeight) does not move. A gap between the two that is bigger than
+// any browser toolbar means a keyboard. The threshold is deliberately generous:
+// a mis-fire only hides a tab bar the vendor is not looking at anyway, whereas
+// a missed one puts the bar back to drifting over what they are typing.
+const KEYBOARD_GAP_PX = 150;
+function setKeyboardOpen(on) {
+document.body.classList.toggle('keyboard-open', !!on);
+}
+function ifmKeyboardWatch() {
+const vv = window.visualViewport;
+if (vv) {
+  const check = () => {
+    // On iOS the visual viewport is also OFFSET when the keyboard is up, and
+    // both parts count -- height alone misses a couple of cases.
+    const hidden = (window.innerHeight - vv.height - vv.offsetTop);
+    setKeyboardOpen(hidden > KEYBOARD_GAP_PX);
+  };
+  vv.addEventListener('resize', check);
+  vv.addEventListener('scroll', check);
+  window.addEventListener('orientationchange', () => setTimeout(check, 350));
+  check();
+  return;
+}
+// Anything without VisualViewport (older Android browsers, some in-app
+// webviews) falls back to watching what has focus, which is cruder but never
+// leaves the bar stranded.
+const typing = el => !!el && (el.matches('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit])') ||
+  el.matches('textarea, select') || el.isContentEditable);
+document.addEventListener('focusin', e => { if (typing(e.target)) setKeyboardOpen(true); });
+document.addEventListener('focusout', () => setTimeout(() => {
+  if (!typing(document.activeElement)) setKeyboardOpen(false);
+}, 120));
+}
 function vtabFollow(btn) {
 if (!document.body.classList.contains('vendor-tabs')) return;
 const fold = btn && btn.closest && btn.closest('.dash-fold');
@@ -19435,7 +19500,7 @@ idea:              { title: 'A Good Idea' },
 ptssignoff:        { title: 'Points Sign-Off' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Scan a Gift Certificate' },
-firelane:          { title: 'Fire Lane Warnings' },
+firelane:          { title: 'Record a Violation' },
 attshort:          { title: 'Attendance Shortfalls' },
 messages:          { title: 'Messages' },
 pavrentals:        { title: 'Pavilion Rentals' },
@@ -23505,7 +23570,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-79';
+const BUILD_ID = '18-81';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -28277,7 +28342,7 @@ const reveal2 = document.getElementById('nsReveal2');
 if (reveal) {
 reveal.style.display = q ? 'none' : 'block';
 reveal.textContent = open ? 'Hide the list'
-  : 'Mark somebody absent with no notice (' + cands.length + ' expected)';
+  : 'See list (' + cands.length + ' expected)';
 }
 if (reveal2) reveal2.style.display = (open && !q) ? 'block' : 'none';
 if (!open) {
@@ -29248,7 +29313,7 @@ const owing = expected.filter(e => !paid.includes(e.vendorId)).length;
 reveal.style.display = q ? 'none' : 'block';
 reveal.textContent = open
   ? 'Hide the list'
-  : owing ? 'Show who still has to pay (' + owing + ')' : 'Show everyone expected (' + expected.length + ')';
+  : owing ? 'Show list (' + owing + ')' : 'Show list (' + expected.length + ')';
 }
 const more = document.getElementById('dfMore');
 if (!open) {
@@ -35041,7 +35106,7 @@ tiles: [
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
 { s: 'fclog', i: 'i-gem', t: 'FreshConnect Checks In', d: 'Checks turned in by vendors \u2014 New York State issues them, so the market only takes them back' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
-{ s: 'firelane', i: 'i-flame', t: 'Fire Lane Warnings', d: 'A blocked lane, recorded \u2014 the first is a warning, the second is charged' },
+{ s: 'firelane', i: 'i-flame', t: 'Record a Violation', d: 'Fire lane, items left at close, late notice \u2014 anything that carries a fine' },
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
 ] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
@@ -45773,6 +45838,59 @@ function gcvStopScan() { stopQrScan(); }
 // One record per offense (ifm-fl-<time><random>), never a shared list: the
 // Manager and Staff may both be recording on a market morning.
 const FIRELANE_PREFIX = 'ifm-fl-';
+// VIOLATIONS (18-81). This tool began as a fire-lane log and is now the one
+// place the office reports any offense the Guide puts a fine on. Each kind
+// carries its own escalation, because the Guide gives them different ones --
+// the fire lane forgives the first and charges the second, items left at close
+// charge from the first and double each time, a late call-out charges the same
+// again each time. Putting them in a table rather than in branching code means
+// a kind the Board adds later is a line here, and the Market Rules figures stay
+// the single source of every amount.
+//
+// `fine(n)` takes the offense number this season (1 for the first) and returns
+// what to charge, or 0 for a warning. A null `fine` means the office enters
+// the amount, because the Guide does not fix one.
+const VIOLATION_KINDS = [
+{ k: 'fire', t: 'Fire lane blocked', reason: 'Fire lane',
+  rule: () => 'First offense: a warning. Second: $' + (ruleNum('fineFire2') || 50) +
+    ', charged automatically. Resets each season.',
+  fine: n => n === 1 ? 0 : n === 2 ? (ruleNum('fineFire2') || 50) : null,
+  over: 'The Guide says it increases after the second but not by how much, so nothing has been charged. ' +
+    'Set an amount in Fines &amp; Penalties. The gap is in front of the Board (BF64).' },
+{ k: 'stall', t: 'Booth or items left at close', reason: 'Booth left uncleared',
+  rule: () => 'First offense: $' + (ruleNum('fineStall') || 10) + ', charged automatically. ' +
+    'Multiplied by ' + (ruleNum('fineStallMult') || 2) + ' each time it happens again. Resets each season.',
+  fine: n => Math.round((ruleNum('fineStall') || 10) * Math.pow(ruleNum('fineStallMult') || 2, n - 1) * 100) / 100 },
+{ k: 'callout', t: 'Absence with late notice or none', reason: 'Late arrival',
+  rule: () => '$' + (ruleNum('fineCallOut') || 50) + ', charged automatically, and the same again ' +
+    'for each further offense. Resets each season.',
+  fine: n => Math.round((ruleNum('fineCallOut') || 50) * n * 100) / 100 },
+{ k: 'other', t: 'Something else', reason: 'Other',
+  rule: () => 'The Guide fixes no amount for this, so enter what the Board or the Manager has decided. ' +
+    'Leave it at zero to record a warning with nothing charged.',
+  fine: null },
+];
+function violationKind(k) { return VIOLATION_KINDS.find(x => x.k === k) || VIOLATION_KINDS[0]; }
+// Records written before 18-81 carry no kind and are all fire lane.
+function violationKindOf(entry) { return violationKind((entry && entry.kind) || 'fire'); }
+function violationPicked() {
+const sel = document.getElementById('flKind');
+return violationKind(sel ? sel.value : 'fire');
+}
+function renderViolationRule() {
+const kind = violationPicked();
+const rule = document.getElementById('flRule');
+if (rule) rule.innerHTML = kind.rule();
+// Only the kinds the Guide gives no figure for ask the office for one.
+const row = document.getElementById('flAmountRow');
+if (row) row.style.display = kind.fine === null ? 'block' : 'none';
+const note = document.getElementById('flNote');
+if (note) note.placeholder = kind.k === 'fire'
+  ? 'e.g. van left in the lane through the 9 o\u2019clock rush'
+  : kind.k === 'stall' ? 'e.g. pallet and two crates left behind the booth'
+  : kind.k === 'callout' ? 'e.g. called at 8:40 for an 8 o\u2019clock market'
+  : 'What happened';
+}
 async function fireLaneAll() {
 if (!window.storage || typeof window.storage.list !== 'function') return [];
 let keys = [];
@@ -45790,42 +45908,58 @@ return out.sort((a, b) => a.date.localeCompare(b.date) || (a.at || 0) - (b.at ||
 }
 function fireLaneSeasonOf(dateISO) { return Number(String(dateISO).slice(0, 4)); }
 async function recordFireLane() {
+const kind = violationPicked();
 const vendorId = (document.getElementById('flVendor') || {}).value || '';
 const date = document.getElementById('flDate').value || todayISO();
 const note = document.getElementById('flNote').value.trim();
-if (!vendorId) { showMsg('flMsg', 'err', 'Pick the vendor whose van, table or boxes were in the lane.'); return; }
+if (!vendorId) { showMsg('flMsg', 'err', 'Pick the vendor this is being recorded against.'); return; }
 const all = await fireLaneAll();
 const season = fireLaneSeasonOf(date);
-const before = all.filter(x => x.vendorId === vendorId && fireLaneSeasonOf(x.date) === season).length;
+// Each kind escalates on its own count, so a fire lane offense does not make
+// somebody's next left-behind pallet a second offense.
+const before = all.filter(x => x.vendorId === vendorId && fireLaneSeasonOf(x.date) === season &&
+  violationKindOf(x).k === kind.k).length;
 const offense = before + 1;
-const entry = { vendorId: vendorId, date: date, note: note, offense: offense, at: Date.now(), by: currentRole };
-let charged = 0;
-if (offense === 2) {
-  charged = ruleNum('fineFire2') || 50;
+const entry = { vendorId: vendorId, date: date, note: note, offense: offense, kind: kind.k,
+  at: Date.now(), by: currentRole };
+// A kind with no rule of its own takes whatever the office typed in.
+let charged = kind.fine === null
+  ? Math.max(0, Math.round(Number((document.getElementById('flAmount') || {}).value || 0) * 100) / 100)
+  : kind.fine(offense);
+const unset = charged === null;      // a rule that runs out past a certain offense
+if (unset) charged = 0;
+if (charged > 0) {
   cache.ops.fines.push({ id: 'F' + Date.now(), vendorId: vendorId, date: date,
-    reason: 'Fire lane \u2014 second offense', note: note, amount: charged });
+    reason: kind.reason + ' \u2014 offense ' + offense, note: note, amount: charged });
   await saveOps();
 }
 entry.fine = charged;
 await storageSet(FIRELANE_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), entry);
-actAs('Recorded a fire lane offense', { kind: 'booth', weight: 'notable', vendorId: vendorId });
+actAs('Recorded a violation', { kind: 'booth', weight: 'notable', vendorId: vendorId });
 document.getElementById('flNote').value = '';
+const amt = document.getElementById('flAmount');
+if (amt) amt.value = '';
 await renderFireLane();
 const name = vendorNameFor(vendorId);
-showMsg('flMsg', 'ok', offense === 1
-  ? '<svg class="ico"><use href="#i-checkmark"></use></svg> Warning recorded for ' + esc(name) +
-    '. A second offense this season is charged automatically.'
-  : offense === 2
-  ? '<svg class="ico"><use href="#i-checkmark"></use></svg> Second offense for ' + esc(name) +
-    ' \u2014 $' + charged + ' charged to their account.'
-  : 'Offense ' + offense + ' recorded for ' + esc(name) + '. The Guide says it increases after the second ' +
-    'but not by how much, so nothing has been charged: set an amount in Fines &amp; Penalties. ' +
-    'The gap is in front of the Board (BF64).');
+const ord = offense === 1 ? 'First' : offense === 2 ? 'Second' : offense === 3 ? 'Third' : 'Offense ' + offense;
+showMsg('flMsg', 'ok', unset
+  ? ord + ' recorded for ' + esc(name) + '. ' + (kind.over || 'Nothing has been charged.')
+  : charged > 0
+  ? '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + ord + ' offense for ' + esc(name) +
+    ' \u2014 $' + fmtMoney(charged) + ' charged to their account.'
+  : '<svg class="ico"><use href="#i-checkmark"></use></svg> Warning recorded for ' + esc(name) +
+    '. A further offense this season is charged automatically.');
 }
 async function initFireLaneScreen() {
-const rule = document.getElementById('flRule');
-if (rule) rule.innerHTML = 'First offense: a warning. Second: $' + (ruleNum('fineFire2') || 50) +
-  ', charged automatically. Resets each season.';
+const kindSel = document.getElementById('flKind');
+if (kindSel && !kindSel.options.length) {
+  VIOLATION_KINDS.forEach(k => {
+    const o = document.createElement('option');
+    o.value = k.k; o.textContent = k.t;
+    kindSel.appendChild(o);
+  });
+}
+renderViolationRule();
 const d = document.getElementById('flDate');
 if (d && !d.value) d.value = todayISO();
 const sel = document.getElementById('flVendor');
@@ -45853,8 +45987,9 @@ host.innerHTML = Object.keys(byVendor).map(vid => {
   const rows = byVendor[vid];
   return '<div class="req-row"><div class="req-row-main">' +
     '<div class="req-name">' + esc(vendorNameFor(vid)) + '</div>' +
-    rows.map(x => '<div class="req-meta">' + esc(formatDisplayDate(x.date)) + ' \u00b7 offense ' + x.offense +
-      (x.fine ? ' \u00b7 $' + x.fine + ' charged' : ' \u00b7 warning') +
+    rows.map(x => '<div class="req-meta">' + esc(formatDisplayDate(x.date)) +
+      ' \u00b7 ' + esc(violationKindOf(x).t) + ' \u00b7 offense ' + x.offense +
+      (x.fine ? ' \u00b7 $' + fmtMoney(x.fine) + ' charged' : ' \u00b7 warning') +
       (x.note ? ' \u00b7 ' + esc(x.note) : '') + '</div>').join('') +
     '</div></div>';
 }).join('');
@@ -46222,6 +46357,19 @@ if (out) out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 } });
 }
 function gcSellStartScan() {
+// A certificate is sold for an amount; scanning the sticker before there is
+// one to load onto it cannot go anywhere. Rather than labelling the Sell
+// button with an instruction -- which reads as a button that does nothing --
+// the instruction is given here, once, at the moment it is needed.
+const amt = Math.round(Number((document.getElementById('gcAmount') || {}).value || 0) * 100) / 100;
+if (!(amt > 0)) {
+const msg = document.getElementById('gcSellMsg');
+if (msg) { msg.className = 'status-msg err show';
+  msg.textContent = 'Set the amount first \u2014 enter what the customer is paying, then scan the sticker.'; }
+const box = document.getElementById('gcAmount');
+if (box) { try { box.focus(); box.select(); } catch (e) {} box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+return;
+}
 return startQrScan({ boxId: 'gcSellScanBox', videoId: 'gcSellVideo', statusId: 'gcSellScanStatus',
 msgId: 'gcSellMsg', looking: 'Point it at the certificate you are selling\u2026',
 onCode: async (code) => {
@@ -46281,8 +46429,7 @@ const feeNow = cardNow ? squareFeeOn(cur) : 0;
 const ready = cur > 0 && code.length >= gcMinCodeLen();
 btn.disabled = !ready;
 btn.style.opacity = ready ? '' : '0.55';
-lbl.textContent = !(cur > 0) ? 'Set the amount first'
-: !code ? 'Scan the sticker'
+lbl.textContent = !code ? 'Sell this certificate'
 : code.length < gcMinCodeLen() ? 'Finish the code'
 : 'Sell ' + code + ' \u2014 take $' + fmtMoney(cur + feeNow);
 }
