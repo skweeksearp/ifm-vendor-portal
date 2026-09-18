@@ -180,6 +180,7 @@ margin-left: 7px; border-radius: 50%; background: #C2703D; animation: gcvpulse 1
 .gc-home-frame { flex: 1; aspect-ratio: auto; min-height: 0; border-radius: 16px; }
 .gc-home-scan .gcv-status { color: #FFFBF1; font-size: 15px; margin: 12px 0 0; }
 .gc-home-scan .gcv-status.gcv-hit-text { color: #8EE0A6; }
+.gc-home-note { margin: 12px auto 0; max-width: 22em; text-align: center; font-size: 14px; color: #FFFBF1; opacity: 0.85; }
 .gc-home-type { margin: 12px auto 0; border: 1px solid rgba(255,251,241,0.6); border-radius: 999px; padding: 10px 18px;
   background: transparent; color: #FFFBF1; font: 700 15px 'Manrope', -apple-system, sans-serif; cursor: pointer; }
 @keyframes gcvpulse { 0%,100% { opacity: 0.25; } 50% { opacity: 1; } }
@@ -2757,6 +2758,13 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .msg-compose textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 12px;
   border: 1px solid var(--paper-dim); resize: vertical; min-height: 92px; }
 .msg-send { width: auto; margin: 0; padding: 12px 18px; }
+/* Scanning is blue too (18-68), the same #2F5D8A as Send: a scan button is a
+   camera, not a decision, and the orange was competing with every other
+   primary button on the screen. */
+html body .primary-btn.gcv-scan-btn { background: #2F5D8A; box-shadow: 0 3px 10px rgba(47,93,138,0.3); }
+html body .primary-btn.gcv-scan-btn:active { background: #244A6F; opacity: 1; }
+
+.gc-home-scan .gc-home-close { background: #FFFBF1; }
 /* Send is blue (18-52): white on #2F5D8A is 6.9:1. */
 .primary-btn.msg-send { background: #2F5D8A; box-shadow: 0 3px 10px rgba(47,93,138,0.3); }
 .primary-btn.msg-send:active { background: #244A6F; opacity: 1; }
@@ -2821,7 +2829,8 @@ body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fol
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; flex: none;
   border-radius: 12px; padding: 10px 16px; font-family: 'Manrope', -apple-system, sans-serif; font-size: 15px; font-weight: 700; color: #fff; background: var(--sky); }
 body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-cta.scan {
-  width: 76px; height: 76px; padding: 8px 0 6px; border-radius: 18px; background: var(--leaf); font-size: 12px; box-shadow: 0 4px 12px rgba(168,68,26,0.3); }
+  width: 76px; height: 76px; padding: 8px 0 6px; border-radius: 18px; font-size: 12px;
+  background: #2F5D8A; box-shadow: 0 4px 12px rgba(47,93,138,0.3); }   /* blue, like every scan button (18-68) */
 body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta > .fold-bar .fold-cta.scan .ico { width: 32px; height: 32px; }
 body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta.open > .fold-bar .fold-cta { display: none; }
 body.vendor-tabs #screen-dashboard[data-tab="home"] > .dash-fold.vtab-cta.open > .fold-bar .fold-chev { display: inline; }
@@ -2987,7 +2996,7 @@ html[data-look="rainshine"] body.vendor-tabs:not(.kiosk-mode) #screen-dashboard 
 <div class="gc-home-top"><b>Scan a Gift Certificate</b><button type="button" class="gc-home-close" onclick="gcHomeScanClose()">Cancel</button></div>
 <div class="gcv-frame gc-home-frame"><video id="gcHomeVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
 <p id="gcHomeStatus" class="gcv-status"></p>
-<button type="button" class="gc-home-type" onclick="gcHomeScanType()">Type the code instead</button>
+<p class="gc-home-note">Nothing is printed on the sticker. If it will not read, the office can take it at the window.</p>
 </div>
 <nav class="vtab-bar" id="vendorTabBar" aria-label="Vendor desk sections"><div class="vtab-inner" role="tablist" id="vendorTabList"></div></nav>
 <header class="market-header" id="marketHeader">
@@ -3602,9 +3611,8 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p id="gcvScanStatus" class="gcv-status"></p>
 <button type="button" class="ghost-btn" onclick="gcvStopScan()">Stop scanning</button>
 </div>
-<div class="card desk-form">
-<label for="gcvCode">Or type the code printed on the certificate</label>
-<input type="text" id="gcvCode" class="find-field" autocomplete="off" placeholder="For a scuffed or wet certificate" oninput="gcVendorLookup(this.value)" style="text-transform:uppercase;">
+<div class="card">
+<p class="empty-note" style="margin:0;">Nothing is printed on the sticker, so a certificate has to be scanned. If your camera will not read one &mdash; scuffed, wet, or a dark booth &mdash; the office can take it at the window.</p>
 <div class="status-msg" id="gcvMsg"></div>
 </div>
 <div id="gcvOut"></div>
@@ -3717,7 +3725,8 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p id="gcLookScanStatus" class="gcv-status"></p>
 <button type="button" class="ghost-btn" onclick="stopQrScan()">Stop scanning</button>
 </div>
-<input type="text" id="gcSerial" class="find-field" placeholder="Or type the code on it" autocomplete="off"
+<label for="gcSerial">Or paste a code</label>
+<input type="text" id="gcSerial" class="find-field" placeholder="From the roll you loaded, or the book" autocomplete="off"
 oninput="gcLookup(this.value)" style="text-transform:uppercase;">
 <div id="gcLookupMsg" class="status-msg"></div>
 <div id="gcLookupOut" class="desk-transient"></div>
@@ -3727,11 +3736,11 @@ oninput="gcLookup(this.value)" style="text-transform:uppercase;">
 <li>a vendor who cannot scan &mdash; no phone, flat battery, no signal &mdash; who brings it to the window</li>
 <li>a customer paying a daily stall fee with it</li>
 <li>somebody asking what is left on one</li>
-<li>voiding one, if you have its serial</li>
+<li>voiding one you can scan, or find in the book</li>
 <li>cashing out the last few dollars, which New York requires under $5 on request</li>
 </ul>
 <p><b>Not for ordinary redemptions.</b> The customer keeps the certificate until it is empty, and a vendor scans it at their own booth.</p>
-<p><b>The code is the only way in.</b> A certificate records its number, amount and date, not who bought it, so a lost one cannot be found by name.</p>
+<p><b>Scanning is the only way in.</b> The stickers carry no printed code, and a certificate records its number, amount and date, not who bought it &mdash; so a lost one cannot be found by name.</p>
 </details>
 </div>
 <div class="card manager-only desk-form">
@@ -3751,7 +3760,7 @@ oninput="gcLookup(this.value)" style="text-transform:uppercase;">
 <p id="gcSellScanStatus" class="gcv-status"></p>
 <button type="button" class="ghost-btn" onclick="stopQrScan()">Stop scanning</button>
 </div>
-<input type="text" id="gcScan" class="find-field" placeholder="Or type the code on the certificate" autocomplete="off"
+<input type="text" id="gcScan" class="find-field" placeholder="Or paste a code from the loaded roll" autocomplete="off"
 style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (event.key === 'Enter') { event.preventDefault(); gcSellScan(); }">
 <button type="button" class="primary-btn" id="gcSellBtn" onclick="gcSellScan()"><svg class="ico"><use href="#i-checkmark"></use></svg> <span id="gcSellBtnLabel">Sell this certificate</span></button>
 <div id="gcSellMsg" class="status-msg"></div>
@@ -3764,7 +3773,7 @@ style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (
 </div>
 <details class="card manager-only gc-occasional">
 <summary><b>Load a roll of certificate codes</b></summary>
-<p class="empty-note">A code the app has never seen cannot be sold or redeemed. Paste the printer&rsquo;s list, or scan the stickers in.</p>
+<p class="empty-note">A code the app has never seen cannot be sold or redeemed. Paste the printer&rsquo;s list of codes if they sent one; otherwise scan the stickers in &mdash; nothing is printed on them to read off.</p>
 <label for="gcRollLabel">Name this batch</label>
 <input type="text" id="gcRollLabel" placeholder="e.g. Roll 1, ordered Aug 2026" autocomplete="off">
 <div id="gcRollScanRow" style="margin-top:12px;"></div>
@@ -3997,7 +4006,7 @@ announces any change.</p>
 <div class="dash-fold" data-fold="st-firelane">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'firelane')">
 <span class="fold-title">Fire Lane Warnings</span>
-<span class="fold-sub">Record a blocked lane \u2014 the first is a warning, the second is charged</span>
+<span class="fold-sub">Record a blocked lane &mdash; the first is a warning, the second is charged</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -6610,7 +6619,7 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <label for="cmteFormName">Name</label>
 <input type="text" id="cmteFormName" placeholder="e.g. Marketing">
 <label for="cmteFormNote" style="margin-top:10px;">What it does <span class="fold-optional">optional</span></label>
-<input type="text" id="cmteFormNote" placeholder="A short description \u2014 shown wherever this committee appears">
+<input type="text" id="cmteFormNote" placeholder="A short description &mdash; shown wherever this committee appears">
 <label for="cmteFormCap" style="margin-top:10px;">Member cap <span class="fold-optional">optional</span></label>
 <input type="text" inputmode="numeric" id="cmteFormCap" placeholder="Leave blank for no cap">
 <button type="button" class="primary-btn" onclick="formNewCommittee()"><svg class="ico"><use href="#i-checkmark"></use></svg> Form the Committee</button>
@@ -14476,8 +14485,8 @@ const HELP_TEXTS = [
 "body": "<p>Two opposite jobs share one form. A <strong>booth request</strong> asks for space at a market you don’t hold; an <strong>absence</strong> tells the office you won’t be at one you do. The Guide calls these calling in and calling out.</p><p>Saturday absences are due by <strong>Wed 11:59 PM</strong>. Sunday absences are due by <strong>8:00 AM</strong> that day. Late notice still goes through — the office would always rather know, even late.</p>"
 },
 {
-"title": "(retired) Booth Request / Absence \u2014 Browse by Date",
-"body": "<p>This was the help text for the &ldquo;Browse by Date&rdquo; calendar, retired along with it. It read the same booth-request and absence records the Saturday lottery screen already builds its pool from, tier-and-points-ordered \u2014 which is what the Thursday phone round actually needs. A second, more general way to look at the same data by calendar date was not carrying its weight.</p><p>The entry is kept rather than deleted because every help dot in the app is numbered by position in this list, and removing one would silently move all the rest.</p>"
+"title": "(retired) Booth Request / Absence — Browse by Date",
+"body": "<p>This was the help text for the &ldquo;Browse by Date&rdquo; calendar, retired along with it. It read the same booth-request and absence records the Saturday lottery screen already builds its pool from, tier-and-points-ordered — which is what the Thursday phone round actually needs. A second, more general way to look at the same data by calendar date was not carrying its weight.</p><p>The entry is kept rather than deleted because every help dot in the app is numbered by position in this list, and removing one would silently move all the rest.</p>"
 },
 {
 "title": "Work Hours This Year",
@@ -14585,11 +14594,11 @@ const HELP_TEXTS = [
 },
 {
 "title": "Vendor Requirements",
-"body": "<p>A place to define any license, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents arrive two ways. By post: a vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>. Or by upload, where the Document Vault is connected: the vendor scans it with their own device, it is filed straight into a Drive folder the market controls, and the review card carries a link that opens it \u2014 in Drive, signed into the market\u2019s account, because the app itself never holds or serves the document. Either way, marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
+"body": "<p>A place to define any license, permit, certificate or insurance the market requires, and to track who holds it. It exists because the rules change from outside the market &mdash; a new state law, a new county permit &mdash; and the office needs somewhere to put a new obligation the same week it appears, without waiting for the app to be rebuilt.</p><p>Each requirement says who it applies to, when it took effect, how often it renews, and whether a vendor without it may still sell. Against each vendor you record a state and, where it matters, an expiry date. Anything inside thirty days of expiry is called out at the top of the screen.</p><p>Documents arrive two ways. By post: a vendor reports from their dashboard that one is on its way, which arrives here as <em>awaiting review</em>. Or by upload, where the Document Vault is connected: the vendor scans it with their own device, it is filed straight into a Drive folder the market controls, and the review card carries a link that opens it — in Drive, signed into the market’s account, because the app itself never holds or serves the document. Either way, marking it received and accepted puts it on file, and the vendor sees that on their side. Sending it back with a reason &mdash; including that nothing ever arrived &mdash; returns the requirement to outstanding.</p><p><b>What this does not do:</b> it flags, it does not enforce. Marking a requirement as blocking will not stop a vendor entering a Booth Selection or reserving a booth &mdash; the fees and insurance holds on Vendor Standing are still the only switches that do that. Treat this as the office&rsquo;s record, not a gate.</p>"
 },
 {
 "title": "Permits & Documents",
-"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself two ways: post it to the office by the date shown and tell the app it is in the mail, or \u2014 where the button is offered \u2014 scan it with your own device and send it straight from there. If it runs to several pages, scan them one at a time: each page is added to the batch, you can see and drop any of them before sending, and they arrive at the office bound into one document.</p><p>A scan goes directly into the market\u2019s own files, over an encrypted connection, and is filed under your name and the document\u2019s. It is not published anywhere, it does not appear in the app, and no other vendor can see it \u2014 only the office, opening the market\u2019s files, can. Keep the app open until it says it arrived.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
+"body": "<p>Everything the market needs on file from you, and where each one stands. Send the document itself two ways: post it to the office by the date shown and tell the app it is in the mail, or — where the button is offered — scan it with your own device and send it straight from there. If it runs to several pages, scan them one at a time: each page is added to the batch, you can see and drop any of them before sending, and they arrive at the office bound into one document.</p><p>A scan goes directly into the market’s own files, over an encrypted connection, and is filed under your name and the document’s. It is not published anywhere, it does not appear in the app, and no other vendor can see it — only the office, opening the market’s files, can. Keep the app open until it says it arrived.</p><p><b>Outstanding</b> means the office has nothing. <b>Awaiting review</b> means you have said it is in the post. <b>Accepted</b> means it arrived and is on file. <b>Returned</b> means something was wrong with it, or nothing turned up — the reason is shown, and you can send another.</p><p>Telling the app is not the same as sending the document. Nothing here reaches the office by itself: it records what you say you have done, so both sides can see the same thing while the envelope is in transit.</p>"
 },
 {
 "title": "Reviewing What Vendors Have Sent",
@@ -14601,7 +14610,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Year-End Money Worksheet",
-"body": "<p>Every money figure this app holds for one year, on one page for whoever does the market's books.</p><p><b>It is a worksheet, not a set of accounts.</b> The app has never seen a bank statement, a cash drawer, or a single expense. It holds what the office typed in while running markets.</p><p>Three kinds of fact are kept apart and never added together. <em>Recorded as received</em> is the nearest thing to income it has. <em>Membership share installments</em> are <b>equity, not income</b> \u2014 a member buys a share and can be repaid it on leaving, and booking that as revenue would overstate what the market earned and understate what it owes its members. And the last section lists what the app cannot see, which for a tax return matters more than what it can.</p><p>Two figures are inferred rather than stored, and the page says so on itself: renewals hold a postmark but not an amount, and day fees hold who paid but not how much.</p>"
+"body": "<p>Every money figure this app holds for one year, on one page for whoever does the market's books.</p><p><b>It is a worksheet, not a set of accounts.</b> The app has never seen a bank statement, a cash drawer, or a single expense. It holds what the office typed in while running markets.</p><p>Three kinds of fact are kept apart and never added together. <em>Recorded as received</em> is the nearest thing to income it has. <em>Membership share installments</em> are <b>equity, not income</b> — a member buys a share and can be repaid it on leaving, and booking that as revenue would overstate what the market earned and understate what it owes its members. And the last section lists what the app cannot see, which for a tax return matters more than what it can.</p><p>Two figures are inferred rather than stored, and the page says so on itself: renewals hold a postmark but not an amount, and day fees hold who paid but not how much.</p>"
 },
 {
 "title": "SNAP Tokens In & Out",
@@ -14625,63 +14634,63 @@ const HELP_TEXTS = [
 },
 {
 "title": "Getting a Space",
-"body": "<p>Wednesday is the one market with no process in front of it. The Vendor Guide is explicit: there is no lottery for Wednesday markets, and there are no reserved or assigned spaces (p.11). Nothing to call in for, nothing to win, no points involved.</p><p>What replaces it is a queue on the ground. Arrive at least fifteen minutes before the market starts, be set up and ready to sell by opening time, and set up next to the person who arrived before you \u2014 so the row fills in arrival order rather than by anyone's say-so. Vendors should not drive onto or across the green space.</p><p>Because nothing is assigned, the app has nothing to record here and does not pretend otherwise.</p>"
+"body": "<p>Wednesday is the one market with no process in front of it. The Vendor Guide is explicit: there is no lottery for Wednesday markets, and there are no reserved or assigned spaces (p.11). Nothing to call in for, nothing to win, no points involved.</p><p>What replaces it is a queue on the ground. Arrive at least fifteen minutes before the market starts, be set up and ready to sell by opening time, and set up next to the person who arrived before you — so the row fills in arrival order rather than by anyone's say-so. Vendors should not drive onto or across the green space.</p><p>Because nothing is assigned, the app has nothing to record here and does not pretend otherwise.</p>"
 },
 {
 "title": "How It Counts",
-"body": "<p>Wednesday at East Hill is a satellite market, and satellite markets sit outside the work-hours arithmetic. A Saturday at Steamboat Landing earns one hour toward what you owe and a Sunday earns half an hour; Wednesday, Downtown and the Winter Market earn none (Guide p.31). Attending does not add to your obligation and does not reduce it either.</p><p>Who may sell: both Full Members and Easy Entry vendors (Guide p.26). Unlike a Saturday stall, Wednesday is not something a Full Membership gives you first claim on \u2014 everyone stands in the same arrival order.</p>"
+"body": "<p>Wednesday at East Hill is a satellite market, and satellite markets sit outside the work-hours arithmetic. A Saturday at Steamboat Landing earns one hour toward what you owe and a Sunday earns half an hour; Wednesday, Downtown and the Winter Market earn none (Guide p.31). Attending does not add to your obligation and does not reduce it either.</p><p>Who may sell: both Full Members and Easy Entry vendors (Guide p.26). Unlike a Saturday stall, Wednesday is not something a Full Membership gives you first claim on — everyone stands in the same arrival order.</p>"
 },
 {
 "title": "Sell a Certificate",
-"body": "<p>The office buys a roll of serialized QR stickers. Selling is one scan: set the amount, scan the sticker, put it on the certificate. Scan again for the next one \u2014 the amount stays where you left it, so a run of six $5 certificates is six scans.</p><p>A sticker has to be on a loaded roll before it can be sold. That is the whole security model and it is a strong one: a code the app has never seen cannot be sold and cannot be redeemed, so a hand-drawn or photocopied sticker fails at the window. A sticker already sold is refused too, with the date and amount it went out at.</p><p>There is no printing and no fallback. If the roll runs out, the market does not sell gift certificates that day. A printed stand-in would be a second kind of certificate with its own numbering, which is the tangle this replaced. The screen warns when twenty stickers are left so a roll can be ordered in time.</p>"
+"body": "<p>The office buys a roll of serialized QR stickers. Selling is one scan: set the amount, scan the sticker, put it on the certificate. Scan again for the next one — the amount stays where you left it, so a run of six $5 certificates is six scans.</p><p>A sticker has to be on a loaded roll before it can be sold. That is the whole security model and it is a strong one: a code the app has never seen cannot be sold and cannot be redeemed, so a hand-drawn or photocopied sticker fails at the window. A sticker already sold is refused too, with the date and amount it went out at.</p><p>There is no printing and no fallback. If the roll runs out, the market does not sell gift certificates that day. A printed stand-in would be a second kind of certificate with its own numbering, which is the tangle this replaced. The screen warns when twenty stickers are left so a roll can be ordered in time.</p>"
 },
 {
 "title": "A Certificate Came Back",
-"body": "<p>When a vendor turns in a certificate, point the phone camera at its QR code. The camera opens this screen with the serial already filled in; one tap marks it redeemed. No camera, no problem \u2014 the serial printed under the code types in just as well.</p><p>A certificate can come back once. If the book says it was already redeemed, the screen says so in red with the date, because the same paper appearing twice is exactly what this system exists to catch.</p><p>Voiding is for a certificate you can name: misprinted, refunded before use, or lost <em>where the customer still has the serial</em>. A voided serial can never be redeemed.</p><p><b>A certificate whose serial nobody has cannot be found.</b> The book records the number, the amount, the date and how it was paid for \u2014 it does not record who bought it, so there is no name or phone number to search on. If a customer photographed the sticker or kept the receipt, the serial is on both. If not, tell them plainly that the market cannot identify it, and refer the question of whether it can be replaced at all to the Board \u2014 that is a policy nobody has set, and not one this screen should invent.</p><p>Old handwritten certificates are not in this book and stay with the paper system until they age out.</p>"
+"body": "<p>When a vendor turns in a certificate, point the phone camera at its QR code. The camera opens this screen with the serial already filled in; one tap marks it redeemed. The stickers carry no printed code, so scanning is the only way in: a vendor whose camera will not read one brings the certificate to the window, where the office scans it.</p><p>A certificate can come back once. If the book says it was already redeemed, the screen says so in red with the date, because the same paper appearing twice is exactly what this system exists to catch.</p><p>Voiding is for a certificate you can name: misprinted, refunded before use, or lost <em>where the office can still find its code in the roll or the book</em>. A voided serial can never be redeemed.</p><p><b>A certificate nobody can scan cannot be found.</b> The book records the number, the amount, the date and how it was paid for — it does not record who bought it, so there is no name or phone number to search on. If a customer photographed the sticker or kept the receipt, the serial is on both. If not, tell them plainly that the market cannot identify it, and refer the question of whether it can be replaced at all to the Board — that is a policy nobody has set, and not one this screen should invent.</p><p>Old handwritten certificates are not in this book and stay with the paper system until they age out.</p>"
 },
 {
 "title": "Post a Task to the Work Hours Board",
-"body": "<p>Chairs are appointed by the Board President and recorded in the Committees tool; that record is what lets this card appear on your desk and nobody else's.</p><p>A task you post goes to every vendor on the Work Hours board, in your committee's name. When a vendor claims it and reports it done, the confirmation comes back to you \u2014 you know whether the work is actually done in a way the office cannot \u2014 and the hours credit lands the moment you confirm. Send it back if it isn't finished, and the vendor keeps the claim with time to complete it.</p><p>The Market Manager's board shows your task alongside everything else, marked with where its confirmation goes. Nothing here happens out of anyone's sight; the routing changes, the record doesn't.</p>"
+"body": "<p>Chairs are appointed by the Board President and recorded in the Committees tool; that record is what lets this card appear on your desk and nobody else's.</p><p>A task you post goes to every vendor on the Work Hours board, in your committee's name. When a vendor claims it and reports it done, the confirmation comes back to you — you know whether the work is actually done in a way the office cannot — and the hours credit lands the moment you confirm. Send it back if it isn't finished, and the vendor keeps the claim with time to complete it.</p><p>The Market Manager's board shows your task alongside everything else, marked with where its confirmation goes. Nothing here happens out of anyone's sight; the routing changes, the record doesn't.</p>"
 },
 {
 "title": "Add a Rental",
-"body": "<p>The Vendor Guide is exact about rental days (p.17): vendors must pack, clean and leave their booth space by 4 PM on market days when an event is scheduled at the pavilion after market hours. Not stop selling by four \u2014 be out by four.</p><p>The Guide also says where a vendor is meant to find this out: the weekly newsletter or the global IFM calendar. Both are places somebody has to go and look, on a morning when they are loading a van. Recording the rental here means the app carries the notice to them instead \u2014 a box over the desk the first time they open it that day, naming who has the pavilion and anything else you add.</p><p>A rental on a day that is not a market day is recorded but sends no notice, because there is nobody to be out of the way of. The schedule keeps it either way, so the office has one place to look.</p>"
+"body": "<p>The Vendor Guide is exact about rental days (p.17): vendors must pack, clean and leave their booth space by 4 PM on market days when an event is scheduled at the pavilion after market hours. Not stop selling by four — be out by four.</p><p>The Guide also says where a vendor is meant to find this out: the weekly newsletter or the global IFM calendar. Both are places somebody has to go and look, on a morning when they are loading a van. Recording the rental here means the app carries the notice to them instead — a box over the desk the first time they open it that day, naming who has the pavilion and anything else you add.</p><p>A rental on a day that is not a market day is recorded but sends no notice, because there is nobody to be out of the way of. The schedule keeps it either way, so the office has one place to look.</p>"
 },
 {
 "title": "Load a Roll of Certificate Codes",
-"body": "<p>Order serialized (sometimes called variable-data) QR labels on a roll, and ask the printer to encode this app\u2019s address with the code attached, so a phone camera opens the app when it reads one. Ask for a random check group in every code rather than a plain 0001, 0002 run \u2014 otherwise seeing one certificate tells somebody what the next fifty say.</p><p>The printer supplies the list of codes they made. Paste it here, one code or one URL per line, and name the roll so the office can tell rolls apart later. Codes already known are skipped rather than duplicated, so re-pasting a list is harmless.</p><p>Tell the printer every time that a reorder must continue the numbering, never repeat it. Two stickers with the same code would be two certificates the book cannot tell apart.</p>"
+"body": "<p>Order serialized (sometimes called variable-data) QR labels on a roll, and ask the printer to encode this app’s address with the code attached, so a phone camera opens the app when it reads one. Ask for a random check group in every code rather than a plain 0001, 0002 run — otherwise seeing one certificate tells somebody what the next fifty say.</p><p>The stickers themselves show only the QR code — no numbers to read off — so the app has to learn them here. The printer supplies the list of codes they made. Paste it here, one code or one URL per line, and name the roll so the office can tell rolls apart later. Codes already known are skipped rather than duplicated, so re-pasting a list is harmless.</p><p>Tell the printer every time that a reorder must continue the numbering, never repeat it. Two stickers with the same code would be two certificates the book cannot tell apart.</p>"
 },
 {
 "title": "Tokens Handed Out",
-"body": "<p>This is the other end of the token loop. A shopper swipes their EBT card on the market\u2019s terminal and walks away with tokens; a vendor takes those tokens in trade and hands them back to the office to be reimbursed. The app has always recorded the second half. Without the first it could total what came back with nothing to check it against.</p><p><b>The app never touches the card.</b> SNAP runs on federally certified equipment and a PIN can only be entered on a certified pad, so the swipe belongs entirely to the terminal and always will. What this records is the paper trail on this side of it: after each swipe, how many tokens went out. The note field is the place for the terminal\u2019s receipt number, which is what makes the two records match later.</p><p>The difference between out and in is <b>not an error</b>. Tokens do not expire, so a shopper may spend them next week or next season. That number is the market\u2019s outstanding obligation to its vendors \u2014 it should rise on a market day and fall afterwards. A <i>negative</i> difference is worth a look: more has come back than ever went out, which usually means a swipe was never recorded here.</p>"
+"body": "<p>This is the other end of the token loop. A shopper swipes their EBT card on the market’s terminal and walks away with tokens; a vendor takes those tokens in trade and hands them back to the office to be reimbursed. The app has always recorded the second half. Without the first it could total what came back with nothing to check it against.</p><p><b>The app never touches the card.</b> SNAP runs on federally certified equipment and a PIN can only be entered on a certified pad, so the swipe belongs entirely to the terminal and always will. What this records is the paper trail on this side of it: after each swipe, how many tokens went out. The note field is the place for the terminal’s receipt number, which is what makes the two records match later.</p><p>The difference between out and in is <b>not an error</b>. Tokens do not expire, so a shopper may spend them next week or next season. That number is the market’s outstanding obligation to its vendors — it should rise on a market day and fall afterwards. A <i>negative</i> difference is worth a look: more has come back than ever went out, which usually means a swipe was never recorded here.</p>"
 },
 {
 "title": "How You Can Pay",
-"body": "<p>Three ways, and they are not equivalent. <b>Cash</b> at the office window \u2014 ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market\u2019s Square account. The card total includes Square\u2019s fee for that transaction \u2014 the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> The office can now record a cash, check or card payment at the desk while you are standing there, and it appears in your account straight away. Telling the app you paid yourself is still a report, and a useful one \u2014 it tells the office what to look for \u2014 but it is not a receipt and it never counts toward the balance on its own.</p>"
+"body": "<p>Three ways, and they are not equivalent. <b>Cash</b> at the office window — ask for a receipt, because that receipt is your proof, not anything this app shows you. <b>Check</b> made out to Ithaca Farmers Market, and what counts is the <i>postmark</i>, not the day it lands on the desk; every deadline in the Guide turns on that.</p><p><b>Card</b> through the market’s Square account. The card total includes Square’s fee for that transaction — the market passes that on at cost and keeps none of it, so paying by card costs a little more than the same amount in cash or by check. You will always see the full total before you commit.</p><p>The thing to hold on to: <b>the office recording your payment is what settles your balance.</b> The office can now record a cash, check or card payment at the desk while you are standing there, and it appears in your account straight away. Telling the app you paid yourself is still a report, and a useful one — it tells the office what to look for — but it is not a receipt and it never counts toward the balance on its own.</p>"
 },
 {
 "title": "Which Wednesday",
-"body": "<p>Wednesday takes no sign-ups. The Vendor Guide says there is no lottery and no assigned spaces \u2014 vendors turn up, set up next to whoever came before them, and sell. So the list of who is at East Hill only exists once somebody has walked the field and looked.</p><p>That is what this is: a tick list made on the day. <b>Start from last week</b> copies the most recent Wednesday that has a list, which is usually most of the way there \u2014 then untick whoever did not come. Notes go beside a name on the published page, and one vendor can be marked as carrying the EBT terminal, which prints as \u201cGet your EBT here today\u201d exactly as the website does it now. Only one at a time: two of those lines would send somebody to the wrong tent.</p><p>Nothing here is a fee record. The $20 day fee is collected on site and logged in the Day-Fee Collection Log.</p>"
+"body": "<p>Wednesday takes no sign-ups. The Vendor Guide says there is no lottery and no assigned spaces — vendors turn up, set up next to whoever came before them, and sell. So the list of who is at East Hill only exists once somebody has walked the field and looked.</p><p>That is what this is: a tick list made on the day. <b>Start from last week</b> copies the most recent Wednesday that has a list, which is usually most of the way there — then untick whoever did not come. Notes go beside a name on the published page, and one vendor can be marked as carrying the EBT terminal, which prints as “Get your EBT here today” exactly as the website does it now. Only one at a time: two of those lines would send somebody to the wrong tent.</p><p>Nothing here is a fee record. The $20 day fee is collected on site and logged in the Day-Fee Collection Log.</p>"
 },
 {
 "title": "Publish to the Website",
-"body": "<p>The market\u2019s Wednesday page tells shoppers the vendor list is updated by 4:15 PM each Wednesday. Today that means somebody retyping names into WordPress while standing in a field. This screen builds the list in the same shape the page already uses \u2014 dated heading, names in two columns, the EBT note \u2014 so what gets published is what shoppers are used to reading.</p><p><b>Publishing is built but not connected, and that is deliberate.</b> Writing to the website needs a WordPress application password. This app is a single public file: anyone can read its source, so a password in it would be a password given away. It belongs in the backend, exactly like the Square token \u2014 the app asks the backend to publish and is told yes or no, and never sees the credential.</p><p>Until that is set up, <b>Copy the list</b> puts it on the clipboard for pasting into the page. That is the same job the office does now, minus the retyping. When the backend endpoint exists, the button lights up and nothing else about this screen changes.</p>"
+"body": "<p>The market’s Wednesday page tells shoppers the vendor list is updated by 4:15 PM each Wednesday. Today that means somebody retyping names into WordPress while standing in a field. This screen builds the list in the same shape the page already uses — dated heading, names in two columns, the EBT note — so what gets published is what shoppers are used to reading.</p><p><b>Publishing is built but not connected, and that is deliberate.</b> Writing to the website needs a WordPress application password. This app is a single public file: anyone can read its source, so a password in it would be a password given away. It belongs in the backend, exactly like the Square token — the app asks the backend to publish and is told yes or no, and never sees the credential.</p><p>Until that is set up, <b>Copy the list</b> puts it on the clipboard for pasting into the page. That is the same job the office does now, minus the retyping. When the backend endpoint exists, the button lights up and nothing else about this screen changes.</p>"
 },
 {
 "title": "FreshConnect Checks In",
-"body": "<p>A shopper is given FreshConnect Checks by <b>New York State</b>, not by the market. They spend them on food at a stall. The vendor brings them back and the market pays them out. This is the log of that last step \u2014 and it is the only step, which is why this screen has one half where SNAP has two.</p><p>There is nothing to hand out here and nothing to reconcile. The market never issues a FreshConnect Check, so there is no out side and no difference between out and in.</p><p>Record the market day, the vendor and the <b>total face value</b>. The check count is optional and is only there for counting the stack back \u2014 the money is the amount. Unlike a SNAP token, the market does not set what a FreshConnect Check is worth, so there is no rate in Market Rules and no past line that could be re-valued.</p><p><b>Every vendor is listed, not only the ones who take them.</b> A craft vendor might have taken one by mistake, and it still has to be redeemed; they are simply marked in the list.</p><p>The vendor is told on their own desk the moment you submit \u2014 they do not have to ask whether it was counted.</p>"
+"body": "<p>A shopper is given FreshConnect Checks by <b>New York State</b>, not by the market. They spend them on food at a stall. The vendor brings them back and the market pays them out. This is the log of that last step — and it is the only step, which is why this screen has one half where SNAP has two.</p><p>There is nothing to hand out here and nothing to reconcile. The market never issues a FreshConnect Check, so there is no out side and no difference between out and in.</p><p>Record the market day, the vendor and the <b>total face value</b>. The check count is optional and is only there for counting the stack back — the money is the amount. Unlike a SNAP token, the market does not set what a FreshConnect Check is worth, so there is no rate in Market Rules and no past line that could be re-valued.</p><p><b>Every vendor is listed, not only the ones who take them.</b> A craft vendor might have taken one by mistake, and it still has to be redeemed; they are simply marked in the list.</p><p>The vendor is told on their own desk the moment you submit — they do not have to ask whether it was counted.</p>"
 },
 {
 "title": "FreshConnect Checks",
-"body": "<p>FreshConnect Checks are issued by <b>New York State</b> to shoppers. You take them like cash for food, bring them back to the office, and the market pays you out at the value printed on the check. The market does not set that value and cannot change it.</p><p>Until you set it, the app guesses: <b>on for Ag vendors, off for everyone else</b>. That guess is a poor one and the market knows it \u2014 a baker or a prepared-food vendor is not an Ag vendor but plainly sells food, and FreshConnect buys food. So if you have been put down as not taking them and that is wrong, it is the guess that is wrong, not you. <b>The switch is yours.</b> The moment you set it either way your choice is recorded, and the guess never overrides it again.</p><p>Saying no dims the rest of this drawer rather than hiding it, so you can see what you would be looking at if you said yes.</p><p>Every time the office takes checks in from you it appears here and on your account. <b>The office\u2019s record is the one that pays out</b> \u2014 if a line is wrong or one is missing, tell them.</p>"
+"body": "<p>FreshConnect Checks are issued by <b>New York State</b> to shoppers. You take them like cash for food, bring them back to the office, and the market pays you out at the value printed on the check. The market does not set that value and cannot change it.</p><p>Until you set it, the app guesses: <b>on for Ag vendors, off for everyone else</b>. That guess is a poor one and the market knows it — a baker or a prepared-food vendor is not an Ag vendor but plainly sells food, and FreshConnect buys food. So if you have been put down as not taking them and that is wrong, it is the guess that is wrong, not you. <b>The switch is yours.</b> The moment you set it either way your choice is recorded, and the guess never overrides it again.</p><p>Saying no dims the rest of this drawer rather than hiding it, so you can see what you would be looking at if you said yes.</p><p>Every time the office takes checks in from you it appears here and on your account. <b>The office’s record is the one that pays out</b> — if a line is wrong or one is missing, tell them.</p>"
 },
 {
 "title": "Pay Now",
-"body": "<p>Two things, one card. <b>What I owe</b> settles the balance your account already shows. <b>Pay ahead</b> puts money on the account before the fees land \u2014 the way a number of vendors have always preferred to handle a season \u2014 and every booth fee charged afterwards comes off it until it runs out.</p><p><b>Nothing is lost by paying ahead.</b> Anything still on your account at the end of the year stays there, and the office can pay it back out. It is your money sitting with the market, not a fee.</p><p><b>Paying by card costs more than paying by cash, and the market keeps none of the difference.</b> Square charges the market for every card payment. The market passes that charge on at cost rather than absorbing it \u2014 absorbing it would mean the market receiving less than the amount that clears your balance. You see the full card total before you tap anything. Cash or a check costs the amount owed and nothing more.</p><p>Telling the office you paid by cash or check is a <b>report</b>, not a settlement. Your balance moves when the office matches it to the money \u2014 the app says so rather than letting you leave thinking it is closed.</p><p>A monthly statement has <b>no deadline of its own</b>. It is a record of what is owed. Anything on it that does carry a deadline \u2014 the annual fees on 31 December, the work hour invoice on 28 February \u2014 shows that date on the line.</p>"
+"body": "<p>Two things, one card. <b>What I owe</b> settles the balance your account already shows. <b>Pay ahead</b> puts money on the account before the fees land — the way a number of vendors have always preferred to handle a season — and every booth fee charged afterwards comes off it until it runs out.</p><p><b>Nothing is lost by paying ahead.</b> Anything still on your account at the end of the year stays there, and the office can pay it back out. It is your money sitting with the market, not a fee.</p><p><b>Paying by card costs more than paying by cash, and the market keeps none of the difference.</b> Square charges the market for every card payment. The market passes that charge on at cost rather than absorbing it — absorbing it would mean the market receiving less than the amount that clears your balance. You see the full card total before you tap anything. Cash or a check costs the amount owed and nothing more.</p><p>Telling the office you paid by cash or check is a <b>report</b>, not a settlement. Your balance moves when the office matches it to the money — the app says so rather than letting you leave thinking it is closed.</p><p>A monthly statement has <b>no deadline of its own</b>. It is a record of what is owed. Anything on it that does carry a deadline — the annual fees on 31 December, the work hour invoice on 28 February — shows that date on the line.</p>"
 },
 {
 "title": "Open to Sharing Your Booth?",
-"body": "<p>A standing answer for the whole season, not tied to any one day. Saying yes puts your name on a list that vendors left without a booth can see after each Booth Selection, on any day you have a booth. <b>Your answer stands until you change it</b>, and it is an invitation to be asked, not a promise \u2014 you still decide each time somebody actually asks.</p><p>Shown only to vendors who could host at some point this season \u2014 a reserved booth, or having won one in a Booth Selection. A vendor who could never host is not asked, because an offer they could not honor would send somebody across the pavilion for nothing.</p>"
+"body": "<p>A standing answer for the whole season, not tied to any one day. Saying yes puts your name on a list that vendors left without a booth can see after each Booth Selection, on any day you have a booth. <b>Your answer stands until you change it</b>, and it is an invitation to be asked, not a promise — you still decide each time somebody actually asks.</p><p>Shown only to vendors who could host at some point this season — a reserved booth, or having won one in a Booth Selection. A vendor who could never host is not asked, because an offer they could not honor would send somebody across the pavilion for nothing.</p>"
 }
 ];
 function showHelp(i) {
@@ -19250,12 +19259,10 @@ if (name === 'attshort') renderAttShort();
 if (name === 'gcvendor') {
 renderGcvScanRow();
 gcvStopScan();
-const el = document.getElementById('gcvCode');
 if (window.gcPendingScan) {
-if (el) el.value = window.gcPendingScan;
 gcVendorLookup(window.gcPendingScan);
 window.gcPendingScan = null;
-} else if (el) { el.value = ''; const o = document.getElementById('gcvOut'); if (o) o.innerHTML = ''; setTimeout(() => el.focus(), 120); }
+} else { const o = document.getElementById('gcvOut'); if (o) o.innerHTML = ''; }
 }
 if (name === 'dashboard') renderBoothPrefs();
 if (name === 'merchmansion') initMerchMansion();
@@ -23441,7 +23448,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-66';
+const BUILD_ID = '18-68';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -45517,7 +45524,7 @@ if (!row) return;
 row.innerHTML = gcvCanScan()
 ? '<button type="button" class="primary-btn gcv-scan-btn" onclick="gcvStartScan()">' +
 '<svg class="ico"><use href="#i-qr"></use></svg> Scan the certificate</button>'
-: '<p class="empty-note">This phone will not open its camera for the app. Type the code printed on the certificate instead.</p>';
+: '<p class="empty-note">This phone will not open its camera for the app, and nothing is printed on the sticker to type in. Take the certificate to the office window.</p>';
 }
 let gcvStream = null, gcvScanTimer = null;
 function gcvSetStatus(text, looking, hit) {
@@ -45630,7 +45637,7 @@ tick();
 } catch (e) {
 stopQrScan();
 if (opt.msgId) showMsg(opt.msgId, 'err',
-'The camera could not be opened. Type the code instead.');
+'The camera could not be opened. Nothing is printed on the sticker, so the office will have to take this one at the window.');
 }
 }
 function stopQrScan() {
@@ -46063,7 +46070,7 @@ const fold = bar.closest('.dash-fold');
 const onHome = document.body.classList.contains('vendor-tabs') && typeof vendorTab !== 'undefined' && vendorTab === 'home';
 if (onHome && fold && !fold.classList.contains('open')) {
   if (gcvCanScan()) { gcHomeScan(); return; }
-  gcHomeOpenTool(null, 'This phone will not open its camera for the app. Type the code printed on the certificate.');
+  gcHomeOpenTool(null, 'This phone will not open its camera for the app, and nothing is printed on the sticker. Take the certificate to the office window.');
   return;
 }
 toggleToolFold(bar, 'gcvendor');
@@ -46073,7 +46080,7 @@ gcHomeCode = null;
 await startQrScan({ boxId: 'gcHomeScan', videoId: 'gcHomeVideo', statusId: 'gcHomeStatus',
   onCode: async (code) => { gcHomeCode = code; gcHomeOpenTool(code); } });
 if (!qrScan.stream && !gcHomeCode)
-  gcHomeOpenTool(null, 'The camera could not be opened. Type the code printed on the certificate.');
+  gcHomeOpenTool(null, 'The camera could not be opened. Nothing is printed on the sticker, so the office will have to take this one at the window.');
 }
 function gcHomeOpenTool(code, err) {
 stopQrScan();
@@ -46083,19 +46090,17 @@ if (code) window.gcPendingScan = code;
 if (!fold.classList.contains('open')) {
   toggleToolFold(fold.querySelector(':scope > .fold-bar'), 'gcvendor');
 } else if (code) {
-  const el = document.getElementById('gcvCode');
-  if (el) el.value = code;
   window.gcPendingScan = null;
   gcVendorLookup(code);
 }
 if (err) setTimeout(() => showMsg('gcvMsg', 'err', err), 180);
 setTimeout(() => {
-  const t = document.getElementById(code ? 'gcvOut' : 'gcvCode');
+  const t = document.getElementById('gcvOut') || document.getElementById('gcvMsg');
   if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  if (!code) { const c = document.getElementById('gcvCode'); if (c) c.focus(); }
 }, 260);
 }
 function gcHomeScanClose() { stopQrScan(); }
+// Kept for the tool's own button; there is nothing to type from a sticker.
 function gcHomeScanType() { gcHomeOpenTool(null); }
 // The office's two: looking a certificate up, and selling a new one. Selling
 // keeps the camera running -- a roll is sold from a few at a time, and
@@ -46180,7 +46185,7 @@ const ready = cur > 0 && code.length >= gcMinCodeLen();
 btn.disabled = !ready;
 btn.style.opacity = ready ? '' : '0.55';
 lbl.textContent = !(cur > 0) ? 'Set the amount first'
-: !code ? 'Scan or type the code'
+: !code ? 'Scan the sticker'
 : code.length < gcMinCodeLen() ? 'Finish the code'
 : 'Sell ' + code + ' \u2014 take $' + fmtMoney(cur + feeNow);
 }
