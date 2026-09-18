@@ -2558,6 +2558,15 @@ html[data-look="rainshine"] body:not(.kiosk-mode) main > .screen.active:not(#scr
   background: var(--glass-sheet); border: 1px solid var(--glass-edge); border-radius: 16px;
   padding: 12px 12px 14px; margin-top: 6px;
 }
+/* To Discuss with the Board is a long read: solid, not see-through (18-54). */
+/* !important because the sheet rule above carries five id selectors inside
+   its :not() list, which outweighs anything reasonable written here. */
+html[data-look="rainshine"] body:not(.kiosk-mode) #screen-boardflags,
+html[data-look="rainshine"] body:not(.kiosk-mode) .dash-fold.open > .fold-body:has(#screen-boardflags) {
+  background: #FFFBF1 !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+html[data-look="rainshine"] body:not(.kiosk-mode) #screen-boardflags .bf-ruling { background: #FFFDF6; }
 /* fields */
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(input[type=text], input[type=number], input[type=password], input[type=email], input[type=tel], input[type=date], select, textarea) {
   background-color: rgba(255,255,255,0.64); border-color: rgba(255,255,255,0.7);
@@ -3969,6 +3978,14 @@ announces any change.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-toolbox"></use></svg></span>Staff<button type="button" class="help-dot" onclick="showHelp(9)" aria-label="What are the rules here?">?</button></h2>
 </div>
 <div id="staffFolders">
+<div class="dash-fold" data-fold="st-firelane">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'firelane')">
+<span class="fold-title">Fire Lane Warnings</span>
+<span class="fold-sub">Record a blocked lane \u2014 the first is a warning, the second is charged</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
 <div class="dash-fold" data-fold="st-messages">
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'messages')">
 <span class="fold-title">Messages</span>
@@ -6253,6 +6270,33 @@ comes from.</p>
 <p class="empty-note" style="margin-top:0;">The Guide sends repeated no-shows to the Board. It does not fix a number; three is used here as a prompt, not a rule.</p>
 <div id="nsRepeat"></div>
 <div class="empty-note" id="nsRepeatEmpty" style="display:none;">Nobody has more than one no-show this season.</div>
+</div>
+</section>
+<section id="screen-firelane" class="screen">
+<div class="screen-head" id="head-firelane"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-flame"></use></svg></span>Record a Fire Lane Offense</h2>
+<p class="empty-note" style="margin-top:0;" id="flRule"></p>
+<label for="flVendor">Vendor</label>
+<select id="flVendor"></select>
+<label for="flDate">When</label>
+<input type="date" id="flDate">
+<label for="flNote">What happened</label>
+<input type="text" id="flNote" placeholder="e.g. van left in the lane through the 9 o&rsquo;clock rush" autocomplete="off">
+<button type="button" class="primary-btn" onclick="recordFireLane()">Record it</button>
+<div class="status-msg" id="flMsg"></div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>This Season</h2>
+<div id="flList"></div>
+</div>
+</section>
+<section id="screen-attshort" class="screen">
+<div class="screen-head" id="head-attshort"></div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-calendar"></use></svg></span>Where Each Booth Stands</h2>
+<p class="empty-note" style="margin-top:0;" id="attShortRule"></p>
+<div id="attShortList"></div>
 </div>
 </section>
 <section id="screen-fines" class="screen">
@@ -19169,6 +19213,8 @@ if (name === 'vreset') initVresetScreen();
 if (name === 'presplanned') initPresPlanned();
 if (name === 'aginspect') initAgInspect();
 if (name === 'messages') renderMessages();
+if (name === 'firelane') initFireLaneScreen();
+if (name === 'attshort') renderAttShort();
 if (name === 'gcvendor') {
 renderGcvScanRow();
 gcvStopScan();
@@ -19293,6 +19339,8 @@ idea:              { title: 'A Good Idea' },
 ptssignoff:        { title: 'Points Sign-Off' },
 demostmt:          { title: 'Demo Statement Records' },
 gcvendor:          { title: 'Scan a Gift Certificate' },
+firelane:          { title: 'Fire Lane Warnings' },
+attshort:          { title: 'Attendance Shortfalls' },
 messages:          { title: 'Messages' },
 pavrentals:        { title: 'Pavilion Rentals' },
 account:           { title: 'My Account' },
@@ -23200,7 +23248,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-53';
+const BUILD_ID = '18-57';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -32790,7 +32838,25 @@ wrap.appendChild(row);
 // 18-46). The Guide mentions it, but it is a tax matter between each vendor
 // and the state; the market neither charges, collects nor enforces it, so
 // there is nothing for the Board to decide.
+// Reference numbers are unique: BF13 to BF16 were each used twice (18-56).
+// Four questions added later reused the numbers of four Vendor Guide ones, so
+// a decision recorded against one appeared on its twin as well -- the Board
+// President's "start enforcing" on Permits also showed on Invented Records.
+// The four newer ones now carry BF60 to BF63; the Guide ones keep BF13-BF16,
+// and keep the decisions recorded against them.
 const BOARD_FLAGS = [
+{ id: 'BF65', kind: 'question', cat: 'Attendance', src: 'Vendor Guide, Market Attendance Requirements; the Board\u2019s decision to enforce BF12',
+t: 'What does an attendance shortfall actually cost?',
+d: 'WHAT THE GUIDE SAYS. A reserved booth owes 15 Saturdays, a corner Ag booth 25, a reserved Sunday booth 12, and every Full Member 5 weekend days. A shortfall costs \u201cup to $100 per market at Board discretion, or the reservation\u201d. ' +
+'WHAT THE BOARD HAS DECIDED. To start enforcing it, counted within the season and starting again each season (18-57). ' +
+'WHAT THE APP DOES NOW. It counts the days each booth owes and shows the office who is short, on track, or can no longer make it (Vendors \u2192 Attendance Shortfalls). It charges nothing by itself, because \u201cup to $100 at discretion\u201d is not an amount. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: what a shortfall costs \u2014 a flat amount per market missed, an amount per day short, or case by case; whether it is charged at the end of the season or as it happens; and when losing the reservation is the answer instead of a charge. Once there is a figure, the app can charge it the way it charges a late absence.' },
+{ id: 'BF64', kind: 'question', cat: 'Fire lane', src: 'Vendor Guide, Fire Lane Policy; the Board\u2019s decision to enforce BF07',
+t: 'What does a third fire lane offense cost?',
+d: 'WHAT THE GUIDE SAYS. A first offense in a season is a verbal warning, a second is $50, and it \u201cincreases from there\u201d \u2014 without saying by how much. ' +
+'WHAT THE BOARD HAS DECIDED. To start enforcing it (18-57). ' +
+'WHAT THE APP DOES NOW. The Manager or Staff records each offense; the app numbers them within the season, and charges the second automatically at the Market Rules figure ($50). A third or later offense is recorded and left for the office to price by hand, because nothing says what it should be. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: what the third and later offenses cost \u2014 doubling each time as the items-left fine does, a fixed step, or case by case; and whether the count starts again each season, as the app assumes.' },
 { id: 'BF59', kind: 'question', cat: 'Agriculture', src: 'Agriculture Guidelines, Weights and Measures; reported from the market floor',
 t: 'Does the sealed-scale rule still fit how members sell?',
 d: 'WHAT THE RULES SAY. The Agriculture Guidelines, under Weights and Measures: scales must be checked annually and sealed by an official of the Bureau of Weights and Measures, through the county department; members selling by volume must use standard containers (pint, quart, peck, bushel). The Vendor Guide does not repeat it. Next to it, under Price Fixing: produce should be priced at a reasonable level, and price fixing is not permitted. ' +
@@ -32931,16 +32997,16 @@ d: 'Two ways the app and the printed Guide now disagree about Sunday sign-in. Fi
 { id: 'BF05', kind: 'discrepancy', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
 t: 'Late-absence fine escalation: settled, worth confirming',
 d: 'The fines table footnote says fines increase in $50 increments for each offense, so the second late notice is $100 and the third $150. Elsewhere the text says the fine "multiplies", which could have meant doubling. The app uses $50 increments. Worth a minute of the Board\u2019s time to close.' },
-{ id: 'BF16', kind: 'gap', cat: 'Booths', src: 'Vendor Guide, Non-reservable Stalls',
+{ id: 'BF60', kind: 'gap', cat: 'Booths', src: 'Vendor Guide, Non-reservable Stalls',
 t: 'Booths available for the season: the Guide names Thursday and nothing else',
 d: 'One sentence covers it \u2014 the OpM assigns these stalls on Thursday morning as part of the call-in process. Saturday morning and Sunday are never mentioned in connection with them. Nothing suggests they are withheld: no reservation can be taken on them, both in-person rounds assign from whatever is open, and there is nothing they could be held back for. The app now says they are available to vendors seeking a booth for Saturday or Sunday, first handed out in the Thursday round. Two things for the OpM to confirm. First, that Sunday really does draw from the same pool. Second, whether the office ever holds one back on the day \u2014 for a vendor whose plans changed, or for a second business in the family. The Guide gives no such priority: a vendor\u2019s second business enters the lottery on its own points and status, and a reserved-booth holder may not enter the daily lottery at all outside shoulder season. But discretion is written into the day-of decisions, so a practice could exist that the Guide never records.' },
-{ id: 'BF15', kind: 'gap', cat: 'Permissions', src: 'App defect \u2014 found in testing',
+{ id: 'BF61', kind: 'gap', cat: 'Permissions', src: 'App defect \u2014 found in testing',
 t: 'Who can operate what has never been audited across the whole app',
 d: 'The Season-Long Booth Reservations screen is on both the vendor desk and the manager\u2019s, and until this build it handed vendors the manager\u2019s controls: assigning a booth to the next vendor in line, passing a turn, and releasing anyone\u2019s booth. It is now gated in two places \u2014 the controls are hidden for anyone but the manager, and the functions refuse to run for anyone else \u2014 but the fix was made to the one screen where the fault was seen. Every other screen that appears on more than one desk needs the same reading. A sweep of the vendor desk then found four more of the same kind, all now manager-only: Sign In a Vendor and Shared Booths on the Sunday Booth Selection, both Printable Sheet cards, and Browse by Date \u2014 a calendar that listed every vendor by name with what they had requested or reported, on any vendor\u2019s phone. Who Holds What went too: a vendor has the Rolodex, and a manager\u2019s ledger of every holding answers nothing the Rolodex does not answer better. What remains to audit is the staff, volunteer and kiosk desks, and the question of whether one vendor should see another\u2019s absences at all \u2014 the app now says no, which nobody has confirmed.' },
-{ id: 'BF14', kind: 'gap', cat: 'Records', src: 'App mechanism \u2014 not from any market document',
+{ id: 'BF62', kind: 'gap', cat: 'Records', src: 'App mechanism \u2014 not from any market document',
 t: 'Invented records the app can still take back \u2014 and the ones it cannot',
 d: 'The app fills an empty sheet with fictional records so the market can be seen working before the real ones arrive. Until this build those fictions were permanent: once written they were indistinguishable from something a person had entered, so a later build could not withdraw its own invention. Seeded fields now carry a stamp of the value they were born with, and a field still matching its stamp can be corrected by a later build. The part that needs people: a field a person has edited is theirs forever after, which is right for a booth assignment and questionable for a typo \u2014 there is no way to hand a field back to the app short of a full reset. And the fictions themselves should end, not merely become correctable: the Records Needed list asks the office for the real reservation and Sunday-only auction lists.' },
-{ id: 'BF13', kind: 'gap', cat: 'Fines', src: 'App proposal \u2014 not from any market document',
+{ id: 'BF63', kind: 'gap', cat: 'Fines', src: 'App proposal \u2014 not from any market document',
 t: 'Should the app put context in front of a fine decision? \u2014 needs discussion',
 d: 'The Fines desk now shows, under each late-absence fine, what the vendor\u2019s own notices say: how late this one was, how many absences they reported on time this season against how many late, which earlier late notices were waived, whether the late ones are nearly all Sundays, how many market days they have attended, and whether a leave is on file. None of it is new information and none of it changes the amount \u2014 it is there because a waive is the one real decision in the process and it was being made with nothing in view. Three things need deciding by people, not by the app. First, whether management wants this at all: the same panel that makes leniency easier to justify makes a pattern harder to ignore, and that cuts both ways. Second, whether any of it is unfair to surface \u2014 attendance and leave status are the questionable ones. Third, whether the Guide\u2019s escalating fine should stay automatic at all, or become a proposal the office confirms; the app currently creates the fine itself and leaves only the waive to a person, which is the opposite of how the rest of the app is built.' },
 { id: 'BF06', kind: 'gap', cat: 'Fines', src: 'Vendor Guide, Vendor Rules and Fines',
@@ -33105,7 +33171,21 @@ const FLAG_FOLLOW = [
 function flagHasDecision(id) { return !!(flagDecision(id).decision || '').trim(); }
 function flagNeedsUpdate(id) {
 const d = flagDecision(id);
-return flagHasDecision(id) && (d.follow === 'rules' || d.follow === 'build') && !d.done;
+if (d.done) return false;
+// A ruling that says the app needs changing.
+if (flagHasDecision(id) && (d.follow === 'rules' || d.follow === 'build')) return true;
+// Or a rule the Board has decided to start enforcing: the app has to carry
+// that out too, and until 18-55 those never reached the Developer desk
+// unless somebody also wrote a decision and ticked what it needed.
+return flagStatus(id) === 'enforce';
+}
+// Why a question is on the Developer desk's list.
+function flagCarryWhy(id) {
+const d = flagDecision(id);
+if (flagHasDecision(id) && (d.follow === 'rules' || d.follow === 'build')) {
+  return (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t || '';
+}
+return 'Set to enforcing' + (d.until ? ' until ' + formatDisplayDate(d.until) : '') + ' \u2014 the app has to carry it out';
 }
 function flagsToCarryOut() { return allBoardFlags().filter(f => flagNeedsUpdate(f.id)); }
 async function saveFlagRuling(id, fields) {
@@ -33130,12 +33210,12 @@ card.style.display = todo.length ? '' : 'none';
 list.innerHTML = '';
 todo.forEach(f => {
   const d = flagDecision(f.id);
-  const followT = (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t || '';
+  const followT = flagCarryWhy(f.id);
   const row = document.createElement('div');
   row.className = 'req-row';
   row.innerHTML = '<div class="req-row-main">' +
     '<div class="req-name">' + esc(f.id) + ' \u00b7 ' + esc(f.t) + '</div>' +
-    '<div class="bf-ruling-text" style="margin-top:4px;">' + esc(d.decision) + '</div>' +
+    (d.decision ? '<div class="bf-ruling-text" style="margin-top:4px;">' + esc(d.decision) + '</div>' : '') +
     '<div class="req-meta">' + [followT, d.minutes ? 'Minuted: ' + esc(d.minutes) : '', d.decidedAt ? 'Recorded ' + esc(formatDisplayDate(d.decidedAt)) : ''].filter(Boolean).join(' \u00b7 ') + '</div>' +
     '</div>';
   const acts = document.createElement('div');
@@ -33457,6 +33537,8 @@ u: 'date', d: '', src: 'Guide p.8: selling fees are waived on the final Saturday
 { g: 'SNAP', id: 'snapTokenValue', l: 'What one SNAP token is worth', u: '$', d: 1, src: 'Set by the market \u2014 not in the Guide' },
 { g: 'Fines', id: 'fineCallOut', l: 'Late absence notice, and each further offense adds the same again', u: '$', d: 50, src: 'Guide, Vendor Rules and Fines' },
 { g: 'Fines', id: 'fineStall', l: 'Items left at close, first offense', u: '$', d: 10, src: 'Guide, Maintenance and Cleaning' },
+{ g: 'Fines', id: 'fineFire2', l: 'Fire lane, second offense in a season', u: '$', d: 50, src: 'Guide, Fire Lane Policy \u2014 first offense is a warning; the Guide says it increases after the second without saying by how much (BF64)' },
+{ g: 'Fines', id: 'attShortMax', l: 'Attendance shortfall, the most the Guide allows per market', u: '$', d: 100, src: 'Guide, Market Attendance Requirements \u2014 \u201cup to\u201d, at Board discretion (BF65)' },
 { g: 'Fines', note: 'Dollars per work hour not worked are set <b>per season</b> in the Work Hour Rate tool, one drawer over \u2014 a rate changed there today does not restate a season already closed, which a single number here could not promise.' },
 { g: 'Fines', id: 'fineStallMult', l: 'What that fine is multiplied by each time it happens again', u: '\u00d7', d: 2, src: 'Guide, Maintenance and Cleaning' },
 { g: 'Attendance owed', id: 'attSat', l: 'Saturdays for a reserved booth', u: 'days', d: 15, src: 'Guide, Saturday Reserved Stalls' },
@@ -34548,6 +34630,7 @@ tiles: [
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
 { s: 'fclog', i: 'i-gem', t: 'FreshConnect Checks In', d: 'Checks turned in by vendors \u2014 New York State issues them, so the market only takes them back' },
 { s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
+{ s: 'firelane', i: 'i-flame', t: 'Fire Lane Warnings', d: 'A blocked lane, recorded \u2014 the first is a warning, the second is charged' },
 { ot: 'stallcheck', i: 'i-brush', t: 'End-of-Day Booth Check', d: 'Booths left uncleared at close' },
 ] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
@@ -34564,6 +34647,7 @@ tiles: [
 { s: 'pointsmanager', i: 'i-star', t: 'Points Manager', d: "Award or adjust a vendor's points" },
 { soon: 'pointsroll', s: 'pointsroll', i: 'i-star', t: 'Annual Points Rollover', d: 'Sets the ranking every selection uses' },
 { s: 'standing', i: 'i-warning', t: 'Vendor Standing', d: 'Fees, insurance, and who may have quit' },
+{ s: 'attshort', i: 'i-calendar', t: 'Attendance Shortfalls', d: 'Reserved booths against the days they owe this season' },
 { s: 'leaves', i: 'i-calendar', t: 'Leaves of Absence', d: 'Approvals, fees, seniority' },
 { s: 'calloutpatterns', i: 'i-phone', t: 'Absence Patterns', d: 'Who is missing the deadline \u2014 and whether a deadline is the problem' },
 { soon: 'fines', s: 'fines', i: 'i-scale', t: 'Fines &amp; Penalties', d: 'What is owed, with the escalation' },
@@ -45260,6 +45344,143 @@ if (out) out.scrollIntoView({ behavior: 'smooth', block: 'center' });
 } });
 }
 function gcvStopScan() { stopQrScan(); }
+// FIRE LANE (18-57, enforcing BF07). The Guide: a first offense in a season
+// is a verbal warning, a second is $50, and it increases from there. Nothing
+// recorded the warning, so a second could never be shown to be a second.
+//
+// Now the Manager or Staff records each offense; the app numbers them within
+// the season and charges the second automatically from the Market Rules
+// figure. The Guide does not say what the third and later cost, so the app
+// records them and asks the Manager to set an amount -- and that gap is in
+// front of the Board as BF64.
+//
+// One record per offense (ifm-fl-<time><random>), never a shared list: the
+// Manager and Staff may both be recording on a market morning.
+const FIRELANE_PREFIX = 'ifm-fl-';
+async function fireLaneAll() {
+if (!window.storage || typeof window.storage.list !== 'function') return [];
+let keys = [];
+try { keys = (await window.storage.list(FIRELANE_PREFIX)).keys || []; } catch (e) { return []; }
+const out = [];
+for (const k of keys) {
+  try {
+    const r = await window.storage.get(k);
+    if (!r || r.value == null) continue;
+    const x = JSON.parse(r.value);
+    if (x && x.vendorId && x.date) { x.key = k; out.push(x); }
+  } catch (e) {}
+}
+return out.sort((a, b) => a.date.localeCompare(b.date) || (a.at || 0) - (b.at || 0));
+}
+function fireLaneSeasonOf(dateISO) { return Number(String(dateISO).slice(0, 4)); }
+async function recordFireLane() {
+const vendorId = (document.getElementById('flVendor') || {}).value || '';
+const date = document.getElementById('flDate').value || todayISO();
+const note = document.getElementById('flNote').value.trim();
+if (!vendorId) { showMsg('flMsg', 'err', 'Pick the vendor whose van, table or boxes were in the lane.'); return; }
+const all = await fireLaneAll();
+const season = fireLaneSeasonOf(date);
+const before = all.filter(x => x.vendorId === vendorId && fireLaneSeasonOf(x.date) === season).length;
+const offense = before + 1;
+const entry = { vendorId: vendorId, date: date, note: note, offense: offense, at: Date.now(), by: currentRole };
+let charged = 0;
+if (offense === 2) {
+  charged = ruleNum('fineFire2') || 50;
+  cache.ops.fines.push({ id: 'F' + Date.now(), vendorId: vendorId, date: date,
+    reason: 'Fire lane \u2014 second offense', note: note, amount: charged });
+  await saveOps();
+}
+entry.fine = charged;
+await storageSet(FIRELANE_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), entry);
+actAs('Recorded a fire lane offense', { kind: 'booth', weight: 'notable', vendorId: vendorId });
+document.getElementById('flNote').value = '';
+await renderFireLane();
+const name = vendorNameFor(vendorId);
+showMsg('flMsg', 'ok', offense === 1
+  ? '<svg class="ico"><use href="#i-checkmark"></use></svg> Warning recorded for ' + esc(name) +
+    '. A second offense this season is charged automatically.'
+  : offense === 2
+  ? '<svg class="ico"><use href="#i-checkmark"></use></svg> Second offense for ' + esc(name) +
+    ' \u2014 $' + charged + ' charged to their account.'
+  : 'Offense ' + offense + ' recorded for ' + esc(name) + '. The Guide says it increases after the second ' +
+    'but not by how much, so nothing has been charged: set an amount in Fines &amp; Penalties. ' +
+    'The gap is in front of the Board (BF64).');
+}
+async function initFireLaneScreen() {
+const rule = document.getElementById('flRule');
+if (rule) rule.innerHTML = 'First offense in a season: a warning, recorded here. Second: $' +
+  (ruleNum('fineFire2') || 50) + ', charged automatically. It resets each season.';
+const d = document.getElementById('flDate');
+if (d && !d.value) d.value = todayISO();
+const sel = document.getElementById('flVendor');
+if (sel && !sel.options.length) {
+  (cache.vendors || []).slice().sort((a, b) => a.businessName.localeCompare(b.businessName)).forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.vendorId;
+    o.textContent = v.businessName;
+    sel.appendChild(o);
+  });
+}
+document.getElementById('flMsg').className = 'status-msg';
+await renderFireLane();
+}
+async function renderFireLane() {
+const host = document.getElementById('flList');
+if (!host) return;
+const all = await fireLaneAll();
+const season = seasonYear();
+const mine = all.filter(x => fireLaneSeasonOf(x.date) === season);
+if (!mine.length) { host.innerHTML = '<p class="empty-note">Nothing recorded this season.</p>'; return; }
+const byVendor = {};
+mine.forEach(x => { (byVendor[x.vendorId] = byVendor[x.vendorId] || []).push(x); });
+host.innerHTML = Object.keys(byVendor).map(vid => {
+  const rows = byVendor[vid];
+  return '<div class="req-row"><div class="req-row-main">' +
+    '<div class="req-name">' + esc(vendorNameFor(vid)) + '</div>' +
+    rows.map(x => '<div class="req-meta">' + esc(formatDisplayDate(x.date)) + ' \u00b7 offense ' + x.offense +
+      (x.fine ? ' \u00b7 $' + x.fine + ' charged' : ' \u00b7 warning') +
+      (x.note ? ' \u00b7 ' + esc(x.note) : '') + '</div>').join('') +
+    '</div></div>';
+}).join('');
+}
+// ATTENDANCE SHORTFALLS (18-57, enforcing BF12). The app already counts the
+// days each reserved booth owes, within the season only, and starts again
+// each season. What was missing was anywhere for the office to see who is
+// short. What a shortfall costs is "up to $100 per market at Board
+// discretion", so nothing is charged automatically: the office decides and
+// records it. The amount question is in front of the Board as BF65.
+function attShortRows() {
+const out = [];
+(cache.vendors || []).forEach(v => {
+  let st;
+  try { st = attendanceStanding(v.vendorId); } catch (e) { return; }
+  (st.obligations || []).forEach(o => {
+    if (o.verdict === 'met') return;
+    out.push({ vendorId: v.vendorId, name: v.businessName, what: o.what, need: o.need, done: o.done,
+      short: o.shortBy, left: o.left, unit: o.unit, verdict: o.verdict });
+  });
+});
+const rank = { impossible: 0, risk: 1, short: 2 };
+return out.sort((a, b) => (rank[a.verdict] - rank[b.verdict]) || b.short - a.short);
+}
+function renderAttShort() {
+const note = document.getElementById('attShortRule');
+if (note) note.innerHTML = 'The season\u2019s count only, starting again each season. A shortfall costs up to $' +
+  (ruleNum('attShortMax') || 100) + ' per market at the Board\u2019s discretion, or the reservation itself \u2014 ' +
+  'so nothing is charged here automatically. Record what the Board decides in Fines &amp; Penalties.';
+const host = document.getElementById('attShortList');
+if (!host) return;
+const rows = attShortRows();
+if (!rows.length) { host.innerHTML = '<p class="empty-note">Every reserved booth is on track this season.</p>'; return; }
+host.innerHTML = rows.map(r =>
+  '<div class="req-row"><div class="req-row-main">' +
+  '<div class="req-name">' + esc(r.name) + '</div>' +
+  '<div class="req-meta">' + esc(r.what) + ' \u00b7 ' + r.done + ' of ' + r.need + ' ' + esc(r.unit) +
+  ' \u00b7 ' + r.short + ' short, ' + r.left + ' left</div>' +
+  '<div class="req-tally"><span class="req-state ' + (r.verdict === 'impossible' ? 'expired' : r.verdict === 'risk' ? 'expiring' : 'submitted') + '">' +
+  (r.verdict === 'impossible' ? 'Can\u2019t be met' : r.verdict === 'risk' ? 'At risk' : 'Short') + '</span></div>' +
+  '</div></div>').join('');
+}
 // MESSAGES (18-50). Vendors, the Market Manager, committees, and the two
 // coordinator desks (Market Staff; Volunteers & Partners) can all write to
 // each other. A Board member writes as their business: the Board has no
