@@ -6496,7 +6496,9 @@ Nobody bids and no points are spent &mdash; vendors are called in points order a
 <section id="screen-dataexport" class="screen">
 <div class="screen-head" id="head-dataexport"></div>
 <div class="card">
-<button class="primary-btn" style="margin-top:0;" id="exportBoardReview" onclick="exportBoardReviewCSV()"><svg class="ico"><use href="#i-download"></use></svg> <span id="exportBoardReviewLabel">Export Board Review List</span></button>
+<button class="primary-btn" style="margin-top:0;" onclick="exportBoardWorkbook()"><svg class="ico"><use href="#i-download"></use></svg> Download Everything as One Spreadsheet</button>
+<p class="empty-note" style="margin-top:-4px;">Six tabs in one file: the Board review list, points, requests and absences, booths, PopUp events and Winter Market dates. Opens in Numbers, Excel or Google Sheets.</p>
+<button class="primary-btn" id="exportBoardReview" onclick="exportBoardReviewCSV()"><svg class="ico"><use href="#i-download"></use></svg> <span id="exportBoardReviewLabel">Export Board Review List</span></button>
 <p class="empty-note" id="exportBoardReviewNote" style="margin-top:-4px;"></p>
 <button class="primary-btn" onclick="exportPointsCSV()"><svg class="ico"><use href="#i-download"></use></svg> Export Points Ledger</button>
 <button class="primary-btn" onclick="exportAttendanceCSV()"><svg class="ico"><use href="#i-download"></use></svg> Export Requests &amp; Absences</button>
@@ -17453,7 +17455,7 @@ s.chargedTotal, s.receivedTotal, s.owed, s.paid, s.outstanding,
 s.sentAt ? new Date(s.sentAt).toISOString().slice(0, 10) : '',
 s.settledAt || '', s.points == null ? '' : s.points,
 s.hours ? Number(s.hours.done || 0).toFixed(1) : '']);
-downloadCSV('statements-' + ym + '.csv',
+downloadSheet('statements-' + ym + '.xlsx', 'Statements ' + ym,
 ['Vendor', 'Month', 'Charges', 'Credits', 'Owed', 'Paid', 'Outstanding',
 'Due', 'Sent', 'Settled', 'Points', 'Hours done'], rows);
 }
@@ -19120,7 +19122,8 @@ renderWedList();
 // Controls that only change what is shown stay live on the Board desk.
 const BOARD_VIEW_OK = '.back-link, .help-dot, .fold-bar, .bf-ruling-head, .find-field, .vfind-input, .vfind-row, ' +
   '.vfind-chosen button, .switch-btn, .evac-bar, #bfStatus, #bfCat, #cmteSelect, #whRateYear, #yeYear, ' +
-  '#presActivity button, #presActivity input, #presActivity select, [data-board-view], .mgr-tile';
+  '#presActivity button, #presActivity input, #presActivity select, [data-board-view], .mgr-tile, ' +
+  '#screen-dataexport button';   // a download reads; it changes nothing
 let boardRoTimer = null;
 function applyBoardReadOnly() {
 if (currentRole !== 'board') return;
@@ -22275,6 +22278,149 @@ function csvEscape(val) {
 const s = String(val === undefined || val === null ? '' : val);
 return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
+// SPREADSHEETS, NOT CSV FILES (18-61). A .csv is a text file: one sheet, no
+// headings, no widths, and Excel and Numbers both guess at what the columns
+// mean. An .xlsx is a zip of small XML files, which this writes by hand --
+// the app loads nothing from anywhere, so a spreadsheet library was never an
+// option. Entries are stored uncompressed, which is legal zip and keeps this
+// to a page of code; the files are small.
+//
+// What it produces: one workbook, one sheet per table, a bold heading row
+// that stays put while you scroll, filter arrows on it, and columns wide
+// enough to read. Numbers are written as numbers so they add up; everything
+// else is text, so a booth number like "07" or an ID keeps its shape.
+function xlsxEscape(s) {
+return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+  .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+}
+function xlsxColName(n) {
+let s = '';
+for (n = n + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s;
+return s;
+}
+function xlsxSheetXML(sheet) {
+const headers = sheet.headers || [];
+const rows = sheet.rows || [];
+const widths = headers.map((hd, i) => {
+  let w = String(hd == null ? '' : hd).length;
+  rows.forEach(r => { const v = r[i]; const len = String(v == null ? '' : v).length; if (len > w) w = len; });
+  return Math.max(9, Math.min(60, w + 2));
+});
+const cell = (r, c, v, headerRow) => {
+  const ref = xlsxColName(c) + (r + 1);
+  if (v == null || v === '') return '<c r="' + ref + '"' + (headerRow ? ' s="1"' : '') + '/>';
+  const num = typeof v === 'number' || (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v)) && String(Number(v)) === v.trim());
+  if (num && !headerRow) return '<c r="' + ref + '"><v>' + Number(v) + '</v></c>';
+  return '<c r="' + ref + '" t="inlineStr"' + (headerRow ? ' s="1"' : '') + '><is><t xml:space="preserve">' + xlsxEscape(v) + '</t></is></c>';
+};
+const body = [headers.map((hd, c) => cell(0, c, hd, true)).join('')]
+  .concat(rows.map((row, i) => headers.map((hd, c) => cell(i + 1, c, row[c], false)).join('')));
+const last = xlsxColName(Math.max(0, headers.length - 1)) + (rows.length + 1);
+return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+  '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+  '<cols>' + widths.map((w, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>').join('') + '</cols>' +
+  '<sheetData>' + body.map((cells, i) => '<row r="' + (i + 1) + '">' + cells + '</row>').join('') + '</sheetData>' +
+  (headers.length ? '<autoFilter ref="A1:' + last + '"/>' : '') +
+  '</worksheet>';
+}
+function xlsxSheetName(name, taken) {
+let s = String(name || 'Sheet').replace(/[\\\/\?\*\[\]:]/g, ' ').trim().slice(0, 31) || 'Sheet';
+let n = 2;
+while (taken.includes(s)) { s = s.slice(0, 28) + ' ' + n++; }
+taken.push(s);
+return s;
+}
+// ---- the smallest zip that Excel, Numbers and Google Sheets all accept ----
+const XLSX_CRC = (() => {
+const t = new Uint32Array(256);
+for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[i] = c >>> 0; }
+return t;
+})();
+function xlsxCrc32(bytes) {
+let c = 0xFFFFFFFF;
+for (let i = 0; i < bytes.length; i++) c = XLSX_CRC[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function xlsxZip(files) {
+const enc = new TextEncoder();
+const parts = [], central = [];
+let offset = 0;
+const num = (n, bytes) => { const a = []; for (let i = 0; i < bytes; i++) a.push((n >>> (8 * i)) & 0xFF); return a; };
+files.forEach(f => {
+  const nameBytes = enc.encode(f.name);
+  const data = enc.encode(f.data);
+  const crc = xlsxCrc32(data);
+  const local = [].concat([0x50, 0x4B, 0x03, 0x04], num(20, 2), num(0, 2), num(0, 2), num(0, 2), num(0, 2),
+    num(crc, 4), num(data.length, 4), num(data.length, 4), num(nameBytes.length, 2), num(0, 2));
+  parts.push(new Uint8Array(local), nameBytes, data);
+  central.push([].concat([0x50, 0x4B, 0x01, 0x02], num(20, 2), num(20, 2), num(0, 2), num(0, 2), num(0, 2), num(0, 2),
+    num(crc, 4), num(data.length, 4), num(data.length, 4), num(nameBytes.length, 2), num(0, 2), num(0, 2), num(0, 2), num(0, 2), num(0, 4), num(offset, 4)));
+  central.push(nameBytes);
+  offset += local.length + nameBytes.length + data.length;
+});
+const centralBytes = [];
+central.forEach(c => { (c instanceof Uint8Array ? Array.from(c) : c).forEach(b => centralBytes.push(b)); });
+const end = [].concat([0x50, 0x4B, 0x05, 0x06], num(0, 2), num(0, 2), num(files.length, 2), num(files.length, 2),
+  num(centralBytes.length, 4), num(offset, 4), num(0, 2));
+return new Blob(parts.concat([new Uint8Array(centralBytes), new Uint8Array(end)]), 
+  { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+function xlsxBlob(sheets) {
+const taken = [];
+const named = sheets.map(s => Object.assign({}, s, { xname: xlsxSheetName(s.name, taken) }));
+const files = [
+  { name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    named.map((s, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') +
+    '</Types>' },
+  { name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>' },
+  { name: 'xl/workbook.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets>' + named.map((s, i) => '<sheet name="' + xlsxEscape(s.xname) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>' },
+  { name: 'xl/_rels/workbook.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    named.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('') +
+    '<Relationship Id="rId' + (named.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '</Relationships>' },
+  { name: 'xl/styles.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+    '<borders count="1"><border/></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+    '</styleSheet>' },
+];
+named.forEach((s, i) => files.push({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', data: xlsxSheetXML(s) }));
+return xlsxZip(files);
+}
+function downloadBlob(filename, blob) {
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = filename;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+// One table, one spreadsheet.
+function downloadSheet(filename, sheetName, headers, rows) {
+downloadBlob(filename, xlsxBlob([{ name: sheetName, headers: headers, rows: rows }]));
+}
+// Several tables, one spreadsheet with a tab each.
+function downloadWorkbook(filename, sheets) { downloadBlob(filename, xlsxBlob(sheets)); }
 function downloadCSV(filename, headers, rows) {
 const lines = [headers.map(csvEscape).join(',')].concat(
 rows.map(row => row.map(csvEscape).join(','))
@@ -22293,33 +22439,51 @@ function vendorNameFor(vendorId) {
 const v = cache.vendors.find(x => x.vendorId === vendorId);
 return v ? v.businessName : vendorId;
 }
+// Each table in one place, so a single button can hand over the lot.
+function exportSheetPoints() {
+return { name: 'Points Ledger', headers: ['Business Name', 'Vendor ID', 'Date', 'Type', 'Points', 'Note', 'PopUp ID', 'Winter Market ID'],
+rows: cache.ledger.map(r => [vendorNameFor(r.vendorId), r.vendorId, r.date, r.type, r.points, r.note || '', r.popupId || '', r.winterMarketId || '']) };
+}
 function exportPointsCSV() {
-const rows = cache.ledger.map(r => [vendorNameFor(r.vendorId), r.vendorId, r.date, r.type, r.points, r.note || '', r.popupId || '', r.winterMarketId || '']);
-downloadCSV('ifm-points-ledger.csv', ['Business Name', 'Vendor ID', 'Date', 'Type', 'Points', 'Note', 'PopUp ID', 'Winter Market ID'], rows);
+const s = exportSheetPoints();
+downloadSheet('ifm-points-ledger.xlsx', s.name, s.headers, s.rows);
+}
+function exportSheetPopups() {
+return { name: 'PopUp Events', headers: ['Event Name', 'Date', 'Location', 'Notes', 'PopUp ID'],
+rows: cache.popups.map(p => [p.name, p.date, p.location || '', p.notes || '', p.id]) };
 }
 function exportPopupsCSV() {
-const rows = cache.popups.map(p => [p.name, p.date, p.location || '', p.notes || '', p.id]);
-downloadCSV('ifm-popup-events.csv', ['Event Name', 'Date', 'Location', 'Notes', 'PopUp ID'], rows);
+const s = exportSheetPopups();
+downloadSheet('ifm-popup-events.xlsx', s.name, s.headers, s.rows);
+}
+function exportSheetWinter() {
+return { name: 'Winter Market Dates', headers: ['Date', 'Location', 'Notes', 'Winter Market ID'],
+rows: cache.wintermarket.map(w => [w.date, w.location || '', w.notes || '', w.id]) };
 }
 function exportWinterMarketCSV() {
-const rows = cache.wintermarket.map(w => [w.date, w.location || '', w.notes || '', w.id]);
-downloadCSV('ifm-winter-market-dates.csv', ['Date', 'Location', 'Notes', 'Winter Market ID'], rows);
+const s = exportSheetWinter();
+downloadSheet('ifm-winter-market-dates.xlsx', s.name, s.headers, s.rows);
+}
+function exportSheetAttendance() {
+return { name: 'Requests & Absences', headers: ['Business Name', 'Vendor ID', 'Market Date', 'Day', 'Status'],
+rows: cache.callinout.map(r => [vendorNameFor(r.vendorId), r.vendorId, r.marketDate, r.marketDay, r.status]) };
 }
 function exportAttendanceCSV() {
-const rows = cache.callinout.map(r => [vendorNameFor(r.vendorId), r.vendorId, r.marketDate, r.marketDay, r.status]);
-downloadCSV('ifm-attendance.csv', ['Business Name', 'Vendor ID', 'Market Date', 'Day', 'Status'], rows);
+const s = exportSheetAttendance();
+downloadSheet('ifm-requests-and-absences.xlsx', s.name, s.headers, s.rows);
 }
 function exportBoothsCSV() {
 // Two columns, because they are two different things. "Where" is a name
 // somebody would recognize; the raw section is an internal label invented
 // when the data was digitized, and a spreadsheet travels far enough from
 // this app that the column heading has to say so.
-const rows = cache.booths.map(b => [
-b.num, boothWhere(b), b.section,
-b.reservedBy ? vendorNameFor(b.reservedBy) : '', b.reservedBy || '', b.note || ''
-]);
-downloadCSV('ifm-booth-assignments.csv',
-['Booth', 'Where', 'Section (internal)', 'Reserved By', 'Vendor ID', 'Note'], rows);
+const s = exportSheetBooths();
+downloadSheet('ifm-booth-assignments.xlsx', s.name, s.headers, s.rows);
+}
+function exportSheetBooths() {
+return { name: 'Booth Assignments', headers: ['Booth', 'Where', 'Section (internal)', 'Reserved By', 'Vendor ID', 'Note'],
+rows: cache.booths.map(b => [b.num, boothWhere(b), b.section,
+  b.reservedBy ? vendorNameFor(b.reservedBy) : '', b.reservedBy || '', b.note || '']) };
 }
 function initSendToCommittee() {
 const sel = document.getElementById('ftCmte');
@@ -23271,7 +23435,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-59';
+const BUILD_ID = '18-61';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -33617,10 +33781,28 @@ const fol = (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t || '';
 return [f.id, f.t, kind.t, f.cat, f.src, f.d, d.setAt || '', 'For Board review',
 d.decision || '', d.minutes || '', fol, d.follow === 'rules' || d.follow === 'build' ? (d.done ? 'Done' : 'Still to do') : ''];
 });
-downloadCSV('ifm-board-review.csv',
+downloadSheet('ifm-board-review.xlsx', 'To Discuss with the Board',
 ['Ref', 'Topic', 'Why flagged', 'Area', 'Where the rule lives', 'Detail', 'Sent on', 'Status',
 'Board decision', 'Minutes', 'What the app needs', 'App updated'],
 rows);
+}
+function exportSheetBoardReview() {
+return { name: 'To Discuss with the Board',
+headers: ['Ref', 'Topic', 'Why flagged', 'Area', 'Where the rule lives', 'Detail', 'Sent on', 'Status',
+  'Board decision', 'Minutes', 'What the app needs', 'App updated'],
+rows: boardReviewList().map(f => {
+  const d = flagDecision(f.id);
+  const kind = FLAG_KIND[f.kind] || FLAG_KIND.gap;
+  const fol = (FLAG_FOLLOW.find(x => x.v === d.follow) || {}).t || '';
+  return [f.id, f.t, kind.t, f.cat, f.src, f.d, d.setAt || '', 'For Board review',
+    d.decision || '', d.minutes || '', fol, d.follow === 'rules' || d.follow === 'build' ? (d.done ? 'Done' : 'Still to do') : ''];
+}) };
+}
+// Everything the Board is handed, in one spreadsheet with a tab each.
+function exportBoardWorkbook() {
+const sheets = [exportSheetBoardReview(), exportSheetPoints(), exportSheetAttendance(),
+  exportSheetBooths(), exportSheetPopups(), exportSheetWinter()];
+downloadWorkbook('ifm-board-' + todayISO() + '.xlsx', sheets);
 }
 const RULE_DEFS = [
 { g: 'Daily selling fees', id: 'feeSat', l: 'Saturday', u: '$', d: 40, src: 'Guide, Daily Selling Fees' },
@@ -46483,6 +46665,7 @@ tiles: [
 // bug -- Compliments & Complaints, Points Sign-Off and Ideas were, in
 // practical terms, gone.
 { s: 'boardflags', i: 'i-scale', t: 'To Discuss with the Board', d: 'Questions only the Board can settle \u2014 raised by builds, waiting for a meeting', nav: true },
+{ s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Spreadsheets for the Board \u2014 questions and decisions, points, attendance, booths, satellite markets' },
 { s: 'ptssignoff', i: 'i-scale', t: 'Points Sign-Off', d: 'Points the office has entered, waiting on you \u2014 they do not count until signed' },
 { s: 'idea', i: 'i-star', t: 'Ideas', d: 'What vendors think the market could try' },
 ] },
@@ -46532,6 +46715,7 @@ tiles: [
 { s: 'proposaltracker', i: 'i-columns', t: 'Board Proposals', d: 'Where each proposal stands' },
 { s: 'amendments', i: 'i-quill', t: 'Board Amendments', d: 'Rules changed since the Guide printed' },
 { s: 'ideapath', i: 'i-scale', t: 'How an Idea Reaches the Board', d: 'The route from a vendor\u2019s idea to a Board decision' },
+{ s: 'dataexport', i: 'i-download', t: 'Data Export', d: 'Spreadsheets of the Board\u2019s own figures \u2014 questions and decisions, points, attendance, booths, satellite markets' },
 ] },
 { key: 'bdcommittees', title: 'Committees', icon: 'i-columns',
 sub: 'Who serves and who chairs \u2014 the President appoints the chairs (Bylaws VI \u00a72)',
