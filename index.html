@@ -826,8 +826,12 @@ details:not([open]) > *:not(summary) { display: none !important; }
    only reads. Different edge, different heading colour, different weight. */
 .gc-sell { border-left: 5px solid var(--sunflower); }
 .gc-sell > h2 { color: var(--leaf); }
-.gc-look { border-left: 5px solid #2F5D8A; background: rgba(245,242,231,0.75); }
-.gc-look > h2 { color: #2F5D8A; font-size: 17px; }
+.gc-look { border-left: 5px solid #5E6B24; background: rgba(245,242,231,0.75); }
+/* Looking one up is green, and it is the only thing in this card (18-71).
+   White on #5E6B24 is 5.8:1. */
+.gc-look > h2 { color: #4B5620; font-size: 17px; }
+html body .gc-look .primary-btn.gcv-scan-btn { background: #5E6B24; box-shadow: 0 3px 10px rgba(94,107,36,0.3); }
+html body .gc-look .primary-btn.gcv-scan-btn:active { background: #4B5620; opacity: 1; }
 .gc-look .gcv-scan-btn { font-size: 16px; padding: 13px; }
 .gc-aside { margin-top: 12px; font-size: 14px; }
 .gc-aside > summary { cursor: pointer; font-weight: 700; font-size: 14px; color: var(--berry); padding: 6px 0; }
@@ -2582,7 +2586,7 @@ html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool :is(.card, de
 }
 /* keep the two certificate cards telling themselves apart */
 html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool div.card.gc-sell { border-left-color: var(--sunflower); }
-html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool div.card.gc-look { border-left-color: #2F5D8A; }
+html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool div.card.gc-look { border-left-color: #5E6B24; }
 
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(#acctRecent, .ans-group) {
   background: var(--glass); border-color: var(--glass-edge);
@@ -2756,6 +2760,8 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .mgr-inline-head { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 8px; padding: 4px; background: none; border: 0;
   font-family: 'Manrope', -apple-system, sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); text-align: left; cursor: pointer; }
 .mgr-inline-open { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--berry); }
+.mgr-inline-day { font-size: 13px; font-weight: 600; opacity: 0.85; }
+.mgr-inline-tool .tool-date { display: none; }
 /* Beats body.role-manager .manager-only, which forces display with
    !important and would otherwise keep these on Home (18-69). */
 body .mgr-inline-tool .tool-aside,
@@ -3783,12 +3789,9 @@ style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (
 <p id="gcLookScanStatus" class="gcv-status"></p>
 <button type="button" class="ghost-btn" onclick="stopQrScan()">Stop scanning</button>
 </div>
-<label for="gcSerial">Or paste a code</label>
-<input type="text" id="gcSerial" class="find-field" placeholder="From the roll you loaded, or the book" autocomplete="off"
-oninput="gcLookup(this.value)" style="text-transform:uppercase;">
 <div id="gcLookupMsg" class="status-msg"></div>
 <div id="gcLookupOut" class="desk-transient"></div>
-<details class="gc-aside">
+<details class="gc-aside tool-aside">
 <summary>When you would look one up</summary>
 <ul>
 <li>a vendor who cannot scan &mdash; no phone, flat battery, no signal &mdash; who brings it to the window</li>
@@ -4990,8 +4993,8 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <section id="screen-snaplog" class="screen">
 <div class="screen-head" id="head-snaplog"></div>
 <div class="card desk-form">
-<label for="snapDate">Market day</label>
-<select id="snapDate" onchange="renderSnapDay()"></select>
+<div class="tool-date"><label for="snapDate">Market day</label>
+<select id="snapDate" onchange="renderSnapDay()"></select></div>
 </div>
 <div class="card desk-form tool-aside" id="snapAcceptCard">
 <h2><span class="emoji"><svg class="ico"><use href="#i-checkmark"></use></svg></span><span id="snapAcceptTitle"></span></h2>
@@ -5066,8 +5069,8 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <section id="screen-fclog" class="screen">
 <div class="screen-head" id="head-fclog"></div>
 <div class="card desk-form">
-<label for="fcDate">Market day</label>
-<select id="fcDate" onchange="renderFcDay()"></select>
+<div class="tool-date"><label for="fcDate">Market day</label>
+<select id="fcDate" onchange="renderFcDay()"></select></div>
 </div>
 <div class="card desk-form">
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Checks Turned In<button type="button" class="help-dot" onclick="showHelp(HELP_FC_MGR)" aria-label="What are the rules here?">?</button></h2>
@@ -6306,8 +6309,8 @@ comes from.</p>
 <div class="screen-head" id="head-noshow"></div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-no-entry"></use></svg></span>No-Show Log<button type="button" class="help-dot" onclick="showPlanned('noshow')" aria-label="What are the rules here?">?</button></h2>
-<label for="nsDate">Market day</label>
-<select id="nsDate" onchange="renderNoShow()"></select>
+<div class="tool-date"><label for="nsDate">Market day</label>
+<select id="nsDate" onchange="renderNoShow()"></select></div>
 <p class="empty-note" id="nsNote"></p>
 <button type="button" class="ghost-btn" id="nsReveal" onclick="noShowToggleList()"></button>
 <div id="nsList"></div>
@@ -6327,8 +6330,8 @@ comes from.</p>
 <p class="empty-note" style="margin-top:0;" id="flRule"></p>
 <label for="flVendor">Vendor</label>
 <select id="flVendor"></select>
-<label for="flDate">When</label>
-<input type="date" id="flDate">
+<div class="tool-date"><label for="flDate">When</label>
+<input type="date" id="flDate"></div>
 <label for="flNote">What happened</label>
 <input type="text" id="flNote" placeholder="e.g. van left in the lane through the 9 o&rsquo;clock rush" autocomplete="off">
 <button type="button" class="primary-btn" onclick="recordFireLane()">Record it</button>
@@ -6435,8 +6438,8 @@ comes from.</p>
 <h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Day-Fee Collection<button type="button" class="help-dot" onclick="showPlanned('dayfees')" aria-label="What are the rules here?">?</button></h2>
 <div class="status-msg" id="dfMsg"></div>
 <p class="empty-note" id="dfWhose" style="display:none;"><b>This log is the Market Manager&rsquo;s.</b> You can read who has paid, but recording a payment says money changed hands, and that is theirs to record.</p>
-<label for="dfDate">Market day</label>
-<select id="dfDate" onchange="renderDayFees()"></select>
+<div class="tool-date"><label for="dfDate">Market day</label>
+<select id="dfDate" onchange="renderDayFees()"></select></div>
 <label for="dfSearch" style="margin-top:10px;">Find a vendor</label>
 <input type="text" id="dfSearch" class="find-field" placeholder="Business or last name" autocomplete="off" oninput="renderDayFees()">
 <div class="df-controls">
@@ -12554,10 +12557,9 @@ o.textContent = formatDisplayDate(m.date);
 sel.appendChild(o);
 });
 if (chosen && [...sel.options].some(o => o.value === chosen)) sel.value = chosen;
+// One line, not a paragraph: the rate, and where to change it (18-71).
 const note = document.getElementById('snapValueNote');
-if (note) note.textContent = 'A token counts as $' + fmtMoney(ruleNum('snapTokenValue') || 1) +
-'. The log keeps the number of tokens, which is the fact; the money is worked out from that, ' +
-'so changing the rate later re-values every past line. Change it in Market Rules if it is wrong.';
+if (note) note.textContent = 'A token counts as $' + fmtMoney(ruleNum('snapTokenValue') || 1) + ' (Market Rules).';
 renderSnapVendorChoices();
 renderAcceptCard('snap');
 renderSnapDay();
@@ -13038,9 +13040,7 @@ sel.appendChild(o);
 });
 if (chosen && [...sel.options].some(o => o.value === chosen)) sel.value = chosen;
 const note = document.getElementById('fcValueNote');
-if (note) note.textContent = 'Record the face value printed on the checks. Unlike a SNAP token, ' +
-'the market does not set what a FreshConnect Check is worth \u2014 New York State does \u2014 ' +
-'so there is no rate here to change and no past line that could be re-valued.';
+if (note) note.textContent = 'Record the face value printed on the checks.';
 renderFcVendorChoices();
 renderAcceptCard('fc');
 renderFcDay();
@@ -15011,6 +15011,16 @@ wrap.appendChild(sec);
 sec.classList.add('inline-screen', 'active');
 grid.appendChild(wrap);
 runScreenInit(tile.s);
+// Which day this is recording, said once, where the picker used to be. The
+// picker itself is on the tool's own screen, for the Sunday you forgot to
+// write up on Sunday (18-71).
+const day = sec.querySelector('.tool-date select');
+if (day && day.value) {
+  const when = document.createElement('span');
+  when.className = 'mgr-inline-day';
+  when.textContent = formatDisplayDate(day.value);
+  head.querySelector('span').after(when);
+}
 // Standing decisions belong where the rule bites, not on a working surface.
 const banner = document.getElementById('rulings-' + tile.s);
 if (banner) banner.remove();
@@ -23500,7 +23510,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-70';
+const BUILD_ID = '18-71';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -45795,8 +45805,8 @@ showMsg('flMsg', 'ok', offense === 1
 }
 async function initFireLaneScreen() {
 const rule = document.getElementById('flRule');
-if (rule) rule.innerHTML = 'First offense in a season: a warning, recorded here. Second: $' +
-  (ruleNum('fineFire2') || 50) + ', charged automatically. It resets each season.';
+if (rule) rule.innerHTML = 'First offense: a warning. Second: $' + (ruleNum('fineFire2') || 50) +
+  ', charged automatically. Resets each season.';
 const d = document.getElementById('flDate');
 if (d && !d.value) d.value = todayISO();
 const sel = document.getElementById('flVendor');
@@ -46494,8 +46504,7 @@ renderGcBook();
 const scan = document.getElementById('gcScan');
 if (scan && !window.gcPendingScan) setTimeout(() => scan.focus(), 120);
 if (window.gcPendingScan) {
-const el = document.getElementById('gcSerial');
-if (el) { el.value = window.gcPendingScan; gcLookup(window.gcPendingScan); }
+gcLookup(window.gcPendingScan);
 window.gcPendingScan = null;
 }
 }
