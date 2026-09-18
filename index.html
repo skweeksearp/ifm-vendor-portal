@@ -23435,7 +23435,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-62';
+const BUILD_ID = '18-63';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -34972,7 +34972,9 @@ tiles: [
 { key: 'wednesday', title: 'Wednesday Market', icon: 'i-sun-rays',
 sub: 'East Hill Plaza \u2014 Wednesdays, May to October, 3 to 6 PM. Attendance earns a point a day, like any market',
 tiles: [
-{ s: 'wednesday', i: 'i-tent', t: 'How Wednesday Runs', d: 'No lottery, no assigned spaces, arrival order &middot; the $20 fee collected on site' },
+// "How Wednesday Runs" left the Manager's desk in 18-63: the office knows how
+// its own market runs. The same screen is still the vendor desk's Wednesday
+// Market drawer, where somebody may actually need telling.
 { s: 'wedlist', i: 'i-list', t: 'Who Is Here Today', d: 'Tick off who turned up, then publish the list to the website' },
 ] },
 { key: 'popups', title: 'PopUp Markets', icon: 'i-tent',
