@@ -5010,8 +5010,10 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <p>After each swipe on the EBT terminal, record how many tokens went out. The app never touches the card &mdash; the terminal does that, and this is only the paper trail on this side of it.</p></details>
 <label for="snapOutCount">How many tokens</label>
 <input type="number" id="snapOutCount" min="1" step="1" inputmode="numeric" placeholder="e.g. 20">
+<div class="tool-aside">
 <label for="snapOutNote" style="margin-top:10px;">Note (optional)</label>
 <input type="text" id="snapOutNote" placeholder="e.g. terminal receipt 4471, or &lsquo;incentive match&rsquo;" autocomplete="off">
+</div>
 <div class="status-msg" id="snapOutMsg"></div>
 <button type="button" class="primary-btn" onclick="recordSnapIssue()"><svg class="ico"><use href="#i-checkmark"></use></svg> Record tokens out</button>
 <div id="snapOutList"></div>
@@ -6433,14 +6435,14 @@ comes from.</p>
 <section id="screen-dayfees" class="screen">
 <div class="screen-head" id="head-dayfees"></div>
 <div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Day-Fee Collection<button type="button" class="help-dot" onclick="showPlanned('dayfees')" aria-label="What are the rules here?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-basket"></use></svg></span>Booth Fees<button type="button" class="help-dot" onclick="showPlanned('dayfees')" aria-label="What are the rules here?">?</button></h2>
 <div class="status-msg" id="dfMsg"></div>
 <p class="empty-note" id="dfWhose" style="display:none;"><b>This log is the Market Manager&rsquo;s.</b> You can read who has paid, but recording a payment says money changed hands, and that is theirs to record.</p>
 <div class="tool-date"><label for="dfDate">Market day</label>
 <select id="dfDate" onchange="renderDayFees()"></select></div>
 <label for="dfSearch" style="margin-top:10px;">Find a vendor</label>
 <input type="text" id="dfSearch" class="find-field" placeholder="Business or last name" autocomplete="off" oninput="renderDayFees()">
-<div class="df-controls">
+<div class="df-controls tool-aside">
 <div>
 <label for="dfFilter">Show</label>
 <select id="dfFilter" onchange="renderDayFees()">
@@ -6457,7 +6459,7 @@ comes from.</p>
 </select>
 </div>
 </div>
-<p class="empty-note" id="dfSummary"></p>
+<p class="empty-note tool-aside" id="dfSummary"></p>
 <div id="dfJust" class="df-just" style="display:none;"></div>
 <button type="button" class="ghost-btn" id="dfReveal" onclick="dayFeeToggleList()"></button>
 <div id="dfList"></div>
@@ -8941,7 +8943,7 @@ const ACT_KEYS = {
 'ifm-ledger':          { t: 'Points ledger', k: 'money', w: 'notable' },
 'ifm-accounts':        { t: 'Vendor accounts', k: 'money', w: 'notable' },
 'ifm-fines':           { t: 'Fines', k: 'money', w: 'notable' },
-'ifm-dayfees':         { t: 'Day-fee collection', k: 'money', w: 'notable' },
+'ifm-dayfees':         { t: 'Booth fees', k: 'money', w: 'notable' },
 'ifm-giftcerts':       { t: 'Gift certificates', k: 'money', w: 'notable' },
 'ifm-snap':            { t: 'SNAP tokens', k: 'money', w: 'notable' },
 'ifm-freshconnect':    { t: 'FreshConnect Checks', k: 'money', w: 'notable' },
@@ -14728,7 +14730,7 @@ body: '<p>Record who serves on each of the six standing committees, who chairs, 
 '<p>Per the Bylaws, membership is approved by the Board and chairs are appointed by the Board President. This screen records those decisions; it does not make them.</p>' +
 '<p>Vendors on a committee see its open items on their own dashboard under Committees.</p>' +
 '<p><b>Blocked on a record we do not have.</b> The current rosters \u2014 who serves on each committee and who chairs \u2014 are in board minutes and the committees&rsquo; own guidelines, not in the app. It is a small record, but this tool cannot proceed without it.</p>' },
-dayfees: { built: true, live: true, t: 'Day-Fee Collection Log', when: 'Every market day',
+dayfees: { built: true, live: true, t: 'Booth Fees', when: 'Every market day',
 body: '<p>Record which vendors paid the daily selling fee, and what is outstanding at the end of the day.</p>' +
 '<p>The Guide sets the fee at $40 Saturday, $30 Sunday, $20 Wednesday and $30 at the Winter Market, collected by the staff member on duty &mdash; before opening at Steamboat Landing, during market on Wednesdays and in winter.</p>' +
 '<p>This is the market&rsquo;s daily cash flow and the app records none of it.</p>' },
@@ -19508,7 +19510,7 @@ noshow:            { title: 'No-Show Log' },
 fines:             { title: 'Fines & Penalties' },
 composition:       { title: 'Membership Composition' },
 optool:            { title: () => (OPTOOLS[otOpenKey] || {}).title || 'Record Log' },
-dayfees:           { title: 'Day-Fee Collection Log' },
+dayfees:           { title: 'Booth Fees' },
 pointsroll:        { title: 'Annual Points Rollover' },
 auction:           { title: () => selectionSeason() + ' Season-Long Booth Reservations' },
 boardcycle:        { title: 'Board Meeting Cycle' },
@@ -23503,7 +23505,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-75';
+const BUILD_ID = '18-77';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -35034,7 +35036,7 @@ d: () => 'Held March and April ' + selectionSeason() + ' &middot; a booth held f
 { key: 'marketday', title: 'Market Day', icon: 'i-sun-rays',
 sub: 'Money taken and what happened, market day by market day',
 tiles: [
-{ s: 'dayfees', i: 'i-basket', t: 'Day-Fee Collection Log', d: 'Who paid the daily selling fee' },
+{ s: 'dayfees', i: 'i-basket', t: 'Booth Fees', d: 'Who paid the daily booth fee' },
 { s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a certificate to sell, scan it again when it comes back' },
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
 { s: 'fclog', i: 'i-gem', t: 'FreshConnect Checks In', d: 'Checks turned in by vendors \u2014 New York State issues them, so the market only takes them back' },
