@@ -3753,7 +3753,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 <section id="screen-giftcerts" class="screen">
 <div class="screen-head" id="head-giftcerts"></div>
 <div class="card manager-only desk-form gc-sell">
-<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Sell a Certificate<button type="button" class="help-dot" onclick="showHelp(73)" aria-label="How does selling one work?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Sell a Gift Certificate<button type="button" class="help-dot" onclick="showHelp(73)" aria-label="How does selling one work?">?</button></h2>
 <div class="empty-note" id="gcOutOfStickers" style="display:none; color:#8A3B2E;"></div>
 <label for="gcAmount">Amount</label>
 <div class="mr-unit-row"><input type="text" id="gcAmount" inputmode="decimal" autocomplete="off" value="20" oninput="renderGcQuickPicks()"><span class="mr-unit">dollars</span></div>
@@ -3780,7 +3780,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 </details>
 </div>
 <div class="card manager-only gc-look">
-<h2><span class="emoji"><svg class="ico"><use href="#i-qr"></use></svg></span>Look Up a Certificate<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does looking one up work?">?</button></h2>
+<h2><span class="emoji"><svg class="ico"><use href="#i-qr"></use></svg></span>Look Up a Gift Certificate<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does looking one up work?">?</button></h2>
 <div id="gcLookScanRow"></div>
 <div id="gcLookScanBox" style="display:none;" class="card gcv-scanbox">
 <div class="gcv-frame"><video id="gcLookVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
@@ -14987,7 +14987,7 @@ if (document.body.classList.contains('vendor-tabs')) return VENDOR_TABS;
 return null;
 }
 // In the order a market day happens.
-const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'firelane', 'noshow', 'ot:stallcheck'];
+const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'noshow', 'ot:stallcheck', 'firelane'];
 function mgrInlineTool(grid, tile) {
 const screenName = tile.s || 'optool';
 if (tile.ot) otOpenKey = tile.ot;
@@ -23505,7 +23505,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-77';
+const BUILD_ID = '18-79';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -46337,8 +46337,8 @@ renderGcRollCount();
 } });
 }
 function renderGcOfficeScanRows() {
-const rows = [['gcLookScanRow', 'gcLookStartScan()', 'Scan the certificate'],
-['gcSellScanRow', 'gcSellStartScan()', 'Scan the certificate you are selling'],
+const rows = [['gcLookScanRow', 'gcLookStartScan()', 'Scan the gift certificate'],
+['gcSellScanRow', 'gcSellStartScan()', 'Scan the gift certificate you are selling'],
 ['gcRollScanRow', 'gcRollStartScan()', 'Scan the stickers in, one after another']];
 rows.forEach(([id, fn, label]) => {
 const el = document.getElementById(id);
