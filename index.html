@@ -3769,8 +3769,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 <p id="gcSellScanStatus" class="gcv-status"></p>
 <button type="button" class="ghost-btn" onclick="stopQrScan()">Stop scanning</button>
 </div>
-<input type="text" id="gcScan" class="find-field" placeholder="Or paste a code from the loaded roll" autocomplete="off"
-style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (event.key === 'Enter') { event.preventDefault(); gcSellScan(); }">
+<input type="hidden" id="gcScan">
 <button type="button" class="primary-btn" id="gcSellBtn" onclick="gcSellScan()"><svg class="ico"><use href="#i-checkmark"></use></svg> <span id="gcSellBtnLabel">Sell this certificate</span></button>
 <div id="gcSellMsg" class="status-msg"></div>
 <div id="gcSession" class="desk-transient"></div>
@@ -4991,7 +4990,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </section>
 <section id="screen-snaplog" class="screen">
 <div class="screen-head" id="head-snaplog"></div>
-<div class="card desk-form">
+<div class="card desk-form tool-aside">
 <div class="tool-date"><label for="snapDate">Market day</label>
 <select id="snapDate" onchange="renderSnapDay()"></select></div>
 </div>
@@ -5067,7 +5066,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </section>
 <section id="screen-fclog" class="screen">
 <div class="screen-head" id="head-fclog"></div>
-<div class="card desk-form">
+<div class="card desk-form tool-aside">
 <div class="tool-date"><label for="fcDate">Market day</label>
 <select id="fcDate" onchange="renderFcDay()"></select></div>
 </div>
@@ -14966,12 +14965,12 @@ const VENDOR_TABS = [
 // Notifications stay on Home. The Board President and Board of Directors
 // desks keep the tile grid; this is the Market Manager's desk only.
 const MANAGER_TABS = [
-{ k: 'home', t: 'Home', icon: 'i-vtab-home', folders: ['marketday', 'answering', 'manual'] },
+{ k: 'home', t: 'Home', icon: 'i-vtab-home', folders: ['marketday'] },
 { k: 'booths', t: 'Booth<br>Selection', title: 'Booth Selection', icon: 'i-vtab-booth', folders: ['selection', 'booths'] },
-{ k: 'accounts', t: 'Accounts', title: 'Accounts', icon: 'i-vtab-cash', folders: ['money', 'hours', 'vendors'] },
+{ k: 'accounts', t: 'Accounts', title: 'Accounts', icon: 'i-vtab-cash', folders: ['money', 'hours', 'vendors', 'manual'] },
 { k: 'board', t: 'Board &amp;<br>Committees', title: 'Board & Committees', icon: 'i-scale', folders: ['board', 'programs'] },
 { k: 'satellites', t: 'Satellite<br>Markets', title: 'Satellite Markets', icon: 'i-map-pin', folders: ['winter', 'wednesday', 'popups'] },
-{ k: 'messages', t: 'Messages', title: 'Messages', icon: 'i-vtab-talk', folders: ['messages'], bare: true },
+{ k: 'messages', t: 'Messages', title: 'Messages', icon: 'i-vtab-talk', folders: ['messages', 'answering'], bare: true },
 ];
 let managerTab = 'home';
 let vendorTab = 'home';
@@ -23501,7 +23500,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-72';
+const BUILD_ID = '18-74';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -46500,8 +46499,7 @@ await loadGiftCerts();
 await loadGcRolls();
 renderGcSession();
 renderGcBook();
-const scan = document.getElementById('gcScan');
-if (scan && !window.gcPendingScan) setTimeout(() => scan.focus(), 120);
+
 if (window.gcPendingScan) {
 gcLookup(window.gcPendingScan);
 window.gcPendingScan = null;
@@ -46930,7 +46928,9 @@ tab.folders.forEach(key => {
     ? (f.tiles || []).filter(t => !MGR_HOME_INLINE.includes(t.s) && !MGR_HOME_INLINE.includes('ot:' + t.ot))
     : (f.tiles || []);
   if (tab.k === 'home' && key === 'marketday' && !tiles.length) return;
-  if (!tab.bare) {
+  // 'bare' means the tab's own tool needs no heading; anything sharing the
+  // tab with it still gets one (18-74).
+  if (!tab.bare || key !== tab.folders[0]) {
     const head = document.createElement('div');
     head.className = 'mgr-drawer-head';
     const v = MGR_VENUE_OF[f.key];
