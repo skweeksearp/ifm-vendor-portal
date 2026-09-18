@@ -821,6 +821,14 @@ background: #F1E1D5; border: 1px solid var(--tomato); color: #6E2E12;
    card children, which is enough to defeat the browser's own hiding, so the
    contents of a closed <details> were visible anyway (18-65). */
 details:not([open]) > *:not(summary) { display: none !important; }
+/* The two certificate jobs must not be mistaken for each other (18-70):
+   selling takes money and is the one with the amount on it; looking one up
+   only reads. Different edge, different heading colour, different weight. */
+.gc-sell { border-left: 5px solid var(--sunflower); }
+.gc-sell > h2 { color: var(--leaf); }
+.gc-look { border-left: 5px solid #2F5D8A; background: rgba(245,242,231,0.75); }
+.gc-look > h2 { color: #2F5D8A; font-size: 17px; }
+.gc-look .gcv-scan-btn { font-size: 16px; padding: 13px; }
 .gc-aside { margin-top: 12px; font-size: 14px; }
 .gc-aside > summary { cursor: pointer; font-weight: 700; font-size: 14px; color: var(--berry); padding: 6px 0; }
 .gc-aside ul { margin: 6px 0 8px 18px; padding: 0; }
@@ -2567,6 +2575,15 @@ html[data-look="rainshine"] body:not(.kiosk-mode) :is(.card, .menu-card) {
 /* Two cards on My Account that never grow past a few hundred pixels get the
    drawer bars' look, so the tab reads like Communicate (18-49): the account
    summary and the Your Answers boxes. The memory test holds them to it. */
+/* The manager's working surface: forms you read while somebody waits, so
+   they are nearly solid rather than see-through (18-70). */
+html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool :is(.card, details.card) {
+  background: rgba(255,251,241,0.93); border-color: var(--paper-dim);
+}
+/* keep the two certificate cards telling themselves apart */
+html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool div.card.gc-sell { border-left-color: var(--sunflower); }
+html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool div.card.gc-look { border-left-color: #2F5D8A; }
+
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(#acctRecent, .ans-group) {
   background: var(--glass); border-color: var(--glass-edge);
   -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15);
@@ -2606,6 +2623,8 @@ html[data-look="rainshine"] body:not(.kiosk-mode) .ghost-btn {
 html[data-look="rainshine"] body:not(.kiosk-mode) header.market-header :is(h1, .biz-line),
 html[data-look="rainshine"] body:not(.kiosk-mode) #mgrFolders > .mgr-drawer-head,
 html[data-look="rainshine"] body:not(.kiosk-mode) #mgrFolders > .mgr-drawer-head *,
+html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-head,
+html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-head *,
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(#screen-dashboard, #screen-managerdash, #screen-staff, #screen-volunteer) > :is(.screen-head > h1.screen-title, h1.screen-title, #menuTailorNote),
 html[data-look="rainshine"] body:not(.kiosk-mode) :is(#screen-dashboard, #screen-managerdash, #screen-staff, #screen-volunteer) > .screen-head > :is(h1.screen-title, .screen-title-quiet) {
   color: #fff; opacity: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.55), 0 2px 12px rgba(0,0,0,0.35);
@@ -3728,33 +3747,7 @@ Recording it here puts that notice in front of every vendor when they open the a
 </section>
 <section id="screen-giftcerts" class="screen">
 <div class="screen-head" id="head-giftcerts"></div>
-<div class="card manager-only">
-<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>Look Up a Certificate<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does looking one up work?">?</button></h2>
-<div id="gcLookScanRow"></div>
-<div id="gcLookScanBox" style="display:none;" class="card gcv-scanbox">
-<div class="gcv-frame"><video id="gcLookVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
-<p id="gcLookScanStatus" class="gcv-status"></p>
-<button type="button" class="ghost-btn" onclick="stopQrScan()">Stop scanning</button>
-</div>
-<label for="gcSerial">Or paste a code</label>
-<input type="text" id="gcSerial" class="find-field" placeholder="From the roll you loaded, or the book" autocomplete="off"
-oninput="gcLookup(this.value)" style="text-transform:uppercase;">
-<div id="gcLookupMsg" class="status-msg"></div>
-<div id="gcLookupOut" class="desk-transient"></div>
-<details class="gc-aside">
-<summary>When you would look one up</summary>
-<ul>
-<li>a vendor who cannot scan &mdash; no phone, flat battery, no signal &mdash; who brings it to the window</li>
-<li>a customer paying a daily stall fee with it</li>
-<li>somebody asking what is left on one</li>
-<li>voiding one you can scan, or find in the book</li>
-<li>cashing out the last few dollars, which New York requires under $5 on request</li>
-</ul>
-<p><b>Not for ordinary redemptions.</b> The customer keeps the certificate until it is empty, and a vendor scans it at their own booth.</p>
-<p><b>Scanning is the only way in.</b> The stickers carry no printed code, and a certificate records its number, amount and date, not who bought it &mdash; so a lost one cannot be found by name.</p>
-</details>
-</div>
-<div class="card manager-only desk-form">
+<div class="card manager-only desk-form gc-sell">
 <h2><span class="emoji"><svg class="ico"><use href="#i-gem"></use></svg></span>Sell a Certificate<button type="button" class="help-dot" onclick="showHelp(73)" aria-label="How does selling one work?">?</button></h2>
 <div class="empty-note" id="gcOutOfStickers" style="display:none; color:#8A3B2E;"></div>
 <label for="gcAmount">Amount</label>
@@ -3780,6 +3773,32 @@ style="text-transform:uppercase;" oninput="renderGcQuickPicks()" onkeydown="if (
 <summary>Batch note</summary>
 <input type="text" id="gcBatch" placeholder="e.g. sold at the office window" autocomplete="off">
 <p>Keep scanning to sell more at the same amount. A certificate is loaded with whatever the customer asks for.</p>
+</details>
+</div>
+<div class="card manager-only gc-look">
+<h2><span class="emoji"><svg class="ico"><use href="#i-qr"></use></svg></span>Look Up a Certificate<button type="button" class="help-dot" onclick="showHelp(74)" aria-label="How does looking one up work?">?</button></h2>
+<div id="gcLookScanRow"></div>
+<div id="gcLookScanBox" style="display:none;" class="card gcv-scanbox">
+<div class="gcv-frame"><video id="gcLookVideo" playsinline webkit-playsinline muted autoplay></video><div class="gcv-reticle"></div></div>
+<p id="gcLookScanStatus" class="gcv-status"></p>
+<button type="button" class="ghost-btn" onclick="stopQrScan()">Stop scanning</button>
+</div>
+<label for="gcSerial">Or paste a code</label>
+<input type="text" id="gcSerial" class="find-field" placeholder="From the roll you loaded, or the book" autocomplete="off"
+oninput="gcLookup(this.value)" style="text-transform:uppercase;">
+<div id="gcLookupMsg" class="status-msg"></div>
+<div id="gcLookupOut" class="desk-transient"></div>
+<details class="gc-aside">
+<summary>When you would look one up</summary>
+<ul>
+<li>a vendor who cannot scan &mdash; no phone, flat battery, no signal &mdash; who brings it to the window</li>
+<li>a customer paying a daily stall fee with it</li>
+<li>somebody asking what is left on one</li>
+<li>voiding one you can scan, or find in the book</li>
+<li>cashing out the last few dollars, which New York requires under $5 on request</li>
+</ul>
+<p><b>Not for ordinary redemptions.</b> The customer keeps the certificate until it is empty, and a vendor scans it at their own booth.</p>
+<p><b>Scanning is the only way in.</b> The stickers carry no printed code, and a certificate records its number, amount and date, not who bought it &mdash; so a lost one cannot be found by name.</p>
 </details>
 </div>
 <details class="card manager-only gc-occasional tool-aside">
@@ -5005,10 +5024,6 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="status-msg" id="snapMsg"></div>
 <button type="button" class="primary-btn" onclick="recordSnap()">Record and tell the vendor</button>
 <p class="empty-note" id="snapValueNote" style="margin-top:8px;"></p>
-</div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-clipboard"></use></svg></span>Turned In On This Day</h2>
-<div id="snapDayList" class="drawer-list"></div>
 </div>
 <details class="card gc-occasional tool-aside">
 <summary><b>This season</b></summary>
@@ -23485,7 +23500,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-69';
+const BUILD_ID = '18-70';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
