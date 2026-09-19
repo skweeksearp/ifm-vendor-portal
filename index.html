@@ -2928,8 +2928,8 @@ html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-m
   color: #6A5540; position: relative; font-family: inherit; cursor: pointer; }
 .vtab .ico { width: 31px; height: 31px; }
 /* One word each, so nothing wraps and every tab is the same height. */
-.vtab-label { font-family: 'Manrope', -apple-system, sans-serif; font-size: 10.5px; font-weight: 700;
-  line-height: 1; letter-spacing: -0.015em; text-align: center; white-space: nowrap;
+.vtab-label { font-family: 'Manrope', -apple-system, sans-serif; font-size: 10.5px; font-weight: 800;
+  line-height: 1; letter-spacing: -0.025em; text-align: center; white-space: nowrap;
   max-width: 100%; }
 body.many-tabs .vtab-label { font-size: 9.5px; }
 .vtab[aria-selected="true"] { color: var(--leaf); }
@@ -23781,7 +23781,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-93';
+const BUILD_ID = '18-94';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
