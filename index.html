@@ -813,6 +813,7 @@ border: 1px solid transparent; white-space: nowrap;
 }
 .req-state.onfile  { background: #E3EAD9; border-color: var(--leaf); color: #2F4A22; }
 .req-state.submitted { background: #E8E4D3; border-color: #B9AC72; color: #4A431F; }
+.req-state.msgnew { background: #DCEDEB; border-color: var(--msg-teal); color: #14524F; }
 .req-state.missing { background: #F1E1D5; border-color: var(--tomato); color: #6E2E12; }
 .req-state.expiring { background: #F6E7C9; border-color: #C98A1F; color: #6B4405; }
 .req-state.expired { background: #F1D5D5; border-color: #B23B3B; color: #6E1212; }
@@ -2788,7 +2789,7 @@ body.role-manager .mgr-inline-tool .tool-aside.manager-only { display: none !imp
 .msg-thread-last { font-size: 14px; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .msg-thread.unread .msg-thread-last { opacity: 1; font-weight: 600; }
 .msg-unread { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
-  display: grid; place-items: center; background: var(--leaf); color: #fff; font-size: 12px; font-weight: 700; }
+  display: grid; place-items: center; background: var(--msg-teal); color: #fff; font-size: 12px; font-weight: 700; }
 .msg-back { margin-bottom: 8px; }
 .msg-with { font-family: 'Manrope', -apple-system, sans-serif; font-size: 19px; margin: 4px 0 10px; }
 .msg-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; padding: 4px 2px 8px; }
@@ -2808,8 +2809,9 @@ html body .primary-btn.gcv-scan-btn:active { background: #244A6F; opacity: 1; }
 
 .gc-home-scan .gc-home-close { background: #FFFBF1; }
 /* Send is blue (18-52): white on #2F5D8A is 6.9:1. */
-.primary-btn.msg-send, .primary-btn.msg-new { background: #1E7878; box-shadow: 0 3px 10px rgba(30,120,120,0.32); }
-.primary-btn.msg-send:active, .primary-btn.msg-new:active { background: #175E5E; opacity: 1; }
+:root { --msg-teal: #1E7878; --msg-teal-dark: #175E5E; }
+.primary-btn.msg-send, .primary-btn.msg-new { background: var(--msg-teal); box-shadow: 0 3px 10px rgba(30,120,120,0.32); }
+.primary-btn.msg-send:active, .primary-btn.msg-new:active { background: var(--msg-teal-dark); opacity: 1; }
 /* Manager's tools, inline on the home screen or opened as their own screen. */
 html body .mgr-inline-tool .primary-btn,
 html body #screen-dayfees .primary-btn, html body #screen-giftcerts .primary-btn,
@@ -2828,7 +2830,7 @@ html body #screen-firelane .primary-btn:active { background: #244A6F; opacity: 1
   border-radius: 10px; border: 1px solid var(--paper-dim); background: rgba(255,255,255,0.75); font: inherit; color: var(--ink); cursor: pointer; }
 .msg-person span { font-size: 12.5px; opacity: 0.7; white-space: nowrap; }
 .msg-private { font-size: 12.5px; margin-top: 14px; }
-.msg-sub-new { color: var(--leaf) !important; font-weight: 700; }
+.msg-sub-new { color: var(--msg-teal) !important; font-weight: 700; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* ===== VENDOR DESK TABS (18-41) ======================================== */
 .vtab-bar { display: none; }
@@ -2937,6 +2939,7 @@ body.many-tabs .vtab-label { font-size: 9.5px; }
 .vtab[aria-selected="true"]::before { content: ""; position: absolute; top: 4px; left: 32%; right: 32%; height: 3px; border-radius: 3px; background: var(--leaf); }
 .vtab-dot { position: absolute; top: 18px; right: calc(50% - 21px); width: 10px; height: 10px; border-radius: 50%; background: var(--leaf); box-shadow: 0 0 0 2px #FFFBF1; display: none; }
 body.many-tabs .vtab-dot { top: 19px; right: calc(50% - 19px); }
+.vtab[data-tab="communicate"] .vtab-dot, .vtab[data-tab="messages"] .vtab-dot { background: var(--msg-teal); }
 .vtab.has-dot .vtab-dot { display: block; }
 body.vendor-tabs #screen-dashboard.active { display: flex; flex-direction: column; }
 body.vendor-tabs #screen-dashboard > * { flex: none; }
@@ -23812,7 +23815,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-97';
+const BUILD_ID = '18-98';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -33144,7 +33147,7 @@ items.unshift({
 t: 'New message from ' + msgName(u.other) + (u.as.startsWith('c:') ? ' to the ' + msgName(u.as) : ''),
 m: u.snippet,
 label: u.n > 1 ? u.n + ' new' : 'New',
-cls: 'submitted',
+cls: 'msgnew',
 go: 'messages',
 open: { as: u.as, thread: u.other },
 });
@@ -33459,7 +33462,7 @@ if (currentRole === 'board') {
 }
 if (currentRole === 'manager' && msgUnreadForAlerts > 0) {
   alerts.unshift({ topic: 'Messages', n: msgUnreadForAlerts, t: msgUnreadForAlerts + ' unread message' + (msgUnreadForAlerts === 1 ? '' : 's'),
-    d: 'In the Market Manager\u2019s inbox', cls: 'submitted', go: 'messages' });
+    d: 'In the Market Manager\u2019s inbox', cls: 'msgnew', go: 'messages' });
 }
 card.style.display = alerts.length ? 'block' : 'none';
 const sub = document.getElementById('mgrAlertSub');
