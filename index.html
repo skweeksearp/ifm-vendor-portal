@@ -116,7 +116,16 @@ box-shadow: 0 1px 4px rgba(35,42,32,0.06);
 .fold-chev { font-size: 22px; font-weight: 800; color: var(--faint); line-height: 1; transition: transform 0.15s; }
 .dash-fold.open > .fold-bar .fold-chev { transform: rotate(90deg); }
 .fold-body { display: none; padding-top: 8px; }
-.pub-toggle { display:flex; align-items:center; gap:8px; margin:5px 0 0; font-size:13.5px; color:#5a5a5a; }
+.pub-toggle { display:flex; align-items:center; gap:8px; margin:5px 0 0; font-size:13.5px; color: var(--muted); }
+.stay-row { display:flex; align-items:flex-start; gap:9px; margin:13px 2px 0;
+  font-size:14px; line-height:1.35; color: var(--ink); cursor:pointer;
+  text-transform:none; letter-spacing:0; font-weight:600; opacity:1; }
+.stay-row input[type=checkbox] { width:19px; height:19px; margin:1px 0 0; flex:none;
+  accent-color: var(--leaf); }
+.stay-row.is-off { cursor:default; }
+.stay-row.is-off > span { color: var(--muted); }
+.stay-why { display:block; font-size:12.5px; line-height:1.4; color: var(--muted);
+  margin-top:3px; text-transform:none; letter-spacing:0; font-weight:400; }
 .pub-toggle input[type=checkbox] { width:18px; height:18px; margin:0; flex-shrink:0; }
 .desk-pinned { margin-bottom: 14px; }
 #ifmSpinner { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -3174,6 +3183,10 @@ html[data-look="rainshine"] body.vendor-tabs:not(.kiosk-mode) #screen-dashboard 
 <div id="landingWhoVendor" style="display:none;"><label for="landingWho" id="landingWhoLabel">Business or name</label><select id="landingWho" data-lead-row="hide" onchange="landingRefresh()"><option value="">Choose a vendor</option></select></div>
 <div id="landingPassWrap" style="display:none;"><label for="landingPass">Password</label>
 <input type="password" id="landingPass" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Not needed in this demo" onkeydown="if (event.key === 'Enter') landingSignIn()"></div>
+<label class="stay-row" id="landingStayRow" style="display:none;">
+<input type="checkbox" id="landingStay">
+<span>Stay signed in on this device<span class="stay-why" id="landingStayWhy"></span></span>
+</label>
 <p class="empty-note" id="landingNote" style="margin:8px 2px 0;"></p>
 <button type="button" class="primary-btn" id="landingSignInBtn" onclick="landingSignIn()" disabled>Sign in</button>
 </div>
@@ -11853,7 +11866,92 @@ function landingRefresh() {
     ready = true;
     note.textContent = 'Desks sign in as the desk, not by name. No password is checked in this demo.';
   }
+  paintStayRow(!!r);
   btn.disabled = !ready;
+}
+/* ===== STAY SIGNED IN (19-01) ==========================================
+   Only an INSTALLED app remembers. That is not a rule invented here -- on iOS
+   a page added to the home screen gets its own storage, separate from the
+   Safari tab it was added from, so a box ticked in Safari would never be seen
+   by the installed app anyway. Rather than let that look like a bug, the box
+   is offered only where it can actually work, and says why when it cannot.
+
+   What is stored is the choice made at the sign-in screen, nothing more: a
+   role, and for a vendor which vendor. No password is stored because this
+   build does not check one -- see the note in the handoff before that changes.
+
+   Signing out clears it. showLanding() is the one door back to the sign-in
+   screen, so the clear lives there and cannot be got round. */
+const STAY_KEY = 'ifm-stay-signed-in';
+
+function isInstalledApp() {
+try {
+  if (navigator.standalone === true) return true;                 // iOS home screen
+  if (window.matchMedia) {                                        // Android, desktop
+    if (matchMedia('(display-mode: standalone)').matches) return true;
+    if (matchMedia('(display-mode: fullscreen)').matches) return true;
+    if (matchMedia('(display-mode: minimal-ui)').matches) return true;
+  }
+} catch (e) {}
+return false;
+}
+function staySignedInClear() {
+try { localStorage.removeItem(STAY_KEY); } catch (e) {}
+}
+function staySignedInSave(role, who) {
+if (!role || !isInstalledApp()) return;
+try { localStorage.setItem(STAY_KEY, JSON.stringify({ role: role, who: who || '', at: Date.now() })); } catch (e) {}
+}
+function staySignedInTarget() {
+if (!isInstalledApp()) return null;
+let raw = null;
+try { raw = localStorage.getItem(STAY_KEY); } catch (e) { return null; }
+if (!raw) return null;
+let v = null;
+try { v = JSON.parse(raw); } catch (e) { staySignedInClear(); return null; }
+if (!v || !v.role) { staySignedInClear(); return null; }
+return v;
+}
+/* 'ok' went somewhere. 'gone' means the saved choice is no longer valid and
+   should be forgotten. 'retry' means we simply could not tell -- the records
+   did not arrive -- and the session must be KEPT: a failed read is not an
+   empty record, and a vendor whose roster did not load is not a vendor who
+   has left the market. */
+function resumeSignIn(t) {
+if (!t || !t.role) return 'gone';
+if (typeof DESKS_LIVE !== 'undefined' && !DESKS_LIVE[t.role]) return 'gone';
+if (t.role === 'vendor') {
+  const list = (typeof cache !== 'undefined' && cache.vendors) || [];
+  if (!list.length) return 'retry';
+  if (!list.some(v => v.vendorId === t.who)) return 'gone';
+  document.body.classList.remove('kiosk-mode');
+  document.getElementById('landing').style.display = 'none';
+  selectVendor(t.who);
+  return 'ok';
+}
+const go = { manager: typeof enterAsManager === 'function' ? enterAsManager : null,
+             president: typeof enterAsPresident === 'function' ? enterAsPresident : null,
+             board: typeof enterAsBoard === 'function' ? enterAsBoard : null,
+             staff: typeof enterAsStaff === 'function' ? enterAsStaff : null,
+             volunteer: typeof enterAsVolunteer === 'function' ? enterAsVolunteer : null }[t.role];
+if (!go) return 'gone';
+go();
+return 'ok';
+}
+// Keep the box in step with the chosen role and with whether this is the
+// installed app at all. Called from landingRefresh.
+function paintStayRow(hasRole) {
+const row = document.getElementById('landingStayRow');
+const box = document.getElementById('landingStay');
+const why = document.getElementById('landingStayWhy');
+if (!row || !box) return;
+row.style.display = hasRole ? '' : 'none';
+const inst = isInstalledApp();
+box.disabled = !inst;
+if (!inst) box.checked = false;
+row.classList.toggle('is-off', !inst);
+if (why) why.textContent = inst ? ''
+  : 'Add the app to your home screen first \u2014 a browser tab cannot keep you signed in.';
 }
 function landingSignIn() {
   const role = (document.getElementById('landingRole') || {}).value || '';
@@ -11861,16 +11959,22 @@ function landingSignIn() {
   const pass = document.getElementById('landingPass');
   if (pass) pass.value = '';
   if (pass && pass.blur) pass.blur();
+  const stayBox = document.getElementById('landingStay');
+  const stay = !!(stayBox && stayBox.checked && !stayBox.disabled);
   if (role === 'vendor') {
     if (!who || !(cache.vendors || []).some(v => v.vendorId === who)) { landingRefresh(); return; }
+    if (stay) staySignedInSave('vendor', who); else staySignedInClear();
     document.body.classList.remove('kiosk-mode');
     document.getElementById('landing').style.display = 'none';
     selectVendor(who);
-  } else if (role === 'manager') enterAsManager();
-  else if (role === 'president') enterAsPresident();
-  else if (role === 'board') enterAsBoard();
-  else if (role === 'staff') enterAsStaff();
-  else if (role === 'volunteer') enterAsVolunteer();
+  } else if (role) {
+    if (stay) staySignedInSave(role, ''); else staySignedInClear();
+    if (role === 'manager') enterAsManager();
+    else if (role === 'president') enterAsPresident();
+    else if (role === 'board') enterAsBoard();
+    else if (role === 'staff') enterAsStaff();
+    else if (role === 'volunteer') enterAsVolunteer();
+  }
 }
 // Switching it off has to UNDO it, not merely skip it. A phone that
 // registered the worker while it was on keeps that worker, and it keeps
@@ -11975,11 +12079,15 @@ paintPickerBackHand();
 paintLandingLogo();
 applyBylawsLink();
 stampBuild();
-document.getElementById('loading').style.display = 'none';
+// A remembered session cannot be restored until the records are in, so the
+// loading screen is held rather than flashing the sign-in screen and
+// replacing it a moment later.
+const stayTarget = staySignedInTarget();
+if (!stayTarget) document.getElementById('loading').style.display = 'none';
 registerServiceWorker();
 let kioskFirst = false;
 try { kioskFirst = localStorage.getItem('ifm-kiosk-device') === '1'; } catch (e) {}
-if (!kioskFirst) showLanding();
+if (!kioskFirst && !stayTarget) showLanding();
 ifmBootMs = Date.now() - bootStarted;
 try { ifmFromNav = Math.round(performance.now()); } catch (e) {}
 if (ifmChainFrom) ifmChainMs = Date.now() - ifmChainFrom;
@@ -11988,6 +12096,17 @@ ifmDataReady = loadAllData();
 await ifmDataReady;
 fillLandingWho();
 landingRefresh();
+if (stayTarget) {
+document.getElementById('loading').style.display = 'none';
+const how = resumeSignIn(stayTarget);
+if (how !== 'ok') {
+  showLanding();
+  // showLanding signs out, which forgets the session. If the only reason we
+  // could not resume was that the records did not arrive, the session is
+  // still good -- put it back, so one bad morning does not sign everyone out.
+  if (how === 'retry') staySignedInSave(stayTarget.role, stayTarget.who);
+}
+}
 ifmRecordsMs = Date.now() - bootStarted;
 if (storageBroken && IFM_BACKEND_URL) {
 const n = document.createElement('div');
@@ -12021,6 +12140,7 @@ showLanding();
 function showLanding() {
 document.documentElement.dataset.photo = 'signin';
 try { localStorage.removeItem('ifm-kiosk-device'); } catch (e) {}
+staySignedInClear();
 document.body.classList.remove('kiosk-mode');
 if (kioskIdleTimer) { clearTimeout(kioskIdleTimer); kioskIdleTimer = null; }
 document.getElementById('main').style.display = 'none';
@@ -23926,7 +24046,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-00';
+const BUILD_ID = '19-01';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
