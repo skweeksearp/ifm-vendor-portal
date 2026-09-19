@@ -2850,15 +2850,13 @@ body.vendor-tabs.kiosk-mode .vtab-bar, body.manager-tabs.kiosk-mode .vtab-bar { 
    its reserved space back at the same time so nothing jumps. */
 body.vendor-tabs.keyboard-open .vtab-bar, body.manager-tabs.keyboard-open .vtab-bar { display: none !important; }
 body.vendor-tabs.keyboard-open main, body.manager-tabs.keyboard-open main { padding-bottom: 24px; }
-/* six tabs need a little less room each than the vendor desk's five */
-body.manager-tabs .vtab-inner { grid-template-columns: repeat(6, 1fr); }
+/* Columns follow the tab count, set by buildVendorTabs/buildManagerTabs. */
 body.manager-tabs .vtab { padding-left: 0; padding-right: 0; }
-body.manager-tabs .vtab .ico { width: 28px; height: 28px; }
 body.manager-tabs .mgr-tab-off { display: none !important; }
 #mgrFolders > .mgr-tab-title { margin: 2px 2px 10px; }
 body.manager-tabs #mgrFolders > .mgr-drawer-head { margin-top: 14px; }
 body.vendor-tabs main, body.manager-tabs main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
-.vtab-inner { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 560px;
+.vtab-inner { display: grid; grid-template-columns: repeat(var(--tab-count, 5), 1fr); width: 100%; max-width: 560px;
   pointer-events: auto; border-radius: 999px; overflow: hidden; position: relative;
   background: rgba(255,251,241,0.62); border: 1px solid rgba(255,255,255,0.50);
   box-shadow: 0 6px 22px rgba(20,12,4,0.20), 0 1px 3px rgba(20,12,4,0.10);
@@ -2870,6 +2868,8 @@ body.vendor-tabs main, body.manager-tabs main { padding-bottom: calc(84px + env(
    one and enlarged; the ring is painted light. Only on the photographic look,
    and only when TAB_LOOK says so. */
 .vtab-lens, .vtab-ring { display: none; }
+body.manager-tabs .vtab .ico { width: 31px; height: 31px; }
+body.many-tabs .vtab .ico { width: 27px; height: 27px; }
 html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-inner {
   background: rgba(255,251,241,var(--tab-cream));
   border-color: rgba(255,255,255,0.46);
@@ -2930,7 +2930,7 @@ html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-m
 .vtab[aria-selected="true"] { color: var(--leaf); }
 .vtab[aria-selected="true"]::before { content: ""; position: absolute; top: 4px; left: 32%; right: 32%; height: 3px; border-radius: 3px; background: var(--leaf); }
 .vtab-dot { position: absolute; top: 9px; right: calc(50% - 21px); width: 10px; height: 10px; border-radius: 50%; background: var(--leaf); box-shadow: 0 0 0 2px #FFFBF1; display: none; }
-body.manager-tabs .vtab-dot { top: 10px; right: calc(50% - 19px); }
+body.many-tabs .vtab-dot { top: 10px; right: calc(50% - 19px); }
 .vtab.has-dot .vtab-dot { display: block; }
 body.vendor-tabs #screen-dashboard.active { display: flex; flex-direction: column; }
 body.vendor-tabs #screen-dashboard > * { flex: none; }
@@ -15107,10 +15107,10 @@ const VENDOR_TABS = [
 // desks keep the tile grid; this is the Market Manager's desk only.
 const MANAGER_TABS = [
 { k: 'home', t: 'Home', icon: 'i-vtab-home', folders: ['marketday'] },
-{ k: 'booths', t: 'Booth<br>Selection', title: 'Booth Selection', icon: 'i-vtab-booth', folders: ['selection', 'booths'] },
+{ k: 'booths', t: 'Booth<br>Selection', title: 'Booth Selection', icon: 'i-vtab-booth',
+  folders: ['selection', 'booths', 'winter', 'wednesday', 'popups'] },
 { k: 'accounts', t: 'Accounts', title: 'Accounts', icon: 'i-vtab-cash', folders: ['manual', 'money', 'hours', 'vendors'] },
 { k: 'board', t: 'Board &amp;<br>Committees', title: 'Board & Committees', icon: 'i-scale', folders: ['board', 'programs'] },
-{ k: 'satellites', t: 'Satellite<br>Markets', title: 'Satellite Markets', icon: 'i-map-pin', folders: ['winter', 'wednesday', 'popups'] },
 { k: 'messages', t: 'Messages', title: 'Messages', icon: 'i-vtab-talk', folders: ['messages', 'answering'], bare: true },
 ];
 let managerTab = 'home';
@@ -15171,6 +15171,7 @@ MANAGER_TABS.forEach(tab => {
   b.onclick = () => openManagerTab(tab.k);
   list.appendChild(b);
 });
+setTabCount(MANAGER_TABS.length);
 paintTabGlass();
 }
 function setManagerTab(k) {
@@ -15234,11 +15235,17 @@ VENDOR_TABS.forEach(tab => {
   b.onclick = () => openVendorTab(tab.k);
   list.appendChild(b);
 });
+setTabCount(VENDOR_TABS.length);
 paintTabGlass();
 }
 // THE GLASS BUBBLE'S LAYERS (18-91).
 // Both build functions clear the tab list's innerHTML, so these are put back
 // afterwards rather than written into the markup where they would be wiped.
+// However many tabs the desk has, that is how many columns it gets.
+function setTabCount(n) {
+document.documentElement.style.setProperty('--tab-count', String(n));
+document.body.classList.toggle('many-tabs', n > 5);
+}
 function paintTabGlass() {
 const list = document.getElementById('vendorTabList');
 if (!list) return;
@@ -23769,7 +23776,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-91';
+const BUILD_ID = '18-92';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
