@@ -3015,8 +3015,42 @@ html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-m
   line-height: 1; letter-spacing: -0.025em; text-align: center; white-space: nowrap;
   display: block; width: 100%; overflow: hidden; }
 body.many-tabs .vtab-label { font-size: 9.5px; }
-.vtab[aria-selected="true"] { color: var(--leaf); }
-.vtab[aria-selected="true"]::before { content: ""; position: absolute; top: 4px; left: 32%; right: 32%; height: 3px; border-radius: 3px; background: var(--leaf); }
+/* THE TAB IN USE (19-02).
+   A 3px bar plus a shift to green was too quiet on the glass bubble: the photo
+   behind keeps changing what "greener" looks like, so the one tab that matters
+   was competing with the backdrop.
+
+   The highlight is a filled capsule behind the ICON, not behind the whole tab.
+   A full-height pill cannot work here: the bubble is a 999px capsule that clips
+   its children, so at the two ends a tall highlight runs into the bubble's own
+   curve, and the word -- "Communicate" is the long one -- overflows whatever is
+   left. The icon sits near the bubble's vertical middle, which is exactly where
+   the bubble is widest, so a capsule there clears the curve at every tab and
+   leaves the label its full column. White on Holly Green is 8.3:1 and does not
+   depend on the backdrop at all; the word underneath stays green and bold. */
+.vtab[aria-selected="true"] .ico { color: var(--paper); }
+/* The word stays Raven Black like its neighbours. Holly Green measures 4.13:1
+   on this glass -- under the 4.5 a 10.5px word needs -- so a green label was
+   both fainter than the tabs it was meant to stand out from and short of the
+   bar. The capsule does the highlighting; the word just stays readable. */
+.vtab[aria-selected="true"] .vtab-label { color: var(--ink); }
+.vtab[aria-selected="true"]::before {
+  content: ""; position: absolute; top: 15px; height: 43px; left: 12%; right: 12%;
+  z-index: 0; border-radius: 999px; background: var(--leaf);
+  box-shadow: 0 1px 3px rgba(21,18,15,0.30), inset 0 1px 0 rgba(255,255,255,0.20);
+}
+/* The capsule is drawn by ::before, so the icon has to be lifted over it. */
+.vtab .ico, .vtab-label { position: relative; z-index: 1; }
+/* The halo exists to lift a dark mark off pale glass. The icon in use is white
+   on a filled capsule, so its glow only blooms -- off it goes. The label is
+   still dark on glass and keeps its halo. */
+html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-mode) .vtab[aria-selected="true"] .ico { filter: none; }
+/* A green dot on the green capsule is no dot at all, so it reverses too. */
+.vtab[aria-selected="true"] .vtab-dot,
+.vtab[aria-selected="true"][data-tab="communicate"] .vtab-dot,
+.vtab[aria-selected="true"][data-tab="messages"] .vtab-dot {
+  background: var(--paper); box-shadow: 0 0 0 2px var(--leaf); z-index: 2;
+}
 .vtab-dot { position: absolute; top: 18px; right: calc(50% - 21px); width: 10px; height: 10px; border-radius: 50%; background: var(--leaf); box-shadow: 0 0 0 2px #FFFBF1; display: none; }
 body.many-tabs .vtab-dot { top: 19px; right: calc(50% - 19px); }
 .vtab[data-tab="communicate"] .vtab-dot, .vtab[data-tab="messages"] .vtab-dot { background: var(--msg-teal); }
@@ -15412,6 +15446,7 @@ MANAGER_TABS.forEach(tab => {
   list.appendChild(b);
 });
 setTabCount(MANAGER_TABS.length);
+markEndTabs(list);
 paintTabGlass();
 fitTabLabels();
 }
@@ -15477,6 +15512,7 @@ VENDOR_TABS.forEach(tab => {
   list.appendChild(b);
 });
 setTabCount(VENDOR_TABS.length);
+markEndTabs(list);
 paintTabGlass();
 fitTabLabels();
 }
@@ -15485,6 +15521,16 @@ fitTabLabels();
 // afterwards rather than written into the markup where they would be wiped.
 // Shrink any label that does not fit its column. Hand-picked sizes only ever
 // fit the font they were measured in; this fits whatever font actually loads.
+/* The tab list does not end with a tab: paintTabGlass appends the lens and
+   ring after the buttons, so :first-child and :last-child never match one.
+   The two ends are marked here instead, and the rounding keys off that. */
+function markEndTabs(list) {
+const btns = list.querySelectorAll('.vtab');
+btns.forEach(b => b.classList.remove('vtab-end-l', 'vtab-end-r'));
+if (!btns.length) return;
+btns[0].classList.add('vtab-end-l');
+btns[btns.length - 1].classList.add('vtab-end-r');
+}
 function fitTabLabels() {
 const list = document.getElementById('vendorTabList');
 if (!list) return;
@@ -24046,7 +24092,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-01';
+const BUILD_ID = '19-02';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
