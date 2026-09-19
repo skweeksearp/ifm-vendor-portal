@@ -2859,10 +2859,70 @@ body.manager-tabs .mgr-tab-off { display: none !important; }
 body.manager-tabs #mgrFolders > .mgr-drawer-head { margin-top: 14px; }
 body.vendor-tabs main, body.manager-tabs main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .vtab-inner { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 560px;
-  pointer-events: auto; border-radius: 999px; overflow: hidden;
+  pointer-events: auto; border-radius: 999px; overflow: hidden; position: relative;
   background: rgba(255,251,241,0.62); border: 1px solid rgba(255,255,255,0.50);
   box-shadow: 0 6px 22px rgba(20,12,4,0.20), 0 1px 3px rgba(20,12,4,0.10);
   -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15);
+}
+/* ---- the droplet (18-89), only when TAB_LOOK says so and only on the
+   photographic look, since the trick is a copy of that photo ---------------
+   The two layers are absolutely positioned, so the grid does not count them
+   as columns. The magnifying layer is the size of the viewport and sits
+   exactly where the page's own fixed backdrop sits, which is what makes the
+   enlargement line up; its wrapper is the size of the bubble, which is what
+   lets the rim mask be measured in the bubble's own coordinates. */
+.vtab-drop, .vtab-gloss { display: none; }
+html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-inner {
+  background: rgba(255,251,241,0.34);
+  border-color: rgba(255,255,255,0.50);
+  -webkit-backdrop-filter: blur(8px) saturate(1.5) brightness(1.07);
+  backdrop-filter: blur(8px) saturate(1.5) brightness(1.07);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,1),
+    inset 0 13px 18px -11px rgba(40,24,10,0.52),
+    inset 0 -18px 22px -13px rgba(255,255,255,0.95),
+    inset 0 0 0 1px rgba(255,255,255,0.50),
+    0 12px 32px rgba(20,12,4,0.32);
+}
+html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-drop {
+  display: block; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  overflow: hidden; border-radius: inherit; opacity: 0.92;
+  -webkit-mask-image:
+    linear-gradient(to right, #000 0, rgba(0,0,0,0.4) 7%, transparent 15%, transparent 85%, rgba(0,0,0,0.4) 93%, #000 100%),
+    linear-gradient(to bottom, #000 0, rgba(0,0,0,0.4) 12%, transparent 23%, transparent 77%, rgba(0,0,0,0.4) 88%, #000 100%);
+  mask-image:
+    linear-gradient(to right, #000 0, rgba(0,0,0,0.4) 7%, transparent 15%, transparent 85%, rgba(0,0,0,0.4) 93%, #000 100%),
+    linear-gradient(to bottom, #000 0, rgba(0,0,0,0.4) 12%, transparent 23%, transparent 77%, rgba(0,0,0,0.4) 88%, #000 100%);
+}
+html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-drop > i {
+  position: absolute; display: block; left: -12px;
+  bottom: calc(-1 * (10px + env(safe-area-inset-bottom)));
+  width: 100vw; height: 100vh;
+  background: var(--photo) center / cover no-repeat;
+  transform: scale(1.62); transform-origin: 50% calc(100% - 28px);
+  filter: saturate(1.3);
+}
+html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-gloss {
+  display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(166deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.16) 15%, rgba(255,255,255,0) 32%),
+    radial-gradient(130% 240% at 16% -34%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 44%),
+    radial-gradient(150% 90% at 50% 128%, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0) 52%);
+}
+html[data-tabs="droplet"] .vtab { z-index: 3; }
+html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab .ico {
+  filter:
+    drop-shadow(0 0 3px rgba(255,255,255,0.95))
+    drop-shadow(0 0 6px rgba(255,255,255,0.65))
+    drop-shadow(0 1px 1px rgba(255,255,255,0.85));
+}
+/* the selected tab's marker and the unread dot need the same help */
+html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab[aria-selected="true"]::before {
+  box-shadow: 0 0 4px rgba(255,255,255,0.9);
+}
+html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-dot {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.95), 0 0 5px rgba(255,255,255,0.8);
 }
 .vtab { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 13px 2px 11px;
   color: #6A5540; position: relative; font-family: inherit; cursor: pointer; }
@@ -11525,6 +11585,18 @@ try { runScreenInit(sec.id.replace('screen-', '')); } catch (e) {}
 // source is in Handover, with a Copy button; turning it on is this constant
 // and uploading sw.js beside index.html.
 const SERVICE_WORKER_ON = false;
+// The tab bubble's look (18-89). 'droplet' gives it a water-drop treatment:
+// a thinner middle, a bright rim, a caustic under the icons, and the market
+// photo genuinely magnified at the two ends. 'flat' is the plain frosted
+// glass of 18-88. Set this to 'flat' to put it back -- that one word is the
+// whole revert, and nothing else in the app depends on which it is.
+//
+// Worth knowing before keeping it: the magnified ends can only ever enlarge
+// the PHOTO, because that is the only thing the page can copy. Wherever a
+// card sits behind the bar, the two ends show enlarged vegetables while the
+// middle shows the card. On the photo it is invisible; over a card it is a
+// small lie at each end.
+const TAB_LOOK = 'droplet';
 let swWaiting = null;
 // Which desks the opening screen offers a way in through. A phased handoff
 // means Manager and Board of Directors can pilot the app for real, on real
@@ -11790,6 +11862,7 @@ const bootStarted = Date.now();
 // over the network and reading it. Measured, not assumed.
 try { ifmParseMs = Math.round(performance.now()); } catch (e) {}
 paintPretendBand();
+document.documentElement.setAttribute('data-tabs', TAB_LOOK);
 ifmKeyboardWatch();
 freeFloatingSheets();
 paintPickerBackHand();
@@ -15079,6 +15152,7 @@ MANAGER_TABS.forEach(tab => {
   b.onclick = () => openManagerTab(tab.k);
   list.appendChild(b);
 });
+paintTabDroplet();
 }
 function setManagerTab(k) {
 buildManagerTabs();
@@ -15141,6 +15215,25 @@ VENDOR_TABS.forEach(tab => {
   b.onclick = () => openVendorTab(tab.k);
   list.appendChild(b);
 });
+paintTabDroplet();
+}
+// The droplet's two layers live inside the bubble, but both build functions
+// clear that element's innerHTML, so they are put back afterwards rather than
+// written into the markup where they would be wiped.
+function paintTabDroplet() {
+const list = document.getElementById('vendorTabList');
+if (!list) return;
+list.querySelectorAll(':scope > .vtab-drop, :scope > .vtab-gloss').forEach(el => el.remove());
+if (TAB_LOOK !== 'droplet') return;
+const drop = document.createElement('div');
+drop.className = 'vtab-drop';
+drop.setAttribute('aria-hidden', 'true');
+drop.appendChild(document.createElement('i'));
+const gloss = document.createElement('div');
+gloss.className = 'vtab-gloss';
+gloss.setAttribute('aria-hidden', 'true');
+list.insertBefore(gloss, list.firstChild);
+list.insertBefore(drop, list.firstChild);
 }
 function tabOfFold(fold) {
 const dash = vtabDash();
@@ -23588,7 +23681,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-88';
+const BUILD_ID = '18-89';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
