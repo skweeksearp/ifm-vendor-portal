@@ -15243,6 +15243,39 @@ if (own && (tile.s || tile.ot)) {
 const banner = document.getElementById('rulings-' + screenName);
 if (banner) banner.remove();
 }
+function tapFast(el, fn) {
+/* THE SECOND-TAP PROBLEM (18-100).
+   While a list is still coasting under a flick, iOS Safari treats the next
+   touch as "stop the scroll" and then does NOT synthesise a click from it, so
+   a tab press mid-scroll appeared to do nothing and needed a second press.
+   touchstart and touchend both still fire, so the tap is read from those.
+
+   It is a tap, not a drag: the finger has to come back up within 10px of
+   where it went down, otherwise someone who started a scroll gesture on the
+   bar would be navigated away mid-drag. preventDefault on a clean touchend
+   stops the synthetic click iOS would otherwise send afterwards; the stamp is
+   a second guard in case a browser sends it anyway. Mouse and keyboard never
+   touch this path and go through click as before. */
+var x = 0, y = 0, moved = false, handled = 0;
+el.addEventListener('touchstart', function (e) {
+  var p = e.touches[0]; if (!p) return;
+  x = p.clientX; y = p.clientY; moved = false;
+}, { passive: true });
+el.addEventListener('touchmove', function (e) {
+  var p = e.touches[0]; if (!p) return;
+  if (Math.abs(p.clientX - x) > 10 || Math.abs(p.clientY - y) > 10) moved = true;
+}, { passive: true });
+el.addEventListener('touchend', function (e) {
+  if (moved) return;
+  handled = Date.now();
+  e.preventDefault();
+  fn();
+});
+el.addEventListener('click', function () {
+  if (Date.now() - handled < 700) return;
+  fn();
+});
+}
 function buildManagerTabs() {
 const list = document.getElementById('vendorTabList');
 if (!list || list.dataset.desk === 'manager') return;
@@ -15255,7 +15288,7 @@ MANAGER_TABS.forEach(tab => {
   b.setAttribute('role', 'tab');
   b.dataset.tab = tab.k;
   b.innerHTML = '<svg class="ico"><use href="#' + tab.icon + '"></use></svg><span class="vtab-label">' + tab.t + '</span><span class="vtab-dot"></span>';
-  b.onclick = () => openManagerTab(tab.k);
+  tapFast(b, () => openManagerTab(tab.k));
   list.appendChild(b);
 });
 setTabCount(MANAGER_TABS.length);
@@ -15320,7 +15353,7 @@ VENDOR_TABS.forEach(tab => {
   b.setAttribute('role', 'tab');
   b.dataset.tab = tab.k;
   b.innerHTML = '<svg class="ico"><use href="#' + tab.icon + '"></use></svg><span class="vtab-label">' + tab.t + '</span><span class="vtab-dot"></span>';
-  b.onclick = () => openVendorTab(tab.k);
+  tapFast(b, () => openVendorTab(tab.k));
   list.appendChild(b);
 });
 setTabCount(VENDOR_TABS.length);
@@ -23893,7 +23926,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-99';
+const BUILD_ID = '19-00';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
