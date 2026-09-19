@@ -15001,7 +15001,7 @@ const VENDOR_TABS = [
 const MANAGER_TABS = [
 { k: 'home', t: 'Home', icon: 'i-vtab-home', folders: ['marketday'] },
 { k: 'booths', t: 'Booth<br>Selection', title: 'Booth Selection', icon: 'i-vtab-booth', folders: ['selection', 'booths'] },
-{ k: 'accounts', t: 'Accounts', title: 'Accounts', icon: 'i-vtab-cash', folders: ['money', 'hours', 'vendors', 'manual'] },
+{ k: 'accounts', t: 'Accounts', title: 'Accounts', icon: 'i-vtab-cash', folders: ['manual', 'money', 'hours', 'vendors'] },
 { k: 'board', t: 'Board &amp;<br>Committees', title: 'Board & Committees', icon: 'i-scale', folders: ['board', 'programs'] },
 { k: 'satellites', t: 'Satellite<br>Markets', title: 'Satellite Markets', icon: 'i-map-pin', folders: ['winter', 'wednesday', 'popups'] },
 { k: 'messages', t: 'Messages', title: 'Messages', icon: 'i-vtab-talk', folders: ['messages', 'answering'], bare: true },
@@ -23570,7 +23570,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-83';
+const BUILD_ID = '18-84';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
