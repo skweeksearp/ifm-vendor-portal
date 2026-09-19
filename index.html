@@ -2808,8 +2808,8 @@ html body .primary-btn.gcv-scan-btn:active { background: #244A6F; opacity: 1; }
 
 .gc-home-scan .gc-home-close { background: #FFFBF1; }
 /* Send is blue (18-52): white on #2F5D8A is 6.9:1. */
-.primary-btn.msg-send { background: #2F5D8A; box-shadow: 0 3px 10px rgba(47,93,138,0.3); }
-.primary-btn.msg-send:active { background: #244A6F; opacity: 1; }
+.primary-btn.msg-send { background: #1E7878; box-shadow: 0 3px 10px rgba(30,120,120,0.32); }
+.primary-btn.msg-send:active { background: #175E5E; opacity: 1; }
 /* Manager's tools, inline on the home screen or opened as their own screen. */
 html body .mgr-inline-tool .primary-btn,
 html body #screen-dayfees .primary-btn, html body #screen-giftcerts .primary-btn,
@@ -23782,7 +23782,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-95';
+const BUILD_ID = '18-96';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
