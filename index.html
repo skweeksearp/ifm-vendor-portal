@@ -42,6 +42,11 @@
 --line: #E1DDC9;
 --debit: #9B2C1E;
 --credit: #2E6B36;
+/* secondary text: units, sub-labels, notes, table filler. A token so it
+   follows the palette instead of being pinned to one olive. */
+--muted: #6E6A57;
+/* tertiary text: tags, day-of-week heads, kiosk filler. Fainter again. */
+--faint: #8A8268;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { color-scheme: light; }
@@ -107,8 +112,8 @@ padding: 13px 16px; font-family: inherit; cursor: pointer;
 box-shadow: 0 1px 4px rgba(35,42,32,0.06);
 }
 .fold-title { font-weight: 800; font-size: 17px; color: var(--ink); }
-.fold-sub { margin-left: auto; font-size: 14px; color: #8A8268; text-align: right; }
-.fold-chev { font-size: 22px; font-weight: 800; color: #8A8268; line-height: 1; transition: transform 0.15s; }
+.fold-sub { margin-left: auto; font-size: 14px; color: var(--faint); text-align: right; }
+.fold-chev { font-size: 22px; font-weight: 800; color: var(--faint); line-height: 1; transition: transform 0.15s; }
 .dash-fold.open > .fold-bar .fold-chev { transform: rotate(90deg); }
 .fold-body { display: none; padding-top: 8px; }
 .pub-toggle { display:flex; align-items:center; gap:8px; margin:5px 0 0; font-size:13.5px; color:#5a5a5a; }
@@ -143,7 +148,7 @@ font-size: var(--ifm-size); transform: translate(-50%, -50%); }
 @keyframes ifmdepth { 0% { z-index: 1; } 50% { z-index: 3; } }
 .mr-unit-row { display: flex; align-items: center; gap: 8px; }
 .mr-unit-row input { flex: 1 1 auto; min-width: 0; }
-.mr-unit { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #6E6A57;
+.mr-unit { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--muted);
 text-transform: uppercase; letter-spacing: 0.04em; }
 .screen-title-quiet { margin: 0 0 10px; text-align: right; }
 .pref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 6px; }
@@ -154,7 +159,7 @@ font-weight: 600; color: #3A382C; padding: 5px 0; }
 .pref-item.pref-dead { opacity: 0.5; }
 .cio-action { margin-top: 5px; }
 .cio-undo { margin: 0; width: auto; padding: 5px 11px; font-size: 13px; }
-.cio-held { font-size: 12px; font-weight: 700; color: #6E6A57; }
+.cio-held { font-size: 12px; font-weight: 700; color: var(--muted); }
 .gcv-scan-btn { width: 100%; font-size: 17px; padding: 16px; margin: 0 0 14px; }
 .gcv-frame { position: relative; width: 100%; aspect-ratio: 4 / 3; min-height: 220px;
 background: #14140E; border-radius: 12px; overflow: hidden; }
@@ -189,7 +194,7 @@ background: #EFF3EA; border: 1.5px solid #C9D6BC; border-radius: 14px; }
 .gc-balance.gc-spent { background: #F4EDEA; border-color: #DFC5BC; }
 .gc-bal-num { font-size: 34px; font-weight: 800; color: #3F5B33; line-height: 1; }
 .gc-balance.gc-spent .gc-bal-num { color: #8A3B2E; }
-.gc-bal-label { font-size: 13px; font-weight: 700; color: #6E6A57; margin-top: 5px; }
+.gc-bal-label { font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 5px; }
 .handover-later { opacity: 0.78; border-style: dashed; }
 .stmt-running { display: flex; align-items: baseline; justify-content: space-between;
 gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--ink);
@@ -202,7 +207,7 @@ margin: 0 0 6px; padding: 12px 12px; text-align: left;
 background: #fff; border: 1.5px solid #E4DFCB; border-radius: 12px;
 font-size: 16px; font-weight: 700; color: var(--ink); }
 .vfind-row.on { border-color: #3F5B33; background: #F3F6EF; }
-.vfind-row.vfind-extra { font-weight: 600; color: #6E6A57; font-style: italic; }
+.vfind-row.vfind-extra { font-weight: 600; color: var(--muted); font-style: italic; }
 .vfind-name { flex: 1 1 auto; min-width: 0; }
 .vfind-meta { font-size: 13px; font-weight: 600; color: #8A8674; white-space: nowrap; }
 .vfind-chosen { display: flex; align-items: center; justify-content: space-between;
@@ -249,7 +254,7 @@ line-height: 1.45; white-space: pre; overflow-x: auto; color: #23231B; margin: 1
 .pav-cal { margin: 10px 0 14px; }
 .pav-cal-head { font-weight: 700; font-size: 15px; margin: 0 2px 6px; color: var(--ink); }
 .pav-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-.pav-dow { font-size: 11px; text-align: center; color: #8A8268; padding-bottom: 2px; }
+.pav-dow { font-size: 11px; text-align: center; color: var(--faint); padding-bottom: 2px; }
 .pav-cell { position: relative; aspect-ratio: 1; border-radius: 6px;
   border: 1px solid var(--paper-dim, #D8D2BE); background: #FFFDF6;
   display: flex; align-items: center; justify-content: center; }
@@ -264,7 +269,7 @@ line-height: 1.45; white-space: pre; overflow-x: auto; color: #23231B; margin: 1
    only thing carrying a fact. */
 .pav-dot { position: absolute; bottom: 3px; width: 4px; height: 4px;
   border-radius: 50%; background: #fff; }
-.pav-key { display: flex; gap: 14px; font-size: 12px; color: #8A8268; margin: 2px 2px 8px; }
+.pav-key { display: flex; gap: 14px; font-size: 12px; color: var(--faint); margin: 2px 2px 8px; }
 .pav-key span { display: inline-flex; align-items: center; gap: 5px; }
 .pav-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block;
   border: 1px solid var(--paper-dim, #D8D2BE); }
@@ -321,28 +326,28 @@ padding: 20px 18px; color: #23231B; font-size: 14px; line-height: 1.45; }
 .stmt-head { display: flex; justify-content: space-between; align-items: flex-start;
 gap: 12px; border-bottom: 2px solid #3F5B33; padding-bottom: 10px; }
 .stmt-org { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
-.stmt-org-sub { font-size: 11px; color: #6E6A57; margin-top: 2px; }
+.stmt-org-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .stmt-doctype { font-size: 13px; font-weight: 800; letter-spacing: 0.14em;
 text-transform: uppercase; color: #3F5B33; white-space: nowrap; }
 .stmt-meta { display: flex; justify-content: space-between; gap: 16px; margin: 14px 0 4px; }
 .stmt-lbl { font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
 text-transform: uppercase; color: #8A8674; }
 .stmt-val { font-weight: 700; }
-.stmt-sub { font-size: 12px; color: #6E6A57; }
+.stmt-sub { font-size: 12px; color: var(--muted); }
 .stmt-due { border: 1.5px solid #3F5B33; border-radius: 6px; padding: 12px;
 margin: 14px 0; text-align: right; background: #F3F6EF; }
 .stmt-due.stmt-due-clear { border-color: #C9C3AD; background: #F7F5EC; }
 .stmt-due-lbl { font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
-text-transform: uppercase; color: #6E6A57; }
+text-transform: uppercase; color: var(--muted); }
 .stmt-due-num { font-size: 30px; font-weight: 800; color: #2F4A26; line-height: 1.1; }
-.stmt-due-clear .stmt-due-num { color: #6E6A57; }
+.stmt-due-clear .stmt-due-num { color: var(--muted); }
 .stmt-due-note { font-size: 11px; color: #8A3B2E; margin-top: 4px; }
 .stmt-table { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 13px; }
 .stmt-table th { text-align: left; font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
 text-transform: uppercase; color: #8A8674; border-bottom: 1px solid #DDD6C0; padding: 6px 4px; }
 .stmt-table td { padding: 7px 4px; border-bottom: 1px solid #EFEADA; vertical-align: top; }
 .stmt-table .num { text-align: right; white-space: nowrap; }
-.stmt-table .nw { white-space: nowrap; color: #6E6A57; }
+.stmt-table .nw { white-space: nowrap; color: var(--muted); }
 .stmt-table tfoot td { border-top: 1px solid #DDD6C0; border-bottom: none;
 font-weight: 700; padding-top: 8px; }
 .stmt-table tfoot tr.stmt-total td { border-top: 2px solid #3F5B33; font-size: 15px; font-weight: 800; }
@@ -351,15 +356,15 @@ margin: 14px 0 0; background: #FDF6EE; }
 .stmt-annual.stmt-annual-soft { border-style: dashed; border-color: #C9C3AD; background: #FAF8F0; }
 .stmt-annual-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .stmt-annual-num { font-size: 20px; font-weight: 800; color: #8A3B2E; }
-.stmt-annual-soft .stmt-annual-num { color: #6E6A57; }
+.stmt-annual-soft .stmt-annual-num { color: var(--muted); }
 .stmt-annual .stmt-table td { border-bottom: 1px solid #F0E3D5; }
-.stmt-annual-note { font-size: 11px; color: #6E6A57; margin-top: 7px; }
+.stmt-annual-note { font-size: 11px; color: var(--muted); margin-top: 7px; }
 .stmt-annual tr.stmt-settled td { opacity: 0.62; }
-.stmt-none { color: #6E6A57; font-style: italic; margin: 14px 0; }
+.stmt-none { color: var(--muted); font-style: italic; margin: 14px 0; }
 .stmt-standing, .stmt-pay { border-top: 1px solid #EFEADA; padding-top: 10px; margin-top: 12px; }
 .stmt-standing .stmt-lbl, .stmt-pay .stmt-lbl { margin-bottom: 3px; }
 .stmt-foot { border-top: 1px solid #EFEADA; margin-top: 14px; padding-top: 10px;
-font-size: 11px; color: #6E6A57; }
+font-size: 11px; color: var(--muted); }
 @media print {
 body * { visibility: hidden; }
 .stmt-doc, .stmt-doc * { visibility: visible; }
@@ -385,7 +390,7 @@ border-radius: 999px; padding: 2px 7px; margin-left: 7px; vertical-align: 2px; }
 .vfind-input { width: 100%; box-sizing: border-box; }
 /* 16px or iOS zooms the whole page when the box is tapped. */
 .vfind-input { font-size: 16px; }
-.vfind-note { font-size: 13px; color: #6E6A57; margin: 5px 2px 0; line-height: 1.35; }
+.vfind-note { font-size: 13px; color: var(--muted); margin: 5px 2px 0; line-height: 1.35; }
 #ifmUpdateBar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
 z-index: 998; background: #4A6741; color: #fff; border: none; border-radius: 999px;
 padding: 12px 22px; font-family: 'Manrope', -apple-system, sans-serif; font-weight: 700;
@@ -1272,7 +1277,7 @@ body.kiosk-mode input.kiosk-search::placeholder { color: #A59C82; font-weight: 4
    rather than left unused, so nothing can quietly start applying them. */
 .season-tag {
   font-size: 11px; font-weight: 800; letter-spacing: .04em;
-  text-transform: uppercase; color: #8A8268;
+  text-transform: uppercase; color: var(--faint);
   border: 1px solid #C9C2A8; border-radius: 4px; padding: 1px 5px;
   display: inline-block; max-width: 100%; white-space: normal;
 }
@@ -1837,15 +1842,15 @@ background: none; border: 0; border-bottom: 1px solid #E7DFC9; color: #3A382C;
 .kiosk-result:last-child { border-bottom: 0; }
 .kiosk-result .biz { font-size: clamp(16px, 1.9vw, 24px); font-weight: 800; display: block; }
 .kiosk-result .what {
-font-size: clamp(12px, 1.3vw, 16px); color: #8A8268; margin-top: 2px;
+font-size: clamp(12px, 1.3vw, 16px); color: var(--faint); margin-top: 2px;
 display: block; line-height: 1.3;
 }
 .kiosk-where {
 flex: 0 0 auto; font-size: clamp(13px, 1.4vw, 18px); font-weight: 800;
 padding: 8px 14px; border-radius: 999px; background: #A9CF97; color: #2F4A26; white-space: nowrap;
 }
-.kiosk-where.away { background: #E7DFC9; color: #8A8268; }
-.kiosk-empty { padding: 16px 20px; color: #8A8268; font-size: clamp(13px, 1.4vw, 17px); }
+.kiosk-where.away { background: #E7DFC9; color: var(--faint); }
+.kiosk-empty { padding: 16px 20px; color: var(--faint); font-size: clamp(13px, 1.4vw, 17px); }
 .kiosk-count {
 padding: 12px 20px 10px; color: #C74B82; font-weight: 800;
 font-size: clamp(14px, 1.6vw, 20px); border-bottom: 1px solid #E7DFC9;
@@ -1924,7 +1929,7 @@ body.kiosk-mode .deal-star.tappable:active svg { transform: scale(0.88); }
 .kiosk-detail h3 { margin: 0 0 2px; font-size: calc(clamp(18px, 2.1vw, 28px) * var(--card-scale, 1)); color: #2E2B20; }
 .kiosk-detail .meta { color: #B98A2E; font-size: calc(clamp(12px, 1.3vw, 16px) * var(--card-scale, 1)); margin: 0 0 8px; }
 .kiosk-detail .body { color: #4A4536; font-size: calc(clamp(13px, 1.4vw, 17px) * var(--card-scale, 1)); line-height: 1.45; margin: 0; }
-.kiosk-detail .site { color: #8A8268; font-size: calc(clamp(11px, 1.2vw, 14px) * var(--card-scale, 1)); margin: 8px 0 0; }
+.kiosk-detail .site { color: var(--faint); font-size: calc(clamp(11px, 1.2vw, 14px) * var(--card-scale, 1)); margin: 8px 0 0; }
 .kiosk-detail .kiosk-field { color: #4A4536; font-size: calc(clamp(12px, 1.3vw, 15px) * var(--card-scale, 1)); margin: 6px 0 0; }
 /* The vendor's own profile preview isn't the touchscreen kiosk -- it sits
    inline in a card on a phone, so the absolute positioning and vw-scaled
@@ -1941,7 +1946,7 @@ background: #fff; padding: 14px; box-shadow: none;
 .kiosk-detail.kiosk-preview .site { font-size: 13px; }
 .kiosk-detail .close {
 position: absolute; right: 10px; top: 8px; background: none; border: 0;
-color: #8A8268; font-size: 22px; font-family: inherit; padding: 2px 8px;
+color: var(--faint); font-size: 22px; font-family: inherit; padding: 2px 8px;
 }
 .wm-canvas {
 position: relative; background: #F7F5EC; border: 2px solid var(--ink);
@@ -2155,7 +2160,7 @@ font-size: calc(clamp(12.5px, 1.35vw, 16px) * var(--card-scale, 1));
 }
 .kiosk-share-note .close {
 position: absolute; right: 8px; top: 6px; background: none; border: 0;
-color: #8A8268; font-size: 22px; font-family: inherit; padding: 2px 8px;
+color: var(--faint); font-size: 22px; font-family: inherit; padding: 2px 8px;
 }
 /* The window that replaced the About button: photographs of the market's own
    subjects, cross-fading, tapped to read. Position and size are set here in
@@ -2263,7 +2268,7 @@ font-size: clamp(14px, 1.5vw, 17px); font-weight: 700; padding: 0 0 8px; cursor:
 .ab-thumb { width: 64px; height: 46px; object-fit: cover; border-radius: 7px;
 flex-shrink: 0; border: 1px solid var(--paper-dim); }
 .kl-hero-empty { width: 100%; aspect-ratio: 16/9; border-radius: 12px;
-background: var(--paper-dim, #EDE8D8); color: var(--ink-dim, #8A8268);
+background: var(--paper-dim, #EDE8D8); color: var(--ink-dim, var(--faint));
 display: flex; align-items: center; justify-content: center;
 font-size: 14px; margin-bottom: 10px; }
 .ab-thumb.empty { display: flex; align-items: center; justify-content: center;
@@ -2556,6 +2561,59 @@ html[data-look="rainshine"] {
   --glass: rgba(255,251,241,0.60); --glass-card: rgba(255,251,241,0.66); --glass-sheet: rgba(255,251,241,0.78); --glass-edge: rgba(255,255,255,0.45);
   --soft-text: #423328;
   background: #2B2418;
+}
+/* ===== THE TRUCK PALETTE (18-99) =====================================
+   Every colour below is a factory body colour offered on a Ford pickup
+   between 1962 and 1965, with its door-tag code in the comment. It sits on
+   top of Rain or Shine rather than replacing it, so all the photographic
+   structure -- the glass, the blur, the panels -- is untouched and setting
+   PALETTE back to 'harvest' restores the colours above exactly.
+
+   The palette divides itself. Measured against white text, only five of the
+   nineteen clear the 4.5:1 a button needs: Raven Black, Academy Blue, Holly
+   Green, Marlin Blue and Rangoon Red. Those are the actions. Every one of the
+   pale colours carries Raven Black text at 10:1 or better, so those are the
+   grounds. Nothing in the middle is asked to do a job it cannot.
+
+   Two colours are used darkened, and say so: Caribbean Turquoise and
+   Driftwood Gray are both too light to carry text at their factory values.
+   Driftwood in particular had to go a long way -- 42% of its factory value.
+   Muted text mostly sits on glass, which is only 60% opaque over a dark
+   photograph, so the ground under it is far darker than the paper white it
+   would be easy to measure against. Driftwood at its own value reads 1.2:1
+   there. This is the number that decided it.  */
+html[data-look="rainshine"][data-palette="truck"] {
+  --paper: #EDEAE0;          /* M  Corinthian White */
+  --paper-dim: #D6CBB2;      /* T  Sandshell Beige */
+  --line: rgba(21,18,15,0.20);
+  --ink: #15120F;            /* A  Raven Black -- 15.5:1 on Corinthian */
+  --leaf: #214A35;           /* L  Holly Green -- the primary action, 10:1 white */
+  --leaf-dark: #16311F;      /* Holly Green, pressed */
+  --tomato: #C2202A;         /* J  Rangoon Red -- warnings, 5.9:1 white */
+  --tomato-dark: #8E1820;
+  --sunflower: #EDA91B;      /* G  Chrome Yellow -- a fill, never behind white text */
+  --sky: #2B5B88;            /* W  Marlin Blue */
+  --berry: #223A63;          /* V  Academy Blue */
+  --debit: #C2202A;          /* J  Rangoon Red */
+  --credit: #214A35;         /* L  Holly Green */
+  --soft-text: #3F3C37;      /* K  Driftwood Gray, darkened hard -- see below */
+  --muted: #3F3C37;          /* the same: under truck all muted text is one colour */
+  /* There is no room for a second, fainter step. On the darker glass a
+     foreground has to sit at or below 0.046 luminance to clear 4.5:1, and
+     Driftwood at 42% measures 4.53:1 -- anything lighter fails. So under
+     truck the muted scale is one colour and the hierarchy is carried by
+     size and weight, which is how most of these already read. */
+  --faint: #3F3C37;
+  /* the glass takes the LIGHTEST white in the palette, not the paper white:
+     it is only 60% opaque over a dark photograph, so every point of lightness
+     here is a point of contrast for everything printed on it */
+  --glass: rgba(245,244,239,0.60); --glass-card: rgba(245,244,239,0.66);
+  --glass-sheet: rgba(245,244,239,0.80); --glass-edge: rgba(255,255,255,0.48);
+  --msg-teal: #3E7B7B;       /* B  Caribbean Turquoise, darkened to clear 4.5:1 (4.86)
+                                and nudged to green == blue, which is the teal
+                                Sean picked: right in the middle, not blue-ish */
+  --msg-teal-dark: #2D5C5C;
+  background: #15120F;       /* A  Raven Black behind the photo */
 }
 html[data-look="rainshine"] body { background: transparent; }
 html[data-look="rainshine"] body:not(.kiosk-mode)::before {
@@ -2874,7 +2932,7 @@ body.vendor-tabs main, body.manager-tabs main { padding-bottom: calc(113px + env
 body.manager-tabs .vtab .ico { width: 31px; height: 31px; }
 body.many-tabs .vtab .ico { width: 27px; height: 27px; }
 html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-inner {
-  background: rgba(255,251,241,var(--tab-cream));
+  background: rgba(var(--tab-tint, 255,251,241), var(--tab-cream));
   border-color: rgba(255,255,255,0.46);
   -webkit-backdrop-filter: blur(var(--tab-blur)) saturate(1.2);
   backdrop-filter: blur(var(--tab-blur)) saturate(1.2);
@@ -2909,7 +2967,20 @@ html[data-tabs="glass"] .vtab-stage > .vtab-copy {
    same material as the middle rather than a sharp cut-out */
 html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-lens::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: rgba(255,251,241,var(--tab-cream));
+  background: rgba(var(--tab-tint, 255,251,241), var(--tab-cream));
+}
+html[data-palette="truck"] { --tab-tint: 245,244,239; --tab-ink: #15120F; }  /* C Pure White, A Raven */
+
+/* The two "not yet built" tags were a literal orange that the glass ground
+   leaves at 2.07:1 -- unreadable, and not a Ford colour either. Chrome Yellow
+   cannot carry white text, but it carries Raven Black at 9.1:1, so the tag
+   becomes a chip instead of coloured text: being opaque, it no longer depends
+   on whatever happens to be behind it. The cone icon beside it is already
+   this warm, so the pairing holds. */
+html[data-palette="truck"] .soon-tag,
+html[data-palette="truck"] .planned-when {
+  color: var(--ink); background: var(--sunflower);
+  display: inline-block; padding: 2px 6px; border-radius: 4px;
 }
 html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-ring {
   display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none;
@@ -2928,7 +2999,7 @@ html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-m
   text-shadow: 0 0 3px rgba(255,255,255,0.98), 0 0 6px rgba(255,255,255,0.75), 0 1px 1px rgba(255,255,255,0.9);
 }
 .vtab { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 22px 2px 20px;
-  color: #6A5540; position: relative; font-family: inherit; cursor: pointer; }
+  color: var(--tab-ink, #6A5540); position: relative; font-family: inherit; cursor: pointer; }
 .vtab .ico { width: 31px; height: 31px; }
 /* One word each, so nothing wraps and every tab is the same height. */
 .vtab-label { font-family: 'Manrope', -apple-system, sans-serif; font-size: 10.5px; font-weight: 800;
@@ -11640,6 +11711,11 @@ let swWaiting = null;
 // how to add one. Each entry here is what the sign-in screen offers; the
 // swatch is the look's own key color so the buttons read at a glance.
 const LOOK_DEFAULT = 'rainshine';
+// Which set of colours the app wears. 'truck' is the 1962-65 Ford pickup
+// factory palette; 'harvest' is the 1973 co-op poster palette the app had
+// before. One word, and nothing else depends on which it is -- the layout,
+// the photographs and every rule are identical under both.
+const PALETTE = 'truck';
 // Whether the sign-in screen offers the Colors choice at all. Off from 18-32:
 // everyone gets LOOK_DEFAULT, and any choice a phone saved earlier is ignored
 // (so nobody is left on Harvest or Original with no way back). Turning it on
@@ -11665,6 +11741,8 @@ function currentLook() {
 // whichever look is the default.
 function applyLook(k, remember) {
   if (!LOOKS.some(l => l.k === k)) k = LOOK_DEFAULT;
+  if (PALETTE === 'truck') document.documentElement.setAttribute('data-palette', 'truck');
+  else document.documentElement.removeAttribute('data-palette');
   if (k === 'market') delete document.documentElement.dataset.look;
   else document.documentElement.dataset.look = k;
   const look = LOOKS.find(l => l.k === k);
@@ -20727,7 +20805,7 @@ html += '<table class="pr-list"><thead><tr><th>Date</th><th>Reason</th><th>Amoun
 d.fines.forEach(f => {
 html += '<tr><td>' + esc(formatDisplayDate(f.date)) + '</td><td>' + esc(f.reason || '') +
 (f.note ? ' \u2014 ' + esc(f.note) : '') +
-(f.auto ? ' <span style="font-size:11px; color:#8A8268;">(assessed automatically from your notice time \u2014 Guide p.15)</span>' : '') +
+(f.auto ? ' <span style="font-size:11px; color:var(--faint);">(assessed automatically from your notice time \u2014 Guide p.15)</span>' : '') +
 '</td><td>' + money(f.amount) + '</td></tr>';
 });
 html += '</tbody></table>';
@@ -23815,7 +23893,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-98';
+const BUILD_ID = '18-99';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
