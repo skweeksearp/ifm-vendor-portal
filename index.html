@@ -624,6 +624,13 @@ input[type=number], input[type=text], select {
 width: 100%; padding: 13px 12px; border: 1px solid var(--paper-dim); background: #fff;
 font-size: 20px; border-radius: 10px; color: var(--ink); font-family: inherit;
 }
+/* Every remaining text-entry type, so none of them inherits the browser's own
+   small default and triggers the zoom. Size only -- the look is left to
+   whatever rule already styles them. */
+input[type=email], input[type=tel], input[type=search], input[type=url],
+input[type=password], input[type=time], input[type=datetime-local], input[type=month], input[type=week] {
+font-size: 16px;
+}
 input[type=date] {
 display: block;
 width: 90%; max-width: 90%; min-width: 0; box-sizing: border-box;
@@ -857,13 +864,13 @@ border-bottom: 1px solid var(--paper-dim);
 .req-vendor-row:last-child { border-bottom: none; }
 .req-vendor-name { flex: 1; min-width: 0; font-size: 16px; line-height: 1.25; }
 .req-vendor-sub { font-size: 13px; opacity: 0.6; }
-.req-vendor-row select { margin: 0; width: auto; min-width: 116px; font-size: 15px; padding: 6px 8px; }
+.req-vendor-row select { margin: 0; width: auto; min-width: 116px; font-size: 16px; padding: 6px 8px; }
 .req-vendor-row .ghost-btn,
 .req-vendor-row .primary-btn {
 flex: 0 0 auto; width: auto; margin: 0; padding: 7px 12px;
 font-size: 14px; white-space: nowrap; border-radius: 999px;
 }
-.req-vendor-row input[type="date"] { margin: 0; width: auto; font-size: 15px; padding: 6px 8px; }
+.req-vendor-row input[type="date"] { margin: 0; width: auto; font-size: 16px; padding: 6px 8px; }
 .req-detail { font-size: 15px; line-height: 1.4; margin: 6px 0 0; }
 .req-example-note {
 background: #F6F1E4; border: 1px dashed #C3B98F; border-radius: 10px;
@@ -5161,7 +5168,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="ghost-btn" onclick="resetTuning()">Put them all back</button>
 <button type="button" class="ghost-btn" onclick="showTuningToBakeIn()">Show these as defaults</button>
 </div>
-<textarea id="tuningOut" readonly rows="8" style="width:100%; margin-top:8px; display:none; font-family:ui-monospace,Menlo,monospace; font-size:15px; padding:10px; border:1px solid var(--paper-dim); border-radius:10px;"></textarea>
+<textarea id="tuningOut" readonly rows="8" style="width:100%; margin-top:8px; display:none; font-family:ui-monospace,Menlo,monospace; font-size:16px; padding:10px; border:1px solid var(--paper-dim); border-radius:10px;"></textarea>
 </div>
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>Two That Matter Beyond Feel</h2>
@@ -15088,6 +15095,9 @@ if (!dash || !list) return;
 vtabBuilt = true;
 list.dataset.desk = 'vendor';
 list.innerHTML = '';
+// Anything a previous build of this desk created goes first, so a rebuild
+// replaces rather than accumulates.
+dash.querySelectorAll(':scope > .vtab-title, :scope > .vtab-heading').forEach(el => el.remove());
 const head = dash.querySelector(':scope > .screen-head');
 if (head) head.style.order = '0';
 const title = document.createElement('h2');
@@ -23570,7 +23580,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-84';
+const BUILD_ID = '18-85';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
