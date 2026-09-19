@@ -2864,65 +2864,62 @@ body.vendor-tabs main, body.manager-tabs main { padding-bottom: calc(84px + env(
   box-shadow: 0 6px 22px rgba(20,12,4,0.20), 0 1px 3px rgba(20,12,4,0.10);
   -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15);
 }
-/* ---- the droplet (18-89), only when TAB_LOOK says so and only on the
-   photographic look, since the trick is a copy of that photo ---------------
-   The two layers are absolutely positioned, so the grid does not count them
-   as columns. The magnifying layer is the size of the viewport and sits
-   exactly where the page's own fixed backdrop sits, which is what makes the
-   enlargement line up; its wrapper is the size of the bubble, which is what
-   lets the rim mask be measured in the bubble's own coordinates. */
-.vtab-drop, .vtab-gloss { display: none; }
-html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-inner {
-  background: rgba(255,251,241,0.34);
-  border-color: rgba(255,255,255,0.50);
-  -webkit-backdrop-filter: blur(8px) saturate(1.5) brightness(1.07);
-  backdrop-filter: blur(8px) saturate(1.5) brightness(1.07);
-  box-shadow:
-    inset 0 2px 0 rgba(255,255,255,1),
-    inset 0 13px 18px -11px rgba(40,24,10,0.52),
-    inset 0 -18px 22px -13px rgba(255,255,255,0.95),
-    inset 0 0 0 1px rgba(255,255,255,0.50),
-    0 12px 32px rgba(20,12,4,0.32);
+/* ---- the glass bubble (18-91) ---------------------------------------
+   Two layers, both absolutely positioned so the tab grid does not count them
+   as columns. The lens holds a live copy of the screen, lined up with the real
+   one and enlarged; the ring is painted light. Only on the photographic look,
+   and only when TAB_LOOK says so. */
+.vtab-lens, .vtab-ring { display: none; }
+html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-inner {
+  background: rgba(255,251,241,var(--tab-cream));
+  border-color: rgba(255,255,255,0.46);
+  -webkit-backdrop-filter: blur(var(--tab-blur)) saturate(1.2);
+  backdrop-filter: blur(var(--tab-blur)) saturate(1.2);
+  box-shadow: 0 8px 24px rgba(20,12,4,0.24), 0 1px 3px rgba(20,12,4,0.10);
 }
-html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-drop {
+/* the lens, masked to a band around the rim */
+html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-lens {
   display: block; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  overflow: hidden; border-radius: inherit; opacity: 0.92;
+  overflow: hidden; border-radius: inherit;
   -webkit-mask-image:
-    linear-gradient(to right, #000 0, rgba(0,0,0,0.4) 7%, transparent 15%, transparent 85%, rgba(0,0,0,0.4) 93%, #000 100%),
-    linear-gradient(to bottom, #000 0, rgba(0,0,0,0.4) 12%, transparent 23%, transparent 77%, rgba(0,0,0,0.4) 88%, #000 100%);
+    linear-gradient(to right,#000 0,transparent var(--tab-reach),transparent calc(100% - var(--tab-reach)),#000 100%),
+    linear-gradient(to bottom,#000 0,transparent var(--tab-reach-y),transparent calc(100% - var(--tab-reach-y)),#000 100%);
   mask-image:
-    linear-gradient(to right, #000 0, rgba(0,0,0,0.4) 7%, transparent 15%, transparent 85%, rgba(0,0,0,0.4) 93%, #000 100%),
-    linear-gradient(to bottom, #000 0, rgba(0,0,0,0.4) 12%, transparent 23%, transparent 77%, rgba(0,0,0,0.4) 88%, #000 100%);
+    linear-gradient(to right,#000 0,transparent var(--tab-reach),transparent calc(100% - var(--tab-reach)),#000 100%),
+    linear-gradient(to bottom,#000 0,transparent var(--tab-reach-y),transparent calc(100% - var(--tab-reach-y)),#000 100%);
 }
-html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-drop > i {
-  position: absolute; display: block; left: -12px;
+/* the stage is the size of the viewport, measured in real pixels rather than
+   vh -- Safari's 100vh is the toolbar-collapsed height and would put the copy
+   60-100px out of step with the screen it is copying */
+html[data-tabs="glass"] .vtab-lens > .vtab-stage {
+  position: absolute; left: -12px;
   bottom: calc(-1 * (10px + env(safe-area-inset-bottom)));
-  width: 100vw; height: 100vh;
+  width: var(--tab-vpw, 100vw); height: var(--tab-vph, 100vh); overflow: hidden;
+  transform: scale(var(--tab-zoom, 1)); transform-origin: 50% calc(100% - 28px);
   background: var(--photo) center / cover no-repeat;
-  transform: scale(1.62); transform-origin: 50% calc(100% - 28px);
-  filter: saturate(1.3);
 }
-html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-gloss {
+html[data-tabs="glass"] .vtab-stage > .vtab-copy {
+  position: absolute; left: 0; top: 0; width: var(--tab-vpw, 100vw);
+  transform: translateY(calc(-1px * var(--tab-scroll, 0)));
+}
+/* the same glass laid back over the magnified part, so the rim reads as the
+   same material as the middle rather than a sharp cut-out */
+html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-lens::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: rgba(255,251,241,var(--tab-cream));
+}
+html[data-tabs="glass"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-ring {
   display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none;
   border-radius: inherit;
-  background:
-    linear-gradient(166deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.16) 15%, rgba(255,255,255,0) 32%),
-    radial-gradient(130% 240% at 16% -34%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 44%),
-    radial-gradient(150% 90% at 50% 128%, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0) 52%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    inset 0 0 0 1px rgba(255,255,255,0.30),
+    inset 0 -10px 14px -11px rgba(255,255,255,0.65),
+    inset 0 8px 12px -10px rgba(40,24,10,0.35);
 }
-html[data-tabs="droplet"] .vtab { z-index: 3; }
-html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab .ico {
-  filter:
-    drop-shadow(0 0 3px rgba(255,255,255,0.95))
-    drop-shadow(0 0 6px rgba(255,255,255,0.65))
-    drop-shadow(0 1px 1px rgba(255,255,255,0.85));
-}
-/* the selected tab's marker and the unread dot need the same help */
-html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab[aria-selected="true"]::before {
-  box-shadow: 0 0 4px rgba(255,255,255,0.9);
-}
-html[data-tabs="droplet"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-dot {
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.95), 0 0 5px rgba(255,255,255,0.8);
+html[data-tabs="glass"] .vtab { z-index: 3; }
+html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-mode) .vtab .ico {
+  filter: drop-shadow(0 0 3px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));
 }
 .vtab { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 13px 2px 11px;
   color: #6A5540; position: relative; font-family: inherit; cursor: pointer; }
@@ -11585,18 +11582,40 @@ try { runScreenInit(sec.id.replace('screen-', '')); } catch (e) {}
 // source is in Handover, with a Copy button; turning it on is this constant
 // and uploading sw.js beside index.html.
 const SERVICE_WORKER_ON = false;
-// The tab bubble's look (18-89). 'droplet' gives it a water-drop treatment:
-// a thinner middle, a bright rim, a caustic under the icons, and the market
-// photo genuinely magnified at the two ends. 'flat' is the plain frosted
-// glass of 18-88. Set this to 'flat' to put it back -- that one word is the
-// whole revert, and nothing else in the app depends on which it is.
+// The tab bubble's look (18-91). 'glass' is the setting chosen on the dial:
+// a very thin cream, a soft blur, and the screen behind the bar genuinely
+// magnified at the rim. 'flat' is the plain frosted glass of 18-88. Setting
+// this to 'flat' is the whole revert -- one word, and nothing else in the app
+// depends on which it is.
+const TAB_LOOK = 'glass';
+// The numbers behind 'glass', exactly as the dial reported them.
+const TAB_GLASS = { cream: 0.15, blur: 10, zoom: 22, reach: 28 };
+// A white halo behind the icons. The look was chosen with this off, and then
+// measured: at 15% cream the icons come out at 1.09:1 against the darkest
+// parts of the market photo, where an icon needs 3:1 to be made out at all.
+// That is not a close call, so the halo is on. It adds light behind the icons
+// and changes nothing else -- the cream, the blur, the magnification and the
+// rim are all exactly as they were set on the dial. Set this false to see the
+// icons the way the dial had them.
+const TAB_HALO = true;
+// THE MAGNIFIER IS OFF, AND THIS IS WHY.
+// It works, and it is cheap: 6ms to rebuild when the screen changes, 0.004ms
+// to follow a scroll, measured on this app's heaviest screens. The problem is
+// not speed. To magnify what is behind the bar the app has to keep a second
+// copy of the current screen, and that copy looks exactly like the real one to
+// every query in the file -- sixteen document-wide class lookups now have two
+// answers instead of one. Most would only be untidy. One is not: the drawer
+// system physically MOVES a screen's nodes into a fold body and moves them
+// back again, and it finds those folds with '.dash-fold.open'. A fold inside
+// the copy is a fold it can find, which means a real screen could be relocated
+// into the tab bar and lost.
 //
-// Worth knowing before keeping it: the magnified ends can only ever enlarge
-// the PHOTO, because that is the only thing the page can copy. Wherever a
-// card sits behind the bar, the two ends show enlarged vegetables while the
-// middle shows the card. On the photo it is invisible; over a card it is a
-// small lie at each end.
-const TAB_LOOK = 'droplet';
+// Making it safe is real work -- every class-based lookup has to skip the
+// copy -- and it touches the drawer machinery, which is the most delicate part
+// of this app. That deserves its own change with its own tests, not a rider on
+// a look. The glass below is exactly as it was dialled in; only the
+// magnification is held back.
+const TAB_LENS = false;
 let swWaiting = null;
 // Which desks the opening screen offers a way in through. A phased handoff
 // means Manager and Board of Directors can pilot the app for real, on real
@@ -11862,7 +11881,7 @@ const bootStarted = Date.now();
 // over the network and reading it. Measured, not assumed.
 try { ifmParseMs = Math.round(performance.now()); } catch (e) {}
 paintPretendBand();
-document.documentElement.setAttribute('data-tabs', TAB_LOOK);
+applyTabLook();
 ifmKeyboardWatch();
 freeFloatingSheets();
 paintPickerBackHand();
@@ -15152,7 +15171,7 @@ MANAGER_TABS.forEach(tab => {
   b.onclick = () => openManagerTab(tab.k);
   list.appendChild(b);
 });
-paintTabDroplet();
+paintTabGlass();
 }
 function setManagerTab(k) {
 buildManagerTabs();
@@ -15215,25 +15234,93 @@ VENDOR_TABS.forEach(tab => {
   b.onclick = () => openVendorTab(tab.k);
   list.appendChild(b);
 });
-paintTabDroplet();
+paintTabGlass();
 }
-// The droplet's two layers live inside the bubble, but both build functions
-// clear that element's innerHTML, so they are put back afterwards rather than
-// written into the markup where they would be wiped.
-function paintTabDroplet() {
+// THE GLASS BUBBLE'S LAYERS (18-91).
+// Both build functions clear the tab list's innerHTML, so these are put back
+// afterwards rather than written into the markup where they would be wiped.
+function paintTabGlass() {
 const list = document.getElementById('vendorTabList');
 if (!list) return;
-list.querySelectorAll(':scope > .vtab-drop, :scope > .vtab-gloss').forEach(el => el.remove());
-if (TAB_LOOK !== 'droplet') return;
-const drop = document.createElement('div');
-drop.className = 'vtab-drop';
-drop.setAttribute('aria-hidden', 'true');
-drop.appendChild(document.createElement('i'));
-const gloss = document.createElement('div');
-gloss.className = 'vtab-gloss';
-gloss.setAttribute('aria-hidden', 'true');
-list.insertBefore(gloss, list.firstChild);
-list.insertBefore(drop, list.firstChild);
+list.querySelectorAll(':scope > .vtab-lens, :scope > .vtab-ring').forEach(el => el.remove());
+if (TAB_LOOK !== 'glass') return;
+const ring = document.createElement('div');
+ring.className = 'vtab-ring';
+ring.setAttribute('aria-hidden', 'true');
+list.insertBefore(ring, list.firstChild);
+if (TAB_LENS) {
+  const lens = document.createElement('div');
+  lens.className = 'vtab-lens';
+  lens.setAttribute('aria-hidden', 'true');
+  lens.innerHTML = '<div class="vtab-stage"><div class="vtab-copy"></div></div>';
+  list.insertBefore(lens, list.firstChild);
+}
+paintTabLens(true);
+}
+// THE LENS, AND WHAT IT COSTS.
+// Nothing in CSS can magnify what is behind an element: backdrop-filter has no
+// way to displace a backdrop, and the SVG filter that can is accepted and then
+// ignored by Safari. The only honest way to enlarge what is actually behind the
+// bar is to keep a second copy of it and scale that -- so the bar carries a
+// silent duplicate of the screen.
+//
+// That duplicate is real DOM and it is not free, which is why it is kept as
+// small as possible: only the ACTIVE screen is copied, not the whole app, and
+// the copy is rebuilt only when the screen changes -- scrolling moves it with
+// one style change. Anything live is stripped: a cloned <video> would ask for
+// the camera a second time, a cloned canvas is dead weight, and cloned ids
+// would be duplicates of the real ones.
+let tabLensAt = '';
+function paintTabLens(force) {
+if (TAB_LOOK !== 'glass' || !TAB_LENS) return;
+const copy = document.querySelector('#vendorTabList .vtab-copy');
+if (!copy) return;
+const screen = document.querySelector('#main .screen.active') || document.getElementById('main');
+if (!screen) return;
+const key = (screen.id || 'main') + ':' + (screen.childElementCount || 0);
+if (!force && key === tabLensAt) return;
+tabLensAt = key;
+let clone;
+try { clone = screen.cloneNode(true); } catch (e) { return; }
+clone.removeAttribute('id');
+clone.querySelectorAll('video, canvas, iframe, script, .vtab-bar, .vtab-lens').forEach(el => el.remove());
+clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+clone.style.display = 'block';
+copy.innerHTML = '';
+copy.appendChild(clone);
+syncTabLens();
+}
+function syncTabLens() {
+if (TAB_LOOK !== 'glass') return;
+let y = window.scrollY;
+if (y === undefined) y = (document.scrollingElement || document.documentElement || document.body).scrollTop;
+document.documentElement.style.setProperty('--tab-scroll', String(Math.round(y || 0)));
+}
+function sizeTabLens() {
+const r = document.documentElement;
+r.style.setProperty('--tab-vph', Math.round(window.innerHeight) + 'px');
+r.style.setProperty('--tab-vpw', Math.round(r.clientWidth) + 'px');
+syncTabLens();
+}
+// The look's numbers, set once from the one place they are written down.
+function applyTabLook() {
+const r = document.documentElement;
+r.setAttribute('data-tabs', TAB_LOOK);
+r.setAttribute('data-halo', TAB_HALO ? 'on' : 'off');
+if (TAB_LOOK !== 'glass') return;
+r.style.setProperty('--tab-cream', String(TAB_GLASS.cream));
+r.style.setProperty('--tab-blur', TAB_GLASS.blur + 'px');
+r.style.setProperty('--tab-zoom', (1 + TAB_GLASS.zoom / 100).toFixed(3));
+r.style.setProperty('--tab-reach', TAB_GLASS.reach + '%');
+r.style.setProperty('--tab-reach-y', Math.min(48, Math.round(TAB_GLASS.reach * 1.55)) + '%');
+sizeTabLens();
+window.addEventListener('scroll', syncTabLens, { passive: true });
+window.addEventListener('resize', sizeTabLens);
+window.addEventListener('orientationchange', () => setTimeout(sizeTabLens, 300));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', sizeTabLens);
+  window.visualViewport.addEventListener('scroll', syncTabLens);
+}
 }
 function tabOfFold(fold) {
 const dash = vtabDash();
@@ -19583,6 +19670,7 @@ applyVendorVisibility();
 refreshAllDateChips();
 runScreenInit(name);
 if (changed) scrollAppToTop();
+try { paintTabLens(true); } catch (e) {}
 }
 // The app scrolls the window on a phone and a panel on a wall display, so
 // both are reset rather than guessing which one is in use.
@@ -23681,7 +23769,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-89';
+const BUILD_ID = '18-91';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
