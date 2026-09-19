@@ -4112,14 +4112,6 @@ announces any change.</p>
 </button>
 <div class="fold-body"></div>
 </div>
-<div class="dash-fold" data-fold="st-noshow">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'noshow')">
-<span class="fold-title">No-Show Log</span>
-<span class="fold-sub"><span class="soon-tag">Not built</span> &middot; Absent with no notice</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
 </div>
 </section>
 <section id="screen-aboutedit" class="screen">
@@ -6347,8 +6339,11 @@ comes from.</p>
 <label for="flKind">What happened</label>
 <select id="flKind" data-no-find="1" onchange="renderViolationRule()"></select>
 <p class="empty-note" style="margin-top:8px;" id="flRule"></p>
-<div class="tool-date"><label for="flDate">When</label>
+<div class="tool-date" id="flDateRow"><label for="flDate">When</label>
 <input type="date" id="flDate" onchange="violationBoothPicked()"></div>
+<div class="tool-date" id="flDayRow" style="display:none;"><label for="flDay">Market day</label>
+<select id="flDay" data-no-find="1" onchange="violationDayPicked()"></select></div>
+<div id="flMarked"></div>
 <div id="flBoothRow" style="display:none;">
 <label for="flBooth">Booth</label>
 <select id="flBooth" data-no-find="1" onchange="violationBoothPicked()"></select>
@@ -14764,9 +14759,10 @@ dayfees: { built: true, live: true, t: 'Booth Fees', when: 'Every market day',
 body: '<p>Record which vendors paid the daily selling fee, and what is outstanding at the end of the day.</p>' +
 '<p>The Guide sets the fee at $40 Saturday, $30 Sunday, $20 Wednesday and $30 at the Winter Market, collected by the staff member on duty &mdash; before opening at Steamboat Landing, during market on Wednesdays and in winter.</p>' +
 '<p>This is the market&rsquo;s daily cash flow and the app records none of it.</p>' },
-noshow: { built: true, live: true, t: 'No-Show Log', when: 'Every market day',
+noshow: { built: true, live: true, t: 'No-Show Log \u2014 now inside Record a Violation', when: 'Every market day',
 body: '<p>Mark who did not appear and never notified the office, which is a different thing from reporting an absence late.</p>' +
-'<p>The Guide sends repeated no-shows to the Board for review, but does not fix a number. Something has to count them before anyone can say a vendor has reached &ldquo;repeated&rdquo;.</p>' },
+'<p>The Guide sends repeated no-shows to the Board for review, but does not fix a number. Something has to count them before anyone can say a vendor has reached &ldquo;repeated&rdquo;.</p>' +
+'<p><b>This is no longer a tool of its own.</b> It is the &ldquo;No-show&rdquo; kind in <b>Record a Violation</b>, which marks the vendor absent for that market day exactly as the log did \u2014 so attendance, the shortfall rows and the day-fee expected list all still see it \u2014 charges the failure-to-notify fine on the same count as a late call-out, shows who is already marked with an Undo beside each, and keeps the repeated-no-show count in front of the office.</p>' },
 stallcheck: { built: true, live: true, t: 'End-of-Day Booth Check \u2014 now inside Record a Violation', when: 'Every market day',
 body: '<p>Walk the pavilion at close and log booths left with chains up, tables out, signage standing or waste behind. ' +
 'The Booth Improvement Guidelines set a $10 fine for non-permanent items left at the end of a market day, doubling at each occurrence.</p>' +
@@ -15020,7 +15016,7 @@ if (document.body.classList.contains('vendor-tabs')) return VENDOR_TABS;
 return null;
 }
 // In the order a market day happens.
-const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'noshow', 'firelane'];
+const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'firelane'];
 function mgrInlineTool(grid, tile) {
 const screenName = tile.s || 'optool';
 if (tile.ot) otOpenKey = tile.ot;
@@ -23574,7 +23570,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-82';
+const BUILD_ID = '18-83';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -33899,7 +33895,7 @@ const FLAG_SCREENS = {
 'Fire lane': ['firelane', 'fines'],
 'Booth condition': ['firelane', 'fines'],
 'Buildings & Grounds': ['optool:bgwalk', 'optool:compliance', 'facilitiestracker'],
-'Attendance': ['attshort', 'noshow'],
+'Attendance': ['attshort', 'firelane'],
 'Insurance': ['requirements', 'standing'],
 'Permits': ['requirements'],
 'Leave of absence': ['leaves'],
@@ -35109,7 +35105,6 @@ tiles: [
 { s: 'giftcerts', i: 'i-gem', t: 'Gift Certificates', d: 'Scan a certificate to sell, scan it again when it comes back' },
 { s: 'snaplog', i: 'i-gem', t: 'SNAP Tokens In &amp; Out', d: 'Tokens handed out at the terminal, tokens turned in by vendors, and the difference' },
 { s: 'fclog', i: 'i-gem', t: 'FreshConnect Checks In', d: 'Checks turned in by vendors \u2014 New York State issues them, so the market only takes them back' },
-{ s: 'noshow', i: 'i-no-entry', t: 'No-Show Log', d: 'Absent with no notice' },
 { s: 'firelane', i: 'i-flame', t: 'Record a Violation', d: 'Fire lane, items left at close, late notice \u2014 anything that carries a fine' },
 ] },
 { key: 'vendors', title: 'Vendors', icon: 'i-list',
@@ -45865,9 +45860,21 @@ const VIOLATION_KINDS = [
   rule: () => 'First offense: $' + (ruleNum('fineStall') || 10) + ', charged automatically. ' +
     'Multiplied by ' + (ruleNum('fineStallMult') || 2) + ' each time it happens again. Resets each season.',
   fine: n => Math.round((ruleNum('fineStall') || 10) * Math.pow(ruleNum('fineStallMult') || 2, n - 1) * 100) / 100 },
-{ k: 'callout', t: 'Absence with late notice or none', reason: 'Late arrival',
+{ k: 'callout', t: 'Late notice of absence or lateness', reason: 'Late arrival', group: 'notify',
   rule: () => '$' + (ruleNum('fineCallOut') || 50) + ', charged automatically, and the same again ' +
-    'for each further offense. Resets each season.',
+    'for each further offense. Resets each season. (BF05: the Guide says $50 increments in one ' +
+    'place and \u201cmultiplies\u201d in another \u2014 the app uses increments.)',
+  fine: n => Math.round((ruleNum('fineCallOut') || 50) * n * 100) / 100 },
+// A no-show is a failure to notify, so it carries the same fine on the same
+// count as a late call-out -- the Guide gives them one line between them. It
+// also does something no other violation does: it takes that market off the
+// vendor's attendance, which is what the reserved-stall requirement is
+// measured against. That is why it needs a market day rather than any date.
+{ k: 'noshow', t: 'No-show \u2014 absent with no notice at all', reason: 'No-show', group: 'notify',
+  marks: true, day: true,
+  rule: () => '$' + (ruleNum('fineCallOut') || 50) + ', on the same count as a late notice. ' +
+    'Recording it also takes that market off the vendor\u2019s attendance. ' +
+    'The Guide sends repeated no-shows to the Board.',
   fine: n => Math.round((ruleNum('fineCallOut') || 50) * n * 100) / 100 },
 { k: 'other', t: 'Something else', reason: 'Other',
   rule: () => 'The Guide fixes no amount for this, so enter what the Board or the Manager has decided. ' +
@@ -45875,6 +45882,59 @@ const VIOLATION_KINDS = [
   fine: null },
 ];
 function violationKind(k) { return VIOLATION_KINDS.find(x => x.k === k) || VIOLATION_KINDS[0]; }
+// A no-show is recorded against a market day, not an arbitrary date: the
+// attendance count, the shortfall rows and the day-fee expected list all look
+// the day up, and a record on a non-market date would be invisible to every
+// one of them.
+function violationDayPicked() {
+const sel = document.getElementById('flDay');
+const d = document.getElementById('flDate');
+if (sel && d && sel.value) d.value = sel.value;
+renderViolationMarked();
+}
+// Marking somebody absent moves money and attendance, so the tool shows who is
+// already marked for that day and lets a mistake be taken back -- the one
+// thing the old No-Show Log could do that a write-only violation record
+// cannot.
+function renderViolationMarked() {
+const host = document.getElementById('flMarked');
+if (!host) return;
+const kind = violationPicked();
+if (!kind.marks) { host.innerHTML = ''; return; }
+const date = (document.getElementById('flDay') || {}).value || '';
+const marked = (date && cache.ops && cache.ops.noshow ? cache.ops.noshow[date] : null) || [];
+let html = '';
+if (marked.length) {
+  html += '<p class="empty-note" style="margin:10px 2px 4px;"><b>Already marked absent on ' +
+    esc(formatDisplayDate(date)) + ':</b></p>';
+  html += marked.map(vid => '<div class="df-just"><button type="button" class="df-just-row" ' +
+    'onclick="violationUnmark(\'' + esc(date) + '\',\'' + esc(vid) + '\')">' +
+    '<span>' + esc(vendorNameFor(vid)) + '</span><span class="df-just-undo">Undo</span></button></div>').join('');
+}
+// The Guide sends repeated no-shows to the Board, so the count has to stay
+// visible somewhere now that the log's own card is gone.
+const counts = noShowCounts();
+const repeat = Object.keys(counts).filter(id => counts[id] > 1)
+  .sort((a, b) => counts[b] - counts[a]);
+if (repeat.length) {
+  html += '<p class="empty-note" style="margin:10px 2px 0;"><b>More than one this season:</b> ' +
+    repeat.map(id => esc(vendorNameFor(id)) + ' (' + counts[id] + ')').join(', ') +
+    '. The Guide sends repeated no-shows to the Board.</p>';
+}
+host.innerHTML = html;
+}
+async function violationUnmark(date, vendorId) {
+const list = (cache.ops.noshow || {})[date] || [];
+const i = list.indexOf(vendorId);
+if (i < 0) return;
+list.splice(i, 1);
+if (!list.length) delete cache.ops.noshow[date];
+await saveOps();
+renderViolationMarked();
+showMsg('flMsg', 'ok', esc(vendorNameFor(vendorId)) + ' is marked present again for ' +
+  esc(formatDisplayDate(date)) + '. That market counts towards their attendance once more. ' +
+  'Any fine already recorded stays \u2014 take it off in Fines &amp; Penalties if it should not stand.');
+}
 function violationBoothPicked() {
 const bSel = document.getElementById('flBooth');
 const note = document.getElementById('flBoothNote');
@@ -45916,6 +45976,11 @@ if (row) row.style.display = kind.fine === null ? 'block' : 'none';
 // land it on nobody at all.
 const bRow = document.getElementById('flBoothRow');
 if (bRow) bRow.style.display = kind.booth ? 'block' : 'none';
+const dRow = document.getElementById('flDateRow');
+const dayRow = document.getElementById('flDayRow');
+if (dRow) dRow.style.display = kind.day ? 'none' : 'block';
+if (dayRow) dayRow.style.display = kind.day ? 'block' : 'none';
+if (kind.day) violationDayPicked(); else renderViolationMarked();
 const wRow = document.getElementById('flWhatRow');
 const wSel = document.getElementById('flWhat');
 if (wRow) wRow.style.display = kind.what ? 'block' : 'none';
@@ -45954,12 +46019,24 @@ const vendorId = (document.getElementById('flVendor') || {}).value || '';
 const date = document.getElementById('flDate').value || todayISO();
 const note = document.getElementById('flNote').value.trim();
 if (!vendorId) { showMsg('flMsg', 'err', 'Pick the vendor this is being recorded against.'); return; }
+// A no-show is the one kind that changes a record other tools read, so it is
+// refused rather than half-written when it cannot be placed on a market day.
+if (kind.marks) {
+  const day = (document.getElementById('flDay') || {}).value || '';
+  if (!day) { showMsg('flMsg', 'err', 'Pick the market day this vendor did not show up for.'); return; }
+  if (((cache.ops.noshow || {})[day] || []).includes(vendorId)) {
+    showMsg('flMsg', 'err', vendorNameFor(vendorId) + ' is already marked absent on ' +
+      formatDisplayDate(day) + '. Nothing has been recorded twice.');
+    return;
+  }
+}
 const all = await fireLaneAll();
 const season = fireLaneSeasonOf(date);
 // Each kind escalates on its own count, so a fire lane offense does not make
 // somebody's next left-behind pallet a second offense.
+const sameCount = k => kind.group ? violationKind(k).group === kind.group : k === kind.k;
 let before = all.filter(x => x.vendorId === vendorId && fireLaneSeasonOf(x.date) === season &&
-  violationKindOf(x).k === kind.k).length;
+  sameCount(violationKindOf(x).k)).length;
 // Items left at close was recorded by the End-of-Day Booth Check before this
 // tool absorbed it, and those records still charge. They have to count here
 // too, or a vendor with two of them starts again at the first-offense $10.
@@ -45988,13 +46065,28 @@ if (charged > 0) {
   await saveOps();
 }
 entry.fine = charged;
+// Marking absent is what takes the market off their attendance, and it is
+// read by the shortfall rows, the day-fee expected list and the vendor's own
+// standing. It is written before the violation record so a failure here stops
+// the whole thing rather than leaving a fine with no absence behind it.
+if (kind.marks) {
+  cache.ops.noshow = cache.ops.noshow || {};
+  cache.ops.noshow[date] = cache.ops.noshow[date] || [];
+  cache.ops.noshow[date].push(vendorId);
+  await saveOps();
+}
 await storageSet(FIRELANE_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), entry);
 actAs('Recorded a violation', { kind: 'booth', weight: 'notable', vendorId: vendorId });
 document.getElementById('flNote').value = '';
 const amt = document.getElementById('flAmount');
 if (amt) amt.value = '';
 await renderFireLane();
+renderViolationMarked();
 const name = vendorNameFor(vendorId);
+const alsoMarked = kind.marks
+  ? ' They are marked absent for ' + esc(formatDisplayDate(date)) +
+    ', so that market no longer counts towards their attendance.'
+  : '';
 const ord = offense === 1 ? 'First' : offense === 2 ? 'Second' : offense === 3 ? 'Third' : 'Offense ' + offense;
 showMsg('flMsg', 'ok', unset
   ? ord + ' recorded for ' + esc(name) + '. ' + (kind.over || 'Nothing has been charged.')
@@ -46003,6 +46095,10 @@ showMsg('flMsg', 'ok', unset
     ' \u2014 $' + fmtMoney(charged) + ' charged to their account.'
   : '<svg class="ico"><use href="#i-checkmark"></use></svg> Warning recorded for ' + esc(name) +
     '. A further offense this season is charged automatically.');
+if (alsoMarked) {
+const box = document.getElementById('flMsg');
+if (box) box.innerHTML = box.innerHTML + alsoMarked;
+}
 }
 async function initFireLaneScreen() {
 const kindSel = document.getElementById('flKind');
@@ -46023,6 +46119,16 @@ if (bSel && !bSel.options.length) {
       o.value = bo.num; o.textContent = 'Booth ' + bo.num + (bo.where ? ' \u00b7 ' + bo.where : '');
       bSel.appendChild(o);
     });
+}
+const daySel = document.getElementById('flDay');
+if (daySel && !daySel.options.length) {
+  const past = allMarketDatesInSeason(seasonYear()).filter(m => m.date <= todayISO()).slice().reverse();
+  past.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.date; o.textContent = formatDisplayDate(m.date);
+    daySel.appendChild(o);
+  });
+  if (past.length) daySel.value = past[0].date;
 }
 const d0 = document.getElementById('flDate');
 if (d0 && !d0.value) d0.value = todayISO();
