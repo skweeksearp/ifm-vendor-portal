@@ -2808,8 +2808,8 @@ html body .primary-btn.gcv-scan-btn:active { background: #244A6F; opacity: 1; }
 
 .gc-home-scan .gc-home-close { background: #FFFBF1; }
 /* Send is blue (18-52): white on #2F5D8A is 6.9:1. */
-.primary-btn.msg-send { background: #1E7878; box-shadow: 0 3px 10px rgba(30,120,120,0.32); }
-.primary-btn.msg-send:active { background: #175E5E; opacity: 1; }
+.primary-btn.msg-send, .primary-btn.msg-new { background: #1E7878; box-shadow: 0 3px 10px rgba(30,120,120,0.32); }
+.primary-btn.msg-send:active, .primary-btn.msg-new:active { background: #175E5E; opacity: 1; }
 /* Manager's tools, inline on the home screen or opened as their own screen. */
 html body .mgr-inline-tool .primary-btn,
 html body #screen-dayfees .primary-btn, html body #screen-giftcerts .primary-btn,
@@ -2931,7 +2931,7 @@ html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-m
 /* One word each, so nothing wraps and every tab is the same height. */
 .vtab-label { font-family: 'Manrope', -apple-system, sans-serif; font-size: 10.5px; font-weight: 800;
   line-height: 1; letter-spacing: -0.025em; text-align: center; white-space: nowrap;
-  max-width: 100%; }
+  display: block; width: 100%; overflow: hidden; }
 body.many-tabs .vtab-label { font-size: 9.5px; }
 .vtab[aria-selected="true"] { color: var(--leaf); }
 .vtab[aria-selected="true"]::before { content: ""; position: absolute; top: 4px; left: 32%; right: 32%; height: 3px; border-radius: 3px; background: var(--leaf); }
@@ -15179,6 +15179,7 @@ MANAGER_TABS.forEach(tab => {
 });
 setTabCount(MANAGER_TABS.length);
 paintTabGlass();
+fitTabLabels();
 }
 function setManagerTab(k) {
 buildManagerTabs();
@@ -15243,10 +15244,39 @@ VENDOR_TABS.forEach(tab => {
 });
 setTabCount(VENDOR_TABS.length);
 paintTabGlass();
+fitTabLabels();
 }
 // THE GLASS BUBBLE'S LAYERS (18-91).
 // Both build functions clear the tab list's innerHTML, so these are put back
 // afterwards rather than written into the markup where they would be wiped.
+// Shrink any label that does not fit its column. Hand-picked sizes only ever
+// fit the font they were measured in; this fits whatever font actually loads.
+function fitTabLabels() {
+const list = document.getElementById('vendorTabList');
+if (!list) return;
+list.querySelectorAll('.vtab').forEach(btn => {
+  const lbl = btn.querySelector('.vtab-label');
+  if (!lbl) return;
+  lbl.style.fontSize = '';
+  const room = lbl.clientWidth;
+  if (!room) return;
+  let size = parseFloat(getComputedStyle(lbl).fontSize) || 10.5;
+  // 7.5px is the floor: below that it is not a label any more, and the icon
+  // and the spoken name still say what the tab is.
+  for (let i = 0; i < 10 && lbl.scrollWidth > room && size > 7.5; i++) {
+    size -= 0.5;
+    lbl.style.fontSize = size + 'px';
+  }
+});
+}
+// Web fonts land after first paint, and a heavier face is wider, so the fit is
+// checked again once the real font is in.
+if (document.fonts && document.fonts.ready) {
+try { document.fonts.ready.then(() => fitTabLabels()); } catch (e) {}
+}
+window.addEventListener('resize', fitTabLabels);
+window.addEventListener('orientationchange', () => setTimeout(fitTabLabels, 320));
+
 // However many tabs the desk has, that is how many columns it gets.
 function setTabCount(n) {
 document.documentElement.style.setProperty('--tab-count', String(n));
@@ -23782,7 +23812,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '18-96';
+const BUILD_ID = '18-97';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
