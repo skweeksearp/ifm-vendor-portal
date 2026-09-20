@@ -24139,7 +24139,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-05';
+const BUILD_ID = '19-06';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26512,20 +26512,16 @@ if (b) kioskMatchBooths.add(b);
 });
 kioskMatchStructures = structureSearchMatches(q);
 renderKioskMap(occ);
-// EXACTLY ONE (19-05). A vendor search hands back a row, and tapping it opens
-// the booth's card and moves the map there. A product search shows no rows, so
-// a single hit had nothing to tap and the answer stayed a small chip somewhere
-// on the map. When there is only one, it now does what that tap would have.
-if (kioskMatchBooths.size === 1 && !kioskMatchStructures.size) {
-const only = [...kioskMatchBooths][0];
-// selectKioskBooth swallows a call while that flag is up -- it is there to stop
-// a pan from registering as a tap on whatever ended up under the finger. This
-// is not a tap, so the flag is not ours to be stopped by.
-kioskGestureMoved = false;
-selectKioskBooth(only, { focus: true });
-if (results) results.innerHTML = '';
-return;
-}
+// ONE RESULT IS NOT A SPECIAL CASE (19-06). 19-05 had a single hit select
+// itself and pull the map to it, on the reasoning that it was doing what
+// tapping the single row of a vendor search does. Wrong, for two reasons.
+// The search now runs on every keystroke, so a word on its way to being typed
+// passes THROUGH one-match states -- "l", "le", "let" -- and the map lurched
+// from booth to booth while the shopper was still typing. And a search that
+// moves the map has decided for the shopper where to look; highlighting says
+// the same thing without taking the map away from them. Every count behaves
+// the same way now: the whole map, with the matches lit. Tapping a booth is
+// what opens its card, and that stays a choice the shopper makes.
 if (!kioskMatchBooths.size && kioskMatchStructures.size) {
 const firstStruct = MAP_STRUCTURES.find(s => s.key && kioskMatchStructures.has(s.key));
 if (firstStruct) focusKioskStructure(firstStruct.key);
