@@ -2819,17 +2819,30 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .ans-row:last-child { border-bottom: 0; }
 .ans-q { font-size: 16px; font-weight: 600; line-height: 1.25; }
 @media (max-width: 359px) { .ans-group { padding: 4px 12px; } .ans-q { font-size: 15px; letter-spacing: -0.01em; } }
-.ans-switch { flex: none; position: relative; width: 52px; height: 32px; border-radius: 999px; border: 0; padding: 0; cursor: pointer;
-  background: #8F8574; transition: background-color 0.18s; }
-.ans-switch .ans-thumb { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: left 0.18s; }
-.ans-switch.on { background: var(--leaf); }
-.ans-switch.on .ans-thumb { left: 23px; }
-.ans-switch.unset { background: rgba(255,255,255,0.75); border: 2px dashed #8F8574; }
-.ans-switch.unset .ans-thumb { top: 1px; left: 11px; background: #CFC6B4; box-shadow: none; }
-.ans-switch:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
-.ans-switch:disabled { opacity: 0.6; }
-@media (prefers-reduced-motion: reduce) { .ans-switch, .ans-switch .ans-thumb { transition: none; } }
+/* ===== YES / NO, NOT A SWITCH (19-03) ================================
+   These answers decide permits and fire rules -- a home kitchen, propane,
+   wine -- so "we never asked" and "they said no" must not look alike.
+
+   A switch is a two-state control, and it was being asked to show three. The
+   third state was drawn as a dashed outline with the thumb parked in the
+   middle, which reads as disabled or half-dragged rather than "your turn".
+   Two real buttons show the three states honestly: neither lit means nobody
+   has answered, and the vendor taps the word they mean. */
+.ans-choice { flex: none; display: flex; gap: 7px; }
+.ans-btn { min-width: 46px; padding: 8px 11px; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-size: 14.5px; font-weight: 700; line-height: 1;
+  border: 2px solid var(--leaf); background: rgba(255,255,255,0.82); color: var(--leaf);
+  transition: background-color 0.15s, color 0.15s; }
+.ans-btn.on { background: var(--leaf); color: var(--paper); }
+.ans-btn.on.ans-no { background: var(--berry); border-color: var(--berry); }
+/* Until one is chosen, neither is lit and both look equally tappable. */
+.ans-row.unset .ans-btn { border-color: var(--sunflower); color: #5A4405; background: rgba(255,255,255,0.92); }
+/* No row stripe: with nothing answered it was a wall of yellow, and an
+   answered row is already the one with a filled button, so the outline does
+   the scanning on its own. */
+.ans-btn:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.ans-btn:disabled { opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .ans-btn { transition: none; } }
 .md-answers-link.md-waiting { border-color: var(--tomato); }
 .mgr-inline-tool { margin-top: 18px; }
 .mgr-inline-head { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 8px; padding: 4px; background: none; border: 0;
@@ -24092,7 +24105,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-02';
+const BUILD_ID = '19-03';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -30847,27 +30860,46 @@ answerGroups(v).forEach(group => {
     label.className = 'ans-q';
     label.id = 'ans-' + item.id + '-q';
     label.textContent = item.q;
-    const sw = document.createElement('button');
-    sw.type = 'button';
-    sw.className = 'ans-switch' + (val === true ? ' on' : val === false ? ' off' : ' unset');
-    sw.id = 'ans-' + item.id;
-    sw.setAttribute('role', 'switch');
-    sw.setAttribute('aria-checked', val === true ? 'true' : 'false');
-    sw.setAttribute('aria-labelledby', label.id);
-    if (val === undefined) sw.setAttribute('aria-description', 'not answered');
-    sw.innerHTML = '<span class="ans-thumb"></span>';
-    sw.onclick = async () => {
-      sw.disabled = true;
-      try { await item.set(val !== true); }
-      catch (e) { showMsg('answerMsg', 'err', e.message || String(e)); }
-      renderAnswers();
-    };
+    // A radiogroup, not a switch: a switch announces an unanswered question as
+    // "off", which is an answer nobody gave.
+    const choice = document.createElement('div');
+    choice.className = 'ans-choice';
+    choice.setAttribute('role', 'radiogroup');
+    choice.setAttribute('aria-labelledby', label.id);
+    [['Yes', true], ['No', false]].forEach(pair => {
+      const word = pair[0], want = pair[1];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ans-btn ' + (want ? 'ans-yes' : 'ans-no') + (val === want ? ' on' : '');
+      btn.id = 'ans-' + item.id + (want ? '-yes' : '-no');
+      btn.textContent = word;
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', String(val === want));
+      btn.setAttribute('aria-label', item.q + ' ' + word);
+      btn.onclick = async () => {
+        if (val === want) return;
+        // The old switch toggled AWAY from its value, and an unanswered
+        // question has no value -- so a first tap on any row recorded Yes,
+        // whichever way the vendor meant. A button records the word on it.
+        choice.querySelectorAll('.ans-btn').forEach(x => { x.disabled = true; });
+        try { await item.set(want); }
+        catch (e) { showMsg('answerMsg', 'err', e.message || String(e)); }
+        renderAnswers();
+      };
+      choice.appendChild(btn);
+    });
+    if (val === undefined) row.classList.add('unset');
     row.appendChild(label);
-    row.appendChild(sw);
+    row.appendChild(choice);
     box.appendChild(row);
   });
   host.appendChild(box);
 });
+const left = host.querySelectorAll('.ans-row.unset').length;
+const sub = document.getElementById('answersSub');
+if (sub) sub.textContent = left
+  ? left + (left === 1 ? ' question still to answer' : ' questions still to answer')
+  : 'All answered \u2014 what you sell, your booth, and what you accept';
 }
 function renderAnswersTraits() { renderAnswers(); }
 function renderSellsFood() {
