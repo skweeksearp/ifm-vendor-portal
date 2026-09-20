@@ -2671,7 +2671,7 @@ html[data-look="rainshine"] body:not(.kiosk-mode) :is(.card, .menu-card) {
 }
 /* Two cards on My Account that never grow past a few hundred pixels get the
    drawer bars' look, so the tab reads like Communicate (18-49): the account
-   summary and the Your Answers boxes. The memory test holds them to it. */
+   summary and the Necessary Questions to Answer boxes. The memory test holds them to it. */
 /* The manager's working surface: forms you read while somebody waits, so
    they are nearly solid rather than see-through (18-70). */
 html[data-look="rainshine"] body:not(.kiosk-mode) .mgr-inline-tool :is(.card, details.card) {
@@ -2862,6 +2862,15 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
    middle, which reads as disabled or half-dragged rather than "your turn".
    Two real buttons show the three states honestly: neither lit means nobody
    has answered, and the vendor taps the word they mean. */
+/* This line sits OUTSIDE the cards, straight on the photograph, where a plain
+   colour is at the mercy of whatever is behind it. An opaque pill takes the
+   backdrop out of the question: Raven Black on Chrome Yellow is 9.1:1, and on
+   Corinthian White the Holly Green is 8.3:1. */
+.ans-tally { display: inline-block; margin: 0 2px 11px; padding: 5px 12px;
+  border-radius: 999px; font-size: 13.5px; font-weight: 700;
+  background: var(--paper); color: var(--credit);
+  box-shadow: 0 1px 3px rgba(21,18,15,0.22); }
+.ans-tally-left { background: var(--sunflower); color: var(--ink); }
 .ans-choice { flex: none; display: flex; gap: 7px; }
 .ans-btn { min-width: 46px; padding: 8px 11px; border-radius: 10px; cursor: pointer;
   font-family: inherit; font-size: 14.5px; font-weight: 700; line-height: 1;
@@ -3504,7 +3513,7 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 </div>
 <div class="dash-fold" data-fold="answers">
 <button type="button" class="fold-bar" onclick="toggleFold(this); renderAnswers();">
-<span class="fold-title">Your Answers</span>
+<span class="fold-title">Necessary Questions to Answer</span>
 <span class="fold-sub" id="answersSub">What you sell, your booth, and what you accept</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
@@ -6547,7 +6556,7 @@ comes from.</p>
 <div class="screen-head" id="head-mydocs"></div>
 <p class="empty-note" id="mdSummary" style="margin-top:0;"></p>
 <div class="card md-answers-link" id="mdAnswersLink">
-<p class="empty-note" style="margin:0;" id="mdAnswersText">Which permits apply depends on your answers to <b>What You Do at Market</b>, in My Account.</p>
+<p class="empty-note" style="margin:0;" id="mdAnswersText">Which permits apply depends on your answers under <b>Necessary Questions to Answer</b>, in My Account.</p>
 <button type="button" class="ghost-btn" style="margin-top:10px;" onclick="openAnswer('answers')">See or change your answers</button>
 </div>
 <div class="card desk-form">
@@ -24139,7 +24148,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-06';
+const BUILD_ID = '19-07';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -30904,7 +30913,7 @@ reqVendors(req).some(v => v.vendorId === vendorId));
 // them later: the permit questions (with "do you sell food" first), whether
 // they would share a booth, and SNAP and FreshConnect. The Permits screen
 // points here rather than asking.
-// Since 18-47 every answer is a one-line switch in Your Answers, in three
+// Since 18-47 every answer is one question in Necessary Questions to Answer, in three
 // groups: what you sell, your booth, what you accept. A question nobody has
 // answered shows its switch in a neutral middle position rather than "off",
 // because off would read as "no"; the first tap turns it on.
@@ -30987,9 +30996,20 @@ answerGroups(v).forEach(group => {
   host.appendChild(box);
 });
 const left = host.querySelectorAll('.ans-row.unset').length;
+/* The drawer's own subtitle is display:none once this screen is relocated into
+   the Account tab, so a count put there is a count nobody ever sees. It goes at
+   the top of the list instead, which renders wherever the list does. */
+const tally = document.createElement('p');
+tally.className = 'ans-tally' + (left ? ' ans-tally-left' : '');
+tally.id = 'answerTally';
+tally.textContent = left
+  ? left + (left === 1 ? ' question still needs an answer' : ' questions still need an answer')
+  : 'All answered \u2014 thank you';
+host.insertBefore(tally, host.firstChild);
 const sub = document.getElementById('answersSub');
-if (sub) sub.textContent = left
-  ? left + (left === 1 ? ' question still to answer' : ' questions still to answer')
+// The heading beside this already says these are questions to answer, so the
+// line under it only has to carry the number.
+if (sub) sub.textContent = left ? left + ' still to answer'
   : 'All answered \u2014 what you sell, your booth, and what you accept';
 }
 function renderAnswersTraits() { renderAnswers(); }
@@ -31028,8 +31048,8 @@ if (!el || !txt || !v) return;
 const missing = VENDOR_TRAITS.filter(t => vendorTrait(v.vendorId, t.key) === undefined).length;
 el.classList.toggle('md-waiting', missing > 0);
 txt.innerHTML = missing
-  ? '<b>' + missing + ' of ' + VENDOR_TRAITS.length + ' questions about what you do are unanswered</b>, so this list may be missing a permit or showing one you do not need. They are in My Account, under Your Answers.'
-  : 'Which permits apply depends on your answers to <b>What You Do at Market</b>, in My Account.';
+  ? '<b>' + missing + ' of ' + VENDOR_TRAITS.length + ' questions about what you do are unanswered</b>, so this list may be missing a permit or showing one you do not need. They are in My Account, under Necessary Questions to Answer.'
+  : 'Which permits apply depends on your answers under <b>Necessary Questions to Answer</b>, in My Account.';
 }
 function mdTraitToggle(bar) {
 const fold = bar.closest('.dash-fold');
@@ -31120,7 +31140,7 @@ box.style.opacity = '0.6';
 box.innerHTML = '<div class="req-row-main">' +
 '<div class="req-name">Not needed from you</div>' +
 '<div class="req-meta">' + none.map(r => esc(r.name)).join(' \u00b7 ') + '</div>' +
-'<p class="req-detail">Based on your answers in My Account (Your Answers). If any of that changes, ' +
+'<p class="req-detail">Based on your answers in My Account (Necessary Questions to Answer). If any of that changes, ' +
 'change the answer and the document appears here.</p></div>';
 wrap.appendChild(box);
 }
@@ -31415,7 +31435,7 @@ mine.slice(0, 6).map(x =>
 function initMyDocsScreen() {
 renderTraitSub();
 renderMyDocsAnswersLink();
-// The questions themselves live in My Account (Your Answers) since 18-42.
+// The questions themselves live in My Account (Necessary Questions to Answer) since 18-42.
 renderMyDocs();
 }
 function renderMyDocs() {
