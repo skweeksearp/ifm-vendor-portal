@@ -47,6 +47,11 @@
 --muted: #6E6A57;
 /* tertiary text: tags, day-of-week heads, kiosk filler. Fainter again. */
 --faint: #8A8268;
+/* The kiosk's "found it" colours. Tokens so the map follows the palette
+   instead of a pink that belongs to no scheme. */
+--find: #F5AECB; --find-edge: #E585AF; --find-ink: #6E1F42;
+--find-strong: #C74B82; --find-hit: #E85C9A; --find-ok: #2F6FB0;
+--find-glow: rgba(229,133,175,0.4);
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { color-scheme: light; }
@@ -1764,8 +1769,11 @@ body.kiosk-mode .booth-chip.kiosk-snap {
 background: #2F6FB0; color: #FFFFFF; border-color: #1F4E80;
 box-shadow: 0 0 0 2px rgba(47,111,176,0.45);
 }
+/* Both at once: the find fill says "this is what you asked for", the SNAP
+   ring around it says "and it takes tokens". One chip, two facts, neither
+   borrowing the other's colour. */
 body.kiosk-mode .booth-chip.kiosk-snap.kiosk-match {
-background: #F5AECB; color: #6E1F42; border-color: #1F4E80;
+background: var(--find); color: var(--find-ink); border-color: #1F4E80;
 box-shadow: 0 0 0 3px #2F6FB0;
 }
 /* Same pill as the two search fields above it, but a switch, not a field.
@@ -1813,8 +1821,8 @@ transition: transform .15s ease;
 .ksnap-strip { color: #2F6FB0; font-weight: 700; }
 .ksnap-strip::before { content: '  \2022  '; color: inherit; }
 body.kiosk-mode .booth-chip.kiosk-match {
-background: #F5AECB; color: #6E1F42; border-color: #E585AF;
-box-shadow: 0 0 0 2px rgba(229,133,175,0.4);
+background: var(--find); color: var(--find-ink); border-color: var(--find-edge);
+box-shadow: 0 0 0 2px var(--find-glow);
 }
 body.kiosk-mode .map-label { color: #A39A7E; }
 body.kiosk-mode .map-structure {
@@ -1824,13 +1832,13 @@ body.kiosk-mode .map-structure span { color: #7A7258; }
 body.kiosk-mode .map-structure em { color: #A89F86; opacity: 0.9; }
 body.kiosk-mode .map-structure.struct-dark { border-color: #232A20; border-width: 2px; }
 body.kiosk-mode .map-structure.struct-dark span { color: #232A20; }
-body.kiosk-mode .map-structure.struct-dark.kiosk-match { border-color: #E585AF; }
+body.kiosk-mode .map-structure.struct-dark.kiosk-match { border-color: var(--find-edge); }
 body.kiosk-mode .map-structure.findable { pointer-events: auto; cursor: pointer; }
 body.kiosk-mode .map-structure.kiosk-match {
-border-color: #E585AF; box-shadow: 0 0 0 2px rgba(229,133,175,0.4);
+border-color: var(--find-edge); box-shadow: 0 0 0 2px var(--find-glow);
 }
-body.kiosk-mode .map-structure.kiosk-match span { color: #C74B82; }
-body.kiosk-mode .map-structure.kiosk-hit { border-color: #E85C9A; border-width: 2.5px; }
+body.kiosk-mode .map-structure.kiosk-match span { color: var(--find-strong); }
+body.kiosk-mode .map-structure.kiosk-hit { border-color: var(--find-hit); border-width: 2.5px; }
 /* Below the scale where the lettering would be a smudge, keep the outline and
    drop the words; they come back as soon as the map is zoomed enough to read. */
 #kioskBoothCanvas.tiny-structures .map-structure > span,
@@ -1861,13 +1869,13 @@ padding: 8px 14px; border-radius: 999px; background: #A9CF97; color: #2F4A26; wh
 .kiosk-where.away { background: #E7DFC9; color: var(--faint); }
 .kiosk-empty { padding: 16px 20px; color: var(--faint); font-size: clamp(13px, 1.4vw, 17px); }
 .kiosk-count {
-padding: 12px 20px 10px; color: #C74B82; font-weight: 800;
+padding: 12px 20px 10px; color: var(--find-strong); font-weight: 800;
 font-size: clamp(14px, 1.6vw, 20px); border-bottom: 1px solid #E7DFC9;
 }
 /* Calm and blue, not the pink alarm color above -- that one means "nobody
    has this"; this means a search worked. */
 .kiosk-count.found {
-color: #2F6FB0; font-weight: 700; border-bottom: none;
+color: var(--find-ok); font-weight: 700; border-bottom: none;
 }
 .kiosk-result mark {
 background: none; color: #C74B82; font-weight: 800; padding: 0;
@@ -2613,6 +2621,16 @@ html[data-look="rainshine"][data-palette="truck"] {
      truck the muted scale is one colour and the hierarchy is carried by
      size and weight, which is how most of these already read. */
   --faint: #3F3C37;
+  /* A found booth wears the SAME amber a tapped booth has always worn, which
+     is the highlight that reads at a glance on this pale map. Marlin Blue was
+     tried here and was wrong twice over: it collides with the SNAP colour --
+     see the note by .kiosk-snap, which exists precisely so a shopper who has
+     searched AND turned SNAP on can tell the two apart -- and it was chosen
+     while the fill was not rendering at all, so what got judged was an outline.
+     Chrome Yellow carries Raven Black at 9.1:1. */
+  --find: #EDA91B; --find-edge: #8E5B06; --find-ink: #15120F;
+  --find-strong: #8E5B06; --find-hit: #C2202A; --find-ok: #2B5B88;
+  --find-glow: rgba(237,169,27,0.45);
   /* the glass takes the LIGHTEST white in the palette, not the paper white:
      it is only 60% opaque over a dark photograph, so every point of lightness
      here is a point of contrast for everything printed on it */
@@ -2745,6 +2763,22 @@ html[data-look="rainshine"] body.kiosk-mode .kjw-text { text-shadow:0 1px 0 #F8E
 html[data-look="rainshine"] body.kiosk-mode .kiosk-zoomreset { color:#5A3E28; border:1px solid #C9AE80; }
 html[data-look="rainshine"] body.kiosk-mode .booth-chip.kiosk-here { background:#CFD7A0; color:#3E4718; }
 html[data-look="rainshine"] body.kiosk-mode .booth-chip.selected, html[data-look="rainshine"] body.kiosk-mode .booth-chip.kiosk-hit { background:#E9A23B; color:#2B1A0C; }
+/* A found booth and a tapped booth now wear the same fill on purpose, so the
+   one that was tapped needs something of its own: a dark ring, not a colour.
+   The kiosk marks that booth .kiosk-hit -- .selected is the other map's word
+   for it, and a ring hung there would never have appeared here. */
+html[data-look="rainshine"] body.kiosk-mode .booth-chip.kiosk-hit {
+  box-shadow: 0 0 0 3px var(--ink);
+}
+/* THE HIGHLIGHT THAT DID NOT HIGHLIGHT (19-04).
+   The .kiosk-here rule above carries an html[] selector, so it outranked the
+   plain body.kiosk-mode .booth-chip.kiosk-match fill -- and every booth worth
+   finding is one that is here today. A search left those chips in their green
+   "here" fill with only the border changed, which at map scale is almost
+   nothing. The match fill is restated at this weight so it wins. */
+html[data-look="rainshine"] body.kiosk-mode .booth-chip.kiosk-match {
+  background: var(--find); color: var(--find-ink); border-color: var(--find-edge);
+}
 html[data-look="rainshine"] body.kiosk-mode button.kiosk-snap-row { border:1px solid #C9AE80; color:#A38A6A; }
 html[data-look="rainshine"] body.kiosk-mode button.kiosk-snap-row.on { color:#3A2412; }
 html[data-look="rainshine"] body.kiosk-mode .ksw { border:1px solid #C9AE80; }
@@ -24105,7 +24139,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-03';
+const BUILD_ID = '19-05';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26409,6 +26443,15 @@ renderKioskSearch();
 return;
 }
 const el = document.getElementById('kioskProductSearch');
+if (el && el.value.trim().length >= 2) {
+// THE FIELD THAT LOOKED BROKEN (19-04). This used to wait for Enter while the
+// vendor bar beside it searched as you typed. On a kiosk nobody presses Enter:
+// you type, nothing lights up, and you conclude the thing does not work. It
+// now searches as you type, debounced so the map is not redrawn per keystroke,
+// and Enter still works for anyone who reaches for it.
+kioskProductLive();
+return;
+}
 if (el && !el.value.trim()) {
 kioskShowWholeMap();
 kioskMatchBooths = new Set();
@@ -26420,6 +26463,14 @@ renderKioskMap(occ);
 renderKioskClock(occ, Object.keys(occ.byBooth).length);
 }
 }
+let kioskProductTimer = null;
+function kioskProductLive() {
+clearTimeout(kioskProductTimer);
+kioskProductTimer = setTimeout(function () {
+  // live: never blur, or the keyboard would close on the vendor mid-word
+  runKioskProductSearch({ live: true });
+}, 220);
+}
 function kioskProductKey(ev) {
 noteKioskActivity();
 if (foolBlocksInput()) { if (ev && ev.preventDefault) ev.preventDefault(); return; }
@@ -26429,7 +26480,8 @@ const pbox = document.getElementById('kioskProductSearch');
 if (pbox && pbox.value.trim() && startKioskPrank('search', 'product')) return;
 runKioskProductSearch();
 }
-function runKioskProductSearch() {
+function runKioskProductSearch(opts) {
+const live = !!(opts && opts.live);
 const el = document.getElementById('kioskProductSearch');
 const results = document.getElementById('kioskResults');
 const q = el ? el.value.trim().toLowerCase() : '';
@@ -26460,6 +26512,20 @@ if (b) kioskMatchBooths.add(b);
 });
 kioskMatchStructures = structureSearchMatches(q);
 renderKioskMap(occ);
+// EXACTLY ONE (19-05). A vendor search hands back a row, and tapping it opens
+// the booth's card and moves the map there. A product search shows no rows, so
+// a single hit had nothing to tap and the answer stayed a small chip somewhere
+// on the map. When there is only one, it now does what that tap would have.
+if (kioskMatchBooths.size === 1 && !kioskMatchStructures.size) {
+const only = [...kioskMatchBooths][0];
+// selectKioskBooth swallows a call while that flag is up -- it is there to stop
+// a pan from registering as a tap on whatever ended up under the finger. This
+// is not a tap, so the flag is not ours to be stopped by.
+kioskGestureMoved = false;
+selectKioskBooth(only, { focus: true });
+if (results) results.innerHTML = '';
+return;
+}
 if (!kioskMatchBooths.size && kioskMatchStructures.size) {
 const firstStruct = MAP_STRUCTURES.find(s => s.key && kioskMatchStructures.has(s.key));
 if (firstStruct) focusKioskStructure(firstStruct.key);
@@ -26490,12 +26556,41 @@ head.innerHTML = '<b>' + hereButFiltered + ' stall' + (hereButFiltered === 1 ? '
 'but none is listed as taking SNAP-Tokens. Turn the switch off to see them, ' +
 'or ask at the stall: a vendor who has never told the market still might.';
 } else {
+const away = kioskAwayToday(found, occ);
+if (away.length === 1) {
+head.innerHTML = '<b>' + esc(away[0].name) + '</b> sells that, but ' +
+  (away[0].calledOut ? 'called out today' : 'is not at the market today') +
+  ' \u2014 usually booth ' + esc(away[0].booth) + '.';
+} else if (away.length > 1) {
+head.innerHTML = '<b>' + esc(away[0].name) + '</b> and ' + (away.length - 1) + ' other' +
+  (away.length === 2 ? '' : 's') + ' sell that, but none of them is at the market today.';
+} else {
 head.textContent = 'Nobody with \u201C' + q + '\u201D is at the market today';
+}
 }
 results.appendChild(head);
 }
 }
-if (el && el.blur) el.blur();
+if (!live && el && el.blur) el.blur();
+}
+/* Somebody sells it, they are just not here. "Nobody with X is at the market
+   today" is true and useless: it cannot tell the shopper whether the market
+   has no Thai food at all, or whether Thai Palace is simply out today. The
+   difference is the whole answer, so when a match has a booth of its own and
+   is not in it, the kiosk says so by name. */
+function kioskAwayToday(found, occ) {
+const date = occ.md.date;
+const away = [];
+found.forEach(function (v) {
+  if (occ.byVendor[v.vendorId]) return;
+  const b = cache.booths.find(function (bo) { return boothBaselineHolder(bo, date) === v.vendorId; });
+  if (!b) return;
+  const calledOut = (cache.callinout || []).some(function (r) {
+    return r.vendorId === v.vendorId && r.marketDate === date && /out/i.test(r.status);
+  });
+  away.push({ name: v.businessName || '', booth: b.num, calledOut: calledOut });
+});
+return away;
 }
 function renderKioskSearch() {
 const active = kioskActiveQuery();
