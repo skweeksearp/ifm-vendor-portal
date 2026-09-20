@@ -3064,7 +3064,22 @@ html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-m
   text-shadow: 0 0 3px rgba(255,255,255,0.98), 0 0 6px rgba(255,255,255,0.75), 0 1px 1px rgba(255,255,255,0.9);
 }
 .vtab { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 22px 2px 20px;
-  color: var(--tab-ink, #6A5540); position: relative; font-family: inherit; cursor: pointer; }
+  color: var(--tab-ink, #6A5540); position: relative; font-family: inherit; cursor: pointer;
+  transition: color 0.25s linear; }
+/* ===== INK THAT FOLLOWS WHAT IS BEHIND IT (19-09) ====================
+   The bubble is glass. The photograph behind it is fixed, but the page is not:
+   cards, headings and white space slide under the bar as the vendor scrolls,
+   so the ground under these marks changes all the way down a screen. One ink
+   cannot serve both ends of that. When what is behind goes dark the marks turn
+   Pure White and the halo that lifts them turns dark; when it is light they go
+   back to Raven Black. paintTabInk() does the measuring. */
+html[data-tabink="light"] .vtab { color: #F5F4EF; }          /* C  Pure White */
+html[data-tabink="light"][data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-mode) .vtab .ico {
+  filter: drop-shadow(0 0 3px rgba(21,18,15,0.92)) drop-shadow(0 0 6px rgba(21,18,15,0.6));
+}
+html[data-tabink="light"][data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-label {
+  text-shadow: 0 0 3px rgba(21,18,15,0.95), 0 0 6px rgba(21,18,15,0.7), 0 1px 1px rgba(21,18,15,0.9);
+}
 .vtab .ico { width: 31px; height: 31px; }
 /* One word each, so nothing wraps and every tab is the same height. */
 .vtab-label { font-family: 'Manrope', -apple-system, sans-serif; font-size: 10.5px; font-weight: 800;
@@ -3085,11 +3100,12 @@ body.many-tabs .vtab-label { font-size: 9.5px; }
    leaves the label its full column. White on Holly Green is 8.3:1 and does not
    depend on the backdrop at all; the word underneath stays green and bold. */
 .vtab[aria-selected="true"] .ico { color: var(--paper); }
-/* The word stays Raven Black like its neighbours. Holly Green measures 4.13:1
-   on this glass -- under the 4.5 a 10.5px word needs -- so a green label was
-   both fainter than the tabs it was meant to stand out from and short of the
-   bar. The capsule does the highlighting; the word just stays readable. */
-.vtab[aria-selected="true"] .vtab-label { color: var(--ink); }
+/* The word stays the same ink as its neighbours -- it sits outside the capsule,
+   on the same glass, so it follows them light or dark. Holly Green was tried
+   and measured 4.13:1 on this glass, under the 4.5 a 10.5px word needs, so a
+   green label was both fainter than the tabs it was meant to stand out from
+   and short of the bar. The capsule does the highlighting. */
+.vtab[aria-selected="true"] .vtab-label { color: inherit; }
 .vtab[aria-selected="true"]::before {
   content: ""; position: absolute; top: 15px; height: 43px; left: 12%; right: 12%;
   z-index: 0; border-radius: 999px; background: var(--leaf);
@@ -15681,6 +15697,111 @@ r.style.setProperty('--tab-vph', Math.round(window.innerHeight) + 'px');
 r.style.setProperty('--tab-vpw', Math.round(r.clientWidth) + 'px');
 syncTabLens();
 }
+/* ===== READING THE GROUND UNDER THE BUBBLE (19-09) ===================
+   There is no way to ask a browser what a region LOOKS like, so this works it
+   out the way the compositor does: find what is stacked under the bar, take
+   each layer's background, and paint them over one another until something
+   opaque stops the light. The bubble's own cream goes on last, because the
+   marks sit on top of that too.
+
+   Three points, not one: the bar is most of the screen's width and a card edge
+   can easily be light at one end and dark at the other.
+
+   The photograph is the floor. It is fixed and it is dark, and nothing behind
+   it can be read from the DOM, so its measured average stands in for it.
+   That is the same figure the palette sweep uses. */
+const TAB_INK_AUTO = true;        // 'false' pins the ink to the palette's own
+const TAB_INK_PHOTO = [58, 50, 38];
+const TAB_INK_DARK = 0.30;        // below this the ground is dark -> white ink
+const TAB_INK_LIGHT = 0.42;       // above this it is light  -> black ink
+                                  // the gap between them is the hysteresis: at
+                                  // one threshold a slow scroll would flicker
+let tabInkState = null, tabInkPending = false, tabInkLastY = -9999;
+
+function tabInkNum(s) {
+const m = String(s || '').match(/[\d.]+/g);
+return m ? m.map(Number) : [];
+}
+function tabInkOver(fg, bg) {
+const a = fg[3] === undefined ? 1 : fg[3];
+return [0, 1, 2].map(i => a * fg[i] + (1 - a) * bg[i]);
+}
+function tabInkLum(c) {
+const f = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+}
+// What is painted at this point, ignoring the bar itself -- the bar is on top
+// of everything here, and it is precisely what we are looking through.
+function tabInkAt(x, y, bar) {
+let stack = [];
+try { stack = document.elementsFromPoint(x, y) || []; } catch (e) { return null; }
+const layers = [];
+for (const el of stack) {
+  if (bar && (el === bar || bar.contains(el) || el.closest('.vtab-bar'))) continue;
+  const cs = getComputedStyle(el);
+  if (cs.visibility === 'hidden') continue;
+  const c = tabInkNum(cs.backgroundColor);
+  if (c.length < 3) continue;
+  const a = c[3] === undefined ? 1 : c[3];
+  if (a <= 0.004) continue;
+  layers.push(c);
+  if (a > 0.995) break;              // opaque: nothing behind it can show
+}
+let ground = TAB_INK_PHOTO.slice();
+for (let i = layers.length - 1; i >= 0; i--) ground = tabInkOver(layers[i], ground);
+return ground;
+}
+function paintTabInk() {
+tabInkPending = false;
+const r = document.documentElement;
+if (!TAB_INK_AUTO || TAB_LOOK !== 'glass') { r.removeAttribute('data-tabink'); return; }
+const bar = document.getElementById('vendorTabList');
+if (!bar) return;
+const box = bar.getBoundingClientRect();
+if (box.width < 20 || box.height < 20) return;      // not on screen
+const y = box.top + box.height * 0.42;              // where the icons sit
+const xs = [0.14, 0.5, 0.86].map(f => box.left + box.width * f);
+let sum = 0, n = 0;
+for (const x of xs) {
+  const g = tabInkAt(x, y, bar);
+  if (!g) continue;
+  // the bubble's own cream is painted over whatever is under it
+  const tint = tabInkNum(getComputedStyle(r).getPropertyValue('--tab-tint')) ;
+  const cream = parseFloat(getComputedStyle(r).getPropertyValue('--tab-cream')) || 0;
+  const seen = tint.length >= 3 ? tabInkOver([tint[0], tint[1], tint[2], cream], g) : g;
+  sum += tabInkLum(seen); n++;
+}
+if (!n) return;
+const lum = sum / n;
+// Hysteresis: only cross when clearly past the far threshold, so a slow scroll
+// over a gradient does not strobe the whole bar.
+let next = tabInkState;
+if (lum < TAB_INK_DARK) next = 'light';
+else if (lum > TAB_INK_LIGHT) next = 'dark';
+else if (next === null) next = lum < (TAB_INK_DARK + TAB_INK_LIGHT) / 2 ? 'light' : 'dark';
+if (next === tabInkState) return;
+tabInkState = next;
+if (next === 'light') r.setAttribute('data-tabink', 'light');
+else r.removeAttribute('data-tabink');
+}
+function tabInkSoon() {
+if (tabInkPending) return;
+tabInkPending = true;
+requestAnimationFrame(paintTabInk);
+}
+function tabInkOnScroll() {
+const y = window.scrollY || 0;
+if (Math.abs(y - tabInkLastY) < 6) return;   // ignore the jitter of a finger
+tabInkLastY = y;
+tabInkSoon();
+}
+function tabInkWatch() {
+if (!TAB_INK_AUTO) return;
+window.addEventListener('scroll', tabInkOnScroll, { passive: true });
+window.addEventListener('resize', tabInkSoon);
+document.addEventListener('ifm:screen', tabInkSoon);
+tabInkSoon();
+}
 // The look's numbers, set once from the one place they are written down.
 function applyTabLook() {
 const r = document.documentElement;
@@ -15694,6 +15815,7 @@ r.style.setProperty('--tab-reach', TAB_GLASS.reach + '%');
 r.style.setProperty('--tab-reach-y', Math.min(48, Math.round(TAB_GLASS.reach * 1.55)) + '%');
 sizeTabLens();
 window.addEventListener('scroll', syncTabLens, { passive: true });
+tabInkWatch();
 window.addEventListener('resize', sizeTabLens);
 window.addEventListener('orientationchange', () => setTimeout(sizeTabLens, 300));
 if (window.visualViewport) {
@@ -17190,7 +17312,7 @@ const done = (exrCache || []).filter(x => x.state !== 'open').slice(0, 3);
 wrap.innerHTML = '';
 if (!open.length) {
 wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 8px;"><b>Nothing waiting.</b> ' +
-'Vendors raise these from <b>Forms &amp; Contacts</b> on their own desk. They must reach the ' +
+'Vendors raise these under <b>Exceptions &amp; Accommodations</b>, on their own Communicate tab. They must reach the ' +
 'office by <b>' + esc(formatDisplayDate(exrDeadline())) + '</b> to go to the December meeting.</p>';
 }
 open.forEach(x => {
@@ -18197,7 +18319,7 @@ host.innerHTML =
 '<button type="button" class="ghost-btn" onclick="window.print()">Print or save it</button>' +
 (s.outstanding > 0
 ? '<p class="empty-note" style="margin:6px 2px 0;">' +
-'Paid already? Tell the office under <b>How You Can Pay</b> above, so it can be matched to the money.</p>'
+'Paid already? Tell the office under <b>How You Can Pay</b>, further down this page, so it can be matched to the money.</p>'
 : '');
 }
 // The bar says what is behind it, like every other drawer on this desk.
@@ -24148,7 +24270,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-07';
+const BUILD_ID = '19-09';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -29469,7 +29591,7 @@ const open = ownrOpen();
 wrap.innerHTML = '';
 if (!open.length) {
 wrap.innerHTML = '<p class="empty-note" style="margin:0 2px 8px;"><b>Nothing waiting.</b> Vendors report these ' +
-'from Forms &amp; Contacts on their own desk.</p>';
+'under <b>Business &amp; Ownership</b>, on their own Communicate tab.</p>';
 } else {
 open.forEach(x => {
 const el = document.createElement('div');
