@@ -3065,7 +3065,7 @@ html[data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-m
 }
 .vtab { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 22px 2px 20px;
   color: var(--tab-ink, #6A5540); position: relative; font-family: inherit; cursor: pointer;
-  transition: color 0.25s linear; }
+  transition: color var(--tab-ink-fade, 0.5s) ease-in-out; }
 /* ===== INK THAT FOLLOWS WHAT IS BEHIND IT (19-09) ====================
    The bubble is glass. The photograph behind it is fixed, but the page is not:
    cards, headings and white space slide under the bar as the vendor scrolls,
@@ -3080,11 +3080,13 @@ html[data-tabink="light"][data-tabs="glass"][data-halo="on"][data-look="rainshin
 html[data-tabink="light"][data-tabs="glass"][data-halo="on"][data-look="rainshine"] body:not(.kiosk-mode) .vtab-label {
   text-shadow: 0 0 3px rgba(21,18,15,0.95), 0 0 6px rgba(21,18,15,0.7), 0 1px 1px rgba(21,18,15,0.9);
 }
-.vtab .ico { width: 31px; height: 31px; }
+.vtab .ico { width: 31px; height: 31px;
+  transition: color var(--tab-ink-fade, 0.5s) ease-in-out, filter var(--tab-ink-fade, 0.5s) ease-in-out; }
 /* One word each, so nothing wraps and every tab is the same height. */
 .vtab-label { font-family: 'Manrope', -apple-system, sans-serif; font-size: 10.5px; font-weight: 800;
   line-height: 1; letter-spacing: -0.025em; text-align: center; white-space: nowrap;
-  display: block; width: 100%; overflow: hidden; }
+  display: block; width: 100%; overflow: hidden;
+  transition: color var(--tab-ink-fade, 0.5s) ease-in-out, text-shadow var(--tab-ink-fade, 0.5s) ease-in-out; }
 body.many-tabs .vtab-label { font-size: 9.5px; }
 /* THE TAB IN USE (19-02).
    A 3px bar plus a shift to green was too quiet on the glass bubble: the photo
@@ -15711,6 +15713,10 @@ syncTabLens();
    it can be read from the DOM, so its measured average stands in for it.
    That is the same figure the palette sweep uses. */
 const TAB_INK_AUTO = true;        // 'false' pins the ink to the palette's own
+/* Both the ink and the halo cross-fade over this, together. Fading only one of
+   them is what made the change read as a flash: the colour eased over a quarter
+   second while the glow behind it snapped. */
+const TAB_INK_FADE = 0.5;         // seconds
 const TAB_INK_PHOTO = [58, 50, 38];
 const TAB_INK_DARK = 0.30;        // below this the ground is dark -> white ink
 const TAB_INK_LIGHT = 0.42;       // above this it is light  -> black ink
@@ -15807,6 +15813,7 @@ function applyTabLook() {
 const r = document.documentElement;
 r.setAttribute('data-tabs', TAB_LOOK);
 r.setAttribute('data-halo', TAB_HALO ? 'on' : 'off');
+r.style.setProperty('--tab-ink-fade', TAB_INK_FADE + 's');
 if (TAB_LOOK !== 'glass') return;
 r.style.setProperty('--tab-cream', String(TAB_GLASS.cream));
 r.style.setProperty('--tab-blur', TAB_GLASS.blur + 'px');
@@ -24270,7 +24277,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-09';
+const BUILD_ID = '19-10';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
