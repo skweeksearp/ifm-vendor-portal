@@ -6253,7 +6253,7 @@ My plan follows the points above, or my proposal explains where it can&rsquo;t
 <option>Board / Committee</option>
 <option>Merch Mansion</option>
 <option>Garbage</option>
-<option>Dish Recycling</option>
+<option>Zero Waste Program</option>
 <option>Morning Tasks</option>
 </select>
 <label for="hrsNote">Note (optional)</label>
@@ -7011,7 +7011,7 @@ task and names where each confirmation goes.</p>
 <option>Board / Committee</option>
 <option>Merch Mansion</option>
 <option>Garbage</option>
-<option>Dish Recycling</option>
+<option>Zero Waste Program</option>
 <option>Morning Tasks</option>
 </select>
 <label for="tkWho" style="margin-top:10px;">Who it is for</label>
@@ -12533,8 +12533,8 @@ unblocks: 'Rule text throughout the app \u2014 the Board Amendments tool on the 
 { t: 'Photograph permissions for the information screen', keeper: 'The photographers, and the office',
 what: 'Written permission for two photographs now on the kiosk: the barn photograph credited to John Kucko Digital, and the photograph of musicians playing (photographer and performers not yet identified).',
 unblocks: 'Both photographs carry a permission note on screen until this is cleared. Staff clear it by emptying the permission field in the Information Screen Subjects tool.' },
-{ t: 'Kiosk voices &amp; links', keeper: 'The office, the Dish Truck crew, and whoever runs the accounts',
-what: 'The Dish Truck\u2019s story in their own words, the daily music lineup, and the market\u2019s social media and Substack addresses.',
+{ t: 'Kiosk voices &amp; links', keeper: 'The office, the Zero Waste Program crew, and whoever runs the accounts',
+what: 'The Zero Waste Program\u2019s story in their own words, the daily music lineup, and the market\u2019s social media and Substack addresses.',
 unblocks: 'The kiosk\u2019s About pages speaking with real voices instead of placeholders, and a News tile linking the market\u2019s own writing.' },
 { t: 'Who actually holds which booth', keeper: 'The Operations Manager \u2014 the reservation list and the Sunday-only auction results',
 what: 'The real list of reserved booth holders, and separately the vendors who won Sunday-only seasonal booths at the Easy Entry auction. Both as of this season.',
@@ -14290,11 +14290,11 @@ d: 'The market\u2019s partner nonprofit',
 who: 'Friends of the IFM is the market\u2019s partner organization. The 2021 Strategic Plan commits the market to a working relationship with FOTM: building partnerships with community organizations and carrying an educational strategy that widens engagement and access to the market, especially for marginalized community members.',
 at: 'Community outreach, education programming, and access work \u2014 often the human face at the information table.',
 note: 'The Guide and Bylaws say little about FOTM\u2019s day-to-day; this screen holds a place for whatever FOTM and the office decide it should carry \u2014 event signups, outreach materials, a shift calendar.' },
-{ key: 'dish', icon: 'i-brush', t: 'The Dish Truck',
+{ key: 'dish', icon: 'i-brush', t: 'Zero Waste Program',
 d: 'Reusable dishware at the market',
 who: 'Ithaca\u2019s reusable-dish program: real plates and cups circulate at the market instead of disposables, collected, washed and returned.',
 at: 'Collection points on market days, and the washing cycle behind them. The Guide\u2019s only trace is the rule that the sink behind the office is for rinsing dishes only.',
-note: 'The market\u2019s documents do not describe this program \u2014 what is written here comes from the market\u2019s practice, not the Guide. Details belong to the Dish Truck itself and the office.' },
+note: 'The market\u2019s documents do not describe this program \u2014 what is written here comes from the market\u2019s practice, not the Guide. Details belong to the Zero Waste Program itself and the office.' },
 { key: 'music', icon: 'i-tent', t: 'Musicians & Buskers',
 d: 'Unamplified, by manager approval',
 who: 'Musicians play the market by Market Manager approval, never amplified. Not in the circle end of the Pavilion; in bad weather, non-amplified music inside the dock end is allowed with MM approval.',
@@ -15008,7 +15008,7 @@ const HELP_TEXTS = [
 },
 {
 "title": "Send to a Committee or Program",
-"body": "<p>Puts an item on a committee's own list, or on the list of one of the things the market runs — the Merch Mansion, garbage, dish recycling, the morning jobs. Either way it lands on the desk of whoever heads it: the chair, or the lead. A repair, a proposal, a question, anything the office wants them to pick up.</p><p>The note is required, and that is deliberate. The committee is not standing where you are when you write it: what is obvious to you at the spigot on Saturday morning is the whole of what they will know on Tuesday night. Say where it is, how bad, who saw it, and anything they need before they start.</p><p>A vendor's own facilities request still arrives on the Google Form under Communicate → Facilities. Send it on from here once it comes in.</p>"
+"body": "<p>Puts an item on a committee's own list, or on the list of one of the things the market runs — the Merch Mansion, garbage, the Zero Waste Program, the morning jobs. Either way it lands on the desk of whoever heads it: the chair, or the lead. A repair, a proposal, a question, anything the office wants them to pick up.</p><p>The note is required, and that is deliberate. The committee is not standing where you are when you write it: what is obvious to you at the spigot on Saturday morning is the whole of what they will know on Tuesday night. Say where it is, how bad, who saw it, and anything they need before they start.</p><p>A vendor's own facilities request still arrives on the Google Form under Communicate → Facilities. Send it on from here once it comes in.</p>"
 },
 {
 "title": "Board Proposals",
@@ -24277,7 +24277,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-11';
+const BUILD_ID = '19-12';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -24818,10 +24818,10 @@ permit: 'Permission not yet obtained: photograph credited to John Kucko Digital.
 body: '<p>Ithaca sits in the homeland of the Gayogo\u0331h\u00f3:n\u01eb\u2019 (Cayuga Nation), whose people farmed these lake valleys for centuries \u2014 corn, beans, and squash grown together long before any market bell.</p>' +
 '<p>In the 1800s the region turned to grain, then dairy, and the deep lakes proved a gift: they soften winter and stretch autumn along their slopes, which is why orchards and vineyards climb the hillsides here. Cornell\u2019s founding as a land-grant university in 1865 put agricultural science next door.</p>' +
 '<p>Today the region is known for small, diverse farms \u2014 vegetables, wine, cheese, flowers \u2014 and this market is where many of them meet their neighbors face to face.</p>' },
-{ id: 'dish', title: 'The Dish Truck', sub: 'Real plates at the market',
+{ id: 'dish', title: 'Zero Waste Program', sub: 'Real plates at the market',
 photo: 'seed:dish', credit: 'Market photo', permit: '', hidden: false,
 body: '<p>The food you buy here can come on a real plate. The reusable-dish program circulates actual dishes and cups instead of disposables \u2014 eat, then leave everything at a collection point, and the crew washes it all for next time.</p>' +
-'<p>Less trash, better meals, and a little more of the market\u2019s spirit: things worth keeping get taken care of. The people who run the Dish Truck have their own story to tell \u2014 this page is holding a spot for it, in their words.</p>' },
+'<p>Less trash, better meals, and a little more of the market\u2019s spirit: things worth keeping get taken care of. The people who run the Zero Waste Program have their own story to tell \u2014 this page is holding a spot for it, in their words.</p>' },
 { id: 'music', title: 'Today\u2019s Music', sub: 'Who\u2019s playing at the market',
 photo: 'seed:music', credit: 'Standing illustration \u2014 replaced each market day',
 permit: 'Confirm the license for this illustration before the kiosk goes public.', hidden: false,
@@ -25555,7 +25555,7 @@ let inner = '<button type="button" class="kiosk-learn-close" onclick="closeKiosk
 const photo = aboutPhoto(page);
 // onerror swaps a broken source for the same placeholder a subject with no
 // photo at all would show. Without this, a seed path nobody has fulfilled
-// -- history, farming, the dish program, live music -- shows the browser's
+// -- history, farming, the Zero Waste Program, live music -- shows the browser's
 // own broken-image icon to a shopper reading about the market.
 if (photo) inner += '<img class="kl-hero" src="' + photo + '" alt="" ' +
 'onerror="this.outerHTML=\'<div class=\\\'kl-hero-empty\\\'>Photo coming soon</div>\'">';
@@ -32877,7 +32877,7 @@ note: 'Selling the market\u2019s own goods. It is not a vendor and not a committ
 { key: 'garbage', name: 'Garbage', icon: 'i-trash',
 sub: 'Bins round the pavilion, and the haul at close',
 note: 'Emptying and re-lining through the day, and getting the whole lot out at the end of market.' },
-{ key: 'dish', name: 'Dish Recycling', icon: 'i-arrows-cycle',
+{ key: 'dish', name: 'Zero Waste Program', icon: 'i-arrows-cycle',
 sub: 'Collecting, washing and returning the reusable dishes',
 note: 'The reusable dish scheme only works if somebody runs the collection and the wash. Prepared-food vendors depend on it.' },
 { key: 'morning', name: 'Morning Tasks', icon: 'i-sun-rays',
@@ -32912,7 +32912,7 @@ return MARKET_PROGRAMS.filter(p => st[p.key] === vendorId);
 //
 // Everything used to route through isMerchLead(), which answers the much
 // broader question "do they lead anything at all" -- so the Merch Mansion
-// lead could act on Garbage and Dish Recycling, which the office had given
+// lead could act on Garbage and the Zero Waste Program, which the office had given
 // to other people. Leading one program is not leading the market's
 // programs.
 function canRunProgram(key) {
@@ -34159,12 +34159,12 @@ d: 'THE RULE IS CLEAR AND THE APP NOW STATES IT. Guide p.27: \u201cOne point is 
 'A THIRD, SMALLER ONE: a PopUp that is a market earns a point; tabling at an event that is not a market presumably does not. The app says so and tells a vendor to ask the office when unsure, because nothing written down draws that line. ' +
 'WHAT THE BOARD NEEDS TO DECIDE: whether to update the example to the current satellite day, and whether to name the Winter Market and PopUps in the points section rather than leaving them to \u201ceach market\u201d. Neither changes what anybody earns \u2014 both change whether a vendor can find that out by reading.' },
 { id: 'BF51', kind: 'question', cat: 'Board', src: 'Noticed by the market administrator; the app asserts two incompatible answers',
-t: 'Is the Dish Truck the market\u2019s own program, or an outside operation the market hosts?',
-d: 'THE APP SAYS BOTH, IN TWO PLACES. Under What the Market Runs it is \u201cDish Recycling\u201d, one of four programs the market runs, with a named lead, posted shifts and work hours that count against what a vendor owes. Under Volunteer Roles it is \u201cThe Dish Truck\u201d, described as Ithaca\u2019s reusable-dish program, with the note that \u201cdetails belong to the Dish Truck itself and the office\u201d \u2014 which is an outside operation the market hosts. Both were written by this app; neither came from a market document. ' +
+t: 'Is the Zero Waste Program the market\u2019s own program, or an outside operation the market hosts?',
+d: 'THE TWO NAMES ARE GONE, THE QUESTION IS NOT. The app used to call this one thing by two names \u2014 \u201cDish Recycling\u201d under What the Market Runs, and \u201cThe Dish Truck\u201d under Volunteer Roles \u2014 and the second carried a note that details belonged to the Dish Truck itself and the office, which reads like an outside operation the market hosts. Both names were written by this app; neither came from a market document. Both are now \u201cZero Waste Program\u201d, which settles what it is CALLED and nothing else. ' +
 'THE GUIDE IS NO HELP. It does not mention a reusable-dish scheme at all. Its only trace of the subject is the rule that the sink behind the office is for rinsing dishes only, and the requirement that vendors take their own trash away. ' +
-'WHY IT IS NOT A LABELING QUESTION. Work hours are money: hours a vendor owes and does not work are invoiced at the Board\u2019s rate. If the Dish Truck is the market\u2019s own program, crediting hours for a shift on it is the market paying for its own work, which is ordinary. If it is a separate operation, the market is discharging vendors\u2019 obligations to the market in exchange for labor given to somebody else \u2014 and the Board should have decided that on purpose rather than by an app\u2019s choice of screen. ' +
-'WHAT THE APP DOES MEANWHILE: nothing has changed. Dish shifts still post and still credit hours, exactly as before, because withdrawing that on the app\u2019s own authority would be the same mistake in the other direction. ' +
-'WHAT THE BOARD NEEDS TO DECIDE: whether the Dish Truck is the market\u2019s program or a partner\u2019s; and if a partner\u2019s, whether working a dish shift discharges a vendor\u2019s work-hour obligation to the market.' },
+'WHY IT IS NOT A LABELING QUESTION. Work hours are money: hours a vendor owes and does not work are invoiced at the Board\u2019s rate. If the Zero Waste Program is the market\u2019s own program, crediting hours for a shift on it is the market paying for its own work, which is ordinary. If it is a separate operation, the market is discharging vendors\u2019 obligations to the market in exchange for labor given to somebody else \u2014 and the Board should have decided that on purpose rather than by an app\u2019s choice of screen. ' +
+'WHAT THE APP DOES MEANWHILE: nothing has changed. Zero Waste shifts still post and still credit hours, exactly as before, because withdrawing that on the app\u2019s own authority would be the same mistake in the other direction. ' +
+'WHAT THE BOARD NEEDS TO DECIDE: whether the Zero Waste Program is the market\u2019s program or a partner\u2019s; and if a partner\u2019s, whether working a Zero Waste shift discharges a vendor\u2019s work-hour obligation to the market.' },
 { id: 'BF50', kind: 'question', cat: 'Board', src: 'Raised while removing the invented deadline from monthly statements',
 t: 'Should an unpaid daily selling fee be treated as an exception on the day, rather than a line on next month\u2019s statement?',
 d: 'The Guide is unambiguous about when a daily selling fee is paid: to the staff member on duty each selling day, before the market opens at Steamboat Landing, and collected on site during market at Wednesday and Winter. On that reading a booth fee outstanding on Monday is not a receivable at all \u2014 it is a vendor who sold without paying, which is an anomaly, not ordinary billing. ' +
@@ -35976,7 +35976,7 @@ tiles: [
 { key: 'programs', title: 'What the Market Runs', icon: 'i-toolbox',
 sub: 'The market\u2019s own operations \u2014 who heads each one, and the shifts that earn work hours',
 tiles: [
-{ s: 'merchmansion', i: 'i-toolbox', t: 'Programs & Leads', d: 'Merch Mansion, garbage, dish recycling and the morning jobs \u2014 who runs each, and posting shifts' },
+{ s: 'merchmansion', i: 'i-toolbox', t: 'Programs & Leads', d: 'Merch Mansion, garbage, the Zero Waste Program and the morning jobs \u2014 who runs each, and posting shifts' },
 { s: 'merch', i: 'i-gem', t: 'Merch Mansion Stock & Till', d: 'What is in stock, what sold, and closing out a market day' },
 ] },
 { key: 'board', title: 'Board & Committees', icon: 'i-columns',
