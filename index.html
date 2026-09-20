@@ -24277,7 +24277,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-12';
+const BUILD_ID = '19-13';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -31567,95 +31567,26 @@ renderMyDocsAnswersLink();
 // The questions themselves live in My Account (Necessary Questions to Answer) since 18-42.
 renderMyDocs();
 }
-function renderMyDocs() {
-const vendor = currentVendor();
-const wrap = document.getElementById('mdList');
-const empty = document.getElementById('mdEmpty');
-if (!wrap || !vendor) return;
-wrap.innerHTML = '';
-// EVERY document the market has, not only the ones already assigned. One
-// that does not apply is shown saying so; one whose answer is missing is
-// shown saying that. A vendor should be able to read this list and know
-// there is nothing else -- which they cannot do if the ones that do not
-// apply are simply absent.
-const all = (cache.requirements.reqs || []);
-const reqs = all.filter(req => reqAppliesToVendor(req, vendor.vendorId) !== 'no');
-const notApplicable = all.filter(req => reqAppliesToVendor(req, vendor.vendorId) === 'no');
-empty.style.display = all.length ? 'none' : 'block';
-let outstanding = 0, pending = 0, accepted = 0, unknown = 0;
-reqs.forEach(req => {
-if (reqAppliesToVendor(req, vendor.vendorId) === 'unknown') { unknown++; return; }
-const st = reqDisplayState(req, vendor.vendorId);
-if (st === 'onfile') accepted++;
-else if (st === 'pending') pending++;
-else if (st !== 'exempt') outstanding++;
-});
-// A vendor who has answered nothing is looking at the two documents that
-// apply to everybody, and has no way to know the rest are waiting on them.
-const unanswered = VENDOR_TRAITS.filter(t => vendorTrait(vendor.vendorId, t.key) === undefined).length;
-const sumEl = document.getElementById('mdSummary');
-if (sumEl) sumEl.className = 'empty-note' + (unanswered === VENDOR_TRAITS.length ? ' md-waiting' : '');
-document.getElementById('mdSummary').textContent = all.length
-? accepted + ' on file \u00b7 ' + pending + ' posted and not yet marked received \u00b7 ' +
-outstanding + ' still to send' +
-(unknown ? ' \u00b7 ' + unknown + ' waiting on your answers in My Account' : '') +
-(notApplicable.length ? ' \u00b7 ' + notApplicable.length + ' do not apply to you' : '') + '.'
-: '';
-reqs.forEach(req => {
-const applies = reqAppliesToVendor(req, vendor.vendorId);
-if (applies === 'unknown') {
-const u = document.createElement('div');
-u.className = 'req-row';
-const need = (req.traits || [])
-.map(k => (VENDOR_TRAITS.find(t => t.key === k) || {}).short).filter(Boolean);
-u.innerHTML = '<div class="req-row-main">' +
-'<div class="req-name">' + esc(req.name) + '</div>' +
-'<div class="req-meta">' + esc(req.issuer || '') + '</div>' +
-'<div class="req-tally"><span class="req-state submitted">Does this apply to you?</span></div>' +
-'<p class="req-detail">Whether the market needs this from you depends on ' +
-esc(need.join(' or ').toLowerCase()) + '. Answer the questions above and this ' +
-'either becomes a document to send or drops off your list.</p>' +
-(req.detail ? '<p class="req-example-note">' + req.detail + '</p>' : '') +
-'</div>';
-wrap.appendChild(u);
-return;
-}
-const rec = reqStatusFor(req.id, vendor.vendorId);
-const st = reqDisplayState(req, vendor.vendorId);
-const card = document.createElement('div');
-card.className = 'req-row';
-const main = document.createElement('div');
-main.className = 'req-row-main';
-const bits = [];
-if (req.issuer) bits.push(esc(req.issuer));
-if (req.due) bits.push((st === 'overdue' ? 'was due ' : 'due ') + esc(formatDisplayDate(req.due)));
-if (rec.state === 'onfile' && rec.expiry) bits.push('expires ' + esc(formatDisplayDate(rec.expiry)));
-if (rec.state === 'pending' && rec.via === 'upload' && rec.uploadedOn) bits.push('you sent a scan of it ' + esc(formatDisplayDate(rec.uploadedOn)));
-// Only for records made before the self-report was removed; nothing writes
-// this state now except a scan.
-else if (rec.state === 'pending' && rec.sentOn) bits.push('you told us you posted it ' + esc(formatDisplayDate(rec.sentOn)) + ' \u2014 the office will mark it on file when it arrives');
-if (rec.state === 'onfile' && rec.receivedOn) bits.push('received ' + esc(formatDisplayDate(rec.receivedOn)));
-main.innerHTML =
-'<div class="req-name">' + esc(req.name) + '</div>' +
-'<div class="req-meta">' + bits.join(' \u00b7 ') + '</div>' +
-'<div class="req-tally"><span class="req-state ' +
-(st === 'overdue' ? 'expired' : st === 'returned' ? 'expired' :
-st === 'pending' ? 'submitted' : st === 'missing' ? 'missing' : st) + '">' +
-esc(reqStateLabel(st)) + '</span></div>' +
-(rec.state === 'returned' && rec.reviewNote
-? '<p class="req-example-note">Returned by the office: ' + esc(rec.reviewNote) + '</p>'
-: '') +
-(req.detail ? '<p class="req-detail">' + esc(req.detail) + '</p>' : '');
-card.appendChild(main);
-if (rec.state !== 'exempt') {
+/* SENDING A DOCUMENT (19-13).
+   These controls used to be built inline, inside the branch that runs only
+   once the app knows a document applies to you. Every requirement still
+   waiting on an answer took an early return well before this, so five of the
+   seven permits offered no way to send anything at all -- a vendor holding a
+   Fire Permit in their hand could not give it to the market through the app.
+   The controls live here now so both branches can use them. */
+function mdSendControls(req, rec, card, unsure) {
 // No "tell the office I have posted it". Saying so changed nothing -- the
 // office marks a document received when it arrives, and that is the record
 // -- while putting the vendor in a review queue with no document in it.
 // What a vendor needs here is where to send it.
 const how = document.createElement('p');
 how.className = 'req-example-note';
-how.innerHTML = '<b>Send it to the office</b> \u2014 bring it to the window, post it, or email it. ' +
-'It appears here as on file once the office has it; there is nothing to tell us in the app.';
+how.innerHTML = unsure
+  ? '<b>Have it already? Send it anyway</b> \u2014 you do not have to settle the question above first. ' +
+    'Bring it to the window, post it, email it, or scan it below. Sending it does not answer the ' +
+    'question; the office still needs that from you.'
+  : '<b>Send it to the office</b> \u2014 bring it to the window, post it, or email it. ' +
+    'It appears here as on file once the office has it; there is nothing to tell us in the app.';
 card.appendChild(how);
 if (vaultReady()) {
 const or = document.createElement('p');
@@ -31714,6 +31645,92 @@ pickBtn.onclick = () => pick.click();
 card.appendChild(pickBtn);
 }
 }
+function renderMyDocs() {
+const vendor = currentVendor();
+const wrap = document.getElementById('mdList');
+const empty = document.getElementById('mdEmpty');
+if (!wrap || !vendor) return;
+wrap.innerHTML = '';
+// EVERY document the market has, not only the ones already assigned. One
+// that does not apply is shown saying so; one whose answer is missing is
+// shown saying that. A vendor should be able to read this list and know
+// there is nothing else -- which they cannot do if the ones that do not
+// apply are simply absent.
+const all = (cache.requirements.reqs || []);
+const reqs = all.filter(req => reqAppliesToVendor(req, vendor.vendorId) !== 'no');
+const notApplicable = all.filter(req => reqAppliesToVendor(req, vendor.vendorId) === 'no');
+empty.style.display = all.length ? 'none' : 'block';
+let outstanding = 0, pending = 0, accepted = 0, unknown = 0;
+reqs.forEach(req => {
+if (reqAppliesToVendor(req, vendor.vendorId) === 'unknown') { unknown++; return; }
+const st = reqDisplayState(req, vendor.vendorId);
+if (st === 'onfile') accepted++;
+else if (st === 'pending') pending++;
+else if (st !== 'exempt') outstanding++;
+});
+// A vendor who has answered nothing is looking at the two documents that
+// apply to everybody, and has no way to know the rest are waiting on them.
+const unanswered = VENDOR_TRAITS.filter(t => vendorTrait(vendor.vendorId, t.key) === undefined).length;
+const sumEl = document.getElementById('mdSummary');
+if (sumEl) sumEl.className = 'empty-note' + (unanswered === VENDOR_TRAITS.length ? ' md-waiting' : '');
+document.getElementById('mdSummary').textContent = all.length
+? accepted + ' on file \u00b7 ' + pending + ' posted and not yet marked received \u00b7 ' +
+outstanding + ' still to send' +
+(unknown ? ' \u00b7 ' + unknown + ' waiting on your answers in My Account' : '') +
+(notApplicable.length ? ' \u00b7 ' + notApplicable.length + ' do not apply to you' : '') + '.'
+: '';
+reqs.forEach(req => {
+const applies = reqAppliesToVendor(req, vendor.vendorId);
+if (applies === 'unknown') {
+const u = document.createElement('div');
+u.className = 'req-row';
+const need = (req.traits || [])
+.map(k => (VENDOR_TRAITS.find(t => t.key === k) || {}).short).filter(Boolean);
+u.innerHTML = '<div class="req-row-main">' +
+'<div class="req-name">' + esc(req.name) + '</div>' +
+'<div class="req-meta">' + esc(req.issuer || '') + '</div>' +
+'<div class="req-tally"><span class="req-state submitted">Does this apply to you?</span></div>' +
+'<p class="req-detail">Whether the market needs this from you depends on ' +
+esc(need.join(' or ').toLowerCase()) + '. Answer the questions above and this ' +
+'either becomes a document to send or drops off your list.</p>' +
+(req.detail ? '<p class="req-example-note">' + req.detail + '</p>' : '') +
+'</div>';
+// Not knowing whether a document applies is no reason to refuse it. A vendor
+// holding the permit can send it now; the question above stays open until
+// they answer it, because a document arriving is not the same as a vendor
+// saying the rule applies to them.
+mdSendControls(req, reqStatusFor(req.id, vendor.vendorId), u, true);
+wrap.appendChild(u);
+return;
+}
+const rec = reqStatusFor(req.id, vendor.vendorId);
+const st = reqDisplayState(req, vendor.vendorId);
+const card = document.createElement('div');
+card.className = 'req-row';
+const main = document.createElement('div');
+main.className = 'req-row-main';
+const bits = [];
+if (req.issuer) bits.push(esc(req.issuer));
+if (req.due) bits.push((st === 'overdue' ? 'was due ' : 'due ') + esc(formatDisplayDate(req.due)));
+if (rec.state === 'onfile' && rec.expiry) bits.push('expires ' + esc(formatDisplayDate(rec.expiry)));
+if (rec.state === 'pending' && rec.via === 'upload' && rec.uploadedOn) bits.push('you sent a scan of it ' + esc(formatDisplayDate(rec.uploadedOn)));
+// Only for records made before the self-report was removed; nothing writes
+// this state now except a scan.
+else if (rec.state === 'pending' && rec.sentOn) bits.push('you told us you posted it ' + esc(formatDisplayDate(rec.sentOn)) + ' \u2014 the office will mark it on file when it arrives');
+if (rec.state === 'onfile' && rec.receivedOn) bits.push('received ' + esc(formatDisplayDate(rec.receivedOn)));
+main.innerHTML =
+'<div class="req-name">' + esc(req.name) + '</div>' +
+'<div class="req-meta">' + bits.join(' \u00b7 ') + '</div>' +
+'<div class="req-tally"><span class="req-state ' +
+(st === 'overdue' ? 'expired' : st === 'returned' ? 'expired' :
+st === 'pending' ? 'submitted' : st === 'missing' ? 'missing' : st) + '">' +
+esc(reqStateLabel(st)) + '</span></div>' +
+(rec.state === 'returned' && rec.reviewNote
+? '<p class="req-example-note">Returned by the office: ' + esc(rec.reviewNote) + '</p>'
+: '') +
+(req.detail ? '<p class="req-detail">' + esc(req.detail) + '</p>' : '');
+card.appendChild(main);
+if (rec.state !== 'exempt') mdSendControls(req, rec, card, false);
 wrap.appendChild(card);
 });
 renderNotApplicable();
