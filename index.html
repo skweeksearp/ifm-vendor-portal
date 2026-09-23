@@ -12659,7 +12659,7 @@ const row = document.createElement('div');
 row.className = 'tracker-row';
 row.innerHTML = '<div class="t-title">' + r.t + '</div>' +
 '<div class="t-note"><b>Keeper:</b> ' + r.keeper + '</div>' +
-'<div class="t-note">' + r.what + '</div>' +
+'<div class="t-note">' + esc(r.what) + '</div>' +
 '<div class="t-note"><b>Unblocks:</b> ' + r.unblocks + '</div>';
 wrap.appendChild(row);
 });
@@ -13586,7 +13586,7 @@ el.innerHTML =
 '<div class="tracker-row"><div class="t-title">Taken in, ' + year +
 '</div><div class="t-note"><b>$' + fmtMoney(money) + '</b></div></div>' +
 '<div class="tracker-row"><div class="t-title">Vendors who turned any in</div>' +
-'<div class="t-note">' + who + '</div></div>' +
+'<div class="t-note">' + esc(who) + '</div></div>' +
 (fcChecks(all) ? '<div class="tracker-row"><div class="t-title">Checks counted</div>' +
 '<div class="t-note">' + fcChecks(all) + '</div></div>' : '');
 }
@@ -14006,11 +14006,11 @@ actAs(obWhMode === 'claim' ? 'Claimed a work shift \u2014 ' + task.title
 { kind: 'hours', weight: 'notable', vendorId: vendorId });
 showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' +
 (obWhMode === 'claim'
-? '<b>' + name + '</b> has ' + esc(task.title) + ' \u2014 ' + hrs + ' hours. The spot is theirs; ' +
+? '<b>' + esc(name) + '</b> has ' + esc(task.title) + ' \u2014 ' + hrs + ' hours. The spot is theirs; ' +
 'nobody else can take it.'
 : obWhMode === 'drop'
-? '<b>' + name + '</b> has given up ' + esc(task.title) + '. It is back on the list.'
-: '<b>' + name + '</b> is down as having done ' + esc(task.title) + ' \u2014 ' + hrs + ' hours. ' +
+? '<b>' + esc(name) + '</b> has given up ' + esc(task.title) + '. It is back on the list.'
+: '<b>' + esc(name) + '</b> is down as having done ' + esc(task.title) + ' \u2014 ' + hrs + ' hours. ' +
 '<b>It is not signed off yet:</b> it is now with whoever runs that program, the same as if they ' +
 'had reported it themselves. The hours reach their account when the lead approves.'));
 fillObWhTasks();
@@ -14107,7 +14107,7 @@ const st = committeeState()[sel.value];
 const chair = (st.members || []).find(m => m.chair);
 note.textContent = isBG
 ? 'Joins the booth improvements queue, where Building & Grounds already works from a proposal list and an agenda.'
-: 'Goes on ' + cm.name + '\u2019s list' +
+: 'Goes on ' + esc(cm.name) + '\u2019s list' +
 (chair ? ', where ' + vendorNameFor(chair.id) + ' chairs it and will see it on their desk.'
 : ' \u2014 that committee has no chair on record, so nobody is alerted.');
 }
@@ -14140,7 +14140,7 @@ if (!cache.checks) cache.checks = [];
 if (method === 'check') {
 const dup = cache.checks.find(c => c.vendorId === vendorId && (c.method || 'check') === 'check' && c.checkNo === ref && !c.voided);
 if (dup) {
-showMsg('obMsg', 'err', 'Check #' + esc(ref) + ' from ' + name + ' is already on the books \u2014 $' +
+showMsg('obMsg', 'err', 'Check #' + esc(ref) + ' from ' + esc(name) + ' is already on the books \u2014 $' +
 fmtMoney(dup.amount) + ' recorded ' + esc(new Date(dup.at).toLocaleDateString()) +
 '. The same check cannot be taken in twice.');
 return;
@@ -14150,7 +14150,7 @@ const recent = cache.checks.find(c => c.vendorId === vendorId && (c.method || 'c
 Number(c.amount) === amt && (c.note || '') === cNote && !c.voided &&
 Date.now() - (c.recordedAt || c.at) < 180000 && Date.now() >= (c.recordedAt || c.at));
 if (recent) {
-showMsg('obMsg', 'err', 'An identical ' + words[method] + ' payment of $' + fmtMoney(amt) + ' from ' + name +
+showMsg('obMsg', 'err', 'An identical ' + words[method] + ' payment of $' + fmtMoney(amt) + ' from ' + esc(name) +
 ' was recorded ' + Math.max(0, Math.round((Date.now() - (recent.recordedAt || recent.at)) / 60000)) + ' minute(s) ago \u2014 this looks like the same one twice. ' +
 'If they really did pay twice, say so in the note and it will go through.');
 return;
@@ -14167,7 +14167,7 @@ const a = accountData(vendorId, new Date(told).getFullYear());
 const what = method === 'check' ? 'Check #' + esc(ref)
 : method === 'card' ? 'A card payment' : 'A cash payment';
 showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + what +
-' for <b>$' + fmtMoney(amt) + '</b> from <b>' + name + '</b> is on the books toward ' +
+' for <b>$' + fmtMoney(amt) + '</b> from <b>' + esc(name) + '</b> is on the books toward ' +
 esc(forWhat.toLowerCase()) + '. Their received column now reads $' + fmtMoney(a.receivedTotal) +
 ' against $' + fmtMoney(a.chargedTotal) + ' charged this season.');
 return;
@@ -14187,7 +14187,7 @@ hostVendorId: vendorId, sameFamily: document.getElementById('obFamily').value ==
 status: 'reported', reportedAt: told, channel: channel, recordedBy: 'office' });
 await storageSet('ifm-booth-shares', cache.boothShares);
 showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded: ' +
-esc(boothVendorName(guestId)) + ' sharing booth ' + esc(ownDay.num) + ' with ' + name +
+esc(boothVendorName(guestId)) + ' sharing booth ' + esc(ownDay.num) + ' with ' + esc(name) +
 ' on ' + esc(formatDisplayDate(marketDate)) + via + ' It shows on the kiosk now and still needs allowing for the records.');
 } else if (status === 'promo') {
 const text = document.getElementById('obPromoText').value.trim();
@@ -14200,7 +14200,7 @@ await storageSet('ifm-promos', cache.promos);
 const live = kioskMarketDate();
 const hasBooth = vendorBoothOn(vendorId, marketDate);
 showMsg('obMsg', hasBooth ? 'ok' : 'err',
-'<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded for ' + name + ' on ' +
+'<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded for ' + esc(name) + ' on ' +
 esc(formatDisplayDate(marketDate)) + via + ' ' +
 (!hasBooth
 ? '<b>They have no booth on the books that day</b>, so nothing will show at the kiosk until they do \u2014 an offer only appears when somebody taps their booth.'
@@ -14242,7 +14242,7 @@ cache.callinout.push({ vendorId: vendorId, marketDate: marketDate, status: statu
 submittedAt: told, channel: channel, recordedBy: 'office',
 note: note });
 await storageSet('ifm-callinout', cache.callinout);
-showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded for ' + name + ' \u2014 ' +
+showMsg('obMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Recorded for ' + esc(name) + ' \u2014 ' +
 (status === 'Out' ? 'away' : 'requesting') + ' on ' + esc(formatDisplayDate(marketDate)) + via +
 (already ? ' They already had a record for that day \u2014 both are kept, newest wins where it matters.' : ''));
 }
@@ -14342,9 +14342,9 @@ function initVolRoleScreen() {
 const r = VOLUNTEER_ROLES.find(x => x.key === volRoleKey) || VOLUNTEER_ROLES[0];
 document.getElementById('volRoleCard').innerHTML =
 '<h2><span class="emoji"><svg class="ico"><use href="#' + r.icon + '"></use></svg></span>' + r.t + '</h2>' +
-'<p>' + r.who + '</p>' +
+'<p>' + esc(r.who) + '</p>' +
 '<p><b>At the market:</b> ' + r.at + '</p>' +
-'<p class="empty-note">' + r.note + '</p>';
+'<p class="empty-note">' + esc(r.note) + '</p>';
 }
 // ----- Movable desk: each vendor's own drawer order, in 'ifm-desk-order' -----
 // Three zones, top to bottom: in season now, the file cabinet (identical
@@ -15384,8 +15384,8 @@ const btn = document.createElement('button');
 btn.className = 'vendor-option';
 btn.innerHTML =
 avatarHTML(v, 'avatar') +
-'<div><div class="vname">' + v.businessName + '</div>' +
-'<div class="vmeta">' + v.category + ' \u2022 ' + v.lastName + ' \u2022 Member since ' + v.joinYear + '</div></div>';
+'<div><div class="vname">' + esc(v.businessName) + '</div>' +
+'<div class="vmeta">' + v.category + ' \u2022 ' + esc(v.lastName) + ' \u2022 Member since ' + v.joinYear + '</div></div>';
 btn.onclick = () => selectVendor(v.vendorId);
 list.appendChild(btn);
 }, () => renderVendorList(filterText), document.getElementById('vendorCount'));
@@ -16464,7 +16464,7 @@ if (date < today) cls.push('pav-past');
 // The title carries the detail. A cell is a fingertip wide; the whole
 // booking will not fit in it and should not try.
 const title = rental
-? formatDisplayDate(date) + ' \u2014 ' + rental.who +
+? formatDisplayDate(date) + ' \u2014 ' + esc(rental.who) +
 (market ? ' \u00b7 vendors out by 4 PM' : ' \u00b7 not a market day')
 : market ? formatDisplayDate(date) + ' \u2014 market day, nothing booked' : '';
 out += '<div class="' + cls.join(' ') + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' +
@@ -17616,8 +17616,8 @@ const r = stmtRoutes(ym, all);
 const eLeft = stmtUnsent(r.email).length, pLeft = stmtUnsent(r.post).length;
 const line = (label, n, left, note) =>
 '<div class="req-row"><div class="req-row-main">' +
-'<div class="req-name">' + label + ' \u00b7 ' + n + '</div>' +
-'<div class="req-meta">' + note + '</div></div></div>';
+'<div class="req-name">' + esc(label) + ' \u00b7 ' + n + '</div>' +
+'<div class="req-meta">' + esc(note) + '</div></div></div>';
 bulk.innerHTML =
 '<p class="empty-note" style="margin:0 0 8px;"><b>How each vendor can be reached</b> \u2014 ' +
 'read from the directory, not from a setting. ' + (open
@@ -22501,7 +22501,7 @@ row.innerHTML =
 '<button type="button" class="lotto-check checked" data-vid="' + v.vendorId + '">' +
 '<svg class="ico"><use href="#i-checkmark"></use></svg>' +
 '</button>' +
-'<div class="lotto-name"><div class="lotto-biz">' + v.businessName + '</div>' +
+'<div class="lotto-name"><div class="lotto-biz">' + esc(v.businessName) + '</div>' +
 '<div class="lotto-pts">' + entry.pts + ' pts \u2022 ' + v.category + '</div></div>' +
 '<input type="text" class="lotto-booth" data-vid="' + v.vendorId + '" value="' +
 (rec.assignments[v.vendorId] || '') + '" placeholder="Booth">';
@@ -22545,7 +22545,7 @@ cache.vendors
 .forEach(v => {
 const row = document.createElement('div');
 row.className = 'lotto-add-result';
-row.innerHTML = '<span>' + v.businessName + ' <span style="opacity:0.6;">(' + v.category + ')</span></span>' +
+row.innerHTML = '<span>' + esc(v.businessName) + ' <span style="opacity:0.6;">(' + v.category + ')</span></span>' +
 '<button type="button">Add</button>';
 row.querySelector('button').onclick = () => lottoAddVendor(kind, v.vendorId);
 results.appendChild(row);
@@ -22635,7 +22635,7 @@ const matches = cache.vendors.filter(v => v.businessName.toLowerCase().includes(
 matches.forEach(v => {
 const row = document.createElement('div');
 row.className = 'lotto-add-result';
-row.innerHTML = '<span>' + v.businessName + '</span><button type="button">Select</button>';
+row.innerHTML = '<span>' + esc(v.businessName) + '</span><button type="button">Select</button>';
 row.querySelector('button').onclick = () => selectPointsManagerVendor(v.vendorId);
 results.appendChild(row);
 });
@@ -23436,7 +23436,7 @@ row.innerHTML =
 '<button type="button" class="tracker-remove">Remove</button></div>';
 row.querySelector('.t-title').textContent = item.title;
 if (item.note) row.querySelector('.t-note').textContent =
-(item.cmteName ? item.cmteName + ' \u00b7 ' : '') + item.note +
+(item.cmteName ? esc(item.cmteName) + ' \u00b7 ' : '') + esc(item.note) +
 (item.due ? ' \u00b7 by ' + formatDisplayDate(item.due) : '');
 const statusBtn = row.querySelector('.tracker-status');
 statusBtn.textContent = item.status;
@@ -24193,7 +24193,7 @@ const avatarKey = category.startsWith('Ag') ? 'seedling' : 'basket';
 const newVendor = { vendorId, businessName: biz, lastName: last, category, joinYear: year, avatar: avatarKey };
 cache.vendors.unshift(newVendor);
 await storageSet('ifm-vendors-v1', cache.vendors);
-showMsg('addVendorStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + biz + ' added as ' + vendorId + '.');
+showMsg('addVendorStatusMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> ' + esc(biz) + ' added as ' + vendorId + '.');
 document.getElementById('newVBiz').value = '';
 document.getElementById('newVLast').value = '';
 document.getElementById('newVEmail').value = '';
@@ -24218,7 +24218,7 @@ Welcome to the market family!
 Ithaca Farmers Market`;
 document.getElementById('welcomeLetterCard').style.display = 'block';
 document.getElementById('welcomeLetterIntro').textContent = email
-? 'Drafted for ' + email + '. Review before sending — nothing is sent automatically.'
+? 'Drafted for ' + esc(email) + '. Review before sending — nothing is sent automatically.'
 : 'No email was entered, so this is ready to copy manually. Review before sending — nothing is sent automatically.';
 document.getElementById('welcomeLetterText').value = body;
 const mailto = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
@@ -24277,7 +24277,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-13';
+const BUILD_ID = '19-15';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -26809,7 +26809,7 @@ const what = (mode === 'product')
 : '') + '</span>';
 btn.innerHTML =
 '<span><span class="biz">' + esc(v.businessName) + '</span>' +
-'<span class="what">' + what + '</span></span>' +
+'<span class="what">' + esc(what) + '</span></span>' +
 '<span class="kiosk-where' + (booth ? '' : ' away') + '">' +
 (booth ? 'Booth ' + esc(booth) : 'Not here today') + '</span>';
 if (booth) btn.onclick = () => selectKioskBooth(booth, { focus: true });
@@ -27505,7 +27505,7 @@ const issues = leaveIssues(l);
 const label = { requested: 'Requested', approved: 'Approved', unapproved: 'Unapproved' }[l.status] || l.status;
 row.innerHTML =
 '<div class="lotto-name"><div class="lotto-biz">' + esc(boothVendorName(l.vendorId) || l.vendorId) + '</div>' +
-'<div class="lotto-pts">' + l.year + ' \u2022 ' + label +
+'<div class="lotto-pts">' + l.year + ' \u2022 ' + esc(label) +
 (l.pointsAtLeave !== undefined ? ' \u2022 ' + l.pointsAtLeave + ' pts held' : '') +
 (l.returned ? ' \u2022 returned' : '') +
 (issues.length ? ' \u2022 ' + esc(issues.join('; ')) : '') +
@@ -28145,9 +28145,9 @@ if (!(pc >= 1 && pc <= 90)) {
 showMsg('promoMsg', 'err', promoBadNum(v, 'the percent off the second one', 1, 90));
 return;
 }
-text = 'Buy one ' + item + ', get one ' + pc + '% off';
+text = 'Buy one ' + esc(item) + ', get one ' + pc + '% off';
 } else {
-text = 'Buy one ' + item + ', get one ' + (what === 'free' ? 'free' : 'half price');
+text = 'Buy one ' + esc(item) + ', get one ' + (what === 'free' ? 'free' : 'half price');
 }
 } else if (ptype === 'freebie') {
 const free = document.getElementById('promoFreeItem').value.trim();
@@ -28959,7 +28959,7 @@ const attendNote = rows.filter(r => /attend/i.test(r.type))
 const line = (label, pts, note) =>
 '<div class="req-row"><div class="req-row-main">' +
 '<div class="req-name">' + esc(label) + ' \u00b7 <b>' + pts + '</b></div>' +
-'<div class="req-meta">' + note + '</div></div></div>';
+'<div class="req-meta">' + esc(note) + '</div></div></div>';
 
 host.innerHTML =
 line('Years at the market', membership,
@@ -29856,8 +29856,8 @@ renderClassHistory();
 const m = membershipComposition();
 const line = (label, value, note) =>
 '<div class="req-row"><div class="req-row-main"><div class="req-name">' + label +
-'</div><div class="req-meta">' + note + '</div></div>' +
-'<div class="req-state ' + (value.cls || 'exempt') + '">' + value.text + '</div></div>';
+'</div><div class="req-meta">' + esc(note) + '</div></div>' +
+'<div class="req-state ' + (value.cls || 'exempt') + '">' + esc(value.text) + '</div></div>';
 const agOk = m.ag >= m.agNeeded;
 const evenSplit = Math.abs(m.food - m.craft) <= 1;
 document.getElementById('compBody').innerHTML =
@@ -35510,7 +35510,7 @@ document.getElementById('cmteSearch').value = '';
 document.getElementById('cmteResults').innerHTML = '';
 const msg = document.getElementById('cmteStatusMsg');
 msg.textContent = (cm.cap && st.members.length > cm.cap)
-? 'Recorded \u2014 but that puts ' + cm.name + ' over its own cap of ' + cm.cap +
+? 'Recorded \u2014 but that puts ' + esc(cm.name) + ' over its own cap of ' + cm.cap +
 '. Worth checking the committee actually agreed to this.'
 : 'Recorded. Remember this needs Board approval to be official.';
 await saveOps();
@@ -35848,14 +35848,14 @@ desc: (document.getElementById('chTaskDesc') || {}).value || '',
 date: (document.getElementById('chTaskDate') || {}).value || '',
 category: key === 'bg' ? 'Building & Grounds' : 'Board / Committee',
 hours: hours, spotsNeeded: spots, assignedTo: '',
-postedBy: me.businessName + ' \u2014 ' + cm.name + ' chair',
+postedBy: me.businessName + ' \u2014 ' + esc(cm.name) + ' chair',
 postedById: me.vendorId, committee: key,
 claims: [], createdAt: Date.now()
 });
 cache.tasks = tasks;
 await saveTasks();
 initMyCommitteesScreen();
-showMsg('chTaskMsg', 'ok', 'Posted to the board in the ' + cm.name + ' committee\u2019s name \u2014 ' +
+showMsg('chTaskMsg', 'ok', 'Posted to the board in the ' + esc(cm.name) + ' committee\u2019s name \u2014 ' +
 'every vendor can see it, and ' + hours + ' work hour' + (hours === 1 ? '' : 's') +
 ' post to whoever does it once you sign it off.');
 }
@@ -36132,7 +36132,7 @@ return;
 gcRolls.push({ id: 'roll' + Date.now(), label: label, codes: codes, loaded: todayISO() });
 await saveGcRolls();
 showMsg('gcRollMsg', 'ok', 'Loaded ' + codes.length + ' sticker' + (codes.length === 1 ? '' : 's') +
-' as \u201c' + label + '\u201d.' + (dupes.length ? ' ' + dupes.length + ' were already known and were skipped.' : ''));
+' as \u201c' + esc(label) + '\u201d.' + (dupes.length ? ' ' + dupes.length + ' were already known and were skipped.' : ''));
 document.getElementById('gcRollCodes').value = '';
 document.getElementById('gcRollLabel').value = '';
 renderGcBook();
@@ -47476,7 +47476,7 @@ const el = document.getElementById(id);
 if (!el) return;
 el.innerHTML = gcvCanScan()
 ? '<button type="button" class="primary-btn gcv-scan-btn" onclick="' + fn + '">' +
-'<svg class="ico"><use href="#i-qr"></use></svg> ' + label + '</button>'
+'<svg class="ico"><use href="#i-qr"></use></svg> ' + esc(label) + '</button>'
 : '';
 });
 }
@@ -49709,7 +49709,7 @@ chip.type = 'button';
 const already = cioMode === 'absence' && cache.callinout.some(r =>
 r.vendorId === currentVendorId && r.marketDate === entry.date && /out/i.test(r.status));
 chip.className = 'cio-date-chip' + (selectedCioDates.has(entry.date) ? ' selected' : '');
-chip.innerHTML = '<span>' + entry.label + (already ? ' \u00b7 already reported' : '') + '</span>' +
+chip.innerHTML = '<span>' + esc(entry.label) + (already ? ' \u00b7 already reported' : '') + '</span>' +
 '<span class="check"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></span>';
 chip.onclick = () => toggleCioDate(entry.date);
 list.appendChild(chip);
