@@ -2871,6 +2871,11 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
   background: var(--paper); color: var(--credit);
   box-shadow: 0 1px 3px rgba(21,18,15,0.22); }
 .ans-tally-left { background: var(--sunflower); color: var(--ink); }
+/* An answer the office has typed but not yet saved. The office types, then
+   Saves; until then the screen must not look like the record already says so. */
+.vp-staged { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px;
+  background: var(--sunflower); color: var(--ink); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.02em; vertical-align: middle; }
 .ans-choice { flex: none; display: flex; gap: 7px; }
 .ans-btn { min-width: 46px; padding: 8px 11px; border-radius: 10px; cursor: pointer;
   font-family: inherit; font-size: 14.5px; font-weight: 700; line-height: 1;
@@ -5117,6 +5122,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <label for="vpVendor">Vendor</label>
 <select id="vpVendor" onchange="loadVpFields()"></select>
 <div id="vpFields"></div>
+<div id="vpAnswers"></div>
 <label for="vpChannel" style="margin-top:14px;">How they told you</label>
 <select id="vpChannel">
 <option>Phone</option><option>Email</option><option>Mail</option><option>In person</option>
@@ -24277,7 +24283,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-15';
+const BUILD_ID = '19-16';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -27707,8 +27713,12 @@ return booth ? { vendorId: vid, booth: booth } : null;
 .sort((a, b) => String(boothVendorName(a.vendorId) || '')
 .localeCompare(String(boothVendorName(b.vendorId) || '')));
 }
-async function setShareOffer(yes) {
-const v = currentVendor();
+/* forVendorId is how the office answers on a vendor's behalf. Without it this
+   read currentVendor(), which on the manager's desk is whoever the manager
+   last looked at -- so answering for one vendor would have written the answer
+   onto another. */
+async function setShareOffer(yes, forVendorId) {
+const v = forVendorId ? (cache.vendors || []).find(x => x.vendorId === forVendorId) : currentVendor();
 if (!v) return;
 await loadShareOffers();
 const key = shareOfferSeasonKey();
@@ -31057,7 +31067,7 @@ const sell = [
   set: async val => { await setVendorTrait(vid, t.key, val); renderMyDocsAnswersLink(); },
 })));
 const booth = shareCouldHost(vid) ? [
-  { id: 'share', q: 'Open to booth sharing?', get: () => shareOfferAnswered(vid) ? !!shareOfferOn(vid) : undefined, set: async val => { await setShareOffer(val); } },
+  { id: 'share', q: 'Open to booth sharing?', get: () => shareOfferAnswered(vid) ? !!shareOfferOn(vid) : undefined, set: async val => { await setShareOffer(val, vid); } },
 ] : [];
 const pay = TENDERS.map(t => ({
   id: 'tender-' + t.key, q: t.key === 'snap' ? 'Accept SNAP tokens?' : 'Accept FreshConnect?',
@@ -32403,10 +32413,101 @@ when.value = d.toISOString().slice(0, 16);
 }
 loadVpFields();
 }
+/* THE SAME QUESTIONS, ANSWERED BY THE OFFICE (19-16).
+   A vendor answers these on their own Account tab. A vendor who rings the
+   office instead had no way in: the office could change their phone number on
+   their behalf but not tell the market they use propane -- which is the answer
+   that decides whether a Fire Permit is required.
+
+   They are STAGED here rather than saved on the tap, unlike the vendor's own
+   screen. Everything else on this screen works that way: type, then Save, and
+   the Save records how the vendor told the office and when. An answer the
+   office typed should carry that provenance too -- more so than a phone
+   number, because these answers drive permits and fire rules. */
+let vpStagedAnswers = {};
+function vpAnswerValue(item) {
+return Object.prototype.hasOwnProperty.call(vpStagedAnswers, item.id)
+  ? vpStagedAnswers[item.id] : item.get();
+}
+function renderVpAnswers() {
+const wrap = document.getElementById('vpAnswers');
+const sel = document.getElementById('vpVendor');
+if (!wrap || !sel) return;
+wrap.innerHTML = '';
+const v = (cache.vendors || []).find(x => x.vendorId === sel.value);
+if (!v) return;
+const head = document.createElement('label');
+head.style.marginTop = '16px';
+head.textContent = 'What they do at market';
+wrap.appendChild(head);
+const note = document.createElement('p');
+note.className = 'empty-note';
+note.style.margin = '-2px 0 8px';
+note.innerHTML = 'The same questions the vendor answers on their own Account tab. ' +
+  'These decide which permits the market asks them for, so answer only what ' +
+  '<b>they</b> told you \u2014 not what you would expect of a stall like theirs.';
+wrap.appendChild(note);
+let unanswered = 0;
+answerGroups(v).forEach(group => {
+  const box = document.createElement('div');
+  box.className = 'card ans-group';
+  group.forEach(item => {
+    const val = vpAnswerValue(item);
+    const staged = Object.prototype.hasOwnProperty.call(vpStagedAnswers, item.id);
+    if (val === undefined) unanswered++;
+    const row = document.createElement('div');
+    row.className = 'ans-row' + (val === undefined ? ' unset' : '');
+    const label = document.createElement('span');
+    label.className = 'ans-q';
+    label.textContent = item.q;
+    if (staged) {
+      const tag = document.createElement('span');
+      tag.className = 'vp-staged';
+      tag.textContent = 'not saved yet';
+      label.appendChild(tag);
+    }
+    const choice = document.createElement('div');
+    choice.className = 'ans-choice';
+    choice.setAttribute('role', 'radiogroup');
+    [['Yes', true], ['No', false]].forEach(pair => {
+      const word = pair[0], want = pair[1];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ans-btn ' + (want ? 'ans-yes' : 'ans-no') + (val === want ? ' on' : '');
+      btn.textContent = word;
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', String(val === want));
+      btn.setAttribute('aria-label', item.q + ' ' + word);
+      btn.onclick = () => {
+        // Tapping the answer already showing takes it back to unstaged rather
+        // than doing nothing, so a mis-tap is undoable before Save.
+        if (vpStagedAnswers[item.id] === want) delete vpStagedAnswers[item.id];
+        else vpStagedAnswers[item.id] = want;
+        renderVpAnswers();
+      };
+      choice.appendChild(btn);
+    });
+    row.appendChild(label);
+    row.appendChild(choice);
+    box.appendChild(row);
+  });
+  wrap.appendChild(box);
+});
+const tally = document.createElement('p');
+tally.className = 'ans-tally' + (unanswered ? ' ans-tally-left' : '');
+tally.textContent = unanswered
+  ? unanswered + (unanswered === 1 ? ' question has no answer yet' : ' questions have no answer yet')
+  : 'All answered';
+wrap.appendChild(tally);
+}
 function loadVpFields() {
 const wrap = document.getElementById('vpFields');
 const sel = document.getElementById('vpVendor');
 if (!wrap || !sel) return;
+// A staged answer belongs to the vendor it was typed for. Changing the vendor
+// drops it rather than carrying it across, which would put one vendor's answer
+// onto another's record -- the same mistake setShareOffer used to make.
+vpStagedAnswers = {};
 const v = cache.vendors.find(x => x.vendorId === sel.value);
 wrap.innerHTML = '';
 if (!v) return;
@@ -32439,6 +32540,7 @@ note.style.margin = '10px 0 0';
 note.innerHTML = 'Showing what is on record for <b>' + esc(v.businessName) + '</b> now. ' +
 'Leave a box as it is and it stays as it is; empty one and it is cleared.';
 wrap.appendChild(note);
+renderVpAnswers();
 }
 async function saveVpProfile() {
 if (!requireManager('vpMsg')) return;
@@ -32460,7 +32562,25 @@ changed.push({ l: f.l, from: before, to: val });
 if (val === (harvested[f.k] || '') || (val === '' && !harvested[f.k])) delete v[f.k];
 else v[f.k] = val;
 });
-if (!changed.length) { showMsg('vpMsg', 'err', 'Nothing was changed \u2014 every box still says what it said.'); return; }
+// The staged answers go in with everything else, so one Save carries both and
+// both get the same "how they told you" against them.
+const v2 = v;
+const answerWork = [];
+answerGroups(v2).forEach(group => group.forEach(item => {
+  if (!Object.prototype.hasOwnProperty.call(vpStagedAnswers, item.id)) return;
+  const want = vpStagedAnswers[item.id];
+  const before = item.get();
+  if (before === want) return;
+  answerWork.push({ item: item, want: want });
+  changed.push({ l: item.q, from: before === undefined ? 'no answer' : (before ? 'Yes' : 'No'),
+                 to: want ? 'Yes' : 'No' });
+}));
+if (!changed.length) { showMsg('vpMsg', 'err', 'Nothing was changed \u2014 every box still says what it said, and no answer was touched.'); return; }
+for (const w of answerWork) {
+  try { await w.item.set(w.want); }
+  catch (e) { showMsg('vpMsg', 'err', 'Could not save "' + esc(w.item.q) + '": ' + esc(String(e.message || e))); return; }
+}
+vpStagedAnswers = {};
 // Provenance: a profile the office typed should be tellable from one the
 // vendor typed, so the record carries who said it and how it arrived.
 actAs('Vendor profile changed by the office \u2014 ' + changed.length + ' field' + (changed.length === 1 ? '' : 's'), { kind: 'vendors', weight: 'notable', vendorId: v.vendorId });
