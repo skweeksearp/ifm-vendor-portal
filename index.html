@@ -2876,6 +2876,23 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .vp-staged { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px;
   background: var(--sunflower); color: var(--ink); font-size: 11px; font-weight: 700;
   letter-spacing: 0.02em; vertical-align: middle; }
+/* ===== THE MARKET MAP (19-17) ====================================
+   A reference map, not a selection tool. It draws from the same booth records
+   and the same furniture as the selection map, so there is nothing to keep in
+   step by hand -- change a booth or the layout and both redraw from it. */
+.mm-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 2px 4px 8px; }
+.mm-fit { width: auto; margin: 0; padding: 6px 14px; font-size: 13px; }
+/* The market is a long strip: about three times as wide as it is deep. A tall
+   window fitted to that leaves most of itself empty above and below the
+   booths, with the moored Teal adrift in the middle of nothing. Shorter suits
+   the shape, and still leaves room to move about once somebody zooms in. */
+.mm-wrap { position: relative; overflow: hidden; border-radius: 8px;
+  background: var(--paper-dim); height: 44vh; min-height: 250px; max-height: 460px;
+  touch-action: none; }
+.mm-scale { position: absolute; top: 0; left: 0; transform-origin: 0 0;
+  will-change: transform; }
+.mm-wrap .booth-chip { cursor: pointer; }
 .ans-choice { flex: none; display: flex; gap: 7px; }
 .ans-btn { min-width: 46px; padding: 8px 11px; border-radius: 10px; cursor: pointer;
   font-family: inherit; font-size: 14.5px; font-weight: 700; line-height: 1;
@@ -3796,6 +3813,14 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <span class="fold-title">Scan a Gift Certificate</span>
 <span class="fold-sub">Scan a customer&rsquo;s certificate &middot; the money comes to you</span>
 <span class="fold-cta scan" aria-hidden="true"><svg class="ico"><use href="#i-qr"></use></svg>Scan</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="marketmap">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'marketmap')">
+<span class="fold-title">Market Map</span>
+<span class="fold-sub">Where every booth is, and who is in it today</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -5135,6 +5160,29 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="card">
 <h2><span class="emoji"><svg class="ico"><use href="#i-warning"></use></svg></span>What This Does Not Change</h2>
 <p class="empty-note" style="margin-top:0;">Business name, membership class, points and booth history are not editable here &mdash; those are market records, not the vendor&rsquo;s own description of themselves. A business name or class change goes through the office&rsquo;s own records, not this form.</p>
+</div>
+</section>
+<section id="screen-marketmap" class="screen">
+<div class="screen-head" id="head-marketmap"></div>
+<p class="empty-note" style="margin:-4px 0 12px;">The market as it is laid out today &mdash; booths, the pavilion, the entrances and what stands between them. This is the same map booth selection draws, from the same records, so anything the office changes about a booth or the layout shows here too.</p>
+<div class="card" style="padding:10px;">
+<div class="mm-bar">
+<div class="lotto-key" style="margin:0;">
+<span><i class="available"></i>Open today</span>
+<span><i class="reserved"></i>Somebody here</span>
+</div>
+<button type="button" class="ghost-btn mm-fit" id="mmFitBtn" onclick="marketMapFit()">Fit map</button>
+</div>
+<div class="mm-wrap" id="mmWrap">
+<div class="mm-scale" id="mmScale">
+<div id="mmCanvas" class="booth-canvas"></div>
+</div>
+</div>
+<p class="empty-note" id="mmHint" style="margin:8px 2px 0;">Pinch or double-tap to zoom in, drag to move around. <b>Fit map</b> brings the whole market back.</p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What You Are Looking At</h2>
+<div id="mmDetail"><p class="empty-note" style="margin:0;">Tap a booth to see its number and who is in it today.</p></div>
 </div>
 </section>
 <section id="screen-vmscript" class="screen">
@@ -8180,6 +8228,226 @@ el.style.transform = 'scale(' + (W / L) + ', ' + (H / L) + ')';
 // five full re-renders of it on top of redrawing 93 chips. The layer is static
 // once placed: build it once, and leave it alone. Its size is set from
 // fitKioskMap, which is the only thing that can change it.
+/* ===== THE MARKET MAP (19-17) ========================================
+   Drawn from cache.booths and BOOTH_COORDS through renderMapFurniture -- the
+   same three sources the selection map uses. Nothing here is a copy: move a
+   booth in the Map Editor or change what is built in the pavilion and both
+   maps show it, because there is only one set of records to show.
+
+   The pan and zoom are its own, deliberately. The kiosk has a fine one, but
+   every part of it is keyed to kiosk element ids and kiosk globals, and the
+   kiosk runs on a screen at the market all day. Sixty lines here is cheaper
+   than making that shared and finding out on a Saturday. */
+let mmZoom = 1, mmPanX = 0, mmPanY = 0, mmBase = 1;
+let mmTouched = false;                 // true once a person has zoomed or panned
+let mmFitX = 0, mmFitY = 0, mmSelected = null;
+let mmPointers = new Map(), mmPinch = null, mmDrag = null, mmMoved = false;
+
+function marketMapBounds() {
+/* Fit to the BOOTHS, then take in whatever stands near them.
+   Fitting to everything drawn puts the market in the lower third of the
+   screen: the MV Teal is moored 500px above the topmost booth, and one boat
+   doubles the height the map has to squeeze into. The boat is still drawn --
+   pan up the inlet and it is there -- it just does not decide how far away
+   the booths are when a person opens the map. */
+let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, any = false;
+Object.keys(BOOTH_COORDS || {}).forEach(num => {
+  const p = BOOTH_COORDS[num]; if (!p) return;
+  any = true;
+  minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+  minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+});
+if (!any) return { x: 0, y: 0, w: 1000, h: 1000 };
+const pad = 70;                        // chips are centred on their point
+minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+// Anything standing among the booths comes along: the office, the restrooms,
+// the entrances. Anything off in the water or up the trail does not.
+const near = 120;
+(MAP_STRUCTURES || []).forEach(s => {
+  const sx2 = s.x + (s.w || 0), sy2 = s.y + (s.h || 0);
+  const overlaps = sx2 > minX - near && s.x < maxX + near &&
+                   sy2 > minY - near && s.y < maxY + near;
+  if (!overlaps) return;
+  minX = Math.min(minX, s.x); maxX = Math.max(maxX, sx2);
+  minY = Math.min(minY, s.y); maxY = Math.max(maxY, sy2);
+});
+return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+function applyMarketMapTransform() {
+const wrap = document.getElementById('mmWrap');
+const scale = document.getElementById('mmScale');
+if (!wrap || !scale) return;
+const w = wrap.clientWidth || 0, hh = wrap.clientHeight || 0;
+if (!w || !hh) return;
+const b = marketMapBounds();
+mmBase = Math.min(w / b.w, hh / b.h);
+const k = mmBase * mmZoom;
+mmFitX = (w - b.w * k) / 2 - b.x * k;
+mmFitY = (hh - b.h * k) / 2 - b.y * k;
+scale.style.transform = 'translate(' + (mmFitX + mmPanX) + 'px, ' +
+  (mmFitY + mmPanY) + 'px) scale(' + k + ')';
+}
+/* Back to the whole market. Also the state the screen opens in: until somebody
+   pinches or drags, it stays fitted -- a map that opens halfway into the
+   pavilion makes a person find their bearings before they can read it. */
+function marketMapFit() {
+mmZoom = 1; mmPanX = 0; mmPanY = 0; mmTouched = false;
+applyMarketMapTransform();
+const btn = document.getElementById('mmFitBtn');
+if (btn) btn.style.visibility = 'hidden';
+}
+function marketMapTouched() {
+if (mmTouched) return;
+mmTouched = true;
+const btn = document.getElementById('mmFitBtn');
+if (btn) btn.style.visibility = 'visible';
+}
+function marketMapZoomAt(nextZoom, cx, cy) {
+const wrap = document.getElementById('mmWrap');
+if (!wrap) return;
+const r = wrap.getBoundingClientRect();
+const px = (cx === undefined ? r.width / 2 : cx - r.left);
+const py = (cy === undefined ? r.height / 2 : cy - r.top);
+const before = mmBase * mmZoom;
+const wx = (px - mmFitX - mmPanX) / before;      // the map point under the finger
+const wy = (py - mmFitY - mmPanY) / before;
+mmZoom = Math.max(1, Math.min(6, nextZoom));
+applyMarketMapTransform();
+const after = mmBase * mmZoom;
+mmPanX = px - mmFitX - wx * after;               // keep that point under the finger
+mmPanY = py - mmFitY - wy * after;
+applyMarketMapTransform();
+marketMapTouched();
+}
+function bindMarketMapGestures() {
+const wrap = document.getElementById('mmWrap');
+if (!wrap || wrap.dataset.bound) return;
+wrap.dataset.bound = '1';
+wrap.addEventListener('pointerdown', e => {
+  mmPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  mmMoved = false;
+  if (mmPointers.size === 2) {
+    const [a, b2] = [...mmPointers.values()];
+    mmPinch = { d: Math.hypot(a.x - b2.x, a.y - b2.y), z: mmZoom,
+                cx: (a.x + b2.x) / 2, cy: (a.y + b2.y) / 2 };
+    mmDrag = null;
+  } else if (mmPointers.size === 1) {
+    mmDrag = { x: e.clientX, y: e.clientY, px: mmPanX, py: mmPanY };
+  }
+  try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+});
+wrap.addEventListener('pointermove', e => {
+  if (!mmPointers.has(e.pointerId)) return;
+  mmPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (mmPinch && mmPointers.size === 2) {
+    const [a, b2] = [...mmPointers.values()];
+    const d = Math.hypot(a.x - b2.x, a.y - b2.y);
+    if (mmPinch.d > 4) marketMapZoomAt(mmPinch.z * (d / mmPinch.d), mmPinch.cx, mmPinch.cy);
+    mmMoved = true;
+  } else if (mmDrag) {
+    const dx = e.clientX - mmDrag.x, dy = e.clientY - mmDrag.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) { mmMoved = true; marketMapTouched(); }
+    mmPanX = mmDrag.px + dx; mmPanY = mmDrag.py + dy;
+    applyMarketMapTransform();
+  }
+});
+const up = e => {
+  mmPointers.delete(e.pointerId);
+  if (mmPointers.size < 2) mmPinch = null;
+  if (!mmPointers.size) mmDrag = null;
+};
+wrap.addEventListener('pointerup', up);
+wrap.addEventListener('pointercancel', up);
+// Double-tap to zoom in, and again to come back out.
+let lastTap = 0;
+wrap.addEventListener('click', e => {
+  const now = Date.now();
+  if (now - lastTap < 320 && !mmMoved) {
+    marketMapZoomAt(mmZoom > 1.5 ? 1 : 2.5, e.clientX, e.clientY);
+    if (mmZoom === 1) marketMapFit();
+  }
+  lastTap = now;
+});
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  marketMapZoomAt(mmZoom * (e.deltaY < 0 ? 1.15 : 0.87), e.clientX, e.clientY);
+}, { passive: false });
+window.addEventListener('resize', () => {
+  if (document.getElementById('mmWrap')) applyMarketMapTransform();
+});
+}
+function marketMapPick(num) {
+mmSelected = mmSelected === num ? null : num;
+renderMarketMap();
+}
+function renderMarketMap() {
+const canvas = document.getElementById('mmCanvas');
+if (!canvas) return;
+// EXACTLY the call the booth-selection map makes, with no arguments, so this
+// draws the selection map's furniture and not the kiosk's. The first version
+// of this screen called renderKioskPark and asked for the kiosk furniture,
+// which put the inlet, the trees and the moored boat around the booths -- a
+// different picture of the market from the one the selection tool shows.
+renderMapFurniture(canvas);
+canvas.querySelectorAll('.booth-chip').forEach(el => el.remove());
+const occ = kioskOccupancy();
+(cache.booths || []).forEach(booth => {
+  const pos = BOOTH_COORDS[booth.num];
+  if (!pos) return;
+  const vid = occ.byBooth[booth.num];
+  const org = (occ.byOrg || {})[booth.num];
+  const spin = boothArcAngle(booth);
+  const wedge = boothIsArcWedge(booth);
+  const chipSpin = wedge ? spin : 0;
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'booth-chip ' + (vid || org ? 'reserved' : 'available') +
+    (mmSelected === booth.num ? ' kiosk-hit' : '') +
+    (spin ? (wedge ? ' arc-wedge' : ' arc-link link-' + booth.num) : '');
+  if (chipSpin) chip.style.transform = 'translate(-50%, -50%) rotate(' + chipSpin + 'deg)';
+  chip.style.left = pos.x + 'px';
+  chip.style.top = pos.y + 'px';
+  chip.dataset.num = booth.num;
+  setChipLabel(chip, booth, spin ? chipSpin : null, boothLabelShift(booth));
+  chip.onclick = () => marketMapPick(booth.num);
+  canvas.appendChild(chip);
+});
+renderMarketMapDetail(occ);
+applyMarketMapTransform();
+}
+function renderMarketMapDetail(occ) {
+const box = document.getElementById('mmDetail');
+if (!box) return;
+if (!mmSelected) {
+  box.innerHTML = '<p class="empty-note" style="margin:0;">Tap a booth to see its number and who is in it today.</p>';
+  return;
+}
+const booth = (cache.booths || []).find(b => b.num === mmSelected);
+if (!booth) { box.innerHTML = ''; return; }
+const vid = occ.byBooth[mmSelected];
+const org = (occ.byOrg || {})[mmSelected];
+const who = vid ? vendorNameFor(vid) : (org ? (org.name || 'A community organisation') : '');
+const bits = [];
+if (booth.section) bits.push(esc(booth.section));
+if (booth.floor) bits.push(esc(booth.floor) + ' floor');
+if (booth.corner) bits.push('corner');
+if (booth.propane) bits.push('propane allowed');
+box.innerHTML =
+  '<div class="req-name">Booth ' + esc(booth.num) + '</div>' +
+  '<div class="req-meta">' + bits.join(' \u00b7 ') + '</div>' +
+  '<p class="req-detail" style="margin-top:6px;">' +
+  (who ? '<b>' + esc(who) + '</b> is here today.' : 'Nobody is in this booth today.') +
+  '</p>' + (booth.note ? '<p class="req-example-note">' + esc(booth.note) + '</p>' : '');
+}
+function initMarketMapScreen() {
+bindMarketMapGestures();
+mmSelected = null;
+renderMarketMap();
+// Fitted, every time it is opened. Somebody who zoomed in last week should not
+// have to find their way back out before they can read it.
+marketMapFit();
+setTimeout(function () { renderMarketMap(); marketMapFit(); }, 60);
+}
 function renderKioskPark(canvas) {
 if (!canvas) return;
 if (canvas.querySelector('.kiosk-park')) return;
@@ -15415,7 +15683,8 @@ const VENDOR_TABS = [
   { fold: 'answers', flat: true },
   { heading: 'Your part in the market' }, { fold: 'mycommittees' }, { fold: 'fMerch' } ] },
 { k: 'booths', t: 'Booths', title: 'Booth Assignments', icon: 'i-vtab-booth', parts: [
-  { fold: 'boothassign', flat: true, nohead: true }, { fold: 'satellites', flat: true } ] },
+  { fold: 'boothassign', flat: true, nohead: true }, { fold: 'marketmap' },
+  { fold: 'satellites', flat: true } ] },
 { k: 'upload', t: 'Upload', title: 'Upload Forms', icon: 'i-vtab-upload', open: 'mydocs', parts: [ { fold: 'mydocs' } ] },
 { k: 'communicate', t: 'Communicate', title: 'Communicate', icon: 'i-vtab-talk', parts: [
   { fold: 'messages' }, { fold: 'communicate' }, { fold: 'reference', flat: true } ] },
@@ -20047,6 +20316,7 @@ if (name === 'snaplog') initSnapLogScreen();
 if (name === 'fclog') initFcLogScreen();
 if (name === 'communicate') initCommunicateScreen();
 if (name === 'booths') { renderBooths(); centerLiveMap('boothCanvasWrap'); }
+if (name === 'marketmap') initMarketMapScreen();
 if (name === 'directory') { renderDirectory(''); renderEasyEntryStanding(); }
 if (name === 'lottery') { initLotteryScreen(); centerLiveMap('lottoMapWrap'); }
 if (name === 'satlottery') { initSatLotteryScreen(); centerLiveMap('satLottoMapWrap'); }
@@ -20203,6 +20473,7 @@ dashboard:         { title: () => vendorClassLine(currentVendor()), home: true }
 managerdash:       { title: () => currentRole === 'president' ? 'Board President' : currentRole === 'board' ? 'Board of Directors' : 'Market Manager', home: true },
 staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
+marketmap:         { title: 'Market Map' },
 winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
@@ -24283,7 +24554,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-16';
+const BUILD_ID = '19-18';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -36078,6 +36349,7 @@ tiles: [
 { key: 'booths', title: 'The Pavilion', icon: 'i-wrench',
 sub: 'The building itself \u2014 what is built, laid out, inspected and repaired',
 tiles: [
+{ s: 'marketmap', i: 'i-map-pin', t: 'Market Map', d: 'Where every booth is and who is in it today \u2014 the same map booth selection draws', nav: true },
 { s: 'boothlayout', i: 'i-ruler', t: 'Booth Layouts', d: 'What a vendor sees when they pick a booth' },
 { s: 'stallimprove', i: 'i-ruler', t: 'Booth Improvements', d: 'Vendor proposals, the B&G agenda, and the per-booth checklist' },
 { s: 'pavrentals', i: 'i-calendar', t: 'Pavilion Rentals', d: 'When the pavilion is let to somebody else \u2014 vendors out by 4 PM on those market days' },
