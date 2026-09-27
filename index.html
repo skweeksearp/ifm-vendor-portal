@@ -2887,12 +2887,82 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
    window fitted to that leaves most of itself empty above and below the
    booths, with the moored Teal adrift in the middle of nothing. Shorter suits
    the shape, and still leaves room to move about once somebody zooms in. */
+.mm-stage { position: relative; display: flex; flex-direction: column; gap: 6px;
+  height: 54vh; min-height: 300px; max-height: 560px; }
+/* THE MAP WINDOW IS THE SHAPE OF THE MARKET, AND IT NEVER CHANGES SIZE.
+   aspect-ratio does the arithmetic: the market's booths span 1742 x 620 of map
+   units, so a window about two and a half times wider than it is tall holds
+   the whole of it with a little room over, at any width, with none of the
+   empty sand a taller window left above and below. Fixing it also settles the
+   thing that made the details sheet awkward -- with the window's size not
+   depending on whether a booth is selected, opening and closing the details
+   cannot move a booth or redraw the market at a different size. */
 .mm-wrap { position: relative; overflow: hidden; border-radius: 8px;
-  background: var(--paper-dim); height: 44vh; min-height: 250px; max-height: 460px;
+  background: var(--paper-dim); flex: 0 0 auto; width: 100%; aspect-ratio: 2.5;
   touch-action: none; }
 .mm-scale { position: absolute; top: 0; left: 0; transform-origin: 0 0;
   will-change: transform; }
 .mm-wrap .booth-chip { cursor: pointer; }
+/* THE BOOTH YOU PICKED, MARKED ON THE MAP.
+   This screen first put `kiosk-hit` on the selected chip, which is the class
+   the kiosk highlights with -- and every rule for it is scoped to
+   body.kiosk-mode, so on this screen it sat on the chip doing nothing and the
+   booth you had just tapped looked exactly like the other ninety-three. The
+   colour is the market's own find-highlight amber, the one already used when
+   the app is showing somebody the thing they asked for. */
+.mm-wrap .booth-chip.mm-hit { background: var(--find); border-color: var(--find-edge);
+  color: var(--find-ink); box-shadow: 0 0 0 3px var(--find-glow); z-index: 3; }
+/* THE ANSWER HAS TO BE WHERE THE FINGER IS.
+   A booth's details used to fill a card BELOW the map. On a phone that card
+   began about 200px past the bottom of the screen, so a tap that worked
+   perfectly still looked as though nothing had happened -- which is exactly
+   what it looked like. The details now come up over the map itself, and beside
+   it on a desk screen, where the map is wide enough to spare the room. */
+/* IT SHARES THE ROOM RATHER THAN COVERING IT.
+   Overlaying the map was the obvious thing and it was wrong: the sheet sat on
+   top of the booths on either side of the one just tapped, so reading along a
+   row meant closing the details after every booth. It costs nothing to share,
+   because the market is a strip nearly three times wider than it is deep and
+   the map is fitted BY ITS WIDTH -- drawn to fit the whole market, the booths
+   use about 110 of the window's 370 pixels of height and the rest is empty
+   sand. The sheet takes that empty room and the map still draws every booth at
+   the same size it did before. */
+.mm-sheet { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  background: var(--paper); border: 1px solid var(--paper-dim);
+  border-top: 2px solid var(--leaf); border-radius: 8px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.10); }
+.mm-sheet[hidden] { display: none; }
+.mm-sheet-head { flex: none; display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 10px 7px; border-bottom: 1px solid var(--paper-dim); }
+.mm-sheet-num { font-family: 'Manrope', -apple-system, sans-serif; font-size: 17px;
+  font-weight: 800; color: var(--ink); line-height: 1.15; }
+.mm-sheet-sub { font-size: 12.5px; color: var(--soft-text); margin-top: 2px; }
+.mm-sheet-x { flex: none; width: 36px; height: 36px; margin-left: auto; padding: 0;
+  border: 1px solid var(--paper-dim); border-radius: 8px; background: rgba(255,255,255,0.72);
+  font-family: inherit; font-size: 20px; line-height: 1; color: var(--ink); cursor: pointer; }
+.mm-sheet-x:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+/* Scrolls on its own, and keeps that scroll to itself: touch-action here beats
+   the wrap's `none`, and overscroll-behavior stops a flick at the end of the
+   list from dragging the page behind it. */
+.mm-sheet-body { position: relative; overflow-y: auto; overscroll-behavior: contain;
+  touch-action: pan-y; -webkit-overflow-scrolling: touch; padding: 9px 10px 11px; }
+.mm-sheet::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px;
+  height: 22px; border-radius: 0 0 7px 7px; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0,0,0,0), var(--paper)); }
+.mm-fact { margin: 0 0 7px; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.mm-fact:last-child { margin-bottom: 0; }
+.mm-fact-h { display: block; margin: 11px 0 3px; font-size: 11px; font-weight: 800;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--soft-text); }
+.mm-sheet-body > .mm-fact-h:first-child { margin-top: 0; }
+.mm-quiet { color: var(--soft-text); }
+/* A desk screen is wide, so the details stand beside the map instead of under
+   it -- and the map keeps its full height. */
+@media (min-width: 760px) {
+  .mm-stage { flex-direction: row; gap: 8px; }
+  .mm-wrap { flex: 1 1 auto; width: auto; aspect-ratio: auto; }
+  .mm-sheet { flex: 0 0 330px;
+    border-top: 1px solid var(--paper-dim); border-left: 2px solid var(--leaf); }
+}
 .ans-choice { flex: none; display: flex; gap: 7px; }
 .ans-btn { min-width: 46px; padding: 8px 11px; border-radius: 10px; cursor: pointer;
   font-family: inherit; font-size: 14.5px; font-weight: 700; line-height: 1;
@@ -5168,21 +5238,29 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="card" style="padding:10px;">
 <div class="mm-bar">
 <div class="lotto-key" style="margin:0;">
-<span><i class="available"></i>Open today</span>
-<span><i class="reserved"></i>Somebody here</span>
+<span><i class="available"></i><span id="mmKeyOpen">Open</span></span>
+<span><i class="reserved"></i><span id="mmKeyTaken">Somebody here</span></span>
 </div>
 <button type="button" class="ghost-btn mm-fit" id="mmFitBtn" onclick="marketMapFit()">Fit map</button>
 </div>
+<div class="mm-stage">
 <div class="mm-wrap" id="mmWrap">
 <div class="mm-scale" id="mmScale">
 <div id="mmCanvas" class="booth-canvas"></div>
 </div>
 </div>
-<p class="empty-note" id="mmHint" style="margin:8px 2px 0;">Pinch or double-tap to zoom in, drag to move around. <b>Fit map</b> brings the whole market back.</p>
+<div class="mm-sheet" id="mmSheet">
+<div class="mm-sheet-head">
+<div>
+<div class="mm-sheet-num" id="mmSheetNum"></div>
+<div class="mm-sheet-sub" id="mmSheetSub"></div>
 </div>
-<div class="card">
-<h2><span class="emoji"><svg class="ico"><use href="#i-search"></use></svg></span>What You Are Looking At</h2>
-<div id="mmDetail"><p class="empty-note" style="margin:0;">Tap a booth to see its number and who is in it today.</p></div>
+<button type="button" class="mm-sheet-x" id="mmSheetX" onclick="marketMapPick(null)" aria-label="Close these booth details">&times;</button>
+</div>
+<div class="mm-sheet-body" id="mmSheetBody"></div>
+</div>
+</div>
+<p class="empty-note" id="mmHint" style="margin:8px 2px 0;"><b>Tap a booth</b> for everything the market holds on it. Pinch or double-tap to zoom in, drag to move around. <b>Fit map</b> brings the whole market back.</p>
 </div>
 </section>
 <section id="screen-vmscript" class="screen">
@@ -8242,6 +8320,9 @@ let mmZoom = 1, mmPanX = 0, mmPanY = 0, mmBase = 1;
 let mmTouched = false;                 // true once a person has zoomed or panned
 let mmFitX = 0, mmFitY = 0, mmSelected = null;
 let mmPointers = new Map(), mmPinch = null, mmDrag = null, mmMoved = false;
+let mmMulti = false;          // two fingers were down: a pinch, never a tap
+let mmLastTap = 0, mmLastTapX = 0, mmLastTapY = 0, mmLastTapNum = null;  // double-tap-to-zoom
+let mmTapAt = 0;              // stamps a pointer tap, so the chip's own click stands down
 
 function marketMapBounds() {
 /* Fit to the BOOTHS, then take in whatever stands near them.
@@ -8283,6 +8364,10 @@ const b = marketMapBounds();
 mmBase = Math.min(w / b.w, hh / b.h);
 const k = mmBase * mmZoom;
 mmFitX = (w - b.w * k) / 2 - b.x * k;
+/* Centred, and there is very little left to centre in: the map window is
+   given the market's own shape in CSS, so fitting it fills the window rather
+   than leaving the deep bands of empty sand above and below that a taller
+   window used to. */
 mmFitY = (hh - b.h * k) / 2 - b.y * k;
 scale.style.transform = 'translate(' + (mmFitX + mmPanX) + 'px, ' +
   (mmFitY + mmPanY) + 'px) scale(' + k + ')';
@@ -8326,6 +8411,7 @@ wrap.dataset.bound = '1';
 wrap.addEventListener('pointerdown', e => {
   mmPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   mmMoved = false;
+  if (mmPointers.size > 1) mmMulti = true;
   if (mmPointers.size === 2) {
     const [a, b2] = [...mmPointers.values()];
     mmPinch = { d: Math.hypot(a.x - b2.x, a.y - b2.y), z: mmZoom,
@@ -8351,23 +8437,51 @@ wrap.addEventListener('pointermove', e => {
     applyMarketMapTransform();
   }
 });
+/* A TAP IS READ HERE, ON POINTERUP, AND NOT FROM A CLICK.
+   The wrap calls setPointerCapture on every pointer it sees, so that a drag
+   keeps working when the finger leaves the map. A side effect of capture is
+   that the following `click` is delivered to the CAPTURING element -- the wrap
+   -- and never reaches the booth button under the finger. That is why clicking
+   a booth at the manager's desk did nothing at all. Pointer events go to the
+   capturing element by design, so reading the tap here is the path that
+   actually works, for mouse and finger alike. */
 const up = e => {
+  const only = mmPointers.size === 1 && mmPointers.has(e.pointerId);
+  const wasMulti = mmMulti;
   mmPointers.delete(e.pointerId);
   if (mmPointers.size < 2) mmPinch = null;
-  if (!mmPointers.size) mmDrag = null;
+  if (!mmPointers.size) { mmDrag = null; mmMulti = false; }
+  if (e.type !== 'pointerup' || !only || wasMulti || mmMoved) return;
+  const now = Date.now();
+  const hit = marketMapBoothAt(e.clientX, e.clientY);
+  /* A DOUBLE TAP IS TWO TAPS THAT MEAN THE SAME BOOTH.
+     Quick succession alone is not enough -- reading along a row, tapping one
+     booth and then the next lands two taps well inside 320ms, and the map
+     zoomed instead of answering the second one. Nor is nearness: fitted to the
+     whole market, neighbouring booths are about SEVEN pixels apart, closer
+     together than any honest double-tap slop. What separates the two is what
+     the taps are pointing at. Two taps resolving to the same booth are a
+     double tap; a tap that lands on a different booth from the one before it
+     is a person asking about that booth. On empty map, with no booth to name,
+     nearness is all there is, so it decides. */
+  const same = hit ? (hit === mmLastTapNum)
+                   : (mmLastTapNum === null &&
+                      Math.abs(e.clientX - mmLastTapX) < 32 &&
+                      Math.abs(e.clientY - mmLastTapY) < 32);
+  mmLastTapX = e.clientX; mmLastTapY = e.clientY;
+  if (now - mmLastTap < 320 && same) {
+    mmLastTap = 0; mmLastTapNum = null;
+    marketMapZoomAt(mmZoom > 1.5 ? 1 : 2.5, e.clientX, e.clientY);
+    if (mmZoom === 1) marketMapFit();
+    return;
+  }
+  mmLastTap = now;
+  mmLastTapNum = hit;
+  mmTapAt = now;
+  marketMapPick(hit);
 };
 wrap.addEventListener('pointerup', up);
 wrap.addEventListener('pointercancel', up);
-// Double-tap to zoom in, and again to come back out.
-let lastTap = 0;
-wrap.addEventListener('click', e => {
-  const now = Date.now();
-  if (now - lastTap < 320 && !mmMoved) {
-    marketMapZoomAt(mmZoom > 1.5 ? 1 : 2.5, e.clientX, e.clientY);
-    if (mmZoom === 1) marketMapFit();
-  }
-  lastTap = now;
-});
 wrap.addEventListener('wheel', e => {
   e.preventDefault();
   marketMapZoomAt(mmZoom * (e.deltaY < 0 ? 1.15 : 0.87), e.clientX, e.clientY);
@@ -8376,8 +8490,40 @@ window.addEventListener('resize', () => {
   if (document.getElementById('mmWrap')) applyMarketMapTransform();
 });
 }
+/* WHICH BOOTH DID THAT TAP MEAN?
+   Not "whichever chip was under the finger". Fitted to the whole market, a
+   booth chip draws SIX pixels across -- all ninety-four of them are under the
+   twenty-four a target needs, let alone the forty-four Apple asks for -- so
+   requiring the tap to land on the chip made most of the map untappable, and
+   the map opens fitted on purpose. So the tap does not have to land on a
+   booth: the NEAREST booth within about a finger's width wins. A finger is
+   about the same size whatever the map is scaled to, so the reach is measured
+   in screen pixels and converted, which means it tightens as somebody zooms
+   in and they can pick out one booth of a pair. A tap with no booth near it
+   clears the selection, so tapping the grass puts the sheet away. */
+function marketMapBoothAt(clientX, clientY) {
+const wrap = document.getElementById('mmWrap');
+const k = mmBase * mmZoom;
+if (!wrap || !k) return null;
+const r = wrap.getBoundingClientRect();
+const mx = (clientX - r.left - mmFitX - mmPanX) / k;   // the tap, in map coordinates
+const my = (clientY - r.top - mmFitY - mmPanY) / k;
+const reach = 26 / k;
+let best = null, bestD = reach * reach;
+(cache.booths || []).forEach(b => {
+  const p = BOOTH_COORDS[b.num];
+  if (!p) return;
+  const d = (p.x - mx) * (p.x - mx) + (p.y - my) * (p.y - my);
+  if (d <= bestD) { bestD = d; best = b.num; }
+});
+return best;
+}
+/* Selects, rather than toggling. Toggling fought the double tap: two taps on
+   one booth meant "show me, now hide it again", which reads as the map having
+   ignored the second tap. The sheet has a close button, and a tap off the
+   booths clears it. */
 function marketMapPick(num) {
-mmSelected = mmSelected === num ? null : num;
+mmSelected = num || null;
 renderMarketMap();
 }
 function renderMarketMap() {
@@ -8402,43 +8548,200 @@ const occ = kioskOccupancy();
   const chip = document.createElement('button');
   chip.type = 'button';
   chip.className = 'booth-chip ' + (vid || org ? 'reserved' : 'available') +
-    (mmSelected === booth.num ? ' kiosk-hit' : '') +
+    (mmSelected === booth.num ? ' mm-hit' : '') +
     (spin ? (wedge ? ' arc-wedge' : ' arc-link link-' + booth.num) : '');
   if (chipSpin) chip.style.transform = 'translate(-50%, -50%) rotate(' + chipSpin + 'deg)';
   chip.style.left = pos.x + 'px';
   chip.style.top = pos.y + 'px';
   chip.dataset.num = booth.num;
   setChipLabel(chip, booth, spin ? chipSpin : null, boothLabelShift(booth));
-  chip.onclick = () => marketMapPick(booth.num);
+  // A chip is a real button, so Enter and Space have to select it. Pointer
+  // taps are already resolved in the wrap's pointerup above; the stamp keeps a
+  // click that follows one from selecting the same booth a second time.
+  chip.setAttribute('aria-pressed', mmSelected === booth.num ? 'true' : 'false');
+  chip.onclick = () => { if (Date.now() - mmTapAt < 700) return; marketMapPick(booth.num); };
   canvas.appendChild(chip);
 });
 renderMarketMapDetail(occ);
 applyMarketMapTransform();
 }
+/* WHAT THE MARKET HOLDS ON ONE BOOTH, GATHERED IN ONE PLACE.
+   Every line below is read from a record the office already keeps -- the booth
+   row, the reservation on it, the call-in list, the recorded stall drawing, the
+   fee band in Market Rules. Nothing here is a second copy of any of it, so a
+   booth that changes in the office changes here, and a fact the market has not
+   recorded says so rather than being guessed at. */
+const MM_FIXTURE_WORDS = { c: 'a built-in counter', s: 'built-in shelving',
+  t: 'a built-in table', p: 'a support post', w: 'a sink',
+  x: 'an area that cannot be used' };
+// Row A, Row B, Middle Row, Front Row, Bottom Row and Circle Row appear on no
+// market document and no printed map -- they were invented when the booth data
+// was digitized. Telling a vendor their booth is "in Row B" sends them looking
+// for a sign that does not exist, so those all answer with the pavilion.
+const MM_PLACE = {
+'Pavilion Floor': 'On the pavilion floor',
+'Waterfront Trail': 'On the Waterfront Trail',
+'Circle End Curve': 'On the circle end curve',
+'Dock Wing (near dock)': 'In the Dock Wing, at the dock end',
+'Dock Wing (near circle)': 'In the Dock Wing, at the circle end',
+'Booth 23B': 'In the pavilion',
+};
+function mmPlaceWords(b) {
+const s = (b && b.section) || '';
+return MM_PLACE[s] || (s ? 'In the pavilion' : '');
+}
+function mmNeighbours(b) {
+const same = (cache.booths || []).filter(x => x.section === b.section)
+  .sort((p, q) => boothSortKey(p.num) - boothSortKey(q.num));
+const i = same.findIndex(x => x.num === b.num);
+if (i < 0) return [];
+return [same[i - 1], same[i + 1]].filter(Boolean).map(x => x.num);
+}
+// The stall drawing the market recorded, read for what is standing in the
+// booth. The manager's own drawing wins over the one read off the printed map,
+// exactly as the booth layout screen treats them.
+function mmBuiltIn(b) {
+const own = boothLayoutFor(b.num);
+const grid = String((own && own.grid) || boothMapGrid(b.num) || '');
+const found = [];
+Object.keys(MM_FIXTURE_WORDS).forEach(code => {
+  if (grid.indexOf(code) !== -1) found.push(MM_FIXTURE_WORDS[code]);
+});
+return { list: found,
+         source: own ? 'Drawing recorded by the Market Manager.'
+                     : (found.length ? 'Read off the October 2025 pavilion map.' : '') };
+}
+function mmWhoIsIn(b, occ) {
+const org = (occ.byOrg || {})[b.num];
+if (org) return { who: org.name || 'A community organisation', how: 'a community stall' };
+const vid = occ.byBooth[b.num];
+const holder = boothBaselineHolder(b, occ.md.date);
+if (vid) return { who: vendorNameFor(vid),
+                  how: vid === holder ? 'reserved this booth for the season'
+                                      : 'placed here through Booth Selection' };
+if (holder) return { who: '', how: 'open — ' + vendorNameFor(holder) +
+                      ' holds it for the season and has called out' };
+return { who: '', how: 'open' };
+}
+function mmMarketDayWords(md) {
+if (md.isToday) return 'today';
+const d = new Date(md.date + 'T12:00:00');
+return isNaN(d) ? md.day : d.toLocaleDateString('en-US',
+  { weekday: 'long', month: 'long', day: 'numeric' });
+}
 function renderMarketMapDetail(occ) {
-const box = document.getElementById('mmDetail');
-if (!box) return;
-if (!mmSelected) {
-  box.innerHTML = '<p class="empty-note" style="margin:0;">Tap a booth to see its number and who is in it today.</p>';
+const sheet = document.getElementById('mmSheet');
+if (!sheet) return;
+const dayWords = mmMarketDayWords(occ.md);
+const key = { open: document.getElementById('mmKeyOpen'),
+              taken: document.getElementById('mmKeyTaken') };
+// The legend used to say "Open today". On a Wednesday the map is drawn for the
+// coming Saturday, so "today" was simply wrong four days a week.
+if (key.open) key.open.textContent = 'Open ' + dayWords;
+if (key.taken) key.taken.textContent = 'Somebody here';
+const numEl0 = document.getElementById('mmSheetNum');
+const subEl0 = document.getElementById('mmSheetSub');
+const bodyEl0 = document.getElementById('mmSheetBody');
+const xBtn = document.getElementById('mmSheetX');
+const b = mmSelected ? (cache.booths || []).find(x => x.num === mmSelected) : null;
+if (!b) {
+  /* Nothing picked yet. The pane holds its room whether or not a booth is
+     selected -- that is what keeps the map from resizing under a finger -- so
+     it may as well say something worth reading while it waits. */
+  mmSelected = null;
+  let taken = 0, open = 0;
+  (cache.booths || []).forEach(x => {
+    if (!BOOTH_COORDS[x.num]) return;
+    if (occ.byBooth[x.num] || (occ.byOrg || {})[x.num]) taken++; else open++;
+  });
+  if (xBtn) xBtn.hidden = true;
+  if (numEl0) numEl0.textContent = 'The market as it stands';
+  if (subEl0) subEl0.textContent = occ.md.isToday
+    ? 'Today' : occ.md.day + ', ' + shortDate(occ.md.date);
+  if (bodyEl0) bodyEl0.innerHTML =
+    '<span class="mm-fact-h">Tap a booth</span>' +
+    '<p class="mm-fact">Any booth on the map, for everything the market holds on it — ' +
+    'who is in it, who holds it for the season, what is built into it, and what a ' +
+    'reservation costs.</p>' +
+    '<span class="mm-fact-h">' + esc(occ.md.isToday ? 'Today' : occ.md.day + ', ' + shortDate(occ.md.date)) + '</span>' +
+    '<p class="mm-fact"><b>' + taken + '</b> booth' + (taken === 1 ? '' : 's') + ' with somebody in ' +
+    (taken === 1 ? 'it' : 'them') + ', <b>' + open + '</b> open.</p>';
   return;
 }
-const booth = (cache.booths || []).find(b => b.num === mmSelected);
-if (!booth) { box.innerHTML = ''; return; }
-const vid = occ.byBooth[mmSelected];
-const org = (occ.byOrg || {})[mmSelected];
-const who = vid ? vendorNameFor(vid) : (org ? (org.name || 'A community organisation') : '');
-const bits = [];
-if (booth.section) bits.push(esc(booth.section));
-if (booth.floor) bits.push(esc(booth.floor) + ' floor');
-if (booth.corner) bits.push('corner');
-if (booth.propane) bits.push('propane allowed');
-box.innerHTML =
-  '<div class="req-name">Booth ' + esc(booth.num) + '</div>' +
-  '<div class="req-meta">' + bits.join(' \u00b7 ') + '</div>' +
-  '<p class="req-detail" style="margin-top:6px;">' +
-  (who ? '<b>' + esc(who) + '</b> is here today.' : 'Nobody is in this booth today.') +
-  '</p>' + (booth.note ? '<p class="req-example-note">' + esc(booth.note) + '</p>' : '');
+if (xBtn) xBtn.hidden = false;
+
+const H = t => '<span class="mm-fact-h">' + t + '</span>';
+const P = t => '<p class="mm-fact">' + t + '</p>';
+const none = t => '<p class="mm-fact mm-quiet">' + t + '</p>';
+const out = [];
+
+// --- who is in it, on the day this map is drawn for
+const inIt = mmWhoIsIn(b, occ);
+out.push(H(occ.md.isToday ? 'Today' : occ.md.day + ', ' + shortDate(occ.md.date)));
+out.push(inIt.who
+  ? P('<b>' + esc(inIt.who) + '</b> — ' + esc(inIt.how) + '.')
+  : P('<b>Nobody is in it</b> — ' + esc(inIt.how) + '.'));
+
+// --- who holds it for a season
+out.push(H('Held for a season'));
+const held = [];
+if (b.reservedBy) held.push('<b>' + esc(vendorNameFor(b.reservedBy)) + '</b> holds it for the ' +
+  boothReservationYear(b, 'sat') + ' Saturday season.');
+if (b.sundaySeasonalBy) held.push('<b>' + esc(vendorNameFor(b.sundaySeasonalBy)) + '</b> holds it for the ' +
+  boothReservationYear(b, 'sun') + ' Sunday season.');
+out.push(held.length ? held.map(P).join('')
+  : none('Nobody. It goes through Booth Selection each week.'));
+
+// --- where it is
+out.push(H('Where it is'));
+const place = mmPlaceWords(b);
+const near = mmNeighbours(b);
+let where = place ? esc(place) + '.' : '';
+if (b.corner) where += ' A <b>corner</b> booth.';
+if (boothIsArcWedge(b)) where += ' Wedge-shaped, on the circle end curve — the narrow edge faces the promenade.';
+else if (boothArcAngle(b)) where += ' Set on the diagonal.';
+if (near.length) where += ' Next to booth' + (near.length > 1 ? 's ' : ' ') +
+  near.map(esc).join(' and ') + '.';
+out.push(where.trim() ? P(where.trim()) : none('Its place is not recorded.'));
+
+// --- the booth itself
+out.push(H('The booth itself'));
+const feats = [];
+if (b.floor) feats.push(esc(b.floor) + ' floor');
+feats.push(b.u ? 'upgraded electric' : 'standard electric');
+if (b.w) feats.push('a water spigot nearby');
+feats.push(b.np ? '<b>no parking beside it</b>'
+                : (b.cp ? 'compact parking only' : 'parking beside it'));
+if (b.nf) feats.push('<b>no food may be sold here</b>');
+if (b.propane) feats.push('propane priority');
+out.push(P(feats.join(', ').replace(/^./, c => c.toUpperCase()) + '.'));
+
+// --- what is standing in it
+const built = mmBuiltIn(b);
+out.push(H('Built into it'));
+out.push(built.list.length
+  ? P('It has ' + built.list.join(', ').replace(/, ([^,]*)$/, ' and $1') + '.' +
+      (built.source ? ' <span class="mm-quiet">' + built.source + '</span>' : ''))
+  : none('Nothing recorded — open space, no built-in counters or shelves.'));
+
+// --- what a Saturday season reservation costs
+const fee = resFeeForBooth(b.num);
+out.push(H('Saturday season reservation'));
+out.push(fee && (fee.min > 0 || fee.exact)
+  ? P('<b>' + resMoneyRange(fee) + '</b> — ' + esc(fee.label.toLowerCase()) +
+      ' in the Guide’s pricing.')
+  : none('No figure for this booth in Market Rules. The Board enters it there; ' +
+         'the office will not take money against a fee nobody can name.'));
+
+// --- the office's own note
+if (b.note) { out.push(H('The office’s note')); out.push(P(esc(b.note))); }
+
+if (numEl0) numEl0.textContent = 'Booth ' + b.num;
+if (subEl0) subEl0.textContent = inIt.who ? inIt.who + ' · ' + dayWords
+                                          : 'Open ' + dayWords;
+if (bodyEl0) { bodyEl0.innerHTML = out.join(''); bodyEl0.scrollTop = 0; }
 }
+
 function initMarketMapScreen() {
 bindMarketMapGestures();
 mmSelected = null;
@@ -24554,7 +24857,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-18';
+const BUILD_ID = '19-19';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
