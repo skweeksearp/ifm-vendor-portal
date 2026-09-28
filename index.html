@@ -2959,6 +2959,81 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
   letter-spacing: 0.07em; text-transform: uppercase; color: var(--soft-text); }
 .mm-sheet-body > .mm-fact-h:first-child { margin-top: 0; }
 .mm-quiet { color: var(--soft-text); }
+/* ===== THE MAP OPENED UP ==============================================
+   On the desk the map is a strip you read at a glance. Tapping it brings it
+   up here, where it has the room to be zoomed into and panned about, and the
+   booth details have room to be read. The market is nearly three times wider
+   than it is deep, so on a phone the whole of it fitted across the screen can
+   only ever be about a finger deep whatever window it is in -- what this
+   window buys is not a bigger drawing at rest but somewhere to zoom INTO, and
+   a pane that can show a booth's whole story without scrolling. */
+.mm-win-backdrop { align-items: stretch; justify-content: center; z-index: 999;
+  background: rgba(20, 14, 6, 0.62); }
+.mm-win { display: flex; flex-direction: column; width: 100%; background: var(--paper);
+  overflow: hidden; }
+.mm-win-head { flex: none; display: flex; align-items: center; gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px 14px;
+  border-bottom: 1px solid var(--paper-dim); background: var(--paper); }
+.mm-win-title { font-family: 'Manrope', -apple-system, sans-serif; font-size: 18px;
+  font-weight: 800; color: var(--ink); }
+/* Said in a word, not left to a glyph somebody has to guess at. Big enough to
+   hit without aiming, and the first thing the keyboard lands on. */
+.mm-win-close { margin-left: auto; min-height: 44px; padding: 8px 16px;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 2px solid var(--leaf); border-radius: 12px; background: var(--leaf);
+  font-family: inherit; font-size: 15.5px; font-weight: 700; color: var(--paper);
+  cursor: pointer; }
+.mm-win-close span { font-size: 21px; line-height: 1; }
+.mm-win-close:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.mm-win-body { flex: 1 1 auto; min-height: 0; overflow: hidden;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+/* Inside the window the map is not held to the market's shape: the empty room
+   above and below it is what a person zooms and drags into. */
+.mm-win-body > .screen { padding: 0; height: 100%; display: flex; flex-direction: column; }
+.mm-win-body > .screen > .screen-head, .mm-win-body > .screen > .empty-note { display: none; }
+.mm-win-body .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  margin: 0; }
+.mm-win-body .mm-stage { flex: 1 1 auto; min-height: 0; max-width: none; }
+/* Three parts map to two parts details. A basis of zero with grow factors,
+   so the split is the same whatever the details happen to say that day and
+   the map is never squeezed by a long dossier. (What the window is given to
+   divide up is settled below, and has to be: measured, it was the window's
+   own height that decided whether any of this worked.) */
+.mm-win-body .mm-wrap { flex: 3 1 0; width: auto; aspect-ratio: auto; min-height: 140px; }
+.mm-win-body .mm-sheet { flex: 2 1 0; min-height: 110px; max-height: none; }
+.mm-win-body #mmHint { flex: none; }
+@media (min-width: 760px) {
+  .mm-win-backdrop { align-items: center; padding: 24px; }
+  /* TOLD HOW TALL TO BE, and this is the line the whole window rests on.
+     On a phone the backdrop stretches it to the screen. Centred on a desk it
+     took its height from its content -- and a map and a details pane that
+     size themselves by share of the window ask for no height at all, so the
+     window shrank around them and the map came out at its minimum, SMALLER in
+     the opened window than it had been on the desk. Every proportion inside
+     here is a proportion of this. */
+  .mm-win { max-width: 1100px; height: 92vh; max-height: 92vh; border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.4); }
+}
+
+/* ---- and the strip it is opened FROM --------------------------------- */
+/* While the map sits in a box on a desk it is a preview: something to glance
+   at and tap, not to work in. Everything that belongs to working in it -- the
+   details, the Fit button, the gesture note -- belongs to the window, and is
+   hidden by the box it is standing in rather than by a flag somebody has to
+   remember to set. The standalone Market Map screen is in no such box, so it
+   keeps the lot. */
+:is(.vtab-inline-tool, .mgr-inline-tool) :is(.mm-sheet, .mm-fit, .mm-hint-full) { display: none; }
+:is(.vtab-inline-tool, .mgr-inline-tool) .mm-wrap { cursor: zoom-in; touch-action: auto; }
+.mm-hint-preview { display: none; }
+:is(.vtab-inline-tool, .mgr-inline-tool) .mm-hint-preview { display: inline; }
+.mm-open-badge { display: none; }
+:is(.vtab-inline-tool, .mgr-inline-tool) .mm-open-badge {
+  display: block; position: absolute; right: 8px; top: 8px; z-index: 5;
+  padding: 5px 11px; border-radius: 999px; pointer-events: none;
+  background: var(--leaf); color: var(--paper);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+
 /* ONE LAYOUT, WIDER ON A DESK SCREEN.
    The details stood beside the map here for a while, which read well but made
    the map window as tall as the details column -- and the market is a strip,
@@ -5252,6 +5327,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="mm-scale" id="mmScale">
 <div id="mmCanvas" class="booth-canvas"></div>
 </div>
+<span class="mm-open-badge" aria-hidden="true">Tap to open</span>
 </div>
 <div class="mm-sheet" id="mmSheet">
 <div class="mm-sheet-head">
@@ -5264,7 +5340,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="mm-sheet-body" id="mmSheetBody"></div>
 </div>
 </div>
-<p class="empty-note" id="mmHint" style="margin:8px 2px 0;">Pinch or double-tap to zoom in, drag to move around; <b>Fit map</b> brings the whole market back. This is the same map Booth Selection draws, from the same records.</p>
+<p class="empty-note" id="mmHint" style="margin:8px 2px 0;"><span class="mm-hint-preview"><b>Tap the map</b> to open it full size &mdash; tap a booth and it opens showing that booth.</span><span class="mm-hint-full">Pinch or double-tap to zoom in, drag to move around; <b>Fit map</b> brings the whole market back. This is the same map Booth Selection draws, from the same records.</span></p>
 </div>
 </section>
 <section id="screen-vmscript" class="screen">
@@ -8324,6 +8400,7 @@ let mmZoom = 1, mmPanX = 0, mmPanY = 0, mmBase = 1;
 let mmTouched = false;                 // true once a person has zoomed or panned
 let mmFitX = 0, mmFitY = 0, mmSelected = null;
 let mmPointers = new Map(), mmPinch = null, mmDrag = null, mmMoved = false;
+let mmDeskReturn = null;      // the box the window borrowed the map from
 let mmMulti = false;          // two fingers were down: a pinch, never a tap
 let mmLastTap = 0, mmLastTapX = 0, mmLastTapY = 0, mmLastTapNum = null;  // double-tap-to-zoom
 let mmTapAt = 0;              // stamps a pointer tap, so the chip's own click stands down
@@ -8385,6 +8462,36 @@ applyMarketMapTransform();
 const btn = document.getElementById('mmFitBtn');
 if (btn) btn.style.visibility = 'hidden';
 }
+/* OPENING THE WINDOW AT A SIZE WORTH OPENING IT FOR.
+   A bigger window is not by itself a bigger map. The market is a strip nearly
+   three times wider than it is deep, so the whole of it fitted across a phone
+   is about a finger deep and its booths are six pixels wide -- in a window of
+   any size. Fitted in a tall window it just gains bands of empty sand.
+   So the window opens FILLED instead: zoomed until the market is as deep as
+   the window, centred on the booth that was tapped, which is the size a person
+   opened it to see. It is not left stranded there -- Fit map is showing from
+   the moment it opens, and puts the whole market back in one press. The strip
+   on the desk still opens fitted, which is the reference view. */
+function marketMapFill(focusNum) {
+const wrap = document.getElementById('mmWrap');
+if (!wrap) return;
+const w = wrap.clientWidth, hh = wrap.clientHeight;
+if (!w || !hh) return;
+const b = marketMapBounds();
+mmBase = Math.min(w / b.w, hh / b.h);
+if (!mmBase) return;
+mmZoom = Math.max(1, Math.min(4, (hh / b.h) / mmBase));
+mmPanX = 0; mmPanY = 0;
+applyMarketMapTransform();
+const p = focusNum ? BOOTH_COORDS[focusNum] : null;
+const cx = p ? p.x : b.x + b.w / 2;
+const cy = p ? p.y : b.y + b.h / 2;
+const k = mmBase * mmZoom;
+mmPanX = w / 2 - mmFitX - cx * k;
+mmPanY = hh / 2 - mmFitY - cy * k;
+applyMarketMapTransform();
+marketMapTouched();            // so Fit map is offered from the first moment
+}
 function marketMapTouched() {
 if (mmTouched) return;
 mmTouched = true;
@@ -8416,6 +8523,9 @@ wrap.addEventListener('pointerdown', e => {
   mmPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   mmMoved = false;
   if (mmPointers.size > 1) mmMulti = true;
+  // A preview is one tap deep. It does not capture the pointer either: the
+  // page has to keep scrolling normally under a finger that is passing over.
+  if (mmPreviewMode()) { mmDrag = { x: e.clientX, y: e.clientY, px: mmPanX, py: mmPanY }; return; }
   if (mmPointers.size === 2) {
     const [a, b2] = [...mmPointers.values()];
     mmPinch = { d: Math.hypot(a.x - b2.x, a.y - b2.y), z: mmZoom,
@@ -8429,6 +8539,12 @@ wrap.addEventListener('pointerdown', e => {
 wrap.addEventListener('pointermove', e => {
   if (!mmPointers.has(e.pointerId)) return;
   mmPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  // Still watched, even in preview: a finger that moved was scrolling the
+  // page past the map, and must not open the window when it lifts.
+  if (mmPreviewMode()) {
+    if (mmDrag && Math.hypot(e.clientX - mmDrag.x, e.clientY - mmDrag.y) > 8) mmMoved = true;
+    return;
+  }
   if (mmPinch && mmPointers.size === 2) {
     const [a, b2] = [...mmPointers.values()];
     const d = Math.hypot(a.x - b2.x, a.y - b2.y);
@@ -8482,11 +8598,33 @@ const up = e => {
   mmLastTap = now;
   mmLastTapNum = hit;
   mmTapAt = now;
+  // On a desk the map is a preview: a tap opens it properly, carrying whatever
+  // booth was under the finger so the window comes up already answering.
+  if (mmPreviewMode()) { openMarketMapWindow(hit); return; }
   marketMapPick(hit);
 };
 wrap.addEventListener('pointerup', up);
 wrap.addEventListener('pointercancel', up);
+/* AND A BACKSTOP FOR THE FINGERS THAT END SOMEWHERE ELSE.
+   The handler above only hears about a pointer that ends ON the map. While
+   the map is a preview it does not capture the pointer -- it must not, or the
+   page could not be scrolled past it -- so a drag that starts on the map and
+   ends off it never reaches that handler, and the map is left believing a
+   finger is still down. The next tap then counts as the second of two, is
+   taken for part of a gesture, and does nothing at all: the map appears dead.
+   The document hears every pointer end, wherever it happens. */
+['pointerup', 'pointercancel'].forEach(function (ev) {
+document.addEventListener(ev, function (e) {
+  if (!mmPointers.has(e.pointerId)) return;
+  // ending on the map is the handler above's business, not this one's
+  if (e.target && e.target.closest && e.target.closest('#mmWrap')) return;
+  mmPointers.delete(e.pointerId);
+  if (mmPointers.size < 2) mmPinch = null;
+  if (!mmPointers.size) { mmDrag = null; mmMulti = false; }
+}, true);
+});
 wrap.addEventListener('wheel', e => {
+  if (mmPreviewMode()) return;
   e.preventDefault();
   marketMapZoomAt(mmZoom * (e.deltaY < 0 ? 1.15 : 0.87), e.clientX, e.clientY);
 }, { passive: false });
@@ -8526,6 +8664,9 @@ return best;
    one booth meant "show me, now hide it again", which reads as the map having
    ignored the second tap. The sheet has a close button, and a tap off the
    booths clears it. */
+document.addEventListener('keydown', function (e) {
+if (e.key === 'Escape' && mmWindowIsOpen()) closeMarketMapWindow();
+});
 function marketMapPick(num) {
 mmSelected = num || null;
 renderMarketMap();
@@ -8746,6 +8887,77 @@ if (subEl0) subEl0.textContent = inIt.who ? inIt.who + ' · ' + dayWords
 if (bodyEl0) { bodyEl0.innerHTML = out.join(''); bodyEl0.scrollTop = 0; }
 }
 
+/* IS THE MAP STANDING IN A BOX ON A DESK RIGHT NOW?
+   Asked of the page rather than kept in a variable, because the answer IS
+   where the section is -- a flag beside it could disagree with it, and this
+   cannot. In a box it is a preview and a tap opens the window; on its own
+   screen, or in the window, a tap picks a booth. */
+function mmPreviewMode() {
+const sec = document.getElementById('screen-marketmap');
+return !!(sec && sec.closest('.vtab-inline-tool, .mgr-inline-tool'));
+}
+function mmWindowIsOpen() {
+const bd = document.getElementById('mmWinBackdrop');
+return !!(bd && bd.classList.contains('open'));
+}
+/* FORGET THE FINGERS. Opening and closing the window MOVES the map's element
+   to a different parent, and it does so in the middle of the very gesture that
+   asked for it. A pointer whose element is moved out from under it may never
+   deliver its pointerup here, and the map is then left believing a finger is
+   still down: the next tap counts as the second of two, the tap handler sees
+   more than one pointer and stands aside, and the map appears dead until
+   something else touches it. Every move starts from no fingers at all. */
+function mmForgetPointers() {
+mmPointers.clear();
+mmPinch = null; mmDrag = null; mmMulti = false; mmMoved = false;
+mmLastTap = 0; mmLastTapNum = null;
+}
+function mmDeskBox() {
+return document.querySelector('.vtab-inline-tool[data-inline="marketmap"], .mgr-inline-tool[data-inline="marketmap"]');
+}
+function openMarketMapWindow(boothNum) {
+const bd = document.getElementById('mmWinBackdrop');
+const body = document.getElementById('mmWinBody');
+const sec = document.getElementById('screen-marketmap');
+if (!bd || !body || !sec || mmWindowIsOpen()) return;
+mmDeskReturn = sec.parentElement;          // where to put it back, exactly
+body.appendChild(sec);
+sec.classList.add('inline-screen', 'active');
+bd.classList.add('open');
+mmForgetPointers();
+mmSelected = boothNum || null;
+renderMarketMap();
+marketMapFill(boothNum);
+// The window has only just been given its size; do it again once the browser
+// has actually laid it out, or it is sized against a box of nothing.
+// Focus goes to Close once the window is actually laid out. Asked for in the
+// same breath as opening it, the button is not yet somewhere focus can land
+// and the keyboard is left behind on the desk underneath.
+setTimeout(function () {
+renderMarketMap();
+marketMapFill(boothNum);
+const btn = bd.querySelector('.mm-win-close');
+if (btn) { try { btn.focus({ preventScroll: true }); } catch (e) { btn.focus(); } }
+}, 60);
+}
+function closeMarketMapWindow() {
+const bd = document.getElementById('mmWinBackdrop');
+if (!bd || !bd.classList.contains('open')) return;
+bd.classList.remove('open');
+const sec = document.getElementById('screen-marketmap');
+// Back to the box it came from. If the desk has moved on and that box is
+// gone, the placeholder left when the screen was first borrowed still knows
+// where it belongs, so hand it back that way instead of stranding it here.
+const box = (mmDeskReturn && mmDeskReturn.isConnected) ? mmDeskReturn : mmDeskBox();
+mmDeskReturn = null;
+if (sec && box) box.appendChild(sec);
+else returnFoldedScreens();
+mmForgetPointers();
+mmSelected = null;
+mmZoom = 1; mmPanX = 0; mmPanY = 0; mmTouched = false;
+renderMarketMap();
+marketMapFit();
+}
 function initMarketMapScreen() {
 bindMarketMapGestures();
 mmSelected = null;
@@ -15165,6 +15377,9 @@ delete foldedPlaceholders[name];
 });
 }
 function closeAllFolds() {
+// The map window borrows the same screen a drawer would. Shut it first, or
+// the screen is pulled out from under an open window and it is left empty.
+if (typeof closeMarketMapWindow === 'function') closeMarketMapWindow();
 returnFoldedScreens();
 document.querySelectorAll('.dash-fold.open').forEach(f => f.classList.remove('open'));
 restoreInlineTools();
@@ -24912,7 +25127,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-20';
+const BUILD_ID = '19-21';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -50858,6 +51073,21 @@ init();</script>
   </div>
 </div>
 
+<!-- THE MAP, OPENED UP. Built to the house rule for anything that floats over
+     the app: .modal-backdrop, moved to the body at boot by freeFloatingSheets(),
+     shown by adding .open -- never by setting display from inside a screen.
+     It holds no map of its own. The one map section is moved in here when it
+     opens and back to its place on the desk when it closes, so there is never
+     a second drawing of the market to keep in step. -->
+<div id="mmWinBackdrop" class="modal-backdrop mm-win-backdrop" onclick="if (event.target === this) closeMarketMapWindow();">
+<div class="mm-win" role="dialog" aria-modal="true" aria-labelledby="mmWinTitle">
+<div class="mm-win-head">
+<div class="mm-win-title" id="mmWinTitle">Market Map</div>
+<button type="button" class="mm-win-close" onclick="closeMarketMapWindow()"><span aria-hidden="true">&times;</span> Close</button>
+</div>
+<div class="mm-win-body" id="mmWinBody"></div>
+</div>
+</div>
 <div id="yearEndBackdrop" class="modal-backdrop">
   <div class="print-shell">
     <div class="print-bar">
