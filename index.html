@@ -2964,6 +2964,27 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .mm-layout { margin: 4px 0 2px; }
 .mm-layout .stall-layout { max-width: 168px; }
 .mm-layout-cap { margin-top: 6px; text-align: center; font-size: 12.5px; }
+/* ===== THE STRETCH SANDBOX ============================================ */
+.ms-shapes { display: flex; gap: 6px; margin: 0 0 8px; }
+.ms-shapes .ms-shape { flex: 1 1 0; width: auto; margin: 0; padding: 7px 4px; font-size: 13px; }
+.ms-shapes .ms-shape.on { background: var(--leaf); border-color: var(--leaf); color: var(--paper); }
+/* A frame the shape of the screen being designed for, so "does it fill it?"
+   is a question you answer by looking rather than by imagining. */
+.ms-frame { position: relative; overflow: hidden; margin: 0 auto;
+  width: 100%; max-width: 300px; aspect-ratio: 9 / 19.5;
+  background: var(--paper-dim); border: 3px solid var(--ink); border-radius: 14px; }
+.ms-frame[data-shape="phonewide"] { aspect-ratio: 19.5 / 9; max-width: 100%; }
+.ms-frame[data-shape="desk"] { aspect-ratio: 16 / 9; max-width: 100%; }
+.ms-scale { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.ms-read { text-align: center; }
+.ms-row { margin: 12px 0 0; }
+.ms-row label { display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.ms-row label span { font-weight: 800; color: var(--leaf); font-variant-numeric: tabular-nums; }
+.ms-row input[type="range"] { width: 100%; }
+.ms-btns { display: flex; gap: 8px; margin-top: 14px; }
+.ms-btns .ghost-btn { flex: 1 1 0; width: auto; margin: 0; }
+
 /* ===== THE MAP OPENED UP ==============================================
    On the desk the map is a strip you read at a glance. Tapping it brings it
    up here, where it has the room to be zoomed into and panned about, and the
@@ -5386,6 +5407,40 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <p class="empty-note" id="mmHint" style="margin:8px 2px 0;"><span class="mm-hint-preview"><b>Tap the map</b> to open it full size &mdash; tap a booth and it opens showing that booth.</span><span class="mm-hint-full">Pinch or double-tap to zoom in, drag to move around; <b>Fit map</b> brings the whole market back. This is the same map Booth Selection draws, from the same records.</span><span class="mm-hint-short">Pinch to zoom &middot; drag to move &middot; <b>Fit map</b> for the whole market.</span></p>
 </div>
 </section>
+<section id="screen-mapstretch" class="screen">
+<div class="screen-head" id="head-mapstretch"></div>
+<p class="empty-note" style="margin:-4px 0 12px;">The market is a strip about three times wider than it is deep, so a true-to-scale map on a phone held upright is a thin band with a lot of empty screen around it. Pull it out of scale here and it stops being a scale drawing and becomes a diagram &mdash; worse for measuring, better for finding booth 46. Nothing changes until you say so, and booth selection and the kiosk stay true to scale whatever you set.</p>
+<div class="card" style="padding:10px;">
+<div class="ms-shapes" role="group" aria-label="Screen shape to try it against">
+<button type="button" class="ghost-btn ms-shape on" data-shape="phone" onclick="msShape('phone')">Phone upright</button>
+<button type="button" class="ghost-btn ms-shape" data-shape="phonewide" onclick="msShape('phonewide')">Phone sideways</button>
+<button type="button" class="ghost-btn ms-shape" data-shape="desk" onclick="msShape('desk')">Desk screen</button>
+</div>
+<div class="ms-frame" id="msFrame"><div class="ms-scale" id="msScale"><div id="msCanvas" class="booth-canvas"></div></div></div>
+<p class="empty-note ms-read" id="msRead" style="margin:8px 2px 0;"></p>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-toolbox"></use></svg></span>Stretch It</h2>
+<div class="ms-row"><label for="msX">Across <span id="msXv"></span></label>
+<input type="range" id="msX" min="60" max="250" oninput="msSet('x', this.value)"></div>
+<div class="ms-row"><label for="msY">Down <span id="msYv"></span></label>
+<input type="range" id="msY" min="60" max="800" oninput="msSet('y', this.value)"></div>
+<div class="ms-row"><label for="msB">Booth size <span id="msBv"></span></label>
+<input type="range" id="msB" min="60" max="220" oninput="msSet('booth', this.value)"></div>
+<div class="ms-btns">
+<button type="button" class="ghost-btn" onclick="msFitShape()">Fill this shape</button>
+<button type="button" class="ghost-btn" onclick="msReset()">Back to true scale</button>
+</div>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-map-pin"></use></svg></span>Use It</h2>
+<p class="empty-note" style="margin-top:0;">This changes the <b>Market Map</b> only &mdash; the reference map on the Booths section of both desks. Booth selection and the kiosk are left alone on purpose: those are questions about the real ground.</p>
+<p class="mm-fact" id="msNumbers" style="margin:8px 0;"></p>
+<button type="button" class="primary-btn" onclick="msApply()"><svg class="ico"><use href="#i-checkmark"></use></svg> Use this on the Market Map</button>
+<button type="button" class="ghost-btn" onclick="msStop()">Stop using it &mdash; back to true scale everywhere</button>
+<div class="status-msg" id="msMsg"></div>
+</div>
+</section>
 <section id="screen-vmscript" class="screen">
 <div class="screen-head" id="head-vmscript"></div>
 <p class="empty-note" style="margin:-4px 0 14px;">Read this into the market&rsquo;s answering machine as the outgoing greeting. <b>Spoken lines are in the boxes</b> &mdash; read those aloud, word for word. Everything in italics is a direction to you, not something to say.</p>
@@ -5858,6 +5913,14 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'appglossary')">
 <span class="fold-title">App Glossary</span>
 <span class="fold-sub">What this app calls its own parts &mdash; desks, tools, chips, help dots, cones and the rest</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="dev-mapstretch">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'mapstretch')">
+<span class="fold-title">Map Stretch Sandbox</span>
+<span class="fold-sub">Pull the market out of scale so it fills a screen &mdash; a diagram to find things on, not a drawing to measure</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -7851,6 +7914,65 @@ return '<svg viewBox="' + (-k.w / 2 - pad) + ' ' + (-k.h / 2 - pad) + ' ' + w + 
 }
 // Pieces ride on the same canvas as the booths, so they turn with the map on
 // the kiosk. Their names do not: those counter-rotate like the section labels.
+/* ===== DRAWING THE MARKET OUT OF SCALE ===============================
+   The market is a strip nearly three times wider than it is deep. Drawn true
+   to scale on a phone held upright, that is a band across the middle with
+   six-pixel booths and empty screen above and below it -- accurate, and hard
+   to read. A map for FINDING things does not have to be a map for measuring
+   them: pull the rows apart and the picture stops being a scale drawing and
+   starts being a diagram, which is what a person hunting for booth 46 wants.
+
+   The whole of it is this: every position on the map is moved away from the
+   centre of the booth field by a factor across and a factor down. Booth chips
+   keep their own size, so spreading the positions spreads the booths WITHOUT
+   stretching the numbers on them out of shape -- which is what would happen if
+   the canvas were simply scaled unevenly in CSS.
+
+   It is identity -- 1 across, 1 down -- unless something deliberately asks for
+   otherwise, so every map in the app draws exactly as it did before. Only the
+   Market Map, the reference tool, reads the saved setting; booth selection and
+   the kiosk set it back to identity before they draw, because a booth being
+   chosen or a shopper being directed is a question about the real ground. */
+const MAP_STRETCH_OFF = { x: 1, y: 1, booth: 1 };
+const MAP_STRETCH_KEY = 'ifm-map-stretch';
+let mapStretchActive = MAP_STRETCH_OFF;
+let mapStretchCentreCache = null;
+// The middle of the booth field, worked out from the UNSTRETCHED coordinates
+// so that stretching cannot move the point everything is stretched about.
+function mapStretchCentre() {
+if (mapStretchCentreCache) return mapStretchCentreCache;
+let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, any = false;
+Object.keys(BOOTH_COORDS || {}).forEach(n => {
+  const p = BOOTH_COORDS[n]; if (!p) return;
+  any = true;
+  minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+  minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+});
+mapStretchCentreCache = any ? { x: (minX + maxX) / 2, y: (minY + maxY) / 2 } : { x: 0, y: 0 };
+return mapStretchCentreCache;
+}
+function sX(x) {
+const st = mapStretchActive;
+if (!st || st.x === 1) return x;
+const c = mapStretchCentre();
+return c.x + (x - c.x) * st.x;
+}
+function sY(y) {
+const st = mapStretchActive;
+if (!st || st.y === 1) return y;
+const c = mapStretchCentre();
+return c.y + (y - c.y) * st.y;
+}
+function readSavedMapStretch() {
+try {
+  const raw = localStorage.getItem(MAP_STRETCH_KEY);
+  if (!raw) return null;
+  const v = JSON.parse(raw);
+  if (!v || typeof v.x !== 'number' || typeof v.y !== 'number') return null;
+  return { x: v.x, y: v.y, booth: typeof v.booth === 'number' ? v.booth : 1 };
+} catch (e) { return null; }
+}
+function referenceMapStretch() { return readSavedMapStretch() || MAP_STRETCH_OFF; }
 function renderMapPieces(canvas, layer) {
 const list = mapFurniture[layer] || [];
 list.forEach(it => {
@@ -7858,15 +7980,15 @@ const k = MAP_FURNITURE_KINDS[it.k];
 if (!k) return;
 const el = document.createElement('div');
 el.className = 'map-piece';
-el.style.left = it.x + 'px';
-el.style.top = it.y + 'px';
+el.style.left = sX(it.x) + 'px';
+el.style.top = sY(it.y) + 'px';
 el.innerHTML = mapPieceHTML(it, '');
 canvas.appendChild(el);
 if (it.name) {
 const lab = document.createElement('div');
 lab.className = 'map-piece-lbl';
-lab.style.left = it.x + 'px';
-lab.style.top = (it.y + (k.h / 2) * ((it.s || 100) / 100) + 9) + 'px';
+lab.style.left = sX(it.x) + 'px';
+lab.style.top = (sY(it.y) + (k.h / 2) * ((it.s || 100) / 100) + 9) + 'px';
 lab.textContent = it.name;
 canvas.appendChild(lab);
 }
@@ -7884,8 +8006,14 @@ box.className = 'map-structure' +
 (s.dark ? ' struct-dark' : '') +
 (s.key && kioskMatchStructures.has(s.key) ? ' kiosk-match' : '') +
 (s.key && kioskSelectedStructure === s.key ? ' kiosk-hit' : '');
-box.style.left = s.x + 'px';
-box.style.top = s.y + 'px';
+box.style.left = sX(s.x) + 'px';
+box.style.top = sY(s.y) + 'px';
+// MOVED, NOT STRETCHED. Every structure on this map is a physical thing --
+// the office, the restroom trailer, the Merch Mansion, the moored Teal, the
+// largest of them 252px across. A trailer does not get taller because the map
+// has been pulled out of shape; stretched with the rest they came out as
+// slivers standing among the booths. They go where the stretch puts them and
+// keep the size they are.
 box.style.width = s.w + 'px';
 box.style.height = s.h + 'px';
 if (s.img) {
@@ -7908,8 +8036,8 @@ canvas.appendChild(box);
 if (showPanels) MAP_PANELS.forEach(pn => {
 const el = document.createElement('div');
 el.className = 'map-panel';
-el.style.left = pn.x + 'px';
-el.style.top = pn.y + 'px';
+el.style.left = sX(pn.x) + 'px';
+el.style.top = sY(pn.y) + 'px';
 el.textContent = pn.id;
 el.title = 'Electrical sub-panel ' + pn.id + ' \u2014 feeds outlets in this part of the Pavilion';
 canvas.appendChild(el);
@@ -7917,8 +8045,8 @@ canvas.appendChild(el);
 MAP_LABELS.forEach(l => {
 const lab = document.createElement('div');
 lab.className = 'booth-label' + (l.sec ? ' section-label' : '');
-lab.style.left = l.x + 'px';
-lab.style.top = l.y + 'px';
+lab.style.left = sX(l.x) + 'px';
+lab.style.top = sY(l.y) + 'px';
 if (l.rot) lab.style.setProperty('--lrot', l.rot + 'deg');
 lab.textContent = l.t;
 canvas.appendChild(lab);
@@ -8459,8 +8587,11 @@ let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, any = false;
 Object.keys(BOOTH_COORDS || {}).forEach(num => {
   const p = BOOTH_COORDS[num]; if (!p) return;
   any = true;
-  minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
-  minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+  // measured where the booths are DRAWN, which is not where they stand if the
+  // map is being drawn out of scale
+  const x = sX(p.x), y = sY(p.y);
+  minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+  minY = Math.min(minY, y); maxY = Math.max(maxY, y);
 });
 if (!any) return { x: 0, y: 0, w: 1000, h: 1000 };
 const pad = 70;                        // chips are centred on their point
@@ -8469,16 +8600,21 @@ minX -= pad; minY -= pad; maxX += pad; maxY += pad;
 // the entrances. Anything off in the water or up the trail does not.
 const near = 120;
 (MAP_STRUCTURES || []).forEach(s => {
-  const sx2 = s.x + (s.w || 0), sy2 = s.y + (s.h || 0);
-  const overlaps = sx2 > minX - near && s.x < maxX + near &&
-                   sy2 > minY - near && s.y < maxY + near;
+  const x1 = sX(s.x), y1 = sY(s.y);
+  const sx2 = x1 + (s.w || 0), sy2 = y1 + (s.h || 0);
+  const overlaps = sx2 > minX - near && x1 < maxX + near &&
+                   sy2 > minY - near && y1 < maxY + near;
   if (!overlaps) return;
-  minX = Math.min(minX, s.x); maxX = Math.max(maxX, sx2);
-  minY = Math.min(minY, s.y); maxY = Math.max(maxY, sy2);
+  minX = Math.min(minX, x1); maxX = Math.max(maxX, sx2);
+  minY = Math.min(minY, y1); maxY = Math.max(maxY, sy2);
 });
 return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 function applyMarketMapTransform() {
+// Fitting happens outside a render -- on a resize, on folding the details --
+// so the stretch the map is drawn under is restated here rather than assumed
+// to be whatever the last map to draw happened to leave behind.
+mapStretchActive = referenceMapStretch();
 const wrap = document.getElementById('mmWrap');
 const scale = document.getElementById('mmScale');
 if (!wrap || !scale) return;
@@ -8714,42 +8850,66 @@ function marketMapPick(num) {
 mmSelected = num || null;
 renderMarketMap();
 }
+/* THE BOOTHS, DRAWN ONCE.
+   The reference map and the stretch sandbox both need this, and a second copy
+   of it is how two pictures of the same market start disagreeing with each
+   other. `live` is what separates them: the map's chips are buttons a person
+   picks booths with, the sandbox's are a picture of what the setting does. */
+function drawBoothChips(canvas, opts) {
+if (!canvas) return;
+const o = opts || {};
+const occ = o.occ || kioskOccupancy();
+const scale = (mapStretchActive && mapStretchActive.booth) || 1;
+canvas.querySelectorAll('.booth-chip').forEach(el => el.remove());
+(cache.booths || []).forEach(booth => {
+const pos = BOOTH_COORDS[booth.num];
+if (!pos) return;
+const vid = occ.byBooth[booth.num];
+const org = (occ.byOrg || {})[booth.num];
+const spin = boothArcAngle(booth);
+const wedge = boothIsArcWedge(booth);
+const chipSpin = wedge ? spin : 0;
+const chip = document.createElement('button');
+chip.type = 'button';
+chip.className = 'booth-chip ' + (vid || org ? 'reserved' : 'available') +
+  (o.selected === booth.num ? ' mm-hit' : '') +
+  (spin ? (wedge ? ' arc-wedge' : ' arc-link link-' + booth.num) : '');
+// Rotation and size in one transform: scaling the chip scales the number
+// written on it, which is the point of the knob.
+const parts = (chipSpin ? 'rotate(' + chipSpin + 'deg) ' : '') +
+              (scale !== 1 ? 'scale(' + scale + ')' : '');
+if (parts) chip.style.transform = 'translate(-50%, -50%) ' + parts.trim();
+chip.style.left = sX(pos.x) + 'px';
+chip.style.top = sY(pos.y) + 'px';
+chip.dataset.num = booth.num;
+setChipLabel(chip, booth, spin ? chipSpin : null, boothLabelShift(booth));
+if (o.live) {
+  // A chip is a real button, so Enter and Space have to select it. Pointer
+  // taps are already resolved in the wrap's pointerup; the stamp keeps a
+  // click that follows one from selecting the same booth a second time.
+  chip.setAttribute('aria-pressed', o.selected === booth.num ? 'true' : 'false');
+  chip.onclick = () => { if (Date.now() - mmTapAt < 700) return; marketMapPick(booth.num); };
+} else {
+  chip.tabIndex = -1;
+  chip.setAttribute('aria-hidden', 'true');
+}
+canvas.appendChild(chip);
+});
+}
 function renderMarketMap() {
 const canvas = document.getElementById('mmCanvas');
 if (!canvas) return;
+// The reference map is the one map that may be drawn out of scale, and it
+// reads that from the saved setting. Set before anything is positioned.
+mapStretchActive = referenceMapStretch();
 // EXACTLY the call the booth-selection map makes, with no arguments, so this
 // draws the selection map's furniture and not the kiosk's. The first version
 // of this screen called renderKioskPark and asked for the kiosk furniture,
 // which put the inlet, the trees and the moored boat around the booths -- a
 // different picture of the market from the one the selection tool shows.
 renderMapFurniture(canvas);
-canvas.querySelectorAll('.booth-chip').forEach(el => el.remove());
 const occ = kioskOccupancy();
-(cache.booths || []).forEach(booth => {
-  const pos = BOOTH_COORDS[booth.num];
-  if (!pos) return;
-  const vid = occ.byBooth[booth.num];
-  const org = (occ.byOrg || {})[booth.num];
-  const spin = boothArcAngle(booth);
-  const wedge = boothIsArcWedge(booth);
-  const chipSpin = wedge ? spin : 0;
-  const chip = document.createElement('button');
-  chip.type = 'button';
-  chip.className = 'booth-chip ' + (vid || org ? 'reserved' : 'available') +
-    (mmSelected === booth.num ? ' mm-hit' : '') +
-    (spin ? (wedge ? ' arc-wedge' : ' arc-link link-' + booth.num) : '');
-  if (chipSpin) chip.style.transform = 'translate(-50%, -50%) rotate(' + chipSpin + 'deg)';
-  chip.style.left = pos.x + 'px';
-  chip.style.top = pos.y + 'px';
-  chip.dataset.num = booth.num;
-  setChipLabel(chip, booth, spin ? chipSpin : null, boothLabelShift(booth));
-  // A chip is a real button, so Enter and Space have to select it. Pointer
-  // taps are already resolved in the wrap's pointerup above; the stamp keeps a
-  // click that follows one from selecting the same booth a second time.
-  chip.setAttribute('aria-pressed', mmSelected === booth.num ? 'true' : 'false');
-  chip.onclick = () => { if (Date.now() - mmTapAt < 700) return; marketMapPick(booth.num); };
-  canvas.appendChild(chip);
-});
+drawBoothChips(canvas, { occ: occ, selected: mmSelected, live: true });
 renderMarketMapDetail(occ);
 applyMarketMapTransform();
 }
@@ -9058,6 +9218,113 @@ mmSelected = null;
 mmZoom = 1; mmPanX = 0; mmPanY = 0; mmTouched = false;
 renderMarketMap();
 marketMapFit();
+}
+/* ===== THE STRETCH SANDBOX ============================================
+   Somewhere to find the numbers by eye, because the right amount to pull a
+   map out of shape is not something anybody can work out on paper. The
+   preview is drawn by the SAME two calls the real map uses, under the live
+   settings, so what is on the screen here is what the Market Map would look
+   like -- not an impression of it. */
+const MS_SHAPES = { phone: 9 / 19.5, phonewide: 19.5 / 9, desk: 16 / 9 };
+// The preview frame is a card on a phone, a good deal narrower than the screen
+// it stands for. A booth measured in it would read smaller than it will be, so
+// the figure is scaled up to the real thing before it is quoted.
+const MS_REAL_W = { phone: 390, phonewide: 844, desk: 1440 };
+let msLive = { x: 1, y: 1, booth: 1 };
+let msShapeKey = 'phone';
+function msShape(k) {
+if (!MS_SHAPES[k]) return;
+msShapeKey = k;
+const frame = document.getElementById('msFrame');
+if (frame) frame.dataset.shape = k;
+document.querySelectorAll('.ms-shapes .ms-shape').forEach(b =>
+  b.classList.toggle('on', b.dataset.shape === k));
+renderStretchPreview();
+}
+function msSet(which, raw) {
+const v = Math.max(0.1, Number(raw) / 100);
+msLive[which] = v;
+renderStretchPreview();
+}
+function msSliders() {
+const put = (id, val) => { const el = document.getElementById(id); if (el) el.value = String(Math.round(val * 100)); };
+put('msX', msLive.x); put('msY', msLive.y); put('msB', msLive.booth);
+const show = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val.toFixed(2) + '\u00d7'; };
+show('msXv', msLive.x); show('msYv', msLive.y); show('msBv', msLive.booth);
+}
+/* The one number that answers "does it fill the screen?": how much of the
+   frame the booths actually cover once the whole market has been fitted into
+   it. True to scale on an upright phone that is about a fifth. */
+function renderStretchPreview() {
+const canvas = document.getElementById('msCanvas');
+const frame = document.getElementById('msFrame');
+const scale = document.getElementById('msScale');
+if (!canvas || !frame || !scale) return;
+const was = mapStretchActive;
+mapStretchActive = msLive;
+renderMapFurniture(canvas);
+drawBoothChips(canvas, { selected: null, live: false });
+const b = marketMapBounds();
+const fw = frame.clientWidth, fh = frame.clientHeight;
+let pct = 0, chipPx = 0;
+if (fw && fh && b.w && b.h) {
+  const k = Math.min(fw / b.w, fh / b.h);
+  scale.style.transform = 'translate(' + ((fw - b.w * k) / 2 - b.x * k) + 'px, ' +
+    ((fh - b.h * k) / 2 - b.y * k) + 'px) scale(' + k + ')';
+  pct = Math.round((b.w * k * b.h * k) / (fw * fh) * 100);
+  const chip = canvas.querySelector('.booth-chip');
+  const inFrame = chip ? chip.getBoundingClientRect().width : 0;
+  chipPx = Math.round(inFrame * ((MS_REAL_W[msShapeKey] || fw) / fw));
+}
+mapStretchActive = was;
+msSliders();
+const read = document.getElementById('msRead');
+if (read) read.innerHTML = 'The market covers <b>' + pct + '%</b> of this screen' +
+  (chipPx ? ', and a booth would draw about <b>' + chipPx + 'px</b> across on it' : '') + '.';
+const nums = document.getElementById('msNumbers');
+if (nums) nums.innerHTML = 'Across <b>' + msLive.x.toFixed(2) + '</b> \u00b7 down <b>' +
+  msLive.y.toFixed(2) + '</b> \u00b7 booth size <b>' + msLive.booth.toFixed(2) + '</b>' +
+  (isMapStretched(readSavedMapStretch()) ? ' \u00b7 <span class="mm-quiet">the Market Map is using ' +
+    stretchWords(readSavedMapStretch()) + ' now</span>' : ' \u00b7 <span class="mm-quiet">the Market Map is true to scale now</span>');
+}
+function isMapStretched(st) { return !!(st && (st.x !== 1 || st.y !== 1 || st.booth !== 1)); }
+function stretchWords(st) {
+if (!isMapStretched(st)) return 'true scale';
+return st.x.toFixed(2) + ' across, ' + st.y.toFixed(2) + ' down, booths ' + st.booth.toFixed(2);
+}
+/* Pulls it down (or across) until the market is the shape of the frame, which
+   is the setting that fills the screen and the one hardest to find by nudging
+   a slider. Across is left where it is: the booths in a row nearly touch
+   already, so squeezing that axis overlaps them. */
+function msFitShape() {
+const was = mapStretchActive;
+mapStretchActive = { x: msLive.x, y: 1, booth: msLive.booth };
+const b = marketMapBounds();
+mapStretchActive = was;
+const want = MS_SHAPES[msShapeKey] || 1;
+if (b.w && b.h && want) {
+  const have = b.w / b.h;
+  msLive.y = Math.max(0.6, Math.min(8, have / want));
+}
+renderStretchPreview();
+}
+function msReset() { msLive = { x: 1, y: 1, booth: 1 }; renderStretchPreview(); }
+function msApply() {
+try { localStorage.setItem(MAP_STRETCH_KEY, JSON.stringify(msLive)); }
+catch (e) { showMsg('msMsg', 'err', 'This device would not keep the setting.'); return; }
+renderStretchPreview();
+showMsg('msMsg', 'ok', 'The Market Map is now drawn ' + stretchWords(msLive) + '.');
+}
+function msStop() {
+try { localStorage.removeItem(MAP_STRETCH_KEY); } catch (e) {}
+renderStretchPreview();
+showMsg('msMsg', 'ok', 'The Market Map is back to true scale.');
+}
+function initMapStretchScreen() {
+const saved = readSavedMapStretch();
+msLive = saved ? { x: saved.x, y: saved.y, booth: saved.booth } : { x: 1, y: 1, booth: 1 };
+msShape(msShapeKey);
+setTimeout(renderStretchPreview, 60);
 }
 function initMarketMapScreen() {
 bindMarketMapGestures();
@@ -20991,6 +21258,7 @@ if (name === 'fclog') initFcLogScreen();
 if (name === 'communicate') initCommunicateScreen();
 if (name === 'booths') { renderBooths(); centerLiveMap('boothCanvasWrap'); }
 if (name === 'marketmap') initMarketMapScreen();
+if (name === 'mapstretch') initMapStretchScreen();
 if (name === 'directory') { renderDirectory(''); renderEasyEntryStanding(); }
 if (name === 'lottery') { initLotteryScreen(); centerLiveMap('lottoMapWrap'); }
 if (name === 'satlottery') { initSatLotteryScreen(); centerLiveMap('satLottoMapWrap'); }
@@ -21148,6 +21416,7 @@ managerdash:       { title: () => currentRole === 'president' ? 'Board President
 staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
 marketmap:         { title: 'Market Map' },
+mapstretch:        { title: 'Map Stretch Sandbox' },
 winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
@@ -25228,7 +25497,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-23';
+const BUILD_ID = '19-24';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -25377,6 +25646,9 @@ const mid = 500; // canvas x of the service block / main entrance
 wrap.scrollLeft = Math.max(0, Math.round(mid - wrap.clientWidth / 2));
 }
 function renderBooths() {
+// Choosing a booth is a question about the real ground, so the selection map
+// is always true to scale whatever the reference map has been set to.
+mapStretchActive = MAP_STRETCH_OFF;
 const note = document.getElementById('auctionRuleNote');
 if (currentAuction === 'weekly') {
 note.textContent = 'Sunday Booth Selection, the \u201Clottery\u201D: Sunday booths default to whoever holds them Saturday, unless that vendor reported an absence for this date. Everything left over goes to the 8:30\u00A0AM meeting \u2014 vendors seeking one of those booths sign in between 8:00 and 8:30\u00A0AM that morning, online or in person, then choose in points order.';
@@ -27848,6 +28120,9 @@ star.style.left = (pos.x + dir.x * 42) + 'px';
 star.style.top = (pos.y + dir.y * 42) + 'px';
 }
 function renderKioskMap(occ) {
+// Likewise the kiosk: it is pointing a shopper at a booth they then have to
+// walk to.
+mapStretchActive = MAP_STRETCH_OFF;
 const canvas = document.getElementById('kioskBoothCanvas');
 if (!canvas) return;
 renderKioskPark(canvas);
