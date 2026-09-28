@@ -2959,6 +2959,11 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
   letter-spacing: 0.07em; text-transform: uppercase; color: var(--soft-text); }
 .mm-sheet-body > .mm-fact-h:first-child { margin-top: 0; }
 .mm-quiet { color: var(--soft-text); }
+/* The stall drawing is square and the pane is not, so it is held to a size
+   that leaves the words around it readable rather than filling the pane. */
+.mm-layout { margin: 4px 0 2px; }
+.mm-layout .stall-layout { max-width: 168px; }
+.mm-layout-cap { margin-top: 6px; text-align: center; font-size: 12.5px; }
 /* ===== THE MAP OPENED UP ==============================================
    On the desk the map is a strip you read at a glance. Tapping it brings it
    up here, where it has the room to be zoomed into and panned about, and the
@@ -2994,13 +2999,16 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .mm-win-body .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
   margin: 0; }
 .mm-win-body .mm-stage { flex: 1 1 auto; min-height: 0; max-width: none; }
-/* Three parts map to two parts details. A basis of zero with grow factors,
-   so the split is the same whatever the details happen to say that day and
-   the map is never squeezed by a long dossier. (What the window is given to
-   divide up is settled below, and has to be: measured, it was the window's
-   own height that decided whether any of this worked.) */
-.mm-win-body .mm-wrap { flex: 3 1 0; width: auto; aspect-ratio: auto; min-height: 140px; }
-.mm-win-body .mm-sheet { flex: 2 1 0; min-height: 110px; max-height: none; }
+/* Half the window each. A basis of zero with grow factors, so the split is
+   the same whatever the details happen to say that day and the map is never
+   squeezed by a long dossier. It was three to two while the details were only
+   words; the stall drawing needs to be seen whole rather than scrolled past
+   in two halves, and it is worth the map's booths being a shade smaller for.
+   (What the window is given to divide up is settled below, and has to be:
+   measured, it was the window's own height that decided whether any of this
+   worked at all.) */
+.mm-win-body .mm-wrap { flex: 1 1 0; width: auto; aspect-ratio: auto; min-height: 140px; }
+.mm-win-body .mm-sheet { flex: 1 1 0; min-height: 110px; max-height: none; }
 .mm-win-body #mmHint { flex: none; }
 @media (min-width: 760px) {
   .mm-win-backdrop { align-items: center; padding: 24px; }
@@ -3013,6 +3021,12 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
      here is a proportion of this. */
   .mm-win { max-width: 1100px; height: 92vh; max-height: 92vh; border-radius: 16px;
     box-shadow: 0 18px 50px rgba(0,0,0,0.4); }
+  /* Half each is the phone's split, where the details are a narrow column and
+     need the height. Here they have width instead, so they need less of it --
+     and at half each the map in the opened window came out a shade SMALLER
+     than the strip it was opened from, which makes opening it pointless. */
+  .mm-win-body .mm-wrap { flex: 3 1 0; }
+  .mm-win-body .mm-sheet { flex: 2 1 0; }
 }
 
 /* ---- and the strip it is opened FROM --------------------------------- */
@@ -8861,13 +8875,24 @@ if (b.nf) feats.push('<b>no food may be sold here</b>');
 if (b.propane) feats.push('propane priority');
 out.push(P(feats.join(', ').replace(/^./, c => c.toUpperCase()) + '.'));
 
-// --- what is standing in it
+// --- what is standing in it, said and then drawn
 const built = mmBuiltIn(b);
 out.push(H('Built into it'));
-out.push(built.list.length
-  ? P('It has ' + built.list.join(', ').replace(/, ([^,]*)$/, ' and $1') + '.' +
-      (built.source ? ' <span class="mm-quiet">' + built.source + '</span>' : ''))
-  : none('Nothing recorded — open space, no built-in counters or shelves.'));
+/* The same drawing the booth sheet shows, from the same recorded layout. The
+   words say WHAT is in the booth; only the drawing says where it stands and
+   which side faces the promenade, which is what a vendor is really asking
+   when they ask what a booth is like.
+   With nothing built in there is no list to write: the drawing says so itself,
+   in the middle of the empty stall, and saying it twice over one small picture
+   reads as though the app is unsure. The caption keeps to what the picture
+   cannot say -- what grey means, and where the drawing came from. */
+if (built.list.length) {
+  out.push(P('It has ' + built.list.join(', ').replace(/, ([^,]*)$/, ' and $1') + '.'));
+}
+const cap = (built.list.length ? 'Grey is built in.' : '') +
+            (built.source ? (built.list.length ? ' ' : '') + esc(built.source) : '');
+out.push('<div class="mm-layout"><div class="stall-layout" id="mmLayoutBox"></div>' +
+  (cap ? '<p class="mm-fact mm-quiet mm-layout-cap">' + cap + '</p>' : '') + '</div>');
 
 // --- what a Saturday season reservation costs
 const fee = resFeeForBooth(b.num);
@@ -8884,7 +8909,14 @@ if (b.note) { out.push(H('The office’s note')); out.push(P(esc(b.note))); }
 if (numEl0) numEl0.textContent = 'Booth ' + b.num;
 if (subEl0) subEl0.textContent = inIt.who ? inIt.who + ' · ' + dayWords
                                           : 'Open ' + dayWords;
-if (bodyEl0) { bodyEl0.innerHTML = out.join(''); bodyEl0.scrollTop = 0; }
+if (bodyEl0) {
+bodyEl0.innerHTML = out.join('');
+bodyEl0.scrollTop = 0;
+// Drawn after the markup is in, into THIS pane's box -- never the booth
+// sheet's, which is a different element on a different screen. The caption is
+// written above, so the renderer is told to write none of its own.
+renderStallLayout(b, document.getElementById('mmLayoutBox'), null);
+}
 }
 
 /* IS THE MAP STANDING IN A BOX ON A DESK RIGHT NOW?
@@ -25127,7 +25159,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-21';
+const BUILD_ID = '19-22';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -50300,9 +50332,16 @@ else if (side === 'left') aisle.style.cssText = 'left:0; right:auto; top:0; bott
 else if (side === 'right') aisle.style.cssText = 'right:0; left:auto; top:0; bottom:0; width:15%; height:auto; border-top:0; border-left:2px dashed rgba(35,42,32,0.35);';
 box.appendChild(aisle);
 }
-function renderStallLayout(booth) {
-const box = document.getElementById('stallLayout');
-const note = document.getElementById('stallLayoutNote');
+/* Draws one booth's stall -- what is built into it and which side faces the
+   promenade. It drew into the booth sheet's own two elements by id and could
+   draw nowhere else, so a second place wanting this picture had to either
+   duplicate the id or duplicate the drawing. It takes the box and the caption
+   to write into instead, and falls back to the booth sheet's when it is not
+   told, so every existing caller is unchanged. Pass null for the note to draw
+   the picture and caption it yourself. */
+function renderStallLayout(booth, intoBox, intoNote) {
+const box = intoBox !== undefined ? intoBox : document.getElementById('stallLayout');
+const note = intoNote !== undefined ? intoNote : document.getElementById('stallLayoutNote');
 if (!box) return;
 box.innerHTML = '';
 const custom = boothLayoutFor(booth.num);
