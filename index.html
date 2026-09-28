@@ -2990,8 +2990,26 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
   cursor: pointer; }
 .mm-win-close span { font-size: 21px; line-height: 1; }
 .mm-win-close:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+/* THE CHROME, CUT TO WHAT EARNS ITS PLACE.
+   Measured on a phone, the map had 34% of a full-screen window. Most of that
+   was the even split with the details, which is dealt with below and is worth
+   about 115px on its own; this trimming is worth about 25 more, and is here
+   for a second reason as much as the height -- the legend had wrapped onto
+   two lines and the gesture note ran to four, which reads as clutter over a
+   map somebody is trying to find their bearings in. */
 .mm-win-body { flex: 1 1 auto; min-height: 0; overflow: hidden;
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); }
+.mm-win-body .card { padding: 7px; }
+/* One line, not two: the legend and Fit map sit on the same row at any width. */
+.mm-win-body .mm-bar { flex-wrap: nowrap; padding: 0 2px 6px; gap: 8px; }
+.mm-win-body .mm-bar .lotto-key { flex-wrap: nowrap; font-size: 12.5px; gap: 10px; }
+.mm-win-body .mm-fit { flex: none; padding: 5px 12px; font-size: 12.5px; }
+/* The gesture note is a sentence a person reads once. In the window it is one
+   quiet line under the map rather than a paragraph taking a ninth of it. */
+.mm-win-body #mmHint { flex: none; margin: 5px 2px 0 !important; font-size: 12px; line-height: 1.35; }
+.mm-hint-short { display: none; }
+.mm-win-body .mm-hint-short { display: inline; }
+.mm-win-body .mm-hint-full { display: none; }
 /* Inside the window the map is not held to the market's shape: the empty room
    above and below it is what a person zooms and drags into. */
 .mm-win-body > .screen { padding: 0; height: 100%; display: flex; flex-direction: column; }
@@ -2999,19 +3017,29 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .mm-win-body .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
   margin: 0; }
 .mm-win-body .mm-stage { flex: 1 1 auto; min-height: 0; max-width: none; }
-/* Half the window each. A basis of zero with grow factors, so the split is
-   the same whatever the details happen to say that day and the map is never
-   squeezed by a long dossier. It was three to two while the details were only
-   words; the stall drawing needs to be seen whole rather than scrolled past
-   in two halves, and it is worth the map's booths being a shade smaller for.
-   (What the window is given to divide up is settled below, and has to be:
-   measured, it was the window's own height that decided whether any of this
-   worked at all.) */
-.mm-win-body .mm-wrap { flex: 1 1 0; width: auto; aspect-ratio: auto; min-height: 140px; }
+/* Two parts map to one part details, and the details fold away to nothing but
+   their own heading -- which is how the map gets ALMOST the whole window when
+   somebody wants to look around it, without the details becoming something
+   they have to reopen the booth to see again. A basis of zero with grow
+   factors, so the split is the same whatever the details happen to say that
+   day. (What the window is given to divide up is settled below, and has to
+   be: measured, it was the window's own height that decided whether any of
+   this worked at all.) */
+.mm-win-body .mm-wrap { flex: 2 1 0; width: auto; aspect-ratio: auto; min-height: 140px; }
 .mm-win-body .mm-sheet { flex: 1 1 0; min-height: 110px; max-height: none; }
+.mm-win-body .mm-sheet.folded { flex: 0 0 auto; min-height: 0; }
+.mm-sheet.folded .mm-sheet-body { display: none; }
+.mm-sheet.folded::after { display: none; }        /* no scroll fade over nothing */
+.mm-fold-btn { flex: none; min-height: 40px; margin-left: auto; padding: 6px 12px;
+  display: none; align-items: center; gap: 6px;
+  border: 2px solid var(--leaf); border-radius: 10px; background: rgba(255,255,255,0.75);
+  font-family: inherit; font-size: 13.5px; font-weight: 700; color: var(--leaf); cursor: pointer; }
+.mm-win-body .mm-fold-btn { display: inline-flex; }
+.mm-fold-btn:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.mm-sheet-head .mm-sheet-x { margin-left: 8px; }
 .mm-win-body #mmHint { flex: none; }
 @media (min-width: 760px) {
-  .mm-win-backdrop { align-items: center; padding: 24px; }
+  .mm-win-backdrop { align-items: center; padding: 14px; }
   /* TOLD HOW TALL TO BE, and this is the line the whole window rests on.
      On a phone the backdrop stretches it to the screen. Centred on a desk it
      took its height from its content -- and a map and a details pane that
@@ -3019,7 +3047,7 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
      window shrank around them and the map came out at its minimum, SMALLER in
      the opened window than it had been on the desk. Every proportion inside
      here is a proportion of this. */
-  .mm-win { max-width: 1100px; height: 92vh; max-height: 92vh; border-radius: 16px;
+  .mm-win { max-width: 1500px; height: 94vh; max-height: 94vh; border-radius: 16px;
     box-shadow: 0 18px 50px rgba(0,0,0,0.4); }
   /* Half each is the phone's split, where the details are a narrow column and
      need the height. Here they have width instead, so they need less of it --
@@ -5349,12 +5377,13 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="mm-sheet-num" id="mmSheetNum"></div>
 <div class="mm-sheet-sub" id="mmSheetSub"></div>
 </div>
+<button type="button" class="mm-fold-btn" id="mmFoldBtn" onclick="toggleMapDetails()" aria-expanded="true" aria-controls="mmSheetBody"><span class="mm-fold-chev" aria-hidden="true">&#9662;</span><span id="mmFoldWord">Hide</span></button>
 <button type="button" class="mm-sheet-x" id="mmSheetX" onclick="marketMapPick(null)" aria-label="Close these booth details">&times;</button>
 </div>
 <div class="mm-sheet-body" id="mmSheetBody"></div>
 </div>
 </div>
-<p class="empty-note" id="mmHint" style="margin:8px 2px 0;"><span class="mm-hint-preview"><b>Tap the map</b> to open it full size &mdash; tap a booth and it opens showing that booth.</span><span class="mm-hint-full">Pinch or double-tap to zoom in, drag to move around; <b>Fit map</b> brings the whole market back. This is the same map Booth Selection draws, from the same records.</span></p>
+<p class="empty-note" id="mmHint" style="margin:8px 2px 0;"><span class="mm-hint-preview"><b>Tap the map</b> to open it full size &mdash; tap a booth and it opens showing that booth.</span><span class="mm-hint-full">Pinch or double-tap to zoom in, drag to move around; <b>Fit map</b> brings the whole market back. This is the same map Booth Selection draws, from the same records.</span><span class="mm-hint-short">Pinch to zoom &middot; drag to move &middot; <b>Fit map</b> for the whole market.</span></p>
 </div>
 </section>
 <section id="screen-vmscript" class="screen">
@@ -8796,7 +8825,11 @@ const key = { open: document.getElementById('mmKeyOpen'),
               taken: document.getElementById('mmKeyTaken') };
 // The legend used to say "Open today". On a Wednesday the map is drawn for the
 // coming Saturday, so "today" was simply wrong four days a week.
-if (key.open) key.open.textContent = 'Open ' + dayWords;
+// Short enough to sit on one line beside the Fit button: the full day and
+// month wrapped the legend in two inside the window, where every line costs
+// the map some of its height.
+if (key.open) key.open.textContent = 'Open ' + (occ.md.isToday
+  ? 'today' : occ.md.day.slice(0, 3) + ' ' + shortDate(occ.md.date));
 if (key.taken) key.taken.textContent = 'Somebody here';
 const numEl0 = document.getElementById('mmSheetNum');
 const subEl0 = document.getElementById('mmSheetSub');
@@ -8944,6 +8977,40 @@ mmPointers.clear();
 mmPinch = null; mmDrag = null; mmMulti = false; mmMoved = false;
 mmLastTap = 0; mmLastTapNum = null;
 }
+/* FOLDING THE DETAILS AWAY.
+   The window can be the whole screen and the map still be too small to keep
+   your bearings in, because a booth's details are a column of their own and
+   they were taking a third of it whether anybody was reading them or not.
+   Folded, the details keep their heading -- so the booth you are looking at
+   is still named -- and give every other pixel to the map. */
+let mmDetailsFolded = false;
+function applyMapDetailsFold() {
+const sheet = document.getElementById('mmSheet');
+const btn = document.getElementById('mmFoldBtn');
+const word = document.getElementById('mmFoldWord');
+if (sheet) sheet.classList.toggle('folded', mmDetailsFolded);
+if (btn) btn.setAttribute('aria-expanded', String(!mmDetailsFolded));
+if (word) word.textContent = mmDetailsFolded ? 'Details' : 'Hide';
+const chev = btn && btn.querySelector('.mm-fold-chev');
+if (chev) chev.innerHTML = mmDetailsFolded ? '&#9652;' : '&#9662;';
+// The map's window just changed height. Keep the zoom -- folding the details
+// is not a request to resize the market -- but settle the pan: the view was
+// centred on one booth in a shorter window, and simply keeping that offset in
+// a taller one shows a band of empty sand below the market rather than more
+// of it. Where the market now fits the window on an axis, that axis centres.
+applyMarketMapTransform();
+const wrap = document.getElementById('mmWrap');
+if (wrap) {
+  const bb = marketMapBounds(), k = mmBase * mmZoom;
+  if (bb.w * k <= wrap.clientWidth) mmPanX = 0;
+  if (bb.h * k <= wrap.clientHeight) mmPanY = 0;
+  applyMarketMapTransform();
+}
+}
+function toggleMapDetails() {
+mmDetailsFolded = !mmDetailsFolded;
+applyMapDetailsFold();
+}
 function mmDeskBox() {
 return document.querySelector('.vtab-inline-tool[data-inline="marketmap"], .mgr-inline-tool[data-inline="marketmap"]');
 }
@@ -8957,6 +9024,8 @@ body.appendChild(sec);
 sec.classList.add('inline-screen', 'active');
 bd.classList.add('open');
 mmForgetPointers();
+mmDetailsFolded = false;        // a booth was asked about: answer it
+applyMapDetailsFold();
 mmSelected = boothNum || null;
 renderMarketMap();
 marketMapFill(boothNum);
@@ -25159,7 +25228,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-22';
+const BUILD_ID = '19-23';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -34386,7 +34455,14 @@ renderVendorAlerts();
 }
 function shortDate(v) {
 if (!v) return '';
-const d = new Date(v);
+/* A BARE YYYY-MM-DD IS NOT MIDNIGHT HERE.
+   new Date('2026-10-03') is read as midnight UTC, which in Ithaca is eight in
+   the evening on the SECOND -- so a market day of the 3rd printed as "Oct 2",
+   a day early, beside other lines on the same card that had it right. Read at
+   local noon instead and it lands on the right day in any time zone. Anything
+   carrying a time of its own is left exactly as it was. */
+const s = String(v);
+const d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T12:00:00') : new Date(s);
 return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 // state: 'waiting' shows no dismiss button \u2014 there is nothing to put down yet.
