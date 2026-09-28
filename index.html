@@ -2887,8 +2887,12 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
    window fitted to that leaves most of itself empty above and below the
    booths, with the moored Teal adrift in the middle of nothing. Shorter suits
    the shape, and still leaves room to move about once somebody zooms in. */
-.mm-stage { position: relative; display: flex; flex-direction: column; gap: 6px;
-  height: 54vh; min-height: 300px; max-height: 560px; }
+/* No fixed height down the column: the map's own height comes from its width
+   and its shape, so the details below it can be as tall as they need and the
+   map cannot move or redraw at a different size whatever they do. Laid out on
+   the Booths tab, where most of the time no booth is picked, that is the
+   difference between a tidy block and a tall box mostly full of nothing. */
+.mm-stage { position: relative; display: flex; flex-direction: column; gap: 6px; }
 /* THE MAP WINDOW IS THE SHAPE OF THE MARKET, AND IT NEVER CHANGES SIZE.
    aspect-ratio does the arithmetic: the market's booths span 1742 x 620 of map
    units, so a window about two and a half times wider than it is tall holds
@@ -2927,7 +2931,7 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
    use about 110 of the window's 370 pixels of height and the rest is empty
    sand. The sheet takes that empty room and the map still draws every booth at
    the same size it did before. */
-.mm-sheet { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+.mm-sheet { flex: 0 1 auto; min-height: 96px; max-height: 46vh; display: flex; flex-direction: column;
   background: var(--paper); border: 1px solid var(--paper-dim);
   border-top: 2px solid var(--leaf); border-radius: 8px;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.10); }
@@ -2955,14 +2959,14 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
   letter-spacing: 0.07em; text-transform: uppercase; color: var(--soft-text); }
 .mm-sheet-body > .mm-fact-h:first-child { margin-top: 0; }
 .mm-quiet { color: var(--soft-text); }
-/* A desk screen is wide, so the details stand beside the map instead of under
-   it -- and the map keeps its full height. */
-@media (min-width: 760px) {
-  .mm-stage { flex-direction: row; gap: 8px; }
-  .mm-wrap { flex: 1 1 auto; width: auto; aspect-ratio: auto; }
-  .mm-sheet { flex: 0 0 330px;
-    border-top: 1px solid var(--paper-dim); border-left: 2px solid var(--leaf); }
-}
+/* ONE LAYOUT, WIDER ON A DESK SCREEN.
+   The details stood beside the map here for a while, which read well but made
+   the map window as tall as the details column -- and the market is a strip,
+   so four fifths of that window was empty sand with the moored Teal adrift in
+   it. Capping the width instead keeps the market's own shape, makes the map
+   BIGGER than the side-by-side version managed, and leaves one arrangement to
+   reason about rather than two. */
+.mm-stage { max-width: 760px; }
 .ans-choice { flex: none; display: flex; gap: 7px; }
 .ans-btn { min-width: 46px; padding: 8px 11px; border-radius: 10px; cursor: pointer;
   font-family: inherit; font-size: 14.5px; font-weight: 700; line-height: 1;
@@ -2980,6 +2984,14 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 @media (prefers-reduced-motion: reduce) { .ans-btn { transition: none; } }
 .md-answers-link.md-waiting { border-color: var(--tomato); }
 .mgr-inline-tool { margin-top: 18px; }
+/* The vendor desk's version of the same idea. The screen's own head is the
+   title and crumb it wears when it is a whole screen; laid out on a tab it is
+   one more thing between the person and the map. */
+.vtab-inline-tool { margin: 2px 0 10px; }
+.vtab-inline-tool > .screen > .screen-head,
+.vtab-inline-tool > .screen > .empty-note,
+.mgr-inline-tool > .screen > .empty-note { display: none; }
+.vtab-inline-tool > .screen { padding-top: 0; }
 .mgr-inline-head { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 8px; padding: 4px; background: none; border: 0;
   font-family: 'Manrope', -apple-system, sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); text-align: left; cursor: pointer; }
 .mgr-open-h2 { cursor: pointer; }
@@ -3883,14 +3895,6 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <span class="fold-title">Scan a Gift Certificate</span>
 <span class="fold-sub">Scan a customer&rsquo;s certificate &middot; the money comes to you</span>
 <span class="fold-cta scan" aria-hidden="true"><svg class="ico"><use href="#i-qr"></use></svg>Scan</span>
-<span class="fold-chev">&rsaquo;</span>
-</button>
-<div class="fold-body"></div>
-</div>
-<div class="dash-fold" data-fold="marketmap">
-<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'marketmap')">
-<span class="fold-title">Market Map</span>
-<span class="fold-sub">Where every booth is, and who is in it today</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -5234,7 +5238,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </section>
 <section id="screen-marketmap" class="screen">
 <div class="screen-head" id="head-marketmap"></div>
-<p class="empty-note" style="margin:-4px 0 12px;">The market as it is laid out today &mdash; booths, the pavilion, the entrances and what stands between them. This is the same map booth selection draws, from the same records, so anything the office changes about a booth or the layout shows here too.</p>
+<p class="empty-note" style="margin:-4px 0 10px;">The same map Booth Selection draws, from the same records &mdash; so anything the office changes about a booth or the layout shows here too.</p>
 <div class="card" style="padding:10px;">
 <div class="mm-bar">
 <div class="lotto-key" style="margin:0;">
@@ -5260,7 +5264,7 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 <div class="mm-sheet-body" id="mmSheetBody"></div>
 </div>
 </div>
-<p class="empty-note" id="mmHint" style="margin:8px 2px 0;"><b>Tap a booth</b> for everything the market holds on it. Pinch or double-tap to zoom in, drag to move around. <b>Fit map</b> brings the whole market back.</p>
+<p class="empty-note" id="mmHint" style="margin:8px 2px 0;">Pinch or double-tap to zoom in, drag to move around; <b>Fit map</b> brings the whole market back. This is the same map Booth Selection draws, from the same records.</p>
 </div>
 </section>
 <section id="screen-vmscript" class="screen">
@@ -15163,6 +15167,7 @@ delete foldedPlaceholders[name];
 function closeAllFolds() {
 returnFoldedScreens();
 document.querySelectorAll('.dash-fold.open').forEach(f => f.classList.remove('open'));
+restoreInlineTools();
 }
 function reopenFoldAncestors(fold) {
 let p = fold.parentElement && fold.parentElement.closest('.dash-fold');
@@ -15986,7 +15991,8 @@ const VENDOR_TABS = [
   { fold: 'answers', flat: true },
   { heading: 'Your part in the market' }, { fold: 'mycommittees' }, { fold: 'fMerch' } ] },
 { k: 'booths', t: 'Booths', title: 'Booth Assignments', icon: 'i-vtab-booth', parts: [
-  { fold: 'boothassign', flat: true, nohead: true }, { fold: 'marketmap' },
+  { inline: 'marketmap' },
+  { fold: 'boothassign', flat: true, nohead: true },
   { fold: 'satellites', flat: true } ] },
 { k: 'upload', t: 'Upload', title: 'Upload Forms', icon: 'i-vtab-upload', open: 'mydocs', parts: [ { fold: 'mydocs' } ] },
 { k: 'communicate', t: 'Communicate', title: 'Communicate', icon: 'i-vtab-talk', parts: [
@@ -16017,6 +16023,49 @@ return null;
 }
 // In the order a market day happens.
 const MGR_HOME_INLINE = ['dayfees', 'giftcerts', 'snaplog', 'fclog', 'firelane'];
+/* TOOLS THAT ARE LAID OUT RATHER THAN TAPPED THROUGH, per tab.
+   Home's market-day tools were the first of these (18-69). The Market Map is
+   the second: it is a reference you read while doing something else with the
+   booths, so it stands at the top of the Booths tab above the drawers rather
+   than behind one of them. A tool named here is NOT also drawn as a drawer on
+   that tab -- it is the same tile, in one place instead of two. */
+const MGR_TAB_INLINE = { home: MGR_HOME_INLINE, booths: ['marketmap'] };
+/* LENDING A SCREEN TO A BOX ON THE DESK.
+   The same move a drawer makes when it borrows a screen, without the drawer:
+   the section is lifted out of the page, a comment left where it stood, and it
+   is put back by returnFoldedScreens when the desk moves on. Both desks use
+   this, so an inline tool behaves the same on either. */
+function inlineToolInto(box, name) {
+const sec = document.getElementById('screen-' + name);
+if (!box || !sec || sec.parentElement === box) return false;
+const ph = document.createComment('home-' + name);
+sec.parentElement.replaceChild(ph, sec);
+foldedPlaceholders[name] = ph;
+box.appendChild(sec);
+sec.classList.add('inline-screen', 'active');
+runScreenInit(name);
+return true;
+}
+/* AN INLINE TOOL IS NOT A DRAWER, AND closeAllFolds DOES NOT KNOW THAT.
+   Opening any drawer calls closeAllFolds, which hands every borrowed screen
+   back where it came from -- including one that is not in a drawer at all but
+   laid out on the desk. That left the box empty and the tool simply gone from
+   the tab until something rendered it again. The boxes that are still on the
+   page, and on the tab being shown, are filled again here, straight after.
+   The guard is because filling a box runs that screen's own init, and no init
+   should be able to set this off a second time part way through. */
+let inlineToolsBusy = false;
+function restoreInlineTools() {
+if (inlineToolsBusy) return;
+inlineToolsBusy = true;
+try {
+  document.querySelectorAll('.vtab-inline-tool[data-inline], .mgr-inline-tool[data-inline]')
+    .forEach(box => {
+      if (box.classList.contains('vtab-off') || box.closest('.vtab-off')) return;
+      inlineToolInto(box, box.dataset.inline);
+    });
+} finally { inlineToolsBusy = false; }
+}
 function mgrInlineTool(grid, tile) {
 const screenName = tile.s || 'optool';
 if (tile.ot) otOpenKey = tile.ot;
@@ -16024,17 +16073,11 @@ const sec = document.getElementById('screen-' + screenName);
 if (!sec) return;
 const wrap = document.createElement('section');
 wrap.className = 'mgr-inline-tool';
+wrap.dataset.inline = screenName;
 // No name above the tool: every tool already says what it is at the top of
 // its own window, and saying it twice was just more to scroll past (18-72).
-// Move the screen here, the same way a drawer borrows one, and put it back
-// when the desk changes (returnFoldedScreens, via closeAllFolds).
-const ph = document.createComment('home-' + screenName);
-sec.parentElement.replaceChild(ph, sec);
-foldedPlaceholders[screenName] = ph;
-wrap.appendChild(sec);
-sec.classList.add('inline-screen', 'active');
 grid.appendChild(wrap);
-runScreenInit(screenName);
+inlineToolInto(wrap, screenName);
 // The tool's own heading is the way into the whole thing, where what is set
 // aside here lives: season totals, who takes SNAP, the certificate book.
 const own = [...sec.querySelectorAll('.card > h2')].find(x => !x.closest('.tool-aside'));
@@ -16145,6 +16188,15 @@ VENDOR_TABS.forEach(tab => {
       el = document.createElement('p');
       el.className = 'vtab-heading';
       el.textContent = pt.heading;
+      dash.appendChild(el);
+    }
+    else if (pt.inline) {
+      // THE TOOL ITSELF, NOT A DRAWER TO OPEN IT. An empty box on the desk;
+      // the screen is lent into it whenever this tab is shown, the same way
+      // the manager's desk lays out its market-day tools.
+      el = document.createElement('div');
+      el.className = 'vtab-inline-tool';
+      el.dataset.inline = pt.inline;
       dash.appendChild(el);
     }
     if (!el) return;
@@ -16431,6 +16483,9 @@ try { if (typeof stopQrScan === 'function') stopQrScan(); } catch (e) {}
 });
 const t = document.getElementById('vendorTabTitle');
 if (t) { t.textContent = tab.title || ''; t.classList.toggle('vtab-off', !tab.title); }
+// After the tab's parts are shown or hidden, not before: a box on a tab that
+// is now off must be left alone, and one on the tab being shown filled.
+restoreInlineTools();
 document.querySelectorAll('#vendorTabList .vtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab.k)));
 paintVendorTabDots();
 if (tab.k === 'account') renderAnswers();
@@ -24857,7 +24912,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-19';
+const BUILD_ID = '19-20';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -48713,6 +48768,13 @@ if (currentRole === 'president' || currentRole === 'board') initActivity();
 const grid = document.getElementById('mgrFolders');
 if (!grid) return;
 renderManagerAlerts();
+/* HAND BACK WHAT THE GRID HAS BORROWED, BEFORE EMPTYING IT.
+   A tool laid out on this desk holds the REAL screen section, not a copy of
+   it. Clearing the grid with one still inside does not put it away -- it
+   destroys it, for the whole app: the tool then exists nowhere, and
+   showScreen cannot find it either. Every screen goes back to where it came
+   from first, so the wipe below can only ever remove boxes. */
+returnFoldedScreens();
 grid.innerHTML = '';
 // One order, every day of the year. The other markets sit together at the
 // foot because that is a fixed place a manager can learn, not because of the
@@ -48757,24 +48819,27 @@ if (tab.title) {
 // tool, not a menu: each one is laid out on Home under its own name, in the
 // order the day happens, so scrolling down finds it. No standing-decision
 // banners here and no screen headings -- this is a working surface.
-if (tab.k === 'home' && MGR_HOME_INLINE.length) {
-  const md = ordered.find(x => x.key === 'marketday');
-  if (md) {
-    // MGR_HOME_INLINE's order, not the folder's: the day's order.
-    MGR_HOME_INLINE.forEach(key => {
-      const t = (md.tiles || []).find(x => (x.s === key) || ('ot:' + x.ot === key));
-      if (t) mgrInlineTool(grid, t);
-    });
-  }
-}
+const inlineKeys = MGR_TAB_INLINE[tab.k] || [];
+const isInline = t => inlineKeys.includes(t.s) || inlineKeys.includes('ot:' + t.ot);
+// The list's order, not the folder's: on Home that is the order the day
+// happens in, and on Booths it puts the map above everything else.
+inlineKeys.forEach(key => {
+  let tile = null;
+  tab.folders.some(fk => {
+    const f = ordered.find(x => x.key === fk);
+    tile = f && (f.tiles || []).find(x => (x.s === key) || ('ot:' + x.ot === key));
+    return !!tile;
+  });
+  if (tile) mgrInlineTool(grid, tile);
+});
 tab.folders.forEach(key => {
   const f = ordered.find(x => x.key === key);
   if (!f) return;
-  // the market-day tools are already laid out above
-  const tiles = (tab.k === 'home' && key === 'marketday')
-    ? (f.tiles || []).filter(t => !MGR_HOME_INLINE.includes(t.s) && !MGR_HOME_INLINE.includes('ot:' + t.ot))
-    : (f.tiles || []);
-  if (tab.k === 'home' && key === 'marketday' && !tiles.length) return;
+  // whatever was laid out above is not drawn again as a drawer here
+  const tiles = inlineKeys.length ? (f.tiles || []).filter(t => !isInline(t)) : (f.tiles || []);
+  // a group whose every tool is now laid out above has no drawers left, and a
+  // heading over nothing is just a word to scroll past
+  if (!tiles.length && (f.tiles || []).length && !f.head) return;
   // 'bare' means the tab's own tool needs no heading; anything sharing the
   // tab with it still gets one (18-74).
   if (!tab.bare || key !== tab.folders[0]) {
