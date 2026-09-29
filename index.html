@@ -2964,6 +2964,36 @@ html[data-look="rainshine"] body.kiosk-mode .kl-hero-empty { background:var(--pa
 .mm-layout { margin: 4px 0 2px; }
 .mm-layout .stall-layout { max-width: 168px; }
 .mm-layout-cap { margin-top: 6px; text-align: center; font-size: 12.5px; }
+/* ===== POINTS RANKINGS ================================================ */
+/* The printed call sheet's table, reused: this is the same information the
+   market already hands round on selection day, so it may as well look it. */
+/* Its own table, not the printed call sheet's. That sheet is styled for
+   paper -- black rules, gray fills -- and this one lives on the vendor desk
+   under a photograph. */
+table.rk-list { width: 100%; border-collapse: collapse; margin-top: 2px; }
+table.rk-list th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  text-align: left; padding: 4px; color: var(--soft-text); }
+table.rk-list td.rank { width: 34px; font-weight: 800; }
+table.rk-list th { border-bottom-color: var(--line); }
+table.rk-list td { border-bottom: 1px dotted var(--paper-dim); vertical-align: middle; }
+table.rk-list td.rk-pts { width: 62px; text-align: right; font-weight: 700;
+  font-variant-numeric: tabular-nums; }
+table.rk-list td.rank { color: var(--soft-text); font-variant-numeric: tabular-nums; }
+/* The row a vendor came to find. Marked by colour AND by the word "you", so
+   it is not one of those highlights that vanishes for whoever cannot pick the
+   shade out of the rest of the table. */
+table.rk-list tr.rk-me td { background: var(--find); color: var(--find-ink); font-weight: 800; }
+table.rk-list tr.rk-me td.rank, table.rk-list tr.rk-me td.rk-pts { color: var(--find-ink); }
+.rk-you { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+  background: var(--find-ink); color: var(--paper); font-size: 11px; font-weight: 800;
+  letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 1px; }
+@keyframes prFlash { 0%, 100% { box-shadow: inset 0 0 0 0 var(--find-edge); }
+                     40% { box-shadow: inset 0 0 0 3px var(--find-edge); } }
+table.rk-list tr.rk-flash td { animation: prFlash 0.9s ease-out 2; }
+@media (prefers-reduced-motion: reduce) { table.rk-list tr.rk-flash td { animation: none; } }
+.rk-standing { margin: 0 0 12px; font-size: 16px; line-height: 1.45; color: var(--ink); }
+#rkJump { width: auto; margin: 0; padding: 8px 16px; }
+
 /* ===== THE STRETCH SANDBOX ============================================ */
 .ms-shapes { display: flex; gap: 6px; margin: 0 0 8px; }
 .ms-shapes .ms-shape { flex: 1 1 0; width: auto; margin: 0; padding: 7px 4px; font-size: 13px; }
@@ -4024,6 +4054,14 @@ onkeydown="if (event.key === 'Enter' || event.key === ' ') showScreen('mycommitt
 <button type="button" class="fold-bar" onclick="toggleToolFold(this, 'merch')">
 <span class="fold-title">Merch Mansion Stock &amp; Till</span>
 <span class="fold-sub" id="merchSub">Ring up the market&rsquo;s own stand, and close out the day</span>
+<span class="fold-chev">&rsaquo;</span>
+</button>
+<div class="fold-body"></div>
+</div>
+<div class="dash-fold" data-fold="pointsrank">
+<button type="button" class="fold-bar" onclick="toggleToolFold(this, 'pointsrank')">
+<span class="fold-title">Points Rankings</span>
+<span class="fold-sub">Where you stand on points against the rest of the market</span>
 <span class="fold-chev">&rsaquo;</span>
 </button>
 <div class="fold-body"></div>
@@ -5405,6 +5443,27 @@ Total for both: <b>$35.49</b> &middot; <span class="sh-free">FREE delivery to St
 </div>
 </div>
 <p class="empty-note" id="mmHint" style="margin:8px 2px 0;"><span class="mm-hint-preview"><b>Tap the map</b> to open it full size &mdash; tap a booth and it opens showing that booth.</span><span class="mm-hint-full">Pinch or double-tap to zoom in, drag to move around; <b>Fit map</b> brings the whole market back. This is the same map Booth Selection draws, from the same records.</span><span class="mm-hint-short">Pinch to zoom &middot; drag to move &middot; <b>Fit map</b> for the whole market.</span></p>
+</div>
+</section>
+<section id="screen-pointsrank" class="screen">
+<div class="screen-head" id="head-pointsrank"></div>
+<p class="empty-note" style="margin:-4px 0 12px;">Points decide the order names are called in every Booth Selection. Booth Selection calls each of the four groups in turn and ranks on points <b>inside</b> a group, so the list that decides your booth is your own group&rsquo;s &mdash; the wider lists here are for seeing the whole market.</p>
+<div class="card desk-form">
+<label for="rkWho">Who to show</label>
+<select id="rkWho" onchange="renderPointsRank()"></select>
+<label for="rkWhen" style="margin-top:12px;">Which points</label>
+<select id="rkWhen" onchange="renderPointsRank()">
+<option value="ytd">This year so far</option>
+<option value="last">Last year</option>
+</select>
+</div>
+<div class="card">
+<h2><span class="emoji"><svg class="ico"><use href="#i-scale"></use></svg></span>Where You Stand</h2>
+<p class="rk-standing" id="rkStanding"></p>
+<button type="button" class="ghost-btn" id="rkJump" onclick="pointsRankJump()">Find me in the list</button>
+</div>
+<div class="card">
+<div id="rkList"></div>
 </div>
 </section>
 <section id="screen-mapstretch" class="screen">
@@ -7089,10 +7148,10 @@ comes from.</p>
 <label for="prYear">Season being rolled in</label>
 <select id="prYear" onchange="renderPointsRoll()"></select>
 <p class="empty-note" id="prSummary"></p>
-<div id="prList"></div>
+<div id="rollList"></div>
 <button class="primary-btn" id="prPost" onclick="postPointsRollover()"><svg class="ico"><use href="#i-checkmark"></use></svg> Post Rollover</button>
 <button class="ghost-btn" onclick="showScreen('pointsmanager')">Open Points Manager</button>
-<div class="status-msg" id="prMsg"></div>
+<div class="status-msg" id="rollMsg"></div>
 </div>
 </section>
 <section id="screen-auction" class="screen">
@@ -9218,6 +9277,126 @@ mmSelected = null;
 mmZoom = 1; mmPanX = 0; mmPanY = 0; mmTouched = false;
 renderMarketMap();
 marketMapFit();
+}
+/* ===== POINTS RANKINGS ================================================
+   Where a vendor stands on points, against whichever slice of the market they
+   ask for. Points are not a score anybody wins: they are the order names get
+   called in at Booth Selection, and that order already goes round the market
+   on paper on selection day. What this adds is that a vendor can see it
+   without waiting to hear their name.
+
+   Two things it is careful about. Equal points is EQUAL -- two vendors on the
+   same total share a rank rather than one of them being quietly put above the
+   other by whatever order the records happen to be in. And Booth Selection
+   ranks within each of the four groups, not across the market, so the wider
+   lists are a view of the market rather than a prediction of anybody's
+   booth; the screen says so, and the vendor's own group is one of the
+   choices. */
+const PR_GROUPS = [
+{ k: 'all',      t: 'Everyone',      match: v => true },
+{ k: 'full',     t: 'Full members',  match: v => /Full$/.test(v.category || '') },
+{ k: 'easy',     t: 'Easy Entry',    match: v => /Easy Entry$/.test(v.category || '') },
+{ k: 'mine',     t: 'My group',      match: null },   // filled in from who is signed in
+];
+// Only the four the market sorts vendors into. The market's own programs keep
+// a category in the same field and are not vendors, so they are not ranked.
+const PR_CATEGORIES = ['Ag Full', 'Non-Ag Full', 'Ag Easy Entry', 'Non-Ag Easy Entry'];
+function prVendors() {
+return (cache.vendors || []).filter(v => PR_CATEGORIES.indexOf(v.category) !== -1);
+}
+// vendorPoints() is every point a vendor has ever been given. A ranking asked
+// for a single year has to count that year alone.
+function vendorPointsInYear(vendorId, year) {
+return (cache.ledger || []).filter(r => r.vendorId === vendorId &&
+  Number(String(r.date || '').slice(0, 4)) === year)
+  .reduce((s, r) => s + Number(r.points || 0), 0);
+}
+function prYearOf(which) { return which === 'last' ? seasonYear() - 1 : seasonYear(); }
+/* Standard competition ranking: equal totals share a place and the next place
+   skips by however many shared it -- 1, 2, 2, 4. Dense ranking would say
+   1, 2, 2, 3, which reads as though the third vendor were third when two
+   people are ahead of them. */
+function pointsRankTable(groupKey, whenKey) {
+const me = cache.vendors.find(v => v.vendorId === currentVendorId) || null;
+const g = PR_GROUPS.find(x => x.k === groupKey) || PR_GROUPS[0];
+const match = g.k === 'mine'
+  ? (v => !!me && v.category === me.category)
+  : g.match;
+const year = prYearOf(whenKey);
+const rows = prVendors().filter(match)
+  .map(v => ({ v: v, pts: vendorPointsInYear(v.vendorId, year) }))
+  .sort((a, b) => b.pts - a.pts || byBusinessName(a.v, b.v));
+let place = 0, seen = 0, lastPts = null;
+rows.forEach(r => {
+  seen++;
+  if (r.pts !== lastPts) { place = seen; lastPts = r.pts; }
+  r.rank = place;
+});
+return { rows: rows, year: year, total: rows.reduce((s, r) => s + r.pts, 0),
+         group: g, me: me };
+}
+function prOrdinal(n) {
+const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+function renderPointsRank() {
+const listBox = document.getElementById('rkList');
+const standing = document.getElementById('rkStanding');
+const jump = document.getElementById('rkJump');
+if (!listBox) return;
+const who = (document.getElementById('rkWho') || {}).value || 'all';
+const when = (document.getElementById('rkWhen') || {}).value || 'ytd';
+const t = pointsRankTable(who, when);
+
+// A year the market has no records for is not a market where everybody is
+// equal on nothing -- it is a year this app was not keeping the ledger.
+if (!t.rows.length || t.total === 0) {
+  listBox.innerHTML = '<p class="empty-note" style="margin:0;">' +
+    (t.rows.length
+      ? 'No points were recorded in ' + t.year + ', so there is nothing to rank. The market\u2019s records in this app begin with the ' + seasonYear() + ' season.'
+      : 'Nobody is in this group.') + '</p>';
+  if (standing) standing.textContent = '';
+  if (jump) jump.style.display = 'none';
+  return;
+}
+const mine = t.rows.find(r => r.v.vendorId === currentVendorId);
+if (standing) {
+  standing.innerHTML = mine
+    ? 'You are <b>' + prOrdinal(mine.rank) + '</b> of ' + t.rows.length + ' on <b>' + mine.pts +
+      '</b> point' + (mine.pts === 1 ? '' : 's') + ', ' +
+      (when === 'last' ? 'counting ' + t.year + ' alone' : 'counting ' + t.year + ' so far') + '.' +
+      (t.rows.filter(r => r.rank === mine.rank).length > 1
+        ? ' <span class="mm-quiet">Level with ' + (t.rows.filter(r => r.rank === mine.rank).length - 1) +
+          ' other' + (t.rows.filter(r => r.rank === mine.rank).length === 2 ? '' : 's') + '.</span>' : '')
+    : 'You are not in this group.';
+}
+if (jump) jump.style.display = mine ? '' : 'none';
+listBox.innerHTML = '<table class="rk-list"><thead><tr><th></th><th>Vendor</th><th>Points</th></tr></thead><tbody>' +
+  t.rows.map(r => '<tr' + (r.v.vendorId === currentVendorId ? ' class="rk-me" id="rkMeRow"' : '') + '>' +
+    '<td class="rank">' + r.rank + '</td>' +
+    '<td>' + esc(r.v.businessName) + (r.v.vendorId === currentVendorId ? ' <span class="rk-you">you</span>' : '') + '</td>' +
+    '<td class="rk-pts">' + r.pts + '</td></tr>').join('') +
+  '</tbody></table>';
+}
+function pointsRankJump() {
+const row = document.getElementById('rkMeRow');
+if (!row) return;
+row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+row.classList.remove('rk-flash');
+void row.offsetWidth;                 // restart the flash if it is pressed twice
+row.classList.add('rk-flash');
+}
+function initPointsRankScreen() {
+const me = cache.vendors.find(v => v.vendorId === currentVendorId) || null;
+const sel = document.getElementById('rkWho');
+if (sel) {
+  const was = sel.value;
+  sel.innerHTML = PR_GROUPS.map(g => '<option value="' + g.k + '">' +
+    esc(g.k === 'mine' ? (me ? 'My group \u2014 ' + me.category : 'My group') : g.t) +
+    '</option>').join('');
+  if (was) sel.value = was;
+}
+renderPointsRank();
 }
 /* ===== THE STRETCH SANDBOX ============================================
    Somewhere to find the numbers by eye, because the right amount to pull a
@@ -16572,7 +16751,8 @@ const VENDOR_TABS = [
 { k: 'account', t: 'Account', title: 'My Account', icon: 'i-vtab-person', parts: [
   { fold: 'fProfile' }, { fold: 'account', flat: true, nohead: true },
   { fold: 'answers', flat: true },
-  { heading: 'Your part in the market' }, { fold: 'mycommittees' }, { fold: 'fMerch' } ] },
+  { heading: 'Your part in the market' }, { fold: 'mycommittees' }, { fold: 'fMerch' },
+  { fold: 'pointsrank' } ] },
 { k: 'booths', t: 'Booths', title: 'Booth Assignments', icon: 'i-vtab-booth', parts: [
   { inline: 'marketmap' },
   { fold: 'boothassign', flat: true, nohead: true },
@@ -21259,6 +21439,7 @@ if (name === 'communicate') initCommunicateScreen();
 if (name === 'booths') { renderBooths(); centerLiveMap('boothCanvasWrap'); }
 if (name === 'marketmap') initMarketMapScreen();
 if (name === 'mapstretch') initMapStretchScreen();
+if (name === 'pointsrank') initPointsRankScreen();
 if (name === 'directory') { renderDirectory(''); renderEasyEntryStanding(); }
 if (name === 'lottery') { initLotteryScreen(); centerLiveMap('lottoMapWrap'); }
 if (name === 'satlottery') { initSatLotteryScreen(); centerLiveMap('satLottoMapWrap'); }
@@ -21417,6 +21598,7 @@ staff:             { title: 'Staff', home: true },
 directory:         { title: 'Rolodex' },
 marketmap:         { title: 'Market Map' },
 mapstretch:        { title: 'Map Stretch Sandbox' },
+pointsrank:        { title: 'Points Rankings' },
 winter:            { title: 'Winter Market' },
 wednesday:         { title: 'Wednesday at East Hill' },
 wedlist:           { title: 'Who Is Here Today' },
@@ -25497,7 +25679,7 @@ try {
 const gcm = /[?&]gc=([A-Za-z0-9-]+)/.exec(location.search);
 if (gcm) window.gcPendingScan = gcm[1].toUpperCase();
 } catch (e) {}
-const BUILD_ID = '19-24';
+const BUILD_ID = '19-25';
 function stampBuild() {
 const a = document.getElementById('aboutBuildId');
 if (a) a.textContent = BUILD_ID;
@@ -31376,14 +31558,14 @@ o.value = String(y); o.textContent = y + ' season';
 sel.appendChild(o);
 });
 sel.value = String(now);
-document.getElementById('prMsg').className = 'status-msg';
+document.getElementById('rollMsg').className = 'status-msg';
 renderPointsRoll();
 }
 function renderPointsRoll() {
 const year = Number(document.getElementById('prYear').value);
 const plan = rolloverPlan(year);
 const posted = cache.ops.rollover[year];
-const wrap = document.getElementById('prList');
+const wrap = document.getElementById('rollList');
 wrap.innerHTML = '';
 document.getElementById('prSummary').textContent = posted
 ? 'Already posted on ' + formatDisplayDate(posted) + '. Posting again would double-count, so it is blocked.'
@@ -31417,7 +31599,7 @@ wrap.appendChild(more);
 }
 async function postPointsRollover() {
 const year = Number(document.getElementById('prYear').value);
-if (cache.ops.rollover[year]) { showMsg('prMsg', 'err', 'That season has already been posted.'); return; }
+if (cache.ops.rollover[year]) { showMsg('rollMsg', 'err', 'That season has already been posted.'); return; }
 const plan = rolloverPlan(year);
 const date = todayISO();
 cache.vendors.forEach(v => {
@@ -31440,7 +31622,7 @@ cache.ops.rollover[year] = date;
 await storageSet('ifm-ledger', cache.ledger);
 await saveOps();
 renderPointsRoll();
-showMsg('prMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Posted. Every entry is on the points ledger and can be adjusted there.');
+showMsg('rollMsg', 'ok', '<svg class="ico"><use href="#i-checkmark"></use></svg> Posted. Every entry is on the points ledger and can be adjusted there.');
 }
 function auctionQueue(kind) {
 const eligible = cache.vendors.filter(v => {
